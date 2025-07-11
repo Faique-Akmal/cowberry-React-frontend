@@ -20,6 +20,7 @@ import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
+import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
 import Home from "./pages/Dashboard/Home";
 
 export default function App() {
@@ -28,10 +29,15 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
+             {/* forgot password  */}
+            <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
-
+            
+            {/* Dashboard Pages */}
+            <Route path="/dashboard" element={<Home />} />
+          
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />

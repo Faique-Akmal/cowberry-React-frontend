@@ -16,7 +16,7 @@ export default function SidebarWidget() {
         rel="nofollow"
         className="flex items-center justify-center p-3 font-medium text-white rounded-lg bg-dashboard-royalblue-200 text-theme-sm hover:bg-brand-600"
       >
-        Purchase Plan
+        2025 COWBERRY All rights reserved.
       </a>
     </div>
   );

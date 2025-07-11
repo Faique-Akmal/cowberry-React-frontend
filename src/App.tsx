@@ -22,6 +22,7 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
 import Home from "./pages/Dashboard/Home";
+import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
   return (
@@ -37,6 +38,8 @@ export default function App() {
             
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />
+
+            <Route path="/LoginWithOtp" element={<LoginWithOtp />} />
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

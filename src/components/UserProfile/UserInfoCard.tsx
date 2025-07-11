@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function UserInfoCard({ userId }) {
+export default function UserInfoCard() {
   const [user, setUser] = useState({
     id: '',
     username: '',
@@ -17,12 +17,7 @@ export default function UserInfoCard({ userId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  //   const accessToken = localStorage.getItem("accessToken");
-  //   const refreshToken = localStorage.getItem("refreshToken");
-
-  //    console.log("Access Token:", accessToken); // For debugging
-  //    console.log(refreshToken); // For debugging
-  // // ✅ Create a custom Axios instance with interceptors
+  // Create a persistent Axios instance
   const axiosInstance = axios.create({
     baseURL: "http://192.168.0.136:8000/api",
     headers: {
@@ -30,19 +25,16 @@ export default function UserInfoCard({ userId }) {
     },
   });
 
-  // ✅ Attach access token on every request
+  // Add request interceptor (runs once)
   axiosInstance.interceptors.request.use((config) => {
     const accessToken = localStorage.getItem("accessToken");
-  
-
-   
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   });
 
-  // ✅ Auto-refresh access token if it expired
+  // Add response interceptor for token refreshing
   axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -50,8 +42,10 @@ export default function UserInfoCard({ userId }) {
 
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
+
         try {
           const refreshToken = localStorage.getItem("refreshToken");
+          if (!refreshToken) throw new Error("No refresh token");
 
           const res = await axios.post("http://192.168.0.136:8000/api/token/refresh/", {
             refresh: refreshToken,
@@ -61,10 +55,12 @@ export default function UserInfoCard({ userId }) {
           localStorage.setItem("accessToken", newAccessToken);
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return axiosInstance(originalRequest);
+          return axiosInstance(originalRequest); // Retry original request
         } catch (err) {
-          console.error("Token refresh failed:", err);
-          return Promise.reject(err);
+          console.error("Refresh token failed", err);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          setError("Session expired. Please log in again.");
         }
       }
 
@@ -72,25 +68,21 @@ export default function UserInfoCard({ userId }) {
     }
   );
 
-  // ✅ Fetch user details from API
   useEffect(() => {
     const fetchUser = async () => {
       try {
         setLoading(true);
         const response = await axiosInstance.get(`/me/`);
-    
         setUser(response.data);
       } catch (err) {
-        setError("Failed to fetch user details.");
         console.error(err);
+        setError("Failed to fetch user details.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (userId) {
-      fetchUser();
-    }
+    fetchUser();
   }, []);
 
   if (loading) return <div className="p-4">Loading...</div>;
@@ -100,8 +92,7 @@ export default function UserInfoCard({ userId }) {
     <div className="p-6 max-w-xl mx-auto rounded-lg shadow border">
       <h2 className="text-xl font-bold mb-4">User Profile</h2>
       <div className="space-y-2 text-gray-800">
-        <p><strong>ID:</strong> {user.id}</p>
-        <p><strong>Username:</strong> {user.username}</p>
+     
         <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Role:</strong> {user.role}</p>
         <p><strong>Department:</strong> {user.department}</p>

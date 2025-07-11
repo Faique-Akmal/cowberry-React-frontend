@@ -78,7 +78,7 @@ export default function UserInfoCard({ userId }) {
       try {
         setLoading(true);
         const response = await axiosInstance.get(`/me/`);
-        console.log(response.data+"bavew"); // For debugging
+    
         setUser(response.data);
       } catch (err) {
         setError("Failed to fetch user details.");

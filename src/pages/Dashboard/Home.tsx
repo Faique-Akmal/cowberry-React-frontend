@@ -9,6 +9,7 @@ import EmployeeChart from "../../components/ecommerce/EmployeeChart";
 import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
 import Customers from "../../components/ecommerce/Customers";
 import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
+import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
 
 export default function Home() {
   return (
@@ -44,8 +45,13 @@ export default function Home() {
           <EmployeeStatus />
         </div>
            
-             <div className="col-span-12 xl:col-span-4">
+        <div className="col-span-12 xl:col-span-4 m-5">
+        <div className="col-span-12 xl:col-span-4 m-4">
           <JobApplicationCard/>
+       </div>
+       <div className="col-span-12 xl:col-span-4 m-4">
+           <JobRejectionCard />
+       </div>
         </div>
 
 

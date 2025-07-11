@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowDownIcon } from '../../icons';
+import { Link } from 'react-router';
 const employees = [
   {
     name: "Alex George",
@@ -87,6 +88,7 @@ const EmployeeStatus = () => {
         </div>
 
         {employees.map((emp, index) => (
+          <Link to={`/employee/${emp.name}`} className="no-underline text-inherit" key={index}>
           <div
             key={index}
             className="grid grid-cols-4 py-4 border-b last:border-none items-center"
@@ -118,6 +120,7 @@ const EmployeeStatus = () => {
               <StatusPill status={emp.status} />
             </div>
           </div>
+          </Link>
         ))}
       </div>
     </div>

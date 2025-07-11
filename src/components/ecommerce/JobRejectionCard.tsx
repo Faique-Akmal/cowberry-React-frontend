@@ -1,7 +1,7 @@
 import React from "react";
 
 
-const JobApplicationCard = () => {
+const JobRejectionCard = () => {
   const totalApplications = 80;
   const acceptedApplications = 46;
   const acceptedThisMonth = 30;
@@ -9,8 +9,8 @@ const JobApplicationCard = () => {
   const progressPercentage = (acceptedThisMonth / totalApplications) * 100;
 
   return (
-    <div className="bg-blue-600 text-white p-8 ml-2 rounded-xl w-82 shadow-lg relative overflow-hidden">
-      <h2 className="text-lg font-semibold mb-2">Accepted Job Applications</h2>
+    <div className="bg-green-600 text-white p-8 ml-2 rounded-xl w-82 shadow-lg relative overflow-hidden">
+      <h2 className="text-lg font-semibold mb-2">Rejected Job Applications</h2>
       <div className="flex items-center justify-between">
         <div className="text-3xl font-bold">
           {acceptedApplications}
@@ -43,9 +43,9 @@ const JobApplicationCard = () => {
           </div>
         </div>
       </div>
-      <p className="mt-2 text-sm text-white/80">Accepted this month</p>
+      <p className="mt-2 text-sm text-white/80">Rejected this month</p>
     </div>
   );
 };
 
-export default JobApplicationCard;
+export default JobRejectionCard;

@@ -1,0 +1,62 @@
+import { useState } from "react"
+// import ChatList from "./ChatList"
+import ChatWindow from "./ChatWindow"
+import { Chat } from "../../types"
+
+const initialChats: Chat[] = [
+  {
+    id: 1,
+    name: "John Doe",
+    messages: [
+      { id: 1, sender: "them", text: "Hello!", timestamp: "10:00 AM" },
+      { id: 2, sender: "me", text: "Hi John!", timestamp: "10:01 AM" },
+    ],
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    messages: [
+      { id: 1, sender: "them", text: "Hey!", timestamp: "11:00 AM" },
+    ],
+  },
+]
+
+const ChatBox: React.FC = () => {
+  const [chats, setChats] = useState(initialChats)
+  const [activeChatId, setActiveChatId] = useState(1)
+
+  const handleSendMessage = (chatId: number, text: string) => {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              messages: [
+                ...chat.messages,
+                {
+                  id: chat.messages.length + 1,
+                  sender: "me",
+                  text,
+                  timestamp: new Date().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                },
+              ],
+            }
+          : chat
+      )
+    )
+  }
+
+  const activeChat = chats.find((chat) => chat.id === activeChatId)!
+
+  return (
+     <div className="bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
+      {/* <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} /> */}
+      <ChatWindow chat={activeChat} onSendMessage={handleSendMessage} />
+    </div>
+  );
+};
+
+export default ChatBox;

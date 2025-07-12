@@ -10,6 +10,8 @@ import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
 import Customers from "../../components/ecommerce/Customers";
 import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
 import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
+import ChatBox from "../../components/chat/ChatBox";
+
 
 export default function Home() {
   return (
@@ -18,19 +20,16 @@ export default function Home() {
         title="Field Employee Location Tracker & Task Management System"
         description="To build a mobile-based location tracker app for field employees and a web-based dashboard for HR/Admin and reporting managers to monitor attendance, task completion, and real-time location tracking."
       />
-      <div className="grid gap-12 md:gap-2">
+      <div className="grid gap-12 md:gap-4">
         <div className="col-span-3 sapce-x-4 xl:col-span-12">
-          <EcommerceMetrics />
-          
-             <MonthlySalesChart />
-        
+          <EcommerceMetrics />        
         </div>
-        
+        <div className="col-span-3 sapce-x-4 xl:col-span-12">
+             <MonthlySalesChart />
+        </div>
           
         <div className="grid col-span-12 xl:col-span-4">
           <Customers/>
-         
-        
         </div>
          
         <div className="col-span-12  xl:col-span-4">
@@ -52,12 +51,15 @@ export default function Home() {
        <div className="col-span-12 xl:col-span-4 m-4">
            <JobRejectionCard />
        </div>
-        </div>
+    </div>
+      <div className="col-span-12">
+        <MapComponent />
+      </div>
 
+      <div className="col-span-12">
+        <ChatBox />
+      </div>
 
-        <div className="col-span-12">
-          <MapComponent />
-        </div>
       </div>
     </>
   );

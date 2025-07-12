@@ -13,9 +13,9 @@ type User = {
 };
 
 type PaginationResponse = {
-  currentPage: number;
-  totalPages: number;
   results: User[];
+  current_page: number;
+  total_pages: number;
 };
 
 const UserPagination: React.FC = () => {
@@ -27,13 +27,18 @@ const UserPagination: React.FC = () => {
   const fetchUsers = async (page: number) => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("accessToken");
       const res = await axios.get<PaginationResponse>(
-        `https://http://192.168.0.144:8000/api/users/`
+        `http://192.168.0.144:8000/api/users/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       setUsers(res.data.results);
-      console.log(res.data.results);
-      setCurrentPage(res.data.currentPage);
-      setTotalPages(res.data.totalPages);
+      setCurrentPage(res.data.current_page);
+      setTotalPages(res.data.total_pages);
     } catch (error) {
       console.error("Failed to fetch users", error);
     } finally {
@@ -87,7 +92,7 @@ const UserPagination: React.FC = () => {
         </div>
       )}
 
-      <div className="flex justify-center mt-6 gap-2">
+      <div className="flex justify-center mt-6 gap-2 flex-wrap">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -96,12 +101,14 @@ const UserPagination: React.FC = () => {
           Previous
         </button>
 
-        {[...Array(totalPages)].map((_, i) => (
+        {Array.from({ length: totalPages }, (_, i) => (
           <button
             key={i}
             onClick={() => setCurrentPage(i + 1)}
             className={`px-3 py-2 rounded ${
-              currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200"
+              currentPage === i + 1
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 hover:bg-gray-200"
             }`}
           >
             {i + 1}

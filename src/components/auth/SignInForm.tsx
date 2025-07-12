@@ -44,7 +44,6 @@ export default function SignInForm() {
 
       console.log("Response:", response.data); 
 
-      // console.log(response.data.message)
 
       if (response.data?.message === "Login successful") {
         setMessage("Login successful!");
@@ -65,16 +64,14 @@ export default function SignInForm() {
       
        
         // Save user data if provided
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
+        // if (response.data) {
+        //   localStorage.setItem("user", JSON.stringify(response.data));
+        // }
 
         // Get user role from response
-        const userRole = response.data.user?.role?.toLowerCase() || response.data.role?.toLowerCase();
+        const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
          
-        const isVerified = response.data.user?.is_employee_code_verified || response.data.is_employee_code_verified || false;
-        // console.log("User Role:", userRole); // For debugging
-        console.log(response.data.user?.is_employee_code_verified)    
+        const isVerified = response.data?.is_employee_code_verified || false;
         
         // Navigate based on user role
       setTimeout(() => {
@@ -108,7 +105,7 @@ export default function SignInForm() {
         const status = error.response.status;
         const data = error.response.data;
         
-        // console.log("Error response:", data);
+        console.log("Error response:", data);
         
         if (status === 401) {
           setMessage("Invalid employee code or password.");

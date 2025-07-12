@@ -32,8 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const interval = setInterval(async () => {
       const res = await AxiosRefreshToken();
-      console.log(res.data)
-        localStorage.setItem('accessToken', res.data?.access);
+
+      localStorage.setItem('accessToken', res.data?.access);
         console.log("token refresh")
       }, 29 * 60 * 1000); // refresh before 30 min expiry
 

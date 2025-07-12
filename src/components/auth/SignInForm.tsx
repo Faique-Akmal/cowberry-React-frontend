@@ -6,6 +6,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import API from "../../api/axios";
 
 export default function SignInForm() {
   const [employeeCode, setEmployeeCode] = useState("");
@@ -39,7 +40,7 @@ export default function SignInForm() {
         timeout: 10000, // 10 seconds timeout
       };
 
-      const response = await axios.post(
+      const response = await API.post(
         "http://192.168.0.136:8000/api/login/",
         {
           employee_code: employeeCode.trim(),
@@ -48,9 +49,9 @@ export default function SignInForm() {
         config
       );
 
-      console.log("Response:", response.data); // For debugging
+      // console.log("Response:", response.data); // For debugging
 
-      console.log(response.data.message)
+      // console.log(response.data.message)
 
       if (response.data.message === "Login successful") {
         setMessage("Login successful!");
@@ -58,12 +59,12 @@ export default function SignInForm() {
        
         // Save token if provided
         if (response.data.refresh) {
-          console.log("Referesh Token:", response.data.refresh)  // For debugging
+          // console.log("Referesh Token:", response.data.refresh)  // For debugging
           localStorage.setItem("refreshToken", response.data.refresh);
         }
          if (response.data.access) {
           localStorage.setItem("accessToken", response.data.access);
-            console.log("Access Token:", response.data.access); // For debugging
+            // console.log("Access Token:", response.data.access); // For debugging
         }
       
        
@@ -74,20 +75,32 @@ export default function SignInForm() {
 
         // Get user role from response
         const userRole = response.data.user?.role?.toLowerCase() || response.data.role?.toLowerCase();
-        console.log("User Role:", userRole); // For debugging
+         
+        const isVerified = response.data.user?.is_employee_code_verified || response.data.is_employee_code_verified || false;
+        // console.log("User Role:", userRole); // For debugging
+        console.log(response.data.user?.is_employee_code_verified)    
         
         // Navigate based on user role
-        setTimeout(() => {
-          if (userRole === "admin" || userRole === "hr" ||  userRole === "department head" || userRole === "employee") {
-            navigate("/dashboard", { replace: true });
-          } else {
-            // For other roles, show an error message
-            setMessage("Access denied. Invalid user role.");
-            setIsLoading(false);
-            return;
-          }
-        }, 1000); // Small delay to show success message
-
+      setTimeout(() => {
+  if (userRole === "admin" ) {
+    // Admin, HR, and Department Head always go to dashboard
+    navigate("/dashboard", { replace: true });
+  } else if (userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+    // For employees, check verification status
+    if (isVerified) {
+      // Verified employee goes to dashboard
+      navigate("/dashboard", { replace: true });
+    } else {
+      // Unverified employee goes to OTP verification
+      navigate("/LoginWithOtp", { replace: true });
+    }
+  } else {
+    // For other roles, show an error message
+    setMessage("Access denied. Invalid user role.");
+    setIsLoading(false);
+    return;
+  }
+}, 1000); // Small delay to show success message
       } else {
         setMessage(response.data.message || "Login failed.");
       }
@@ -99,7 +112,7 @@ export default function SignInForm() {
         const status = error.response.status;
         const data = error.response.data;
         
-        console.log("Error response:", data);
+        // console.log("Error response:", data);
         
         if (status === 401) {
           setMessage("Invalid employee code or password.");
@@ -126,12 +139,7 @@ export default function SignInForm() {
 
   return (
     <div className="flex flex-col flex-1">
-      {/* <div className="w-full max-w-md pt-10 mx-auto">
-        <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
-          <ChevronLeftIcon className="size-5" />
-          Back to dashboard
-        </Link>
-      </div> */}
+ 
       <div className=" w-20 h-20 mx-auto mb-6 mt-6">
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>

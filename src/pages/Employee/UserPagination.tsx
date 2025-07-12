@@ -1,0 +1,123 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+type User = {
+  id: number;
+  username: string;
+  email: string;
+  mobile_no: string | null;
+  employee_code: string;
+  role: number;
+  profile_image: string | null;
+  is_active_employee: boolean;
+};
+
+type PaginationResponse = {
+  currentPage: number;
+  totalPages: number;
+  results: User[];
+};
+
+const UserPagination: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fetchUsers = async (page: number) => {
+    setLoading(true);
+    try {
+      const res = await axios.get<PaginationResponse>(
+        `https://http://192.168.0.136:8000/api/users/`
+      );
+      setUsers(res.data.results);
+      console.log(res.data.results);
+      setCurrentPage(res.data.currentPage);
+      setTotalPages(res.data.totalPages);
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers(currentPage);
+  }, [currentPage]);
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4 text-center">User List</h2>
+      {loading ? (
+        <p className="text-center text-gray-500">Loading...</p>
+      ) : (
+        <div className="overflow-x-auto shadow rounded-lg">
+          <table className="min-w-full bg-white border border-gray-200 text-sm">
+            <thead className="bg-gray-100 text-gray-700">
+              <tr>
+                <th className="py-2 px-4 text-left">ID</th>
+                <th className="py-2 px-4 text-left">Username</th>
+                <th className="py-2 px-4 text-left">Email</th>
+                <th className="py-2 px-4 text-left">Mobile</th>
+                <th className="py-2 px-4 text-left">Employee Code</th>
+                <th className="py-2 px-4 text-left">Role</th>
+                <th className="py-2 px-4 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-t">
+                  <td className="py-2 px-4">{user.id}</td>
+                  <td className="py-2 px-4">{user.username}</td>
+                  <td className="py-2 px-4">{user.email}</td>
+                  <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
+                  <td className="py-2 px-4">{user.employee_code}</td>
+                  <td className="py-2 px-4">{user.role}</td>
+                  <td className="py-2 px-4">
+                    {user.is_active_employee ? (
+                      <span className="text-green-600 font-medium">Active</span>
+                    ) : (
+                      <span className="text-red-500 font-medium">Inactive</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="flex justify-center mt-6 gap-2">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+
+        {[...Array(totalPages)].map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentPage(i + 1)}
+            className={`px-3 py-2 rounded ${
+              currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            {i + 1}
+          </button>
+        ))}
+
+        <button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default UserPagination;

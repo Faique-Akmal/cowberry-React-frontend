@@ -47,7 +47,7 @@ const BirthdaysToday = () => {
   ];
 
   return (
-    <div className="max-w-sm bg-white shadow-md rounded-xl p-4">
+    <div className="w-full bg-white shadow-md rounded-xl p-4">
       <h2 className="text-lg font-semibold mb-4">Today’s Birthday ({birthdayList.length})</h2>
       <div className="space-y-3">
         {birthdayList.map((person, index) => (

@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")!).render(
         <AppWrapper>
           <App />
         </AppWrapper>
-    </ThemeProvider>
+      </ThemeProvider>
     </AuthProvider>
   </StrictMode>,
 );

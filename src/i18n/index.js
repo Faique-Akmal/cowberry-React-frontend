@@ -9,7 +9,7 @@ i18n
   .use(initReactI18next) // pass to react-i18next
   .init({
     fallbackLng: 'en',
-    debug: true,
+    debug: false,
     interpolation: {
       escapeValue: false, // react already safes from xss
     },

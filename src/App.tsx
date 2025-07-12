@@ -22,7 +22,8 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
 import Home from "./pages/Dashboard/Home";
-import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
+import OtpModal from "./pages/AuthPages/LoginWithOtp";
+// import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
   return (
@@ -30,6 +31,8 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
+          {/* OTP VERIFIFCATION MODAL ROUTE */}
+           <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} />} />
              {/* forgot password  */}
             <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
           {/* Dashboard Layout */}
@@ -39,7 +42,7 @@ export default function App() {
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />
 
-            <Route path="/LoginWithOtp" element={<LoginWithOtp />} />
+       
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

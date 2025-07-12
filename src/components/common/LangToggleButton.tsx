@@ -10,7 +10,6 @@ const LangToggleButton: React.FC = () => {
     const newLang = i18n.language === 'en' ? 'hi' : 'en';
     setLanguage(newLang)
     i18n.changeLanguage(newLang);
-    console.log(`Language changed to ${lng}`);
     } catch (error) {
       console.error(`Failed to change language to ${lng}`, error);
     }

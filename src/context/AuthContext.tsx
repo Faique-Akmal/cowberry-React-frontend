@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import API from '../api/axios';
 
 interface AuthContextType {
-  user: any;
   login: (refreshToken: string, accessToken: string) => void;
   logout: () => void;
 }
@@ -9,33 +9,41 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
 
   const login = (refreshToken: string, accessToken: string) => {
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('accessToken', accessToken);
-    setUser(accessToken);
   };
 
   const logout = () => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('accessToken');
-    setUser(null);
   };
 
+  const refreshToken = localStorage.getItem('refreshToken');
+
+  const AxiosRefreshToken = () =>
+  API.post('token/refresh/', {refresh:refreshToken});
+
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
-      try {
-        setUser(accessToken);
-      } catch {
-        logout();
-      }
+
+    if(!refreshToken){
+      logout()    
+    } else {
+      const interval = setInterval(async () => {
+      const res = await AxiosRefreshToken();
+      console.log(res.data)
+        localStorage.setItem('accessToken', res.data?.access);
+        console.log("token refresh")
+      }, 29 * 60 * 1000); // refresh before 30 min expiry
+
+      return () => clearInterval(interval);
     }
+
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ login, logout }}>
       {children}
     </AuthContext.Provider>
   );

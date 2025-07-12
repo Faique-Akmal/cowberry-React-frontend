@@ -28,7 +28,7 @@ const UserPagination: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get<PaginationResponse>(
-        `https://http://192.168.0.136:8000/api/users/`
+        `https://http://192.168.0.144:8000/api/users/`
       );
       setUsers(res.data.results);
       console.log(res.data.results);

@@ -19,7 +19,7 @@ export default function UserInfoCard() {
 
   // Create a persistent Axios instance
   const axiosInstance = axios.create({
-    baseURL: "http://192.168.0.136:8000/api",
+    baseURL: "http://192.168.0.144:8000/api",
     headers: {
       "Content-Type": "application/json",
     },
@@ -47,7 +47,7 @@ export default function UserInfoCard() {
           const refreshToken = localStorage.getItem("refreshToken");
           if (!refreshToken) throw new Error("No refresh token");
 
-          const res = await axios.post("http://192.168.0.136:8000/api/token/refresh/", {
+          const res = await axios.post("http://192.168.0.144:8000/api/token/refresh/", {
             refresh: refreshToken,
           });
 

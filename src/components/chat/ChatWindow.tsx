@@ -16,7 +16,7 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
   }
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-[80vh] w-full">
       <div className="p-4 rounded-xl bg-cowberry-cream-500">
         <h2 className="text-lg font-bold">{chat.name}</h2>
       </div>

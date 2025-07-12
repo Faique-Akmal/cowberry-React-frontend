@@ -78,7 +78,7 @@ export default function SignInForm() {
         
         // Navigate based on user role
         setTimeout(() => {
-          if (userRole === "admin" || userRole === "hr" ||  userRole === "department head") {
+          if (userRole === "admin" || userRole === "hr" ||  userRole === "department head" || userRole === "employee") {
             navigate("/dashboard", { replace: true });
           } else {
             // For other roles, show an error message
@@ -132,7 +132,12 @@ export default function SignInForm() {
           Back to dashboard
         </Link>
       </div> */}
-
+      <div className=" w-20 h-20 mx-auto mb-6 mt-6">
+        <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
+      </div>
+         <div className="flex items-center justify-center w-full h-20 ">
+          <h1>WELCOME TO COWBERRY</h1>
+         </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>
           <div className="space-y-6">

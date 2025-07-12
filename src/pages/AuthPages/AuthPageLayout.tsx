@@ -15,12 +15,17 @@ export default function AuthLayout({
         <div className="items-center hidden w-full lg:w-1/2 bg-cowberry-green-600 dark:bg-white/5 lg:grid">
           <div className="relative w-full flex items-center justify-center z-1">
             <div className="overflow-hidden w-full max-h-screen">
-              <video 
+              {/* <video 
               className="w-full h-full"
               src="/videos/cowberry_welcome_Banner.mp4" 
               autoPlay 
               muted 
-              loop></video>
+              loop></video> */}
+              <img
+                className="object-cover w-full p-3 h-full"
+                src="cowberry-banner.png"
+                alt="Cowberry Welcome Banner"
+              />
             </div>
             {/* <!-- ===== Common Grid Shape Start ===== --> */}
             {/* <GridShape /> */}

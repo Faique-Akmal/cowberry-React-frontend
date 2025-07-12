@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
-
+import API from "../../api/axios";
 interface OtpModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,19 +33,10 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
     setIsError(false);
 
     try {
-      const response = await axios.post(
-        "http://192.168.0.136:8000/api/verify-otp/",
+      const response = await API.post(
+        "/verify-otp/",
         {
-    
           otp: otp.trim(),
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            "Authorization": `Bearer ${accessToken}`, 
-          },
-          timeout: 15000,
         }
       );
 

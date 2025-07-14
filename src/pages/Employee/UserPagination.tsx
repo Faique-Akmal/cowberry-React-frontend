@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { role, department } from "../../store/store";
 
 type User = {
   id: number;
@@ -23,8 +24,9 @@ const UserPagination: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const fetchUsers = async (page: number) => {
+  const fetchUsers = async (page: number, username?: string) => {
     setLoading(true);
     try {
       const accessToken = localStorage.getItem("accessToken");
@@ -35,12 +37,12 @@ const UserPagination: React.FC = () => {
             Authorization: `Bearer ${accessToken}`,
           },
           params: {
-            page: page,
-            limit: 24, // Adjust this if your backend has a different key
+            page,
+            limit: 24,
+            username: username || "",
           },
         }
       );
-
       setUsers(res.data.results);
       setCurrentPage(res.data.current_page);
       setTotalPages(res.data.total_pages);
@@ -51,13 +53,37 @@ const UserPagination: React.FC = () => {
     }
   };
 
+  const getRoleName = (roleId: number): string => {
+    const roleObj = role.find((r) => r.id === roleId);
+    return roleObj ? roleObj.name : "Unknown";
+  };
+
   useEffect(() => {
-    fetchUsers(currentPage);
-  }, [currentPage]);
+    const delayDebounce = setTimeout(() => {
+      fetchUsers(currentPage, searchTerm);
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [currentPage, searchTerm]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
   return (
-    <div className="p-2">
+    <div className="p-4">
       <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
+
+      <div className="mb-4 flex justify-center">
+        <input
+          type="text"
+          placeholder="Search by username"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="border border-gray-300 rounded px-3 py-2 w-full sm:w-96"
+        />
+      </div>
 
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>
@@ -76,23 +102,31 @@ const UserPagination: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-t">
-                  <td className="py-2 px-4">{user.id}</td>
-                  <td className="py-2 px-4">{user.username}</td>
-                  <td className="py-2 px-4">{user.email}</td>
-                  <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
-                  <td className="py-2 px-4">{user.employee_code}</td>
-                  <td className="py-2 px-4">{user.role}</td>
-                  <td className="py-2 px-4">
-                    {user.is_active_employee ? (
-                      <span className="text-green-600 font-medium">Active</span>
-                    ) : (
-                      <span className="text-red-500 font-medium">Inactive</span>
-                    )}
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <tr key={user.id} className="border-t">
+                    <td className="py-2 px-4">{user.id}</td>
+                    <td className="py-2 px-4">{user.username}</td>
+                    <td className="py-2 px-4">{user.email}</td>
+                    <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
+                    <td className="py-2 px-4">{user.employee_code}</td>
+                    <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
+                    <td className="py-2 px-4">
+                      {user.is_active_employee ? (
+                        <span className="text-green-600 font-medium">Active</span>
+                      ) : (
+                        <span className="text-red-500 font-medium">Inactive</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-gray-500">
+                    No users found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -122,9 +156,7 @@ const UserPagination: React.FC = () => {
         ))}
 
         <button
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           disabled={currentPage === totalPages}
         >

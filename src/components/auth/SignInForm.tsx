@@ -42,7 +42,7 @@ export default function SignInForm() {
         }
       );
 
-      console.log("Response:", response.data); 
+      // console.log("Response:", response.data); 
 
 
       if (response.data?.message === "Login successful") {
@@ -53,22 +53,7 @@ export default function SignInForm() {
 
         login(response.data?.refresh, response.data?.access);
 
-        // if (response.data.refresh) {
-        //   // console.log("Referesh Token:", response.data.refresh)  // For debugging
-        //   localStorage.setItem("refreshToken", response.data.refresh);
-        // }
-        //  if (response.data.access) {
-        //   localStorage.setItem("accessToken", response.data.access);
-        //     // console.log("Access Token:", response.data.access); // For debugging
-        // }
-      
        
-        // Save user data if provided
-        // if (response.data) {
-        //   localStorage.setItem("user", JSON.stringify(response.data));
-        // }
-
-        // Get user role from response
         const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
          
         const isVerified = response.data?.is_employee_code_verified || false;

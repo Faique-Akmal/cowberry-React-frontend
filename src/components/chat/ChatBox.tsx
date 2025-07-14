@@ -1,5 +1,5 @@
 import { useState } from "react"
-// import ChatList from "./ChatList"
+import ChatList from "./ChatList"
 import ChatWindow from "./ChatWindow"
 import { Chat } from "../../types"
 
@@ -53,8 +53,10 @@ const ChatBox: React.FC = () => {
 
   return (
      <div className="bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
-      {/* <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} /> */}
-      <ChatWindow chat={activeChat} onSendMessage={handleSendMessage} />
+      <div className="flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
+        <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
+        <ChatWindow chat={activeChat} onSendMessage={handleSendMessage} />
+      </div>
     </div>
   );
 };

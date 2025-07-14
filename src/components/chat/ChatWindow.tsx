@@ -17,8 +17,8 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="p-4 rounded-xl bg-cowberry-cream-500">
-        <h2 className="text-lg font-bold">{chat.name}</h2>
+      <div className="p-4 bg-cowberry-cream-500">
+        <h2 className="text-lg font-bold text-yellow-800">{chat.name}</h2>
       </div>
       <div className="flex-1 p-4 overflow-y-auto space-y-2">
         {chat.messages.map((msg) => (
@@ -35,10 +35,10 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
           </div>
         ))}
       </div>
-      <div className="p-4 rounded-xl bg-cowberry-cream-500 flex gap-2">
+      <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input
           type="text"
-          className="flex-1 border outline-none border-none rounded px-3 py-2"
+          className="flex-1 border text-yellow-800 outline-none border-none rounded px-3 py-2"
           value={newMsg}
           onChange={(e) => setNewMsg(e.target.value)}
           placeholder="Type a message"

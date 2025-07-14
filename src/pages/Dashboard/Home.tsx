@@ -55,11 +55,7 @@ export default function Home() {
         <div className="col-span-12">
           <MapComponent />
         </div>
-
-        <div className="col-span-12">
-          <ChatBox />
-        </div>
-
+        
       </div>
     </>
   );

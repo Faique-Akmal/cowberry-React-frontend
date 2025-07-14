@@ -12,8 +12,6 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-
-  const accessToken = localStorage.getItem('accessToken');
   
   const handleVerifyOtp = async () => {
     if (!otp.trim()) {

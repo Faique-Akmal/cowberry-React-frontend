@@ -48,9 +48,11 @@ const navItems: NavItem[] = [
     subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
   },
   {
-    name: "Tables",
+    name: "User Table",
     icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
+    subItems: [{ name: "Users List", path: "/basic-tables", pro: false },
+      { name: "Task Page", path: "/task-page", pro: false }
+    ],
   },
   {
     name: "Pages",

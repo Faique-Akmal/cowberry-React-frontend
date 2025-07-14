@@ -56,8 +56,8 @@ const UserPagination: React.FC = () => {
   }, [currentPage]);
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">User List</h2>
+    <div className="p-2">
+      <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
 
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>

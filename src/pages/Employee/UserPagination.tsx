@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { role, department } from "../../store/store";
+import { role} from "../../store/store";
 
 type User = {
   id: number;
@@ -10,7 +10,7 @@ type User = {
   employee_code: string;
   role: number;
   profile_image: string | null;
-  is_active_employee: boolean;
+  is_active: boolean;
 };
 
 type PaginationResponse = {
@@ -38,7 +38,7 @@ const UserPagination: React.FC = () => {
           },
           params: {
             page,
-            limit: 24,
+            limit: 9,
             username: username || "",
           },
         }
@@ -112,7 +112,7 @@ const UserPagination: React.FC = () => {
                     <td className="py-2 px-4">{user.employee_code}</td>
                     <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
                     <td className="py-2 px-4">
-                      {user.is_active_employee ? (
+                      {user.is_active ? (
                         <span className="text-green-600 font-medium">Active</span>
                       ) : (
                         <span className="text-red-500 font-medium">Inactive</span>

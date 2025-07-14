@@ -27,15 +27,20 @@ const UserPagination: React.FC = () => {
   const fetchUsers = async (page: number) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const accessToken = localStorage.getItem("accessToken");
       const res = await axios.get<PaginationResponse>(
         `http://192.168.0.144:8000/api/users/`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          params: {
+            page: page,
+            limit: 24, // Adjust this if your backend has a different key
           },
         }
       );
+
       setUsers(res.data.results);
       setCurrentPage(res.data.current_page);
       setTotalPages(res.data.total_pages);
@@ -53,6 +58,7 @@ const UserPagination: React.FC = () => {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4 text-center">User List</h2>
+
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>
       ) : (
@@ -116,7 +122,9 @@ const UserPagination: React.FC = () => {
         ))}
 
         <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           disabled={currentPage === totalPages}
         >

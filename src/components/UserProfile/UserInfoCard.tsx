@@ -89,11 +89,13 @@ export default function UserInfoCard() {
   if (error) return <div className="p-4 text-red-600">{error}</div>;
 
   return (
-    <div className="p-6 max-w-xl mx-auto rounded-lg shadow border">
+    <div className="p-6 max-w-2xl mx-auto rounded-lg shadow border ">
       <h2 className="text-xl font-bold mb-4">User Profile</h2>
       <div className="space-y-2 text-gray-800">
      
-        <p><strong>Email:</strong> {user.email}</p>
+      <div className="mb-4 ">
+          <p><strong>Email:</strong> {user.email}</p>
+      </div>
         <p><strong>Role:</strong> {user.role}</p>
         <p><strong>Department:</strong> {user.department}</p>
         <p><strong>Mobile No:</strong> {user.mobile_no}</p>

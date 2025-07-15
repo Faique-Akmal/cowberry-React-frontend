@@ -13,8 +13,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+  
   const navigate = useNavigate();
 
+   
   const handleSendLink = async () => {
     if (!email.trim()) {
       setMessage("Please enter your email address.");
@@ -105,6 +107,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       setEmail("");
       setMessage("");
       setIsError(false);
+      navigate("/signin");
       onClose();
     }
   };

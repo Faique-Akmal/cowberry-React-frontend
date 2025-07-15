@@ -111,7 +111,7 @@ export default function TaskShowPage() {
 
   return (
     <div className="p-6 max-w-5xl  mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">My Tasks</h1>
+      <h1 className="text-3xl font-bold mb-2  p-3 rounded-2xl border text-center text-neutral-500">My Tasks</h1>
 
       {loading && (
         <div className="text-center py-8">

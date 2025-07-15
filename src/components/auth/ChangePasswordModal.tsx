@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
-import axios from "axios";
 import API from "../../api/axios";
+import { Link } from "react-router";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -110,21 +110,23 @@ export default function ChangePasswordModal({
         )}
 
         <div className="flex justify-between mt-6">
-          <button
+          <Link
+            to="/forgot-password"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             disabled={isLoading}
           >
             Cancel
-          </button>
+          </Link>
 
-          <button
+          <Link
+            to="/sigin"
             onClick={handleChangePassword}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             disabled={isLoading}
           >
             {isLoading ? "Saving..." : "Change Password"}
-          </button>
+          </Link>
         </div>
       </div>
     </div>

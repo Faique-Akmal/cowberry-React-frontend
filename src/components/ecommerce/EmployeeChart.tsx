@@ -9,7 +9,7 @@ const data = [
 
 export default function EmployeeChart() {
   return (
-    <div className=" bg-white p-6 rounded-xl shadow-md  max-w-4xl mx-auto flex flex-col sm:flex-row gap-6">
+    <div className="h-full bg-white p-6 rounded-xl shadow-md  max-w-4xl mx-auto flex flex-col sm:flex-row gap-6">
       <div className="w-full sm:w-1/2">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           Employees by Department

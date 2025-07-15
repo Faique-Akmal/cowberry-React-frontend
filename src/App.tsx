@@ -25,6 +25,7 @@ import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
+import ChatBox from "./components/chat/ChatBox";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -35,7 +36,7 @@ export default function App() {
         <Routes>
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
-           <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} />} />
+           <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
              {/* forgot password  */}
             <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
               
@@ -57,6 +58,7 @@ export default function App() {
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/chat" element={<ChatBox />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 

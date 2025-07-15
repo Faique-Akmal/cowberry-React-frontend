@@ -33,33 +33,29 @@ export default function Home() {
         </div>
          
         <div className="col-span-12  xl:col-span-4">
-             <EmployeeChart/>
+          <EmployeeChart/>
         </div>
 
         <div className="col-span-12 xl:col-span-4">
           <BirthdaysToday/>
         </div>
 
-        <div className="col-span-12 xl:col-span-8 ">
+        <div className="col-span-12 xl:col-span-8">
           <EmployeeStatus />
         </div>
            
-        <div className="col-span-12 xl:col-span-4 m-5">
-        <div className="col-span-12 xl:col-span-4 m-4">
-          <JobApplicationCard/>
-       </div>
-       <div className="col-span-12 xl:col-span-4 m-4">
-           <JobRejectionCard />
-       </div>
-    </div>
-      <div className="col-span-12">
-        <MapComponent />
-      </div>
-
-      <div className="col-span-12">
-        <ChatBox />
-      </div>
-
+        <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
+          <div className="col-span-12 h-full xl:col-span-4">
+            <JobApplicationCard/>
+          </div>
+          <div className="col-span-12 h-full xl:col-span-4">
+              <JobRejectionCard />
+          </div>
+        </div>
+        <div className="col-span-12">
+          <MapComponent />
+        </div>
+        
       </div>
     </>
   );

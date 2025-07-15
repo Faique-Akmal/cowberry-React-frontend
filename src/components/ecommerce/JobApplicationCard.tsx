@@ -9,7 +9,7 @@ const JobApplicationCard = () => {
   const progressPercentage = (acceptedThisMonth / totalApplications) * 100;
 
   return (
-    <div className="bg-blue-600 text-white p-8 ml-2 rounded-xl w-82 shadow-lg relative overflow-hidden">
+    <div className="bg-blue-600 text-white p-8 rounded-xl w-full h-full shadow-lg relative overflow-hidden">
       <h2 className="text-lg font-semibold mb-2">Accepted Job Applications</h2>
       <div className="flex items-center justify-between">
         <div className="text-3xl font-bold">

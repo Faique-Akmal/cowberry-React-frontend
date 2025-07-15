@@ -9,19 +9,24 @@ interface Props {
 
 const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   return (
-    <div className="w-full md:w-1/3 border-r h-full overflow-y-auto">
+    <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh] overflow-y-auto">
       {chats.map((chat) => (
         <div
           key={chat.id}
           onClick={() => onSelectChat(chat.id)}
-          className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
-            activeChatId === chat.id ? "bg-gray-200" : ""
+          className={`flex gap-2 p-4 cursor-pointer text-white hover:bg-green-500 ${
+            activeChatId === chat.id ? "bg-brand-500 " : ""
           }`}
         >
-          <h3 className="font-semibold">{chat.name}</h3>
-          <p className="text-sm text-gray-500">
-            {chat.messages[chat.messages.length - 1]?.text}
-          </p>
+          <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+            <img src="/images/user/owner.jpg" alt="User" />
+          </span>
+          <div>
+            <h3 className="font-semibold">{chat.name}</h3>
+            <p className="text-sm text-gray-300">
+              {chat.messages[chat.messages.length - 1]?.text}
+            </p>
+          </div>
         </div>
       ))}
     </div>

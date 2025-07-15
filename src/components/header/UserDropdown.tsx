@@ -26,7 +26,7 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
+        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
         

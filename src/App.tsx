@@ -24,6 +24,7 @@ import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
 import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
+import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -49,7 +50,10 @@ export default function App() {
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />
 
-       
+          {/* ChangePassword Modal */}
+            <Route path="/change-password" element={<ChangePasswordModal isOpen={true} onClose={() => {}} />} />
+
+            {/* Employee Pages */}
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

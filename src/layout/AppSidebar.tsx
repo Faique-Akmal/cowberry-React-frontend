@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import  LogoutIcon from '@mui/icons-material/Logout';
 
 // Assume these icons are imported from an icon library
 import {
@@ -61,6 +62,11 @@ const navItems: NavItem[] = [
       { name: "Blank Page", path: "/blank", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
     ],
+  },
+  {
+    name: "Logout",
+    icon: <LogoutIcon />,
+     path: "/blank_page",
   },
 ];
 

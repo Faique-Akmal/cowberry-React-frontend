@@ -48,15 +48,32 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   //   { value: "6", text: "Option 6", selected: false },
   // ];
   
-  const handleSave = (e:FormEvent) => {
-    e.preventDefault();
-    // Handle save logic here
+  const axiosCreateGroup = async () => {
+      try {
+          const res = await API.post("/chat/group/create/", {
+            name: groupName.trim(),
+            members:[...selectedValues] 
+          });
 
+          if(res.data){
+            console.log(res.data)
+          }
+      } catch (error) {
+        console.error("'/chat/group/create/' get request error:", error);
+      }
+    };
+
+  const handleSave = (e:FormEvent) => {
+     e.preventDefault();
+    // Handle save logic here
     console.log(
       {
       groupName: groupName.trim(),
       members: selectedValues,
-  })
+    });
+
+    axiosCreateGroup();
+
     console.log("Saving changes...");
     setGroupName("");
     setSelectedValues([]);
@@ -74,21 +91,6 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
           }
       } catch (error) {
         console.error("/User get request error:", error);
-      }
-    })();
-
-    (async () => {
-      try {
-          const res = await API.get("/chat/group/create/", {
-            name: groupName,
-            members:selectedValues 
-          });
-
-          if(res){
-            console.log(res.data)
-          }
-      } catch (error) {
-        console.error("/chat/group/create/ get request error:", error);
       }
     })();
 

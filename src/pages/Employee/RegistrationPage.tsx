@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import API from "../../api/axios";
 
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
@@ -29,11 +30,11 @@ export default function RegisterUserForm() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://192.168.0.144:8000/api/register/", {
+      const response = await API.post("/register/", {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        role: Number(formData.role),         // 👈 Ensure numeric values
+        role: Number(formData.role),        
         department: Number(formData.department),
       });
 

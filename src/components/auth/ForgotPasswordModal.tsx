@@ -54,8 +54,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         setTimeout(() => {
           setEmail("");
           setMessage("");
-          onClose();
-          navigate("/change-password");
+          onClose(); // Close the modal first
+          // Navigate after a short delay to ensure modal is closed
+          setTimeout(() => {
+       navigate("/change-password", { state: { email: email.trim().toLowerCase() } });
+          }, 100);
         }, 2000);
       } else {
         setMessage(response.data.message || "Failed to send reset link.");

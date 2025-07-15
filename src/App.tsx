@@ -41,6 +41,9 @@ export default function App() {
            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
              {/* forgot password  */}
             <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
+                {/* ChangePassword Modal */}
+            <Route path="/change-password" element={<ChangePasswordModal isOpen={true} onClose={() => {}} />} />
+
               
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
@@ -55,9 +58,7 @@ export default function App() {
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />
 
-          {/* ChangePassword Modal */}
-            <Route path="/change-password" element={<ChangePasswordModal isOpen={true} onClose={() => {}} />} />
-
+        
             {/* Employee Pages */}
           
             {/* Others Page */}

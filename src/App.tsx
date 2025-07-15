@@ -27,6 +27,7 @@ import TaskPage from "./pages/Employee/TaskPage";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
+import RegistrationPage from "./pages/Employee/RegistrationPage";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -44,6 +45,8 @@ export default function App() {
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
 
+            {/* User Registration Page */}
+            <Route path="/user-register" element={<RegistrationPage />} />
 
 
             {/* Home Page */}

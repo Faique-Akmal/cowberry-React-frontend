@@ -3,6 +3,7 @@ import axios from "axios";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import { role } from "../../store/store";
+import API from "../../api/axios";
 
 interface UserProfile {
   username: string;
@@ -21,13 +22,9 @@ export default function UserMetaCard() {
     const fetchUser = async () => {
       try {
         const accessToken = localStorage.getItem("accessToken"); // Adjust key if needed
-        const response = await axios.get<UserProfile>(
-          "http://192.168.0.144:8000/api/me/",
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+        const response = await API.get<UserProfile>(
+          "/me/",
+        
         );
         setUser(response.data);
       } catch (err) {

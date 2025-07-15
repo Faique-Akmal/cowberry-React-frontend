@@ -26,6 +26,7 @@ import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import ChatBox from "./components/chat/ChatBox";
+import TaskShowPage from "./pages/Employee/TaskShowPage";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -68,6 +69,7 @@ export default function App() {
             {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables />} />
             <Route path="/task-page" element={<TaskPage />} />
+            <Route path="/task-show-page" element={<TaskShowPage />} />
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

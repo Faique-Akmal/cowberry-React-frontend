@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import axios from "axios";
+import API from "../../api/axios";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -34,18 +35,13 @@ export default function ChangePasswordModal({
     setIsError(false);
 
     try {
-      const response = await axios.post(
-        "http://192.168.0.144:8000/api/change-password",
+      const response = await API.post(
+        "/change-password/",
         {
           old_password: oldPassword,
           new_password: newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
         }
+       
       );
 
       if (response.status === 200 || response.data.status === "success") {

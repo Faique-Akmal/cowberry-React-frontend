@@ -14,7 +14,7 @@ export default function TaskPage() {
     assigned_by: 0,
   });
 
-  const API_URL = "http://your-api-url.com/api/tasks"; 
+  const API_URL = "http://10.79.184.40:8000/api/my-created-tasks/"; 
 
   // Fetch tasks
   useEffect(() => {

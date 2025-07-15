@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { role} from "../../store/store";
+import { role } from "../../store/store";
 
 type User = {
   id: number;
@@ -17,6 +17,7 @@ type PaginationResponse = {
   results: User[];
   current_page: number;
   total_pages: number;
+  total_count?: number; // optional
 };
 
 const UserPagination: React.FC = () => {
@@ -25,13 +26,14 @@ const UserPagination: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const fetchUsers = async (page: number, username?: string) => {
     setLoading(true);
     try {
       const accessToken = localStorage.getItem("accessToken");
       const res = await axios.get<PaginationResponse>(
-        `http://192.168.0.144:8000/api/users/`,
+        "http://192.168.0.144:8000/api/users/",
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -40,6 +42,8 @@ const UserPagination: React.FC = () => {
             page,
             limit: 9,
             username: username || "",
+            sort_by: "username",
+            sort_order: sortOrder,
           },
         }
       );
@@ -59,16 +63,19 @@ const UserPagination: React.FC = () => {
   };
 
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
+    const debounce = setTimeout(() => {
       fetchUsers(currentPage, searchTerm);
     }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [currentPage, searchTerm]);
+    return () => clearTimeout(debounce);
+  }, [currentPage, searchTerm, sortOrder]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
   return (
@@ -93,7 +100,12 @@ const UserPagination: React.FC = () => {
             <thead className="bg-gray-100 text-gray-700">
               <tr>
                 <th className="py-2 px-4 text-left">ID</th>
-                <th className="py-2 px-4 text-left">Username</th>
+                <th
+                  className="py-2 px-4 text-left cursor-pointer"
+                  onClick={toggleSortOrder}
+                >
+                  Username {sortOrder === "asc" ? "↑" : "↓"}
+                </th>
                 <th className="py-2 px-4 text-left">Email</th>
                 <th className="py-2 px-4 text-left">Mobile</th>
                 <th className="py-2 px-4 text-left">Employee Code</th>
@@ -156,7 +168,9 @@ const UserPagination: React.FC = () => {
         ))}
 
         <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           disabled={currentPage === totalPages}
         >

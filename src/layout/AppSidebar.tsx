@@ -58,7 +58,8 @@ const navItems: NavItem[] = [
     name: "User Table",
     icon: <TableIcon />,
     subItems: [{ name: "Users List", path: "/basic-tables", pro: false },
-      { name: "Task Page", path: "/task-page", pro: false }
+      { name: "Task Page", path: "/task-page", pro: false },
+      { name: "Show Task Page", path: "/task-show-page", pro: false }
     ],
   },
   {
@@ -69,11 +70,7 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
-  {
-    name: "Logout",
-    icon: <LogoutIcon />,
-     path: "/blank_page",
-  },
+ 
 ];
 
 const othersItems: NavItem[] = [

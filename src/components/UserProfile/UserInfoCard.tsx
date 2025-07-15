@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../api/axios";
 
 export default function UserInfoCard() {
   const [user, setUser] = useState({
@@ -18,62 +18,65 @@ export default function UserInfoCard() {
   const [error, setError] = useState('');
 
   // Create a persistent Axios instance
-  const axiosInstance = axios.create({
-    baseURL: "http://192.168.0.136:8000/api",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  // const axiosInstance = axios.create({
+  //   baseURL: "http://192.168.0.136:8000/api",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  // });
 
-  // Add request interceptor (runs once)
-  axiosInstance.interceptors.request.use((config) => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  });
+  // // Add request interceptor (runs once)
+  // axiosInstance.interceptors.request.use((config) => {
+  //   const accessToken = localStorage.getItem("accessToken");
+  //   if (accessToken) {
+  //     config.headers.Authorization = `Bearer ${accessToken}`;
+  //   }
+  //   return config;
+  // });
 
-  // Add response interceptor for token refreshing
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
+  // // Add response interceptor for token refreshing
+  // axiosInstance.interceptors.response.use(
+  //   (response) => response,
+  //   async (error) => {
+  //     const originalRequest = error.config;
 
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
+  //     if (error.response?.status === 401 && !originalRequest._retry) {
+  //       originalRequest._retry = true;
 
-        try {
-          const refreshToken = localStorage.getItem("refreshToken");
-          if (!refreshToken) throw new Error("No refresh token");
+  //       try {
+  //         const refreshToken = localStorage.getItem("refreshToken");
+  //         if (!refreshToken) throw new Error("No refresh token");
 
-          const res = await axios.post("http://192.168.0.136:8000/api/token/refresh/", {
-            refresh: refreshToken,
-          });
+  //         const res = await axios.post("http://192.168.0.136:8000/api/token/refresh/", {
+  //           refresh: refreshToken,
+  //         });
 
-          const newAccessToken = res.data.access;
-          localStorage.setItem("accessToken", newAccessToken);
+  //         const newAccessToken = res.data.access;
+  //         localStorage.setItem("accessToken", newAccessToken);
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return axiosInstance(originalRequest); // Retry original request
-        } catch (err) {
-          console.error("Refresh token failed", err);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          setError("Session expired. Please log in again.");
-        }
-      }
+  //         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+  //         return axiosInstance(originalRequest); // Retry original request
+  //       } catch (err) {
+  //         console.error("Refresh token failed", err);
+  //         localStorage.removeItem("accessToken");
+  //         localStorage.removeItem("refreshToken");
+  //         setError("Session expired. Please log in again.");
+  //       }
+  //     }
 
-      return Promise.reject(error);
-    }
-  );
+  //     return Promise.reject(error);
+  //   }
+  // );
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`/me/`);
-        setUser(response.data);
+        const response = await API.get(`/me/`);
+        if(response.data){
+          // console.log("/me/ :", response.data)
+          setUser(response.data);
+        }
       } catch (err) {
         console.error(err);
         setError("Failed to fetch user details.");

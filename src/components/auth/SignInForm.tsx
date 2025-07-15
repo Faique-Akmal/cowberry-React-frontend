@@ -42,7 +42,7 @@ export default function SignInForm() {
         }
       );
 
-      console.log("Response:", response.data); 
+      console.log("/login/ Response:", response.data); 
 
 
       if (response.data?.message === "Login successful") {
@@ -180,7 +180,7 @@ export default function SignInForm() {
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
-              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+              <Link to="/forgot-password" className="text-brand-500 hover:underline">
                 Forgot password?
               </Link>
             </div>

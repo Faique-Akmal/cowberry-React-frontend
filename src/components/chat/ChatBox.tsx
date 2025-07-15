@@ -16,7 +16,16 @@ const initialChats: Chat[] = [
     id: 2,
     name: "Jane Smith",
     messages: [
-      { id: 1, sender: "them", text: "Hey!", timestamp: "11:00 AM" },
+      { id: 1, sender: "them", text: "Hello!", timestamp: "10:00 AM" },
+      { id: 2, sender: "me", text: "Hi John!", timestamp: "10:01 AM" },
+      { id: 3, sender: "them", text: "How are you?", timestamp: "10:02 AM" },
+      { id: 4, sender: "me", text: "I'm good, thanks! You?", timestamp: "10:03 AM" },
+      { id: 5, sender: "them", text: "Doing great.", timestamp: "10:04 AM" },
+      { id: 6, sender: "me", text: "Want to meet up later?", timestamp: "10:05 AM" },
+      { id: 7, sender: "them", text: "Sure, what time?", timestamp: "10:06 AM" },
+      { id: 8, sender: "me", text: "Around 5 PM works?", timestamp: "10:07 AM" },
+      { id: 9, sender: "them", text: "Perfect, see you then!", timestamp: "10:08 AM" },
+      { id: 10, sender: "them", text: "Hey!", timestamp: "11:00 AM" }
     ],
   },
 ]

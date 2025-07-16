@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import API from '../../api/axios';
 
-const AttendanceForm = () => {
+const AttendanceEndForm = () => {
   const [formData, setFormData] = useState({
     id: '',
     date: '',
     start_time: '',
     odometer_image: null,
     selfie_image: null,
-    start_lat: '',
-    start_lng: '',
+    end_lat: '',
+    end_lng: '',
     description: '',
     user: '',
   });
@@ -47,8 +47,8 @@ const AttendanceForm = () => {
 
         setFormData(prev => ({
           ...prev,
-          start_lat: latitude.toString(),
-          start_lng: longitude.toString(),
+          end_lat: latitude.toString(),
+          end_lng: longitude.toString(),
         }));
 
         setLocationFetched(true);
@@ -81,14 +81,14 @@ const AttendanceForm = () => {
         start_time: '',
         odometer_image: null,
         selfie_image: null,
-        start_lat: '',
-        start_lng: '',
+        end_lat: '',
+        end_lng: '',
         description: '',
         user: '',
       });
       setLocationFetched(false);
     } catch (error: any) {
-      setMessage(`❌ Error: ${error?.response?.data?.message || 'Submission failed'}`);
+      setMessage(` Error: ${error?.response?.data?.message || 'Submission failed'}`);
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ const AttendanceForm = () => {
       onSubmit={handleSubmit}
       className="max-w-2xl mx-auto px-6 py-8 bg-white rounded-lg shadow-md space-y-6"
     >
-      <h2 className="text-2xl font-bold text-center">Employee Attendance Start</h2>
+      <h2 className="text-2xl font-bold text-center">Employee Attendance End</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col">
@@ -190,11 +190,11 @@ const AttendanceForm = () => {
         </div>
 
         <div className="flex flex-col">
-          <label htmlFor="start_lat" className="mb-1 font-medium">Start Latitude</label>
+          <label htmlFor="end_lat" className="mb-1 font-medium">Start Latitude</label>
           <input
-            name="start_lat"
-            id="start_lat"
-            value={formData.start_lat}
+            name="end_lat"
+            id="end_lat"
+            value={formData.end_lat}
             readOnly
             className="border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
             placeholder="Latitude"
@@ -203,11 +203,11 @@ const AttendanceForm = () => {
         </div>
 
         <div className="flex flex-col">
-          <label htmlFor="start_lng" className="mb-1 font-medium">Start Longitude</label>
+          <label htmlFor="end_lng" className="mb-1 font-medium">Start Longitude</label>
           <input
-            name="start_lng"
-            id="start_lng"
-            value={formData.start_lng}
+            name="end_lng"
+            id="end_lng"
+            value={formData.end_lng}
             readOnly
             className="border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
             placeholder="Longitude"
@@ -244,4 +244,4 @@ const AttendanceForm = () => {
   );
 };
 
-export default AttendanceForm;
+export default AttendanceEndForm;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+
 import API from "../../api/axios";
 
 export default function RegisterUserForm() {
@@ -7,8 +8,8 @@ export default function RegisterUserForm() {
     username: "",
     email: "",
     password: "",
-    role: "0",
-    department: "0",
+    role: "",
+    department: "",
   });
 
   const [message, setMessage] = useState("");
@@ -29,32 +30,71 @@ export default function RegisterUserForm() {
     setIsError(false);
     setIsLoading(true);
 
+    // Validation
+    if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
+      setMessage("❌ All fields are required.");
+      setIsError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.role || !formData.department) {
+      setMessage("❌ Please select both Role and Department.");
+      setIsError(true);
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await API.post("/register/", {
-        username: formData.username,
-        email: formData.email,
+      // Payload setup - update according to backend expectations
+      const payload = {
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        role: Number(formData.role),        
-        department: Number(formData.department),
+        role: parseInt(formData.role, 10),
+        department: parseInt(formData.department, 10),
+      };
+
+      console.log("Payload:", payload);
+
+      const response = await API.post("/register/", payload, {
+       
       });
 
-      if (response.status === 201 || response.data.status === "success") {
-        setMessage("User registered successfully!");
+      if (response.status === 201 || response.status === 200) {
+        setMessage("✅ User registered successfully!");
+        setIsError(false);
         setFormData({
           username: "",
           email: "",
           password: "",
-          role: "0",
-          department: "0",
+          role: "",
+          department: "",
         });
       } else {
+        setMessage("❌ Registration failed. Try again.");
         setIsError(true);
-        setMessage(response.data.message || "Registration failed.");
       }
     } catch (error: any) {
-      console.error("Registration error:", error);
-      const errMsg =
-        error.response?.data?.message || error.response?.data?.detail || "Server error occurred.";
+      console.error("Error response:", error?.response?.data);
+
+      let errMsg = "❌ Something went wrong.";
+      const data = error?.response?.data;
+      const status = error?.response?.status;
+
+      if (status === 400 && data && typeof data === "object") {
+        const firstError = Object.values(data)[0];
+        errMsg = Array.isArray(firstError) ? firstError[0] : String(firstError);
+      } else if (status === 409) {
+        errMsg = "❌ User already exists.";
+      } else if (status === 422) {
+        errMsg = "❌ Validation error.";
+      } else if (status === 500) {
+        errMsg = "❌ Internal Server Error.";
+      } else if (error.code === "ECONNABORTED") {
+        errMsg = "❌ Request timed out.";
+      }
+
       setMessage(errMsg);
       setIsError(true);
     } finally {
@@ -63,8 +103,8 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg--dashboard-brown-200 rounded-xl shadow-md">
-      <h2 className="text-4xl font-bold mb-4 text-center">User Registration</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -74,7 +114,7 @@ export default function RegisterUserForm() {
           value={formData.username}
           onChange={handleChange}
           required
-          className="w-full border px-4 py-2 rounded"
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
 
         <input
@@ -84,7 +124,7 @@ export default function RegisterUserForm() {
           value={formData.email}
           onChange={handleChange}
           required
-          className="w-full border px-4 py-2 rounded"
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
 
         <input
@@ -94,45 +134,52 @@ export default function RegisterUserForm() {
           value={formData.password}
           onChange={handleChange}
           required
-          className="w-full border px-4 py-2 rounded"
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+          minLength={6}
         />
 
         <select
           name="role"
           value={formData.role}
           onChange={handleChange}
-          className="w-full border px-4 py-2 rounded"
           required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="0">Select Role</option>
+          <option value="">Select Role</option>
           <option value="1">Admin</option>
-          <option value="2">Manager</option>
-          <option value="3">Employee</option>
+          <option value="2">HR</option>
+          <option value="3">Department Head</option>
+          <option value="4">Manager</option>
+          <option value="5">Executive</option>
+          <option value="6">Employee</option>
         </select>
 
         <select
           name="department"
           value={formData.department}
           onChange={handleChange}
-          className="w-full border px-4 py-2 rounded"
           required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="0">Select Department</option>
-          <option value="1">Development</option>
-          <option value="2">Marketing</option>
-          <option value="3">HR</option>
+          <option value="">Select Department</option>
+          <option value="1">HR</option>
+          <option value="2">Sales</option>
+          <option value="3">Support</option>
+          <option value="4">IT</option>
+          <option value="5">Product</option>
+          <option value="6">Accountant</option>
         </select>
 
         {message && (
-          <p className={`text-sm ${isError ? "text-red-600" : "text-green-600"}`}>
+          <div className={`p-3 text-sm rounded ${isError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
             {message}
-          </p>
+          </div>
         )}
 
         <button
           type="submit"
-          className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           disabled={isLoading}
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Registering..." : "Register"}
         </button>

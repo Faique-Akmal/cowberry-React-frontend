@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api/axios"; // adjust if your API file path differs
 import { Link } from "react-router";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -16,15 +17,21 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
   const navigate = useNavigate();
 
+  // Change Password Modal
+  const [openChangeModal, setOpenChangeModal] = useState(false);
+
+  const handleSuccess = () => {
+  setOpenChangeModal(true);
+  onClose(); // Close forgot modal
+};
+
    const action = () =>{
-            actionone();
+        handleSuccess();
             onClose();
             handleSendLink();
    }
     
-   const actionone = () =>{ 
-     navigate("/change-password");
-   }
+   
 
   const handleSendLink = async () => {
     if (!email.trim()) {
@@ -147,15 +154,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
           >
             Cancel
           </button>
-          <Link
+          <button
             
-            onClick={action}
-            to="/change-password"
+           
+            onClick={handleSendLink}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
             disabled={isLoading}
           >
             {isLoading ? "Sending..." : "Reset Password"}
-          </Link>
+          </button>
         </div>
       </div>
     </div>

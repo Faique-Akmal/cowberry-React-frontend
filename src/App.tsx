@@ -29,7 +29,7 @@ import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
-import LocationFetcher from "./pages/Employee/LocationFetcher";
+import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -42,10 +42,7 @@ export default function App() {
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
-             {/* forgot password  */}
-            <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
-                {/* ChangePassword Modal */}
-            <Route path="/change-password" element={<ChangePasswordModal isOpen={true} onClose={() => {}} />} />
+            
 
               
           {/* Dashboard Layout */}
@@ -65,7 +62,7 @@ export default function App() {
             {/* Employee Pages */}
             <Route path="/attandanceStart-page" element={<AttendanceForm />} />
             <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
-            <Route path="/user-location" element={<LocationFetcher/>} />
+            <Route path="/user-location" element={<LiveCoordinates/>} />
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

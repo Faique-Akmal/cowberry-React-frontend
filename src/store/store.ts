@@ -1,65 +1,71 @@
 export const role= [
     {
       "id": 1,
-      "name": "hr",
-      "description": "Hr"
-    },
-    {
-      "id": 2,
-      "name": "employee",
-      "description": "employee"
-    },
-    {
-      "id": 3,
-      "name": "manager",
-      "description": "manager"
-    },
-    {
-      "id": 4,
-      "name": "admin",
+      "name": "admin",  
       "description": "admin"
     },
     {
-      "id": 5,
+      "id": 2,
+      "name": "hr",
+      "description": "hr"
+    },
+     {
+      "id": 3,
       "name": "department_head",
       "description": "department head"
     },
     {
-      "id": 6,
+      "id": 4,
+      "name": "manager",
+      "description": "manager"
+    },
+    {
+      "id": 5,
       "name": "executive",
       "description": "Executive"
-    }
+    },
+    {
+      "id":6 ,
+      "name": "employee",
+      "description": "employee"
+    },
+    
+    
   ];
 
   export const department =  [
     {
       "id": 1,
+      "name": "hr",
+      "description": "hr"
+    },
+     {
+      "id": 2,
+      "name": "sales",
+      "description": "sales"
+    },
+     
+      {
+      "id": 3,
+      "name": "support",
+      "description": "support"
+    },
+    
+    {
+      "id": 4,
       "name": "IT",
       "description": "IT"
     },
+    
     {
-      "id": 2,
-      "name": "Accountant",
-      "description": "accountant"
-    },
-    {
-      "id": 3,
+      "id": 5,
       "name": "Product",
       "description": "product"
     },
     {
-      "id": 4,
-      "name": "Hr",
-      "description": "Hr"
-    },
-    {
-      "id": 5,
-      "name": "Account",
-      "description": "Account"
-    },
-    {
       "id": 6,
-      "name": "Procurement",
-      "description": "Procurement"
-    }
+      "name": "Accountant",
+      "description": "Accountant"
+    },
+   
   ]

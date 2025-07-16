@@ -7,6 +7,7 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 
 export default function SignInForm() {
   const { login } = useAuth();
@@ -19,6 +20,12 @@ export default function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
+
+  // forgotPasswordModal 
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+
+  const openForgotModal = () => setIsForgotModalOpen(true);
+  const closeForgotModal = () => setIsForgotModalOpen(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,15 +67,10 @@ export default function SignInForm() {
         
         // Navigate based on user role
       setTimeout(() => {
-  if (userRole === "admin"  ) {
+  if (userRole === ""  ) {
     // Admin, HR, and Department Head always go to dashboard
     navigate("/dashboard", { replace: true });
-  }
-  else if (userRole === "hr" || userRole === "department_head" || userRole === "manager") {
-      // HR and Department Head go to dashboard
-      navigate("/dashboard", { replace: true });
-    }  
-  else if (userRole === "employee") {
+  } else if ( userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
     // For employees, check verification status
     if (isVerified) {
       // Verified employee goes to dashboard
@@ -170,9 +172,15 @@ export default function SignInForm() {
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
-              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+              {/* <Link to="/forgot-password" className="text-blue-600 hover:underline">
                 Forgot password?
-              </Link>
+              </Link> */}
+              <button
+          onClick={openForgotModal}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Forgot Password?
+        </button>
             </div>
 
             <div>
@@ -185,7 +193,7 @@ export default function SignInForm() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
-
+   <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
             {message && (
               <p className={`text-sm text-center ${
                 message.includes("successful") ? "text-green-500" : "text-red-500"

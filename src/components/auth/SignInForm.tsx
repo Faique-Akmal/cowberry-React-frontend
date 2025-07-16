@@ -57,10 +57,12 @@ export default function SignInForm() {
         
         // Navigate based on user role
       setTimeout(() => {
-  if (userRole === "admin" ) {
-    // Admin, HR, and Department Head always go to dashboard
-    navigate("/dashboard", { replace: true });
-  } else if (userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+  // if (userRole === "admin" ) {
+  //   // Admin, HR, and Department Head always go to dashboard
+  //   navigate("/dashboard", { replace: true });
+  // } else
+    
+  if (userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
     // For employees, check verification status
     if (isVerified) {
       // Verified employee goes to dashboard

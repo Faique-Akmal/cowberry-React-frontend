@@ -6,9 +6,11 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
-import {axiosGetAllGroup, axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
-import { axiosGetUsers } from "../../store/userstore";
+import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
+import { axiosGetUsers } from "../../store/userStore";
+import Spinner from "../common/Spinner";
 interface Props {
+  groups: AxiosAllGroup[];
   chats: Chat[]
   activeChatId: number
   onSelectChat: (id: number) => void
@@ -19,14 +21,18 @@ interface Option {
   text: string;
 }
 
-const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
+const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
  
    const [userOptions, setUserOptions] = useState<Option[]>([]);
+
+  useEffect(() => {
+    
+  }, [])
+  
 
   useEffect(() => {
     if (users.length > 0) {
@@ -39,35 +45,11 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
 
   }, [users]);
   
-  // const multiOptions = [
-  //   { value: "1", text: "Option 1", selected: false },
-  //   { value: "2", text: "Option 2", selected: false },
-  //   { value: "3", text: "Option 3", selected: false },
-  //   { value: "4", text: "Option 4", selected: false },
-  //   { value: "5", text: "Option 5", selected: false },
-  //   { value: "6", text: "Option 6", selected: false },
-  // ];
-  
-  // const axiosPostCreateGroup = async (newGroup:) => {
-  //     try {
-  //         const res = await API.post("/chat/group/create/", newGroup);
 
-  //         if(res.data){
-  //           console.log(res.data)
-  //         }
-  //     } catch (error) {
-  //       console.error("'/chat/group/create/' get request error:", error);
-  //     }
-  //   };
 
   const handleSave = (e:FormEvent) => {
      e.preventDefault();
     // Handle save logic here
-    console.log(
-      {
-      groupName: groupName.trim(),
-      members: selectedValues,
-    });
 
     axiosPostCreateGroup({
             name: groupName.trim(),
@@ -83,12 +65,8 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   useEffect(() => {
     ;(async ()=>{
       const allUsers = await axiosGetUsers();
-      const allGroup = await axiosGetAllGroup();
-
-      // console.log(allGroup);
       // console.log(allUsers);
-      setGroups(allGroup)
-      setUsers(allUsers)
+      setUsers(allUsers);
     }
     )();
 
@@ -97,7 +75,7 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   return (
     <>
     <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh]">
-      <div className="text-end m-2">
+      <div className="text-end h-1/12 m-2">
         <button
             onClick={openModal}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
@@ -121,37 +99,41 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
           </button>
       </div>
 
-      <div className="custom-scrollbar bg-amber-500 h-[70vh] overflow-y-auto">
-        <div className="">
-        {groups.map(({id, name}) => (
+      <div className="h-11/12 py-2 custom-scrollbar overflow-y-auto overflow-hidden">
+        {
+          groups.length <= 0 ?
+          <div className="flex items-center justify-center"> 
+            <Spinner text="Loading Chat Group..." />
+          </div>
+          : <div className="">
+          {groups.map(({group_id, group_name}) => (
           <div
-          key={id}
-          onClick={() => onSelectChat(id)}
-          className={`flex gap-2 p-4 cursor-pointer text-white hover:bg-green-500 ${
-            activeChatId === id ? "bg-brand-500 " : ""
-          }`}
+          key={group_id}
+          onClick={() => onSelectChat(group_id)}
+          className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer bg-cowberry-cream-500 text-white hover:bg-green-500`}
         >
           <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
             <img src="/images/user/owner.jpg" alt="User" />
           </span>
           <div>
-            <h3 className="font-semibold">{name}</h3>
-            {/* <p className="text-sm text-gray-300">
-              {chat.messages[chat.messages.length - 1]?.text}
-            </p> */}
+            <h3 className="font-semibold">{group_name}</h3>
+            <p className="text-sm text-gray-300">
+              {/* {chat.messages[chat.messages.length - 1]?.text} */}
+            </p>
           </div>
         </div>
-        ))
-
-        }
+        ))}
         </div>
 
-        <div className="bg-red-500">
+        }
+        
+
+        <div className="">
           {chats.map((chat) => (
           <div
             key={chat.id}
             onClick={() => onSelectChat(chat.id)}
-            className={`flex gap-2 p-4 cursor-pointer text-white hover:bg-green-500 ${
+            className={`bg-cowberry-cream-500 flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:bg-green-500 ${
               activeChatId === chat.id ? "bg-brand-500 " : ""
             }`}
           >
@@ -160,7 +142,7 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
             </span>
             <div>
               <h3 className="font-semibold">{chat.name}</h3>
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-dashboard-brown-200">
                 {chat.messages[chat.messages.length - 1]?.text}
               </p>
             </div>

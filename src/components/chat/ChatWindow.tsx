@@ -17,17 +17,20 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="p-4 bg-cowberry-cream-500">
+      <div className="flex justify-between p-4 bg-cowberry-cream-500">
         <h2 className="text-lg font-bold text-yellow-800">{chat.name}</h2>
+        <div>
+          <button>Group Members</button>
+        </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {chat.messages.map((msg) => (
           <div
             key={msg.id}
-            className={`max-w-xs flex flex-col p-2 rounded-lg rounded-br-none ${
+            className={`max-w-xs flex flex-col p-2 rounded-lg ${
               msg.sender === "me"
-                ? "bg-brand-500 text-white self-end ml-auto"
-                : "bg-brand-400 text-white self-start"
+                ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
+                : "bg-brand-400 text-white self-start rounded-bl-none"
             }`}
           >
             <p>{msg.text}</p>

@@ -6,11 +6,11 @@ export interface AxiosPostCreateGroup {
 }
 
 export interface AxiosAllGroup{
-  id:number;
-  name:string;
-  created_by:number;
+  group_id: number;
+  group_name: string;
+  created_by: number;
   members: number[];
-  created_at:Date;
+  created_at: Date;
 }
 
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {

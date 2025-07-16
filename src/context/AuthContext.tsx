@@ -46,16 +46,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const interval = setInterval(async () => {
       const res = await axiosRefreshToken();
 
-      if(res.data){
+      if(res.data?.access){
           localStorage.setItem('accessToken', res.data?.access);
-          localStorage.setItem('refreshToken', res.data?.refresh);
-            console.log("token refresh")
+          
+          console.log("Token Refresh.");
+          console.log("NEW ACCESS TOKEN : ", res.data?.access);
+          console.log(localStorage.getItem("accessToken"));
         }
-      }, 3 * 60 * 1000); // refresh before 3 min expiry
+      }, 29 * 60 * 1000); // refresh before 30 min expiry
 
       return () => clearInterval(interval);
     }
-
+    
+    console.log(localStorage.getItem("accessToken"));
   }, []);
 
   return (

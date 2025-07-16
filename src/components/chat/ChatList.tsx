@@ -6,8 +6,8 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
-import API from "../../api/axios";
-
+import {axiosGetAllGroup, axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
+import { axiosGetUsers } from "../../store/userstore";
 interface Props {
   chats: Chat[]
   activeChatId: number
@@ -19,12 +19,12 @@ interface Option {
   text: string;
 }
 
-
 const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
  
    const [userOptions, setUserOptions] = useState<Option[]>([]);
 
@@ -48,20 +48,17 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   //   { value: "6", text: "Option 6", selected: false },
   // ];
   
-  const axiosCreateGroup = async () => {
-      try {
-          const res = await API.post("/chat/group/create/", {
-            name: groupName.trim(),
-            members:[...selectedValues] 
-          });
+  // const axiosPostCreateGroup = async (newGroup:) => {
+  //     try {
+  //         const res = await API.post("/chat/group/create/", newGroup);
 
-          if(res.data){
-            console.log(res.data)
-          }
-      } catch (error) {
-        console.error("'/chat/group/create/' get request error:", error);
-      }
-    };
+  //         if(res.data){
+  //           console.log(res.data)
+  //         }
+  //     } catch (error) {
+  //       console.error("'/chat/group/create/' get request error:", error);
+  //     }
+  //   };
 
   const handleSave = (e:FormEvent) => {
      e.preventDefault();
@@ -72,7 +69,10 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
       members: selectedValues,
     });
 
-    axiosCreateGroup();
+    axiosPostCreateGroup({
+            name: groupName.trim(),
+            members: [...selectedValues] 
+          });
 
     console.log("Saving changes...");
     setGroupName("");
@@ -81,25 +81,22 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
   };
 
   useEffect(() => {
-    (async () => {
-      try {
-          const res = await API.get("/users/");
-          const {results} = res.data;
+    ;(async ()=>{
+      const allUsers = await axiosGetUsers();
+      const allGroup = await axiosGetAllGroup();
 
-          if(res.data){
-            setUsers(results)
-          }
-      } catch (error) {
-        console.error("/User get request error:", error);
-      }
-    })();
+      // console.log(allGroup);
+      // console.log(allUsers);
+      setGroups(allGroup)
+      setUsers(allUsers)
+    }
+    )();
 
-    return 
   }, [])
 
   return (
     <>
-    <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh] overflow-y-auto">
+    <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh]">
       <div className="text-end m-2">
         <button
             onClick={openModal}
@@ -123,25 +120,56 @@ const ChatList: React.FC<Props> = ({ chats, activeChatId, onSelectChat }) => {
             Create Group
           </button>
       </div>
-      {chats.map((chat) => (
-        <div
-          key={chat.id}
-          onClick={() => onSelectChat(chat.id)}
+
+      <div className="custom-scrollbar bg-amber-500 h-[70vh] overflow-y-auto">
+        <div className="">
+        {groups.map(({id, name}) => (
+          <div
+          key={id}
+          onClick={() => onSelectChat(id)}
           className={`flex gap-2 p-4 cursor-pointer text-white hover:bg-green-500 ${
-            activeChatId === chat.id ? "bg-brand-500 " : ""
+            activeChatId === id ? "bg-brand-500 " : ""
           }`}
         >
           <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
             <img src="/images/user/owner.jpg" alt="User" />
           </span>
           <div>
-            <h3 className="font-semibold">{chat.name}</h3>
-            <p className="text-sm text-gray-300">
+            <h3 className="font-semibold">{name}</h3>
+            {/* <p className="text-sm text-gray-300">
               {chat.messages[chat.messages.length - 1]?.text}
-            </p>
+            </p> */}
           </div>
         </div>
-      ))}
+        ))
+
+        }
+        </div>
+
+        <div className="bg-red-500">
+          {chats.map((chat) => (
+          <div
+            key={chat.id}
+            onClick={() => onSelectChat(chat.id)}
+            className={`flex gap-2 p-4 cursor-pointer text-white hover:bg-green-500 ${
+              activeChatId === chat.id ? "bg-brand-500 " : ""
+            }`}
+          >
+            <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+              <img src="/images/user/owner.jpg" alt="User" />
+            </span>
+            <div>
+              <h3 className="font-semibold">{chat.name}</h3>
+              <p className="text-sm text-gray-300">
+                {chat.messages[chat.messages.length - 1]?.text}
+              </p>
+            </div>
+          </div>
+        ))}
+        </div>
+      </div> 
+      
+      
     </div>
     <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4">
         <div className="no-scrollbar relative w-full max-w-[500px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">

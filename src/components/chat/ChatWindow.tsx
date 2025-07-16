@@ -20,7 +20,7 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
       <div className="p-4 bg-cowberry-cream-500">
         <h2 className="text-lg font-bold text-yellow-800">{chat.name}</h2>
       </div>
-      <div className="flex-1 p-4 overflow-y-auto space-y-2">
+      <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {chat.messages.map((msg) => (
           <div
             key={msg.id}

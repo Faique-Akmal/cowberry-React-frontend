@@ -61,7 +61,8 @@ const navItems: NavItem[] = [
     icon: <TableIcon />,
     subItems: [{ name: "Users List", path: "/basic-tables", pro: false },
       { name: "Task Page", path: "/task-page", pro: false },
-      { name: "Show Task Page", path: "/task-show-page", pro: false }
+      { name: "Show Task Page", path: "/task-show-page", pro: false },
+      { name: "Attandance Start", path: "/attandance-page", pro: false },
     ],
   },
   {

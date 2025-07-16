@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { role } from "../../store/store";
+import API from "../../api/axios";
 
 type User = {
   id: number;
@@ -32,8 +33,8 @@ const UserPagination: React.FC = () => {
     setLoading(true);
     try {
       const accessToken = localStorage.getItem("accessToken");
-      const res = await axios.get<PaginationResponse>(
-        "http://192.168.0.144:8000/api/users/",
+      const res = await API.get<PaginationResponse>(
+        "/users/",
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

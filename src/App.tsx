@@ -28,6 +28,7 @@ import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
+import AttendanceForm from "./pages/Employee/AttandanceStart";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
 
         
             {/* Employee Pages */}
+            <Route path="/attandance-page" element={<AttendanceForm />} />
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

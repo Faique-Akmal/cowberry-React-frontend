@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import API from "../../api/axios";
+import API from "../../api/axios"; // adjust if your API file path differs
+import { Link } from "react-router";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -13,10 +13,19 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  
+
   const navigate = useNavigate();
 
-   
+   const action = () =>{
+            actionone();
+            onClose();
+            handleSendLink();
+   }
+    
+   const actionone = () =>{ 
+     navigate("/change-password");
+   }
+
   const handleSendLink = async () => {
     if (!email.trim()) {
       setMessage("Please enter your email address.");
@@ -53,14 +62,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         setMessage("Password reset link sent to your email.");
         setIsError(false);
 
+        // Wait and then close modal + navigate
         setTimeout(() => {
           setEmail("");
           setMessage("");
-          onClose(); // Close the modal first
-          // Navigate after a short delay to ensure modal is closed
-          setTimeout(() => {
-       navigate("/change-password", { state: { email: email.trim().toLowerCase() } });
-          }, 100);
+          onClose(); // Close modal
+          navigate("/signin"); // Navigate after modal closes
         }, 2000);
       } else {
         setMessage(response.data.message || "Failed to send reset link.");
@@ -73,17 +80,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         const status = error.response.status;
         const data = error.response.data;
 
-        if (status === 404) {
-          setMessage("Email not found.");
-        } else if (status === 422) {
-          setMessage(data.message || "Invalid email format.");
-        } else if (status === 429) {
-          setMessage("Too many requests. Try again later.");
-        } else if (status === 500) {
-          setMessage("Server error. Try again later.");
-        } else {
-          setMessage(data.message || `Error: ${status}`);
-        }
+        if (status === 404) setMessage("Email not found.");
+        else if (status === 422) setMessage(data.message || "Invalid email format.");
+        else if (status === 429) setMessage("Too many requests. Try again later.");
+        else if (status === 500) setMessage("Server error. Try again later.");
+        else setMessage(data.message || `Error: ${status}`);
       } else if (error.request) {
         setMessage("No response from server.");
       } else {
@@ -107,8 +108,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       setEmail("");
       setMessage("");
       setIsError(false);
-      navigate("/signin");
       onClose();
+      navigate("/signin");
     }
   };
 
@@ -146,13 +147,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
           >
             Cancel
           </button>
-          <button
-            onClick={handleSendLink}
+          <Link
+            
+            onClick={action}
+            to="/change-password"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
             disabled={isLoading}
           >
             {isLoading ? "Sending..." : "Reset Password"}
-          </button>
+          </Link>
         </div>
       </div>
     </div>

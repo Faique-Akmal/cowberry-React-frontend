@@ -97,7 +97,7 @@ const AttendanceEndForm = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto px-6 py-8 bg-white rounded-lg shadow-md space-y-6"
+      className="max-w-2xl mx-auto px-6 py-8 bg-transparent rounded-lg shadow-md space-y-6"
     >
       <h2 className="text-2xl font-bold text-center">Employee Attendance End</h2>
 

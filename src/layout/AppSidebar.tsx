@@ -50,10 +50,12 @@ const navItems: NavItem[] = [
     path: "/chat",
   },
   {
-    name: "Forms",
+    name: "Employee",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }
-      , { name: "Register User", path: "/user-register", pro: false },
+    subItems: [ 
+       { name: "Show Task Page", path: "/task-show-page", pro: false },
+      { name: "Attandance Start", path: "/attandanceStart-page", pro: false },
+      { name: "Attandance END", path: "/attandanceEnd-page", pro: false },
        { name: "location ", path: "/user-location", pro: false },
     ],
   },
@@ -61,10 +63,9 @@ const navItems: NavItem[] = [
     name: "User Table",
     icon: <TableIcon />,
     subItems: [{ name: "Users List", path: "/basic-tables", pro: false },
-      { name: "Task Page", path: "/task-page", pro: false },
-      { name: "Show Task Page", path: "/task-show-page", pro: false },
-      { name: "Attandance Start", path: "/attandanceStart-page", pro: false },
-      { name: "Attandance END", path: "/attandanceEnd-page", pro: false },
+      { name: "Register User", path: "/user-register", pro: false },
+      { name: "Assign Task Page", path: "/task-page", pro: false },
+     
     ],
   },
   {

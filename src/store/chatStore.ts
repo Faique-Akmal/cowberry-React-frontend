@@ -5,12 +5,25 @@ export interface AxiosPostCreateGroup {
   members: string[];
 }
 
+export interface Members {
+                id: number;
+                username: string;
+                is_online: boolean;
+                last_seen: Date
+            }
+
+export interface Created_By {
+            id: number;
+            username: string;
+            email: string;
+        }
+
 export interface AxiosAllGroup{
   group_id: number;
   group_name: string;
-  created_by: number;
-  members: number[];
+  created_by: Created_By;
   created_at: Date;
+  members: Members[];
 }
 
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {

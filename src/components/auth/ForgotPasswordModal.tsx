@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api/axios"; // adjust if your API file path differs
-import { Link } from "react-router";
-import ChangePasswordModal from "./ChangePasswordModal";
+// import { Link } from "react-router";
+// import ChangePasswordModal from "./ChangePasswordModal";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;

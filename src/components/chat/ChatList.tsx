@@ -28,11 +28,8 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
  
-   const [userOptions, setUserOptions] = useState<Option[]>([]);
+  const [userOptions, setUserOptions] = useState<Option[]>([]);
 
-  useEffect(() => {
-    
-  }, [])
   
 
   useEffect(() => {
@@ -71,7 +68,7 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
     }
     )();
 
-  }, [])
+  }, []);
 
   return (
     <>

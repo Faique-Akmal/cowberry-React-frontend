@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import {  useNavigate } from "react-router";
 import API from "../../api/axios";
 interface OtpModalProps {
   isOpen: boolean;
@@ -12,6 +13,9 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  const accessToken = localStorage.getItem('accessToken');
+   const navigate = useNavigate();
   
   const handleVerifyOtp = async () => {
     if (!otp.trim()) {
@@ -41,6 +45,7 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
       if (response.data.status === "success" || response.status === 200) {
         setMessage("OTP verified successfully!");
         setIsError(false);
+         navigate("/dashboard", { replace: true });
         
         setTimeout(() => {
           onVerificationSuccess();

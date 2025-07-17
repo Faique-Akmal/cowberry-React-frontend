@@ -3,12 +3,13 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 // import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import UserPagination from "../Employee/UserPagination";
+import TaskPage from "../Employee/TaskPage";
 
 export default function BasicTables() {
   return (
     <>
       <PageMeta
-        title="React.js Basic Tables Dashboard | TailAdmin - Next.js Admin Dashboard Template"
+        title="React.js userPagination Dashboard"
         description="This is React.js Basic Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
       />
       <PageBreadcrumb pageTitle="Basic Tables" />
@@ -16,6 +17,7 @@ export default function BasicTables() {
         <ComponentCard title="Basic Table 1">
           {/* <BasicTableOne /> */}
           <UserPagination/>
+       
         </ComponentCard>
       </div>
     </>

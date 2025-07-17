@@ -23,7 +23,14 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import ForgotPasswordModal from "./components/auth/ForgotPasswordModal";
 import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
+import TaskPage from "./pages/Employee/TaskPage";
+import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import ChatBox from "./components/chat/ChatBox";
+import TaskShowPage from "./pages/Employee/TaskShowPage";
+import RegistrationPage from "./pages/Employee/RegistrationPage";
+import AttendanceForm from "./pages/Employee/AttandanceStart";
+import LiveCoordinates from "./pages/Employee/LocationFetcher";
+import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -32,18 +39,30 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
+      
           {/* OTP VERIFIFCATION MODAL ROUTE */}
            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
-             {/* forgot password  */}
-            <Route path="/forgot-password" element={<ForgotPasswordModal isOpen={true} onClose={() => {}} />} />
+            
+
+              
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
+
+            {/* User Registration Page */}
+            <Route path="/user-register" element={<RegistrationPage />} />
+
+
+            {/* Home Page */}
             <Route index path="/" element={<Home />} />
             
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />
 
-       
+        
+            {/* Employee Pages */}
+            <Route path="/attandanceStart-page" element={<AttendanceForm />} />
+            <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
+            <Route path="/user-location" element={<LiveCoordinates/>} />
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -56,6 +75,8 @@ export default function App() {
 
             {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables />} />
+            <Route path="/task-page" element={<TaskPage />} />
+            <Route path="/task-show-page" element={<TaskShowPage />} />
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

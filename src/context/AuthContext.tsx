@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import API from '../api/axios';
 
 interface AuthContextType {
@@ -15,10 +15,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('accessToken', accessToken);
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('accessToken');
+
+     try {
+      const res = await API.post("/logout/")
+      console.log(res.data)
+    } catch (err) {
+      console.error('Failed to logout user', err);
+    }
+    
   };
+
 
   const refreshToken = localStorage.getItem('refreshToken');
 
@@ -28,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
 
     if(!refreshToken){
+      
       logout()    
     } else {
       const interval = setInterval(async () => {

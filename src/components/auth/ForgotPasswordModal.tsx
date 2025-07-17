@@ -1,136 +1,139 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import API from "../../api/axios"; // adjust if your API file path differs
+import { Link } from "react-router";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
+const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  const navigate = useNavigate();
+
+  // Change Password Modal
+  const [openChangeModal, setOpenChangeModal] = useState(false);
+
+  const handleSuccess = () => {
+  setOpenChangeModal(true);
+  onClose(); // Close forgot modal
+};
+
+   const action = () =>{
+        handleSuccess();
+            onClose();
+            handleSendLink();
+   }
+    
+   
+
   const handleSendLink = async () => {
-    // Basic email validation
     if (!email.trim()) {
       setMessage("Please enter your email address.");
       setIsError(true);
       return;
     }
 
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       setMessage("Please enter a valid email address.");
       setIsError(true);
       return;
     }
 
     setIsLoading(true);
-    setMessage("");
     setIsError(false);
+    setMessage("");
 
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        timeout: 15000, // 15 seconds timeout
-      };
-
-      const response = await axios.post(
-        "http://192.168.0.136:8000/api/forgot-password/",
+      const response = await API.post(
+        "/forgot-password/",
+        { email: email.trim().toLowerCase() },
         {
-          email: email.trim().toLowerCase(),
-        },
-        config
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
       );
 
-      console.log("Forgot password response:", response.data); // For debugging
+      console.log("Server response:", response);
 
       if (response.data.status === "success" || response.status === 200) {
-        setMessage("Password reset link has been sent to your email address.");
+        setMessage("Password reset link sent to your email.");
         setIsError(false);
-        
-        // Clear form and close modal after success
+
+        // Wait and then close modal + navigate
         setTimeout(() => {
-          setMessage("");
           setEmail("");
-          onClose();
-        }, 3000);
+          setMessage("");
+          onClose(); // Close modal
+          navigate("/signin"); // Navigate after modal closes
+        }, 2000);
       } else {
-        setMessage(response.data.message || "Failed to send reset link. Please try again.");
+        setMessage(response.data.message || "Failed to send reset link.");
         setIsError(true);
       }
     } catch (error: any) {
       console.error("Forgot password error:", error);
-      
+
       if (error.response) {
-        // Server responded with error status
         const status = error.response.status;
         const data = error.response.data;
-        
-        console.log("Error response:", data);
-        
-        if (status === 404) {
-          setMessage("Email address not found. Please check your email and try again.");
-        } else if (status === 422) {
-          setMessage(data.message || "Invalid email format.");
-        } else if (status === 429) {
-          setMessage("Too many requests. Please try again later.");
-        } else if (status === 500) {
-          setMessage("Server error. Please try again later.");
-        } else {
-          setMessage(data.message || `Error: ${status}. Please try again.`);
-        }
+
+        if (status === 404) setMessage("Email not found.");
+        else if (status === 422) setMessage(data.message || "Invalid email format.");
+        else if (status === 429) setMessage("Too many requests. Try again later.");
+        else if (status === 500) setMessage("Server error. Try again later.");
+        else setMessage(data.message || `Error: ${status}`);
       } else if (error.request) {
-        // Request was made but no response received
-        console.log("No response received:", error.request);
-        setMessage("Cannot connect to server. Please check your connection.");
+        setMessage("No response from server.");
       } else {
-        // Something else happened
-        console.log("Request error:", error.message);
-        setMessage("An unexpected error occurred. Please try again.");
+        setMessage("Unexpected error occurred.");
       }
-      
+
       setIsError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClose = () => {
-    if (!isLoading) {
-      setMessage("");
-      setEmail("");
-      setIsError(false);
-      onClose();
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !isLoading) {
+      handleSendLink();
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleSendLink();
+  const handleClose = () => {
+    if (!isLoading) {
+      setEmail("");
+      setMessage("");
+      setIsError(false);
+      onClose();
+      navigate("/signin");
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg">
         <h2 className="text-xl font-semibold mb-4 text-center">Forgot Password</h2>
-        
-        <label className="block mb-2 text-sm font-medium text-gray-700">
+
+        <label className="text-sm font-medium text-gray-700 block mb-1">
           Enter your email address
         </label>
         <input
           type="email"
           placeholder="example@gmail.com"
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -138,30 +141,32 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
         />
 
         {message && (
-          <p className={`mt-2 text-sm ${
-            isError ? "text-red-600" : "text-green-600"
-          }`}>
+          <p className={`mt-2 text-sm ${isError ? "text-red-600" : "text-green-600"}`}>
             {message}
           </p>
         )}
 
-        <div className="mt-6 flex justify-between items-center">
+        <div className="mt-6 flex justify-between">
           <button
             onClick={handleClose}
-            className="text-gray-500 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-gray-500 hover:underline"
             disabled={isLoading}
           >
             Cancel
           </button>
           <button
+            
+           
             onClick={handleSendLink}
-            className="bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
             disabled={isLoading}
           >
-            {isLoading ? "Sending..." : "Send Reset Link"}
+            {isLoading ? "Sending..." : "Reset Password"}
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default ForgotPasswordModal;

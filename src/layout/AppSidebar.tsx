@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import  LogoutIcon from '@mui/icons-material/Logout';
 
 // Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
   CalenderIcon,
+  ChatIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
@@ -43,14 +45,28 @@ const navItems: NavItem[] = [
     path: "/profile",
   },
   {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    icon: <ChatIcon />,
+    name: "Chat",
+    path: "/chat",
   },
   {
-    name: "Tables",
+    name: "Employee",
+    icon: <ListIcon />,
+    subItems: [ 
+       { name: "Show Task Page", path: "/task-show-page", pro: false },
+      { name: "Attandance Start", path: "/attandanceStart-page", pro: false },
+      { name: "Attandance END", path: "/attandanceEnd-page", pro: false },
+       { name: "location ", path: "/user-location", pro: false },
+    ],
+  },
+  {
+    name: "User Table",
     icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
+    subItems: [{ name: "Users List", path: "/basic-tables", pro: false },
+      { name: "Register User", path: "/user-register", pro: false },
+      { name: "Assign Task Page", path: "/task-page", pro: false },
+     
+    ],
   },
   {
     name: "Pages",
@@ -60,6 +76,7 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
+ 
 ];
 
 const othersItems: NavItem[] = [

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { role } from "../../store/store";
+import API from "../../api/axios";
 
 type User = {
   id: number;
@@ -9,13 +11,14 @@ type User = {
   employee_code: string;
   role: number;
   profile_image: string | null;
-  is_active_employee: boolean;
+  is_active: boolean;
 };
 
 type PaginationResponse = {
-  currentPage: number;
-  totalPages: number;
   results: User[];
+  current_page: number;
+  total_pages: number;
+  total_count?: number; // optional
 };
 
 const UserPagination: React.FC = () => {
@@ -23,17 +26,31 @@ const UserPagination: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchUsers = async (page: number) => {
+  const fetchUsers = async (page: number, username?: string) => {
     setLoading(true);
     try {
-      const res = await axios.get<PaginationResponse>(
-        `https://http://192.168.0.136:8000/api/users/`
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await API.get<PaginationResponse>(
+        "/users/",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          params: {
+            page,
+            limit: 9,
+            username: username || "",
+            sort_by: "username",
+            sort_order: sortOrder,
+          },
+        }
       );
       setUsers(res.data.results);
-      console.log(res.data.results);
-      setCurrentPage(res.data.currentPage);
-      setTotalPages(res.data.totalPages);
+      setCurrentPage(res.data.current_page);
+      setTotalPages(res.data.total_pages);
     } catch (error) {
       console.error("Failed to fetch users", error);
     } finally {
@@ -41,13 +58,41 @@ const UserPagination: React.FC = () => {
     }
   };
 
+  const getRoleName = (roleId: number): string => {
+    const roleObj = role.find((r) => r.id === roleId);
+    return roleObj ? roleObj.name : "Unknown";
+  };
+
   useEffect(() => {
-    fetchUsers(currentPage);
-  }, [currentPage]);
+    const debounce = setTimeout(() => {
+      fetchUsers(currentPage, searchTerm);
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [currentPage, searchTerm, sortOrder]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">User List</h2>
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
+
+      <div className="mb-4 flex justify-center">
+        <input
+          type="text"
+          placeholder="Search by username"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="border border-gray-300 rounded px-3 py-2 w-full sm:w-96"
+        />
+      </div>
+
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>
       ) : (
@@ -56,7 +101,12 @@ const UserPagination: React.FC = () => {
             <thead className="bg-gray-100 text-gray-700">
               <tr>
                 <th className="py-2 px-4 text-left">ID</th>
-                <th className="py-2 px-4 text-left">Username</th>
+                <th
+                  className="py-2 px-4 text-left cursor-pointer"
+                  onClick={toggleSortOrder}
+                >
+                  Username {sortOrder === "asc" ? "↑" : "↓"}
+                </th>
                 <th className="py-2 px-4 text-left">Email</th>
                 <th className="py-2 px-4 text-left">Mobile</th>
                 <th className="py-2 px-4 text-left">Employee Code</th>
@@ -65,29 +115,37 @@ const UserPagination: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-t">
-                  <td className="py-2 px-4">{user.id}</td>
-                  <td className="py-2 px-4">{user.username}</td>
-                  <td className="py-2 px-4">{user.email}</td>
-                  <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
-                  <td className="py-2 px-4">{user.employee_code}</td>
-                  <td className="py-2 px-4">{user.role}</td>
-                  <td className="py-2 px-4">
-                    {user.is_active_employee ? (
-                      <span className="text-green-600 font-medium">Active</span>
-                    ) : (
-                      <span className="text-red-500 font-medium">Inactive</span>
-                    )}
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <tr key={user.id} className="border-t">
+                    <td className="py-2 px-4">{user.id}</td>
+                    <td className="py-2 px-4">{user.username}</td>
+                    <td className="py-2 px-4">{user.email}</td>
+                    <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
+                    <td className="py-2 px-4">{user.employee_code}</td>
+                    <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
+                    <td className="py-2 px-4">
+                      {user.is_active ? (
+                        <span className="text-green-600 font-medium">Active</span>
+                      ) : (
+                        <span className="text-red-500 font-medium">Inactive</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-gray-500">
+                    No users found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       )}
 
-      <div className="flex justify-center mt-6 gap-2">
+      <div className="flex justify-center mt-6 gap-2 flex-wrap">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -96,12 +154,14 @@ const UserPagination: React.FC = () => {
           Previous
         </button>
 
-        {[...Array(totalPages)].map((_, i) => (
+        {Array.from({ length: totalPages }, (_, i) => (
           <button
             key={i}
             onClick={() => setCurrentPage(i + 1)}
             className={`px-3 py-2 rounded ${
-              currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200"
+              currentPage === i + 1
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 hover:bg-gray-200"
             }`}
           >
             {i + 1}
@@ -109,7 +169,9 @@ const UserPagination: React.FC = () => {
         ))}
 
         <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
           className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           disabled={currentPage === totalPages}
         >

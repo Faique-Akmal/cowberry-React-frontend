@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import {Routes, Route } from "react-router";
 
 import 'leaflet/dist/leaflet.css';
 
@@ -36,7 +36,7 @@ import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 export default function App() {
   return (
     <>
-      <Router>
+      
         <ScrollToTop />
         <Routes>
       
@@ -98,7 +98,6 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-    </>
+      </>
   );
 }

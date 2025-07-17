@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import ChatList from "./ChatList"
 import ChatWindow from "./ChatWindow"
 import { Chat } from "../../types"
-import {axiosGetAllGroup, axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
+import {axiosGetAllGroup, AxiosAllGroup, Members} from "../../store/chatStore"
 
 
 const initialChats: Chat[] = [
@@ -52,6 +52,7 @@ const ChatBox: React.FC = () => {
   const [chats, setChats] = useState(initialChats);
   const [activeChatId, setActiveChatId] = useState(1);
   const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
+  const [members, setMembers] = useState<Members[]>([]);
 
 
   const handleSendMessage = (chatId: number, text: string) => {
@@ -77,6 +78,18 @@ const ChatBox: React.FC = () => {
       )
     )
   }
+
+    useEffect(() => {
+      ;(async ()=>{
+        const allGroups = await axiosGetAllGroup();
+        console.log(allGroups)
+        console.log("Members:", allGroups?.members)
+        setGroups(allGroups);
+      }
+      )();
+  
+    }, [])
+  
 
   const activeChat = chats.find((chat) => chat.id === activeChatId)!  
 

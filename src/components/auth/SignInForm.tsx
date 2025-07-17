@@ -173,7 +173,7 @@ export default function SignInForm() {
               <Link to="/forgot-password" className="text-brand-500 hover:underline">
 
                 Forgot password?
-              </Link> */}
+              </Link>
               <button
           onClick={openForgotModal}
           className="text-sm text-blue-600 hover:underline"

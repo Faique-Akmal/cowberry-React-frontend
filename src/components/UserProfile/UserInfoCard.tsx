@@ -83,6 +83,8 @@ export default function UserInfoCard() {
   //     return Promise.reject(error);
   //   }
   // );
+    }
+    );
 
   useEffect(() => {
     const fetchUser = async () => {

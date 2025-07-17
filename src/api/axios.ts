@@ -5,58 +5,52 @@ const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // withCredentials: true,
 });
 
 API.interceptors.request.use((config) => {
-  const accessToken:string | null = localStorage.getItem('accessToken');
+  const accessToken = localStorage.getItem("accessToken");
   if (accessToken && config.headers) {
-    config.headers['Authorization'] = `Bearer ${accessToken}`;
+    config.headers["Authorization"] = `Bearer ${accessToken}`;
   }
   return config;
 });
-
-// API.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     // Global error handling
-//     if (error.response?.status === 401) {
-//       // Token expired, redirect to login, or refresh token logic
-//     }
-//     return Promise.reject(error);
-//   }
-// );
 
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const refreshToken = localStorage.getItem("refreshToken");
 
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      localStorage.getItem("refreshToken")
+      refreshToken
     ) {
       originalRequest._retry = true;
+
       try {
-        const refreshResponse = await axios.post(
-          "/token/refresh",
-          {},
+        const res = await axios.post(
+          `${import.meta.env.VITE_BASE_URL}/token/refresh`,
+          { refresh: refreshToken },
           { withCredentials: true }
         );
-        const newToken = refreshResponse.data.access;
 
-        localStorage.setItem("accessToken", newToken);
-        API.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+        const newAccessToken = res.data.access;
+        localStorage.setItem("accessToken", newAccessToken);
+
+        API.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
 
         return API(originalRequest);
-      } catch (refreshError) {
-        console.error("Refresh token failed");
+      } catch (err) {
+        console.error("Token refresh failed.");
         localStorage.clear();
         window.location.href = "/signin";
-        return Promise.reject(refreshError);
+        return Promise.reject(err);
       }
     }
+
     return Promise.reject(error);
   }
 );

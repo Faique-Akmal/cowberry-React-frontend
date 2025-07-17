@@ -169,17 +169,12 @@ export default function SignInForm() {
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
-
-              <Link to="/forgot-password" className="text-brand-500 hover:underline">
-
-                Forgot password?
-              </Link>
               <button
-          onClick={openForgotModal}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Forgot Password?
-        </button>
+                onClick={openForgotModal}
+                className="text-sm text-brand-500 hover:underline"
+              >
+                Forgot Password?
+              </button>
             </div>
 
             <div>
@@ -192,7 +187,7 @@ export default function SignInForm() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
-   <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
+            <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
             {message && (
               <p className={`text-sm text-center ${
                 message.includes("successful") ? "text-green-500" : "text-red-500"

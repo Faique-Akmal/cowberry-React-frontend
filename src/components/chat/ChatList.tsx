@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Chat } from "../../types"
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
@@ -8,13 +7,11 @@ import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
 import { axiosGetUsers } from "../../store/userStore";
-// import Spinner from "../common/Spinner";
 
 interface Props {
   groups: AxiosAllGroup[];
-  chats: Chat[]
-  activeChatId: number
-  onSelectChat: (id: number) => void
+  activeChatId: number;
+  onSelectChat: (id: number) => void;
 }
 
 interface Option {
@@ -22,7 +19,7 @@ interface Option {
   text: string;
 }
 
-const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }) => {
+const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
@@ -30,20 +27,16 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
  
   const [userOptions, setUserOptions] = useState<Option[]>([]);
 
-  
-
   useEffect(() => {
     if (users.length > 0) {
       const transformed = users.map<Option>(user => ({
-        value: user.id,
-        text: user.username,
+        value: user?.id,
+        text: user?.username,
       }));
       setUserOptions(transformed);
     }
 
   }, [users]);
-  
-
 
   const handleSave = (e:FormEvent) => {
      e.preventDefault();
@@ -63,13 +56,14 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
   useEffect(() => {
     ;(async ()=>{
       const allUsers = await axiosGetUsers();
-      // console.log(allUsers);
-      setUsers(allUsers);
+
+      if(allUsers?.length > 0){
+        setUsers(allUsers);
+      }
     }
     )();
-
   }, []);
-
+  
   return (
     <>
     <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh]">
@@ -101,21 +95,21 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
         {
           groups.length <= 0 ?
           <div className="flex items-center justify-center">
-            <p className="text-white-">No Chat Group Found...</p> 
+            <p className="text-white">No Chat Group Found...</p> 
             {/* <Spinner text="Loading Chat Group..." /> */}
           </div>
           : <div className="">
-          {groups.map(({group_id, group_name}) => (
+          {groups.map((group) => (
           <div
-          key={group_id}
-          onClick={() => onSelectChat(group_id)}
-          className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer bg-cowberry-cream-500 text-white hover:bg-green-500`}
+          key={group?.group_id}
+          onClick={() => onSelectChat(group?.group_id)}
+          className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:bg-green-500 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
         >
           <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
             <img src="/images/user/owner.jpg" alt="User" />
           </span>
           <div>
-            <h3 className="font-semibold">{group_name}</h3>
+            <h3 className="font-semibold">{group?.group_name}</h3>
             <p className="text-sm text-gray-300">
               {/* {chat.messages[chat.messages.length - 1]?.text} */}
             </p>
@@ -127,7 +121,7 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
         }
         
 
-        <div className="">
+        {/* <div className="">
           {chats.map((chat) => (
           <div
             key={chat.id}
@@ -147,7 +141,8 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
             </div>
           </div>
         ))}
-        </div>
+        </div> */}
+
       </div> 
       
       

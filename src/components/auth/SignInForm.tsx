@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import {  useNavigate } from "react-router";
 import {  EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -170,10 +170,7 @@ export default function SignInForm() {
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
 
-              <Link to="/forgot-password" className="text-brand-500 hover:underline">
-
-                Forgot password?
-              </Link>
+             
               <button
           onClick={openForgotModal}
           className="text-sm text-blue-600 hover:underline"

@@ -49,8 +49,6 @@ export default function SignInForm() {
         }
       );
 
-      // console.log("Response:", response.data); 
-
 
       if (response.data?.message === "Login successful") {
         setMessage("Login successful!");
@@ -60,17 +58,16 @@ export default function SignInForm() {
 
         login(response.data?.refresh, response.data?.access);
 
-       
+
         const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
          
         const isVerified = response.data?.is_employee_code_verified || false;
         
         // Navigate based on user role
       setTimeout(() => {
-  if (userRole === ""  ) {
-    // Admin, HR, and Department Head always go to dashboard
-    navigate("/dashboard", { replace: true });
-  } else if ( userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+
+  if ( userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+
     // For employees, check verification status
     if (isVerified) {
       // Verified employee goes to dashboard
@@ -172,7 +169,9 @@ export default function SignInForm() {
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
-              {/* <Link to="/forgot-password" className="text-blue-600 hover:underline">
+
+              <Link to="/forgot-password" className="text-brand-500 hover:underline">
+
                 Forgot password?
               </Link> */}
               <button

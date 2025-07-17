@@ -21,6 +21,7 @@ export default function SelectInputs() {
     { value: "3", text: "Option 3", selected: false },
     { value: "4", text: "Option 4", selected: false },
     { value: "5", text: "Option 5", selected: false },
+    { value: "6", text: "Option 6", selected: false },
   ];
   return (
     <ComponentCard title="Select Inputs">

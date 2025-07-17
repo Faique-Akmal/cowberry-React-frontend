@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import axios from "axios";
 import { role , department } from "../../store/store";
 
@@ -22,6 +23,7 @@ export default function UserInfoCard() {
   const [error, setError] = useState('');
 
   // Create a persistent Axios instance
+
   const axiosInstance = axios.create({
     baseURL: "http://192.168.0.144:8000/api",
     headers: {
@@ -55,42 +57,43 @@ export default function UserInfoCard() {
     async (error) => {
       const originalRequest = error.config;
 
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
 
-        try {
-          const refreshToken = localStorage.getItem("refreshToken");
-          if (!refreshToken) throw new Error("No refresh token");
+  //     if (error.response?.status === 401 && !originalRequest._retry) {
+  //       originalRequest._retry = true;
 
-          const res = await axios.post("http://192.168.0.144:8000/api/token/refresh/", {
-            refresh: refreshToken,
-          });
+  //       try {
+  //         const refreshToken = localStorage.getItem("refreshToken");
+  //         if (!refreshToken) throw new Error("No refresh token");
 
-          const newAccessToken = res.data.access;
-          localStorage.setItem("accessToken", newAccessToken);
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return axiosInstance(originalRequest); // Retry original request
-        } catch (err) {
-          console.error("Refresh token failed", err);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          setError("Session expired. Please log in again.");
-        }
-      }
 
-      return Promise.reject(error);
-    }
-  );
+  //         const newAccessToken = res.data.access;
+  //         localStorage.setItem("accessToken", newAccessToken);
+
+  //         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+  //         return axiosInstance(originalRequest); // Retry original request
+  //       } catch (err) {
+  //         console.error("Refresh token failed", err);
+  //         localStorage.removeItem("accessToken");
+  //         localStorage.removeItem("refreshToken");
+  //         setError("Session expired. Please log in again.");
+  //       }
+  //     }
+
+  //     return Promise.reject(error);
+  //   }
+  // );
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         setLoading(true);
+
         const response = await axiosInstance.get(`/me/`);
      localStorage.setItem("meuser" , JSON.stringify(response.data)); 
 
         setUser(response.data);
+
       } catch (err) {
         console.error(err);
         setError("Failed to fetch user details.");

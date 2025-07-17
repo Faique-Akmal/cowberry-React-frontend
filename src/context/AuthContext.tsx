@@ -4,6 +4,7 @@ import API from '../api/axios';
 interface AuthContextType {
   login: (refreshToken: string, accessToken: string) => void;
   logout: () => void;
+  axiosLogout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,23 +16,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('accessToken', accessToken);
   };
 
-  const logout = async () => {
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('accessToken');
-
-     try {
+  const axiosLogout = async () =>{
+    try {
       const res = await API.post("/logout/")
       console.log(res.data)
     } catch (err) {
       console.error('Failed to logout user', err);
     }
     
+    logout();
+  } 
+
+  const logout = () => {
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('accessToken');
   };
 
 
   const refreshToken = localStorage.getItem('refreshToken');
 
-  const AxiosRefreshToken = () =>
+  const axiosRefreshToken = () =>
   API.post('token/refresh/', {refresh:refreshToken});
 
   useEffect(() => {
@@ -41,19 +45,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout()    
     } else {
       const interval = setInterval(async () => {
-      const res = await AxiosRefreshToken();
+      const res = await axiosRefreshToken();
 
-      localStorage.setItem('accessToken', res.data?.access);
-        console.log("token refresh")
+      if(res.data?.access){
+          localStorage.setItem('accessToken', res.data?.access);
+          
+          console.log("Token Refresh.");
+          console.log("NEW ACCESS TOKEN : ", res.data?.access);
+          console.log(localStorage.getItem("accessToken"));
+        }
       }, 29 * 60 * 1000); // refresh before 30 min expiry
 
       return () => clearInterval(interval);
     }
-
+    
+    console.log(localStorage.getItem("accessToken"));
   }, []);
 
   return (
-    <AuthContext.Provider value={{ login, logout }}>
+    <AuthContext.Provider value={{ login, logout, axiosLogout }}>
       {children}
     </AuthContext.Provider>
   );

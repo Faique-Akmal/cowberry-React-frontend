@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
-import API from "../../api/axios";
+
+import axios from "axios";
+import { role , department } from "../../store/store";
+
 
 export default function UserInfoCard() {
   const [user, setUser] = useState({
     id: '',
     username: '',
+    first_name: '',
+    last_name: '',
     email: '',
     role: '',
     department: '',
@@ -18,27 +23,40 @@ export default function UserInfoCard() {
   const [error, setError] = useState('');
 
   // Create a persistent Axios instance
-  // const axiosInstance = axios.create({
-  //   baseURL: "http://192.168.0.136:8000/api",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  // });
 
-  // // Add request interceptor (runs once)
-  // axiosInstance.interceptors.request.use((config) => {
-  //   const accessToken = localStorage.getItem("accessToken");
-  //   if (accessToken) {
-  //     config.headers.Authorization = `Bearer ${accessToken}`;
-  //   }
-  //   return config;
-  // });
+  const axiosInstance = axios.create({
+    baseURL: "http://192.168.0.144:8000/api",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+     
+   const getRoleName = (roleId: number): string => {
+      const roleObj = role.find((r) => r.id === roleId);
+      return roleObj ? roleObj.name : "Unknown";
+    };
+    
+  const getDepartmentName = (departmentId: number): string => {
+      const departmentObj = department.find((d) => d.id === departmentId);
+      return departmentObj ? departmentObj.name : "Unknown";
+    };
+  // Add request interceptor (runs once)
+  axiosInstance.interceptors.request.use((config) => {
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  });
 
-  // // Add response interceptor for token refreshing
-  // axiosInstance.interceptors.response.use(
-  //   (response) => response,
-  //   async (error) => {
-  //     const originalRequest = error.config;
+  
+
+  // Add response interceptor for token refreshing
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+
 
   //     if (error.response?.status === 401 && !originalRequest._retry) {
   //       originalRequest._retry = true;
@@ -47,9 +65,7 @@ export default function UserInfoCard() {
   //         const refreshToken = localStorage.getItem("refreshToken");
   //         if (!refreshToken) throw new Error("No refresh token");
 
-  //         const res = await axios.post("http://192.168.0.136:8000/api/token/refresh/", {
-  //           refresh: refreshToken,
-  //         });
+
 
   //         const newAccessToken = res.data.access;
   //         localStorage.setItem("accessToken", newAccessToken);
@@ -72,11 +88,12 @@ export default function UserInfoCard() {
     const fetchUser = async () => {
       try {
         setLoading(true);
-        const response = await API.get(`/me/`);
-        if(response.data){
-          // console.log("/me/ :", response.data)
-          setUser(response.data);
-        }
+
+        const response = await axiosInstance.get(`/me/`);
+     localStorage.setItem("meuser" , JSON.stringify(response.data)); 
+
+        setUser(response.data);
+
       } catch (err) {
         console.error(err);
         setError("Failed to fetch user details.");
@@ -92,25 +109,83 @@ export default function UserInfoCard() {
   if (error) return <div className="p-4 text-red-600">{error}</div>;
 
   return (
-    <div className="p-6 max-w-xl mx-auto rounded-lg shadow border">
-      <h2 className="text-xl font-bold mb-4">User Profile</h2>
-      <div className="space-y-2 text-gray-800">
-     
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Role:</strong> {user.role}</p>
-        <p><strong>Department:</strong> {user.department}</p>
-        <p><strong>Mobile No:</strong> {user.mobile_no}</p>
-        <p><strong>Birth Date:</strong> {user.birth_date}</p>
-        <p><strong>Address:</strong> {user.address}</p>
-        {user.profile_image && (
-          <div>
-            <strong>Profile Image:</strong>
-            <div className="mt-2">
-              <img src={user.profile_image} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+    <div className="p-3 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+
+      {/* user profile */}
+        <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
+            Personal Information
+          </h4>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                First Name
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+              {user.first_name|| "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Last Name
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+                {user.last_name|| "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Email address
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+            {user.email}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Phone
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {user.mobile_no || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              Role
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+             {getRoleName(user.role)}
+              </p>
+            </div>
+             <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Department
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+             {getDepartmentName(user.department)}
+              </p>
+            </div>
+               <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Address
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+             {user.address}
+              </p>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+
+          </div>
+   </div>
+   </div>
+
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import ChatList from "./ChatList"
 import ChatWindow from "./ChatWindow"
 import { Chat } from "../../types"
@@ -78,7 +78,7 @@ const ChatBox: React.FC = () => {
     )
   }
 
-  const activeChat = chats.find((chat) => chat.id === activeChatId)!
+  const activeChat = chats.find((chat) => chat.id === activeChatId)!  
 
   return (
      <div className="bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">

@@ -8,7 +8,8 @@ import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
 import { axiosGetUsers } from "../../store/userStore";
-import Spinner from "../common/Spinner";
+// import Spinner from "../common/Spinner";
+
 interface Props {
   groups: AxiosAllGroup[];
   chats: Chat[]
@@ -102,8 +103,9 @@ const ChatList: React.FC<Props> = ({ groups, chats, activeChatId, onSelectChat }
       <div className="h-11/12 py-2 custom-scrollbar overflow-y-auto overflow-hidden">
         {
           groups.length <= 0 ?
-          <div className="flex items-center justify-center"> 
-            <Spinner text="Loading Chat Group..." />
+          <div className="flex items-center justify-center">
+            <p className="text-white-">No Chat Group Found...</p> 
+            {/* <Spinner text="Loading Chat Group..." /> */}
           </div>
           : <div className="">
           {groups.map(({group_id, group_name}) => (

@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react"
-import { AxiosAllGroup, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
+import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
 import { axiosGetMe } from "../../store/userStore";
 import MemberDropdown from "./MemberDropdown";
 
 interface Props {
   group: AxiosAllGroup; 
-  allMsg:any;
-  setAllMsg: (msg: any )=> void;
+  allMsg: AxiosGetGroupMsg[];
+  dispatch: React.Dispatch<React.SetStateAction<never[]>>;
+  // onAllMsg: (allMsg: AxiosGetGroupMsg[])=> void;
 }
 
-const ChatWindow: React.FC<Props> = ({ group, allMsg, setAllMsg }) => {
+const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
   const [newMsg, setNewMsg] = useState<string>("");
   const [meUserId, setMeUserId] = useState<number>();
 
@@ -23,19 +24,16 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, setAllMsg }) => {
         content: newMsg
       };
 
-      ;(async()=>{
-        const sendMsg = await axiosPostSendMsg(createMsg);
-        console.log("send msg response : ", sendMsg)
-      })();
+      axiosPostSendMsg(createMsg);
     }
 
-     ;(async()=>{
+     ;(async () => {
           if(group?.group_id){
-            console.log(group);
             const groupMsg = await axiosGetGroupMsg(group?.group_id);
             if(groupMsg.length > 0){
-              setAllMsg(groupMsg)
-            } else setAllMsg([]);
+              console.log("groupMsg : ", groupMsg)
+              dispatch(groupMsg)
+            } else dispatch([]);
           }
         })();
     

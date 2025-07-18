@@ -21,18 +21,18 @@ export default function Home() {
         description="To build a mobile-based location tracker app for field employees and a web-based dashboard for HR/Admin and reporting managers to monitor attendance, task completion, and real-time location tracking."
       />
       <div className="grid gap-12 md:gap-4">
-        <div className="col-span-3 sapce-x-4 xl:col-span-12">
+        <div className="col-span-12 sapce-x-4 xl:col-span-12">
           <EcommerceMetrics />        
         </div>
-        <div className="col-span-3 sapce-x-4 xl:col-span-12">
+        <div className="col-span-12 sapce-x-4 xl:col-span-12">
              <MonthlySalesChart />
         </div>
           
-        <div className="grid col-span-12 xl:col-span-4">
+        <div className="col-span-12 md:col-span-3 xl:col-span-4">
           <Customers/>
         </div>
          
-        <div className="col-span-12  xl:col-span-4">
+        <div className="col-span-12 md:col-span-9  xl:col-span-4">
           <EmployeeChart/>
         </div>
 

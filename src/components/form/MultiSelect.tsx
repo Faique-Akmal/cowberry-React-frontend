@@ -2,8 +2,8 @@ import type React from "react";
 import { useState } from "react";
 
 interface Option {
-  value: string;
-  text: string;
+  value: number;
+  name: string;
 }
 
 interface MultiSelectProps {
@@ -45,7 +45,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   };
 
   const selectedValuesText = selectedOptions.map(
-    (value) => options.find((option) => option.value === value)?.text || ""
+    (value) => options.find((option) => option.value === +value)?.name || ""
   );
 
   return (
@@ -134,25 +134,25 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col custom-scrollbar h-[200px] overflow-y-auto">
-                {options.map((option, index) => (
+                {options.length>0 ?  options.map((option, index) => (
                   <div
                     key={index}
                     className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800`}
-                    onClick={() => handleSelect(option.value)}
+                    onClick={() => handleSelect(`${option.value}`)}
                   >
                     <div
                       className={`relative flex w-full items-center p-2 pl-2 ${
-                        selectedOptions.includes(option.value)
-                          ? "bg-primary/10"
+                        selectedOptions.includes(`${option.value}`)
+                          ? "bg-gray-400"
                           : ""
                       }`}
                     >
                       <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
-                        {option.text}
+                        {option.name}
                       </div>
                     </div>
                   </div>
-                ))}
+                )): (<div className="mx-2 leading-6 text-gray-800 dark:text-white/90">No selectable Member exist!</div>)}
               </div>
             </div>
           )}

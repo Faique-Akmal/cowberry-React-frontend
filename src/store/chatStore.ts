@@ -32,6 +32,21 @@ export interface AxiosPostSendMsg {
   content: string
 }
 
+export interface AxiosGetGroupMsg {
+  id: number;
+  sender: number;
+  sender_username: string;
+  recipient: number | null;
+  group: number;
+  group_name: string;
+  content: string;
+  parent: number | null;
+  replies: AxiosGetGroupMsg[]; // Recursive structure
+  sent_at: string; // ISO datetime string (can convert to Date if needed)
+  is_read: boolean;
+  read_at: string | null;
+}
+
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {
   try {
           const res = await API.post("/chat/group/create/", newGroup);

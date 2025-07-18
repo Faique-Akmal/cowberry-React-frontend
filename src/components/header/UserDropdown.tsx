@@ -25,7 +25,7 @@ export default function UserDropdown() {
       >
         <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
         
-          <img src= "/cowberry-img.png" alt="User" className="bg-cover" />
+          <img src= "/cowberry_logo_with_bg.jpg" alt="User" className="bg-cover" />
       
         </div>
 

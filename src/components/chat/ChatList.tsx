@@ -6,7 +6,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
-import { axiosGetUsers } from "../../store/userStore";
+import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 
 interface Props {
   groups: AxiosAllGroup[];
@@ -16,22 +16,23 @@ interface Props {
 
 interface Option {
   value: number;
-  text: string;
+  name: string;
 }
 
 const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<AxiosGetUsers[]>([]);
  
+  console.log("users : ",users)
   const [userOptions, setUserOptions] = useState<Option[]>([]);
 
   useEffect(() => {
     if (users.length > 0) {
       const transformed = users.map<Option>(user => ({
         value: user?.id,
-        text: user?.username,
+        name: user?.username,
       }));
       setUserOptions(transformed);
     }

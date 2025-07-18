@@ -21,7 +21,7 @@ export default function UserMetaCard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const accessToken = localStorage.getItem("accessToken"); // Adjust key if needed
+        // const accessToken = localStorage.getItem("accessToken"); // Adjust key if needed
         const response = await API.get<UserProfile>(
           "/me/",
         
@@ -58,7 +58,7 @@ export default function UserMetaCard() {
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-22 h-22 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
               <img
-                src={user.profile_image || "/cowberry-img.png"}
+                src={user.profile_image || "/cowberry_logo_with_bg.jpg"}
                 alt="user"
                 className="bg-cover w-full h-full "
               />

@@ -4,7 +4,7 @@
 export default function Customers() {
  
   return (
-      <div className="bg-white rounded-xl shadow-sm p-5 w-full max-w-xs">
+      <div className="bg-white flex flex-col justify-between rounded-xl shadow-sm p-5 h-full w-full">
       <h4 className="text-base font-semibold text-gray-800 mb-4">Customers</h4>
 
       {/* Circle with 4 dots */}

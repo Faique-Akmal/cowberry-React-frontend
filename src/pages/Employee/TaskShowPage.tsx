@@ -140,6 +140,9 @@ export default function TaskShowPage() {
             <p className="text-sm text-gray-600 mb-2">
               {task.description || "No description"}
             </p>
+              <p className="text-sm text-gray-600 mb-2">
+              <b>{task.completion_description || "No description"}</b>
+            </p>
             <div className="flex justify-between items-center text-sm">
               <span
                 className={`px-2 py-1 rounded-full ${getStatusColor(task.is_completed ? "completed" : "pending")}`}

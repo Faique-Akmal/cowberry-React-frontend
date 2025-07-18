@@ -29,7 +29,7 @@ import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
-import SignInForm from "./components/auth/SignInForm";
+// import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -47,12 +47,14 @@ export default function App() {
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
 
+           {/* Home Page */}
+            <Route index path="/" element={<Home />} />
+
             {/* User Registration Page */}
             <Route path="/user-register" element={<RegistrationPage />} />
 
 
-            {/* Home Page */}
-            <Route index path="/" element={<SignInForm />} />
+           
             
             {/* Dashboard Pages */}
             <Route path="/dashboard" element={<Home />} />

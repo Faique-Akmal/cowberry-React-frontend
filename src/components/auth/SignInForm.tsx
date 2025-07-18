@@ -64,25 +64,32 @@ export default function SignInForm() {
         const isVerified = response.data?.is_employee_code_verified || false;
         
         // Navigate based on user role
-      setTimeout(() => {
+     setTimeout(() => {
+  // const allowedRoles = ["admin", "hr", "department_head", "manager", "employee"];
 
-  if ( userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+  // if (!allowedRoles.includes(userRole)) {
+  //   setMessage("Access denied. Invalid user role.");
+  //   setIsLoading(false);
+  //   return;
+  // }
 
-    // For employees, check verification status
+  if (userRole === "employee") {
     if (isVerified) {
-      // Verified employee goes to dashboard
-      navigate("/dashboard", { replace: true });
+      navigate("/attandanceStart-page", { replace: true });  
     } else {
-      // Unverified employee goes to OTP verification
-      navigate("/LoginWithOtp", { replace: true });
+      navigate("/LoginWithOtp", { replace: true });    
     }
   } else {
-    // For other roles, show an error message
-    setMessage("Access denied. Invalid user role.");
-    setIsLoading(false);
-    return;
+    if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+      if (isVerified) {
+      navigate("/dashboard", { replace: true });  
+    } else {
+      navigate("/LoginWithOtp", { replace: true });    
+    }   
+    } 
   }
-}, 1000); // Small delay to show success message
+}, 1000);
+ // Small delay to show success message
       } else {
         setMessage(response.data.message || "Login failed.");
       }
@@ -189,7 +196,7 @@ export default function SignInForm() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
-   <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
+               <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
             {message && (
               <p className={`text-sm text-center ${
                 message.includes("successful") ? "text-green-500" : "text-red-500"

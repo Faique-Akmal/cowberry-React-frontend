@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <>
       <PageMeta
-        title="Field Employee Location Tracker & Task Management System"
+        title="DASHBOARD"
         description="To build a mobile-based location tracker app for field employees and a web-based dashboard for HR/Admin and reporting managers to monitor attendance, task completion, and real-time location tracking."
       />
       <div className="grid gap-12 md:gap-4">

@@ -30,8 +30,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.clear();
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('accessToken');
   };
 
 

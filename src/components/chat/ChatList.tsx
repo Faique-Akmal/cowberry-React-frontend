@@ -23,7 +23,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState([]);
  
   const [userOptions, setUserOptions] = useState<Option[]>([]);
 

@@ -28,7 +28,6 @@ export const axiosGetMe = async () => {
           const res = await API.get("/me/");
           
           if(res.data){
-            console.log(res.data);
             return res.data;
           }
       } catch (error) {

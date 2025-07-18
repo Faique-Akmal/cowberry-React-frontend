@@ -1,19 +1,44 @@
 import { useEffect, useState } from "react"
-import { AxiosAllGroup, axiosGetGroupMsg } from "../../store/chatStore"
-import MemberDropdown from "./MemberDropdown";
+import { AxiosAllGroup, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
 import { axiosGetMe } from "../../store/userStore";
+import MemberDropdown from "./MemberDropdown";
 
 interface Props {
-  group:AxiosAllGroup; 
+  group: AxiosAllGroup; 
+  allMsg:any;
+  setAllMsg: (msg: any )=> void;
 }
 
-const ChatWindow: React.FC<Props> = ({ group }) => {
-  const [allMsg, setAllMsg] = useState([]);
-  const [newMsg, setNewMsg] = useState("");
-  const [meUserId, setMeUserId] = useState();
+const ChatWindow: React.FC<Props> = ({ group, allMsg, setAllMsg }) => {
+  const [newMsg, setNewMsg] = useState<string>("");
+  const [meUserId, setMeUserId] = useState<number>();
 
   const send = () => {
     if (!newMsg.trim()) return
+        
+    if(meUserId && allMsg[0]?.group){
+      const createMsg = {
+        sender: meUserId,
+        group: allMsg[0]?.group,
+        content: newMsg
+      };
+
+      ;(async()=>{
+        const sendMsg = await axiosPostSendMsg(createMsg);
+        console.log("send msg response : ", sendMsg)
+      })();
+    }
+
+     ;(async()=>{
+          if(group?.group_id){
+            console.log(group);
+            const groupMsg = await axiosGetGroupMsg(group?.group_id);
+            if(groupMsg.length > 0){
+              setAllMsg(groupMsg)
+            } else setAllMsg([]);
+          }
+        })();
+    
     setNewMsg("")
   }
 
@@ -37,22 +62,7 @@ const ChatWindow: React.FC<Props> = ({ group }) => {
         setMeUserId(meData?.id);
       }
     })();
-  },[])
-
-  useEffect(()=>{
-    ;(async()=>{
-      if(group){
-        // console.log(group);
-        const groupMsg = await axiosGetGroupMsg(group?.group_id);
-        if(groupMsg.length > 0){
-          // console.log(res);
-          setAllMsg(groupMsg)
-        }
-      }
-    })();
-  },[group])
-
-  console.log("All Msg :",allMsg[0]);
+  },[]);
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
@@ -63,7 +73,7 @@ const ChatWindow: React.FC<Props> = ({ group }) => {
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
-        {allMsg.map((msg) => (
+        {allMsg.length > 0 ? allMsg.map((msg) => (
           <div
             key={msg?.id}
             className={`max-w-xs flex flex-col p-2 rounded-lg ${
@@ -80,7 +90,9 @@ const ChatWindow: React.FC<Props> = ({ group }) => {
               <small className="text-xs text-end text-gray-200">{timeZone(msg?.sent_at)}</small>
             </div>
           </div>
-        ))} 
+        )): (
+          <p className="text-center w-full text-2xl font-bold text-dashboard-brown-200">No Chat Found!</p>
+        )} 
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input

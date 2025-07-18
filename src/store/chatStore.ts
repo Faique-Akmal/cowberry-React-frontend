@@ -26,6 +26,12 @@ export interface AxiosAllGroup{
   members: Members[];
 }
 
+export interface AxiosPostSendMsg {
+  sender: number;
+  group: number;
+  content: string
+}
+
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {
   try {
           const res = await API.post("/chat/group/create/", newGroup);
@@ -62,7 +68,7 @@ export const axiosGetGroupMsg = async (group_id:number) => {
       }
 };
 
-export const axiosPostSendMsg = async (newMsg) => {
+export const axiosPostSendMsg = async (newMsg:AxiosPostSendMsg) => {
   try {
           const res = await API.post("/chat/message/send/", newMsg);
 

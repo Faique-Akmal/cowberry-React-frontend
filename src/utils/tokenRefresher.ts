@@ -2,7 +2,7 @@
 import axios from "axios";
 
 export const startTokenRefreshInterval = () => {
-  const refreshInterval = 29 * 60 * 1000; // 29 minutes
+  const refreshInterval = 3 * 60 * 1000; // 29 minutes
 
   const intervalId = setInterval(async () => {
     const refreshToken = localStorage.getItem("refreshToken");
@@ -10,7 +10,7 @@ export const startTokenRefreshInterval = () => {
     if (refreshToken) {
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_BASE_URL}/token/refresh`,
+          `${import.meta.env.VITE_BASE_URL}/token/refresh/`,
           { refresh: refreshToken },
           // { withCredentials: true }
         );

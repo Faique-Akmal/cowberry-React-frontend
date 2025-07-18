@@ -29,6 +29,7 @@ import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
+import ProtectedRoute from "./components/ProtectedRoutes";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -61,8 +62,34 @@ export default function App() {
 
         
             {/* Employee Pages */}
-            <Route path="/attandanceStart-page" element={<AttendanceForm />} />
-            <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
+            <Route path="/attandanceStart-page" 
+             element={
+          <ProtectedRoute allowedRoles={['employee']}>
+           <AttendanceForm />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/attandanceEnd-page" 
+             element={
+          <ProtectedRoute allowedRoles={['employee']}>
+        <AttendanceEndForm />
+          </ProtectedRoute>
+        }
+      />
+
+      
+      <Route path="/task-show-page" 
+             element={
+          <ProtectedRoute allowedRoles={['employee']}>
+               <TaskShowPage />
+          </ProtectedRoute>
+        }
+      />
+
+          
+
+         
             <Route path="/user-location" element={<LiveCoordinates/>} />
           npm 
             {/* Others Page */}

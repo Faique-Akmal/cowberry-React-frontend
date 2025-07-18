@@ -148,7 +148,7 @@ export default function AttendanceForm() {
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {formData.username && (
+        {/* {formData.username && (
           <div>
             <label className="text-sm font-medium">Username:</label>
             <p className="text-gray-700">{formData.username}</p>
@@ -162,7 +162,7 @@ export default function AttendanceForm() {
               {formData.start_lat}, {formData.start_lng}
             </p>
           </div>
-        )}
+        )} */}
 
         <div>
           <label className="block text-sm font-medium">Description:</label>
@@ -182,7 +182,7 @@ export default function AttendanceForm() {
             accept="image/*"
             onChange={(e) => handleFileChange(e, 'odometer_image')}
             required
-            className="w-full"
+            className="w-full border px-3 py-2 rounded"
           />
         </div>
 
@@ -193,7 +193,7 @@ export default function AttendanceForm() {
             accept="image/*"
             onChange={(e) => handleFileChange(e, 'selfie_image')}
             required
-            className="w-full"
+            className="w-full border px-3 py-2 rounded"
           />
         </div>
 

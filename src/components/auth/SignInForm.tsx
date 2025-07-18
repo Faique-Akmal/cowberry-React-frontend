@@ -30,6 +30,7 @@ export default function SignInForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    
     // Basic validation
     if (!employeeCode.trim() || !password.trim()) {
       setMessage("Please enter both employee code and password.");
@@ -52,6 +53,8 @@ export default function SignInForm() {
 
       if (response.data?.message === "Login successful") {
         setMessage("Login successful!");
+
+        localStorage.setItem("role", response.data?.role  || "employee" ); // Save user role
         
        
         // Save token if provided

@@ -11,7 +11,7 @@ type User = {
   employee_code: string;
   role: number;
   profile_image: string | null;
-  is_active: boolean;
+  // is_active: boolean;
 };
 
 type PaginationResponse = {
@@ -41,7 +41,7 @@ const UserPagination: React.FC = () => {
           },
           params: {
             page,
-            limit: 9,
+            limit: 10,
             username: username || "",
             sort_by: "username",
             sort_order: sortOrder,
@@ -80,7 +80,7 @@ const UserPagination: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="">
       <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
 
       <div className="mb-4 flex justify-center">
@@ -111,7 +111,7 @@ const UserPagination: React.FC = () => {
                 <th className="py-2 px-4 text-left">Mobile</th>
                 <th className="py-2 px-4 text-left">Employee Code</th>
                 <th className="py-2 px-4 text-left">Role</th>
-                <th className="py-2 px-4 text-left">Status</th>
+                {/* <th className="py-2 px-4 text-left">Status</th> */}
               </tr>
             </thead>
             <tbody>
@@ -124,13 +124,13 @@ const UserPagination: React.FC = () => {
                     <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
                     <td className="py-2 px-4">{user.employee_code}</td>
                     <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
-                    <td className="py-2 px-4">
+                    {/* <td className="py-2 px-4">
                       {user.is_active ? (
                         <span className="text-green-600 font-medium">Active</span>
                       ) : (
                         <span className="text-red-500 font-medium">Inactive</span>
                       )}
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               ) : (

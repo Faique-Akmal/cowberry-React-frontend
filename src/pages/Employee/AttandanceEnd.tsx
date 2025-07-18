@@ -134,7 +134,7 @@ export default function AttendanceEndForm() {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow-md">
+    <div className="max-w-xl mx-auto mt-10 p-6 bg-transparent rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-center"> End Attendance</h2>
 
       {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
@@ -144,11 +144,11 @@ export default function AttendanceEndForm() {
         disabled={locationFetched}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ? '✅ Location Fetched' : 'Get User Info & Location'}
+        {locationFetched ? ' Location Fetched' : 'Get User Info & Location'}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {formData.username && (
+        {/* {formData.username && (
           <div>
             <label className="text-sm font-medium">Username:</label>
             <p className="text-gray-700">{formData.username}</p>
@@ -162,7 +162,7 @@ export default function AttendanceEndForm() {
               {formData.end_lat}, {formData.end_lng}
             </p>
           </div>
-        )}
+        )} */}
 
         <div>
           <label className="block text-sm font-medium">Description:</label>
@@ -182,7 +182,7 @@ export default function AttendanceEndForm() {
             accept="image/*"
             onChange={(e) => handleFileChange(e, 'odometer_image')}
             required
-            className="w-full"
+             className="w-full border px-3 py-2 rounded"
           />
         </div>
 
@@ -193,7 +193,7 @@ export default function AttendanceEndForm() {
             accept="image/*"
             onChange={(e) => handleFileChange(e, 'selfie_image')}
             required
-            className="w-full"
+              className="w-full border px-3 py-2 rounded"
           />
         </div>
 

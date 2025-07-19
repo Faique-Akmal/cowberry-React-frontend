@@ -8,6 +8,9 @@ import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import Home from "../../pages/Dashboard/Home";
+// import EmployeeDashboard from "../../pages/Dashboard/EmployeeDashboard";
+// import Home from "../../pages/Dashboard/Home";
 
 export default function SignInForm() {
   const { login } = useAuth();
@@ -50,16 +53,21 @@ export default function SignInForm() {
         }
       );
 
-
+         
       if (response.data?.message === "Login successful") {
         setMessage("Login successful!");
-
-        localStorage.setItem("role", response.data?.role  || "employee" ); // Save user role
+      
         
+         localStorage.setItem("userRole", response.data.role); // e.g., "admin" or "employee"
+
+
+
        
         // Save token if provided
 
         login(response.data?.refresh, response.data?.access);
+
+        
 
 
         const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
@@ -78,6 +86,8 @@ export default function SignInForm() {
 
   if (userRole === "employee") {
     if (isVerified) {
+      // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
+
       navigate("/attandanceStart-page", { replace: true });  
     } else {
       navigate("/LoginWithOtp", { replace: true });    
@@ -85,7 +95,7 @@ export default function SignInForm() {
   } else {
     if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager") {
       if (isVerified) {
-      navigate("/dashboard", { replace: true });  
+      navigate( "/home");  
     } else {
       navigate("/LoginWithOtp", { replace: true });    
     }   

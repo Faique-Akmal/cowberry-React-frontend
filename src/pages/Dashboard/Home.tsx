@@ -10,7 +10,7 @@ import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
 import Customers from "../../components/ecommerce/Customers";
 import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
 import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
-import ChatBox from "../../components/chat/ChatBox";
+
 
 
 export default function Home() {
@@ -18,7 +18,7 @@ export default function Home() {
     <>
       <PageMeta
         title="DASHBOARD"
-        description="To build a mobile-based location tracker app for field employees and a web-based dashboard for HR/Admin and reporting managers to monitor attendance, task completion, and real-time location tracking."
+        description=""
       />
       <div className="grid gap-12 md:gap-4">
         <div className="col-span-3 sapce-x-4 xl:col-span-12">

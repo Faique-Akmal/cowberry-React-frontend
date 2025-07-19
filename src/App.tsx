@@ -30,6 +30,8 @@ import AttendanceForm from "./pages/Employee/AttandanceStart";
 import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import TaskCalendar from "./pages/Employee/TaskCalendar";
+import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -39,59 +41,57 @@ export default function App() {
       
         <ScrollToTop />
         <Routes>
+       
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
             
-
+              <Route  path="/" element={<SignIn />} />
               
           {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
+          <Route  element={<AppLayout />}>
 
+                
+                  
            {/* Home Page */}
-            <Route index path="/" element={<Home />} />
+
+            <Route  path="/home" element={  <ProtectedRoute allowedRoles={['admin' , 'hr', 'department_head', 'manager']}>
+                        <Home />
+          </ProtectedRoute>}  />
 
             {/* User Registration Page */}
-            <Route path="/user-register" element={<RegistrationPage />} />
+            <Route path="/user-register" element={
+               <ProtectedRoute allowedRoles={['admin' , 'hr', 'department_head', 'manager']}>
+             <RegistrationPage />
+          </ProtectedRoute>
+            } />
 
 
            
             
             {/* Dashboard Pages */}
-            <Route path="/dashboard" element={<Home />} />
+            {/* <Route path="/dashboard" element={
+           /> */}
 
         
             {/* Employee Pages */}
-            <Route path="/attandanceStart-page" 
-             element={
-          <ProtectedRoute allowedRoles={['employee']}>
-           <AttendanceForm />
-          </ProtectedRoute>
-        }
-      />
+            <Route path="/attandanceStart-page" element={<ProtectedRoute allowedRoles={['employee']}> <AttendanceForm /></ProtectedRoute>}/>
 
-      <Route path="/attandanceEnd-page" 
-             element={
-          <ProtectedRoute allowedRoles={['employee']}>
-        <AttendanceEndForm />
-          </ProtectedRoute>
-        }
-      />
+            <Route path="/attandanceEnd-page" element={<ProtectedRoute allowedRoles={['employee']}><AttendanceEndForm /></ProtectedRoute>} />
 
       
-      <Route path="/task-show-page" 
-             element={
-          <ProtectedRoute allowedRoles={['employee']}>
-               <TaskShowPage />
-          </ProtectedRoute>
-        }
-      />
+           <Route path="/task-show-page" element={<ProtectedRoute allowedRoles={['employee']}><TaskShowPage /></ProtectedRoute>} />
+           <Route path="/task-calendar" element={<ProtectedRoute allowedRoles={['employee']}><TaskCalendar /></ProtectedRoute>} />
+           <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDashboard/> </ProtectedRoute>} />
 
           
 
          
             <Route path="/user-location" element={<LiveCoordinates/>} />
-          npm 
+
+
+            
+      
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/chat" element={<ChatBox />} />
@@ -102,9 +102,9 @@ export default function App() {
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-            <Route path="/task-page" element={<TaskPage />} />
-            <Route path="/task-show-page" element={<TaskShowPage />} />
+            <Route path="/basic-tables" element={ <ProtectedRoute allowedRoles={['admin', 'hr' ,'department_head','manager' ]}><BasicTables /></ProtectedRoute> } />
+            <Route path="/assign-task-page" element={ <ProtectedRoute allowedRoles={['admin', 'hr' ,'department_head','manager', ]}><TaskPage /></ProtectedRoute>} />
+            {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

@@ -38,8 +38,6 @@ const ChatBox: React.FC = () => {
 
   },[activeChat])
   
-  console.log("activeChat:", activeChat);
-
   console.count("ChatBox rendered");
 
   return (

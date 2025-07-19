@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Members } from "../../store/chatStore"
+import Avatar from "../ui/avatar/Avatar";
 
 interface Props{
   members:Members[]
@@ -50,7 +51,7 @@ const MemberDropdown:React.FC<Props> = ({members}) => {
         onClose={closeDropdown}
         className="-translate-x-12 absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+        <ul className="custom-scrollbar overflow-y-auto overflow-hidden h-58 flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
          {members?.length > 0 ? members.map((member)=>(
           <li key={member?.id}>
             <DropdownItem
@@ -58,7 +59,17 @@ const MemberDropdown:React.FC<Props> = ({members}) => {
               tag="button"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
+              <div className="flex gap-2 justify-center items-center">
+                <div>
+                  <Avatar
+                    src="/images/user/user-01.jpg"
+                    size="large"
+                    status={member?.is_online ? "online" : "offline"}
+                  />                </div>
+              <p className="capitalize">
               {member?.username}
+              </p>
+              </div>
             </DropdownItem>
           </li>
           )) : ( <li>
@@ -67,7 +78,7 @@ const MemberDropdown:React.FC<Props> = ({members}) => {
               tag="button"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              {"No Members!"}
+              <p>"Members Not Found!"</p>              
             </DropdownItem>
             </li>)
          }

@@ -2,7 +2,6 @@ import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
 import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
 
 import EmployeeStatus from "../../components/ecommerce/EmployeeStatus";
-// import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
 import MapComponent from "../../components/Maps/MapComponent";
 import EmployeeChart from "../../components/ecommerce/EmployeeChart";
@@ -10,7 +9,6 @@ import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
 import Customers from "../../components/ecommerce/Customers";
 import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
 import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
-import ChatBox from "../../components/chat/ChatBox";
 
 
 export default function Home() {

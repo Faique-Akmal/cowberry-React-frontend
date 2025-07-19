@@ -7,6 +7,7 @@ import Label from "../form/Label";
 import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
 import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
+import LastChatMsg from "./LastChatMsg";
 
 interface Props {
   groups: AxiosAllGroup[];
@@ -25,19 +26,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [users, setUsers] = useState<AxiosGetUsers[]>([]);
  
-  console.log("users : ",users)
   const [userOptions, setUserOptions] = useState<Option[]>([]);
-
-  useEffect(() => {
-    if (users.length > 0) {
-      const transformed = users.map<Option>(user => ({
-        value: user?.id,
-        name: user?.username,
-      }));
-      setUserOptions(transformed);
-    }
-
-  }, [users]);
 
   const handleSave = (e:FormEvent) => {
      e.preventDefault();
@@ -55,6 +44,17 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   };
 
   useEffect(() => {
+    if (users.length > 0) {
+      const transformed = users.map<Option>(user => ({
+        value: user?.id,
+        name: user?.username,
+      }));
+      setUserOptions(transformed);
+    }
+
+  }, [users]);
+
+  useEffect(() => {
     ;(async ()=>{
       const allUsers = await axiosGetUsers();
 
@@ -64,6 +64,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
     }
     )();
   }, []);
+  
   
   return (
     <>
@@ -94,13 +95,13 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
 
       <div className="h-11/12 py-2 custom-scrollbar overflow-y-auto overflow-hidden">
         {
-          groups.length <= 0 ?
+          groups?.length <= 0 ?
           <div className="flex items-center justify-center">
-            <p className="text-white">No Chat Group Found...</p> 
+            <p className="text-white">Chat Group Not Found...</p> 
             {/* <Spinner text="Loading Chat Group..." /> */}
           </div>
           : <div className="">
-          {groups.map((group) => (
+          {groups?.map((group) => (
           <div
           key={group?.group_id}
           onClick={() => onSelectChat(group?.group_id)}
@@ -111,9 +112,9 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
           </span>
           <div>
             <h3 className="font-semibold">{group?.group_name}</h3>
-            <p className="text-sm text-gray-300">
-              {/* {chat.messages[chat.messages.length - 1]?.text} */}
-            </p>
+            <div className="text-sm text-dashboard-brown-200">
+              <LastChatMsg groupId={group?.group_id} />
+            </div>
           </div>
         </div>
         ))}

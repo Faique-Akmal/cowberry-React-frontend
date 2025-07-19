@@ -2,7 +2,7 @@
 import axios from "axios";
 
 export const startTokenRefreshInterval = () => {
-  const refreshInterval = 3 * 60 * 1000; // 29 minutes
+  const refreshInterval = 29 * 60 * 1000; // 29 minutes
 
   const intervalId = setInterval(async () => {
     const refreshToken = localStorage.getItem("refreshToken");

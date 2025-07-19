@@ -7,7 +7,6 @@ interface Props {
   group: AxiosAllGroup; 
   allMsg: AxiosGetGroupMsg[];
   dispatch: React.Dispatch<React.SetStateAction<never[]>>;
-  // onAllMsg: (allMsg: AxiosGetGroupMsg[])=> void;
 }
 
 const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
@@ -31,8 +30,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
           if(group?.group_id){
             const groupMsg = await axiosGetGroupMsg(group?.group_id);
             if(groupMsg.length > 0){
-              console.log("groupMsg : ", groupMsg)
-              dispatch(groupMsg)
+              dispatch(groupMsg);
             } else dispatch([]);
           }
         })();
@@ -89,7 +87,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
             </div>
           </div>
         )): (
-          <p className="text-center w-full text-2xl font-bold text-dashboard-brown-200">No Chat Found!</p>
+          <p className="text-center w-full text-2xl font-bold text-dashboard-brown-200">Chat Not Found!</p>
         )} 
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">

@@ -95,3 +95,19 @@ export const axiosPostSendMsg = async (newMsg:AxiosPostSendMsg) => {
         console.error("'/chat/group/create/' post error:", error);
       }
 };
+
+// GET
+// /chat/messages/users/{user_id}/status/
+
+export const axiosGetUserStatus = async (userId:number) => {
+  try {
+          const res = await API.post(`chat/messages/users/${userId}/status/`);
+
+          if(res.data){
+            console.log(res.data)
+            return res.data;
+          }
+      } catch (error) {
+        console.error("/chat/messages/users/{user_id}/status/ get request error:", error);
+      }
+};

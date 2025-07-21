@@ -32,6 +32,7 @@ import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
 import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
+import LiveUserLocation from "./pages/Employee/LiveUserLocation";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -55,15 +56,11 @@ export default function App() {
                   
            {/* Home Page */}
 
-            <Route  path="/home" element={  <ProtectedRoute allowedRoles={['admin' , 'hr', 'department_head', 'manager']}>
-                        <Home />
-          </ProtectedRoute>}  />
+            <Route  path="/home" element={   <Home />  }  />
 
             {/* User Registration Page */}
-            <Route path="/user-register" element={
-               <ProtectedRoute allowedRoles={['admin' , 'hr', 'department_head', 'manager']}>
-             <RegistrationPage />
-          </ProtectedRoute>
+            <Route path="/user-register" element={ <RegistrationPage />
+             
             } />
 
 
@@ -75,19 +72,25 @@ export default function App() {
 
         
             {/* Employee Pages */}
-            <Route path="/attandanceStart-page" element={<ProtectedRoute allowedRoles={['employee']}> <AttendanceForm /></ProtectedRoute>}/>
+            {/* <Route path="/attandanceStart-page" element={<AttendanceForm/>}/> */}
+            <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
 
-            <Route path="/attandanceEnd-page" element={<ProtectedRoute allowedRoles={['employee']}><AttendanceEndForm /></ProtectedRoute>} />
+            <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
 
       
-           <Route path="/task-show-page" element={<ProtectedRoute allowedRoles={['employee']}><TaskShowPage /></ProtectedRoute>} />
-           <Route path="/task-calendar" element={<ProtectedRoute allowedRoles={['employee']}><TaskCalendar /></ProtectedRoute>} />
-           <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDashboard/> </ProtectedRoute>} />
+           <Route path="/task-show-page" element={
+          <TaskShowPage />} />
+           <Route path="/task-calendar" element={  <TaskCalendar />} />
+           {/* <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}></ProtectedRoute>} /> */}
+           <Route path="/employee-dashboard" element={<EmployeeDashboard/> } />
+
 
           
 
          
             <Route path="/user-location" element={<LiveCoordinates/>} />
+
+            {/* <Route path="/live-user-location" element={<LiveUserLocation/>} /> */}
 
 
             
@@ -102,8 +105,8 @@ export default function App() {
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={ <ProtectedRoute allowedRoles={['admin', 'hr' ,'department_head','manager' ]}><BasicTables /></ProtectedRoute> } />
-            <Route path="/assign-task-page" element={ <ProtectedRoute allowedRoles={['admin', 'hr' ,'department_head','manager', ]}><TaskPage /></ProtectedRoute>} />
+            <Route path="/basic-tables" element={<BasicTables /> } />
+            <Route path="/assign-task-page" element={ <TaskPage />} />
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}

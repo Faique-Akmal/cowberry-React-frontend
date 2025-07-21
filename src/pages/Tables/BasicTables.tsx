@@ -7,7 +7,7 @@ import UserPagination from "../Employee/UserPagination";
 export default function BasicTables() {
   return (
     <>
-      <PageMeta title="userPagination Dashboard"/>
+    
     
       <div >
         <PageBreadcrumb title="User Pagination"/>

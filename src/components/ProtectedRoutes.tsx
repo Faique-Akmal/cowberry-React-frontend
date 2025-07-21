@@ -6,7 +6,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const role = localStorage.getItem('role');
 
   if (!role || !allowedRoles.includes(role)) {
-    return <Navigate to="/blank" />;
+    return <Navigate to="/sigin" />;
   }
 
   return children;

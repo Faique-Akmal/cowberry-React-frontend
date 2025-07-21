@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+
 import API from "../../api/axios";
 
 const TaskPage = () => {

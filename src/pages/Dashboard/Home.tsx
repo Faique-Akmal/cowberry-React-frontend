@@ -1,15 +1,15 @@
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
+import EcommerceMetrics from "../../components/admin/EcommerceMetrics";
+import MonthlySalesChart from "../../components/admin/MonthlySalesChart";
 
-import EmployeeStatus from "../../components/ecommerce/EmployeeStatus";
+import EmployeeStatus from "../../components/admin/EmployeeStatus";
 // import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
 import MapComponent from "../../components/Maps/MapComponent";
-import EmployeeChart from "../../components/ecommerce/EmployeeChart";
-import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
-import Customers from "../../components/ecommerce/Customers";
-import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
-import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
+import EmployeeChart from "../../components/admin/EmployeeChart";
+import BirthdaysToday from "../../components/admin/BirthdayCard";
+import Customers from "../../components/admin/Customers";
+import JobApplicationCard from "../../components/admin/JobApplicationCard";
+import JobRejectionCard from "../../components/admin/JobRejectionCard";
 
 
 

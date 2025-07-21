@@ -78,7 +78,7 @@ export default function ChangePasswordModal({
         <h2 className="text-xl font-semibold mb-4 text-center">Change Password</h2>
 
         <div className="mb-4">
-          <label className="block mb-1 text-sm font-medium">Old Password</label>
+          <label className="block mb-1 text-sm font-medium">Temporary Password</label>
           <input
             type="password"
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

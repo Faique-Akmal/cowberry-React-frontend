@@ -1,25 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
-  BoxCubeIcon,
+  
   CalenderIcon,
   ChatIcon,
   ChevronDownIcon,
   GridIcon,
-  HorizontaLDots,
+ 
   ListIcon,
-  PageIcon,
-  PieChartIcon,
+
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import API from "../api/axios";
 
 
-const userRole = localStorage.getItem("userRole" );
+
+
 
 interface UserProfile {
 
@@ -63,7 +62,7 @@ const navItems: NavItem[] = [
     icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
-    role: ["admin" , "department_head" ,"manager" , "hr"],
+    role: ["admin" ,"employee", "department_head" ,"manager" , "hr"],
   },
   {
     icon: <ChatIcon />,
@@ -103,6 +102,12 @@ const navItems: NavItem[] = [
     path: "/task-show-page",
     role: ["employee"],
   },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: "live location",
+  //   path: "/live-user-location",
+   
+  // },
   // {
   //   name: "Pages",
   //   icon: <PageIcon />,
@@ -153,41 +158,9 @@ const AppSidebar: React.FC = () => {
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
+  const userRole = localStorage.getItem("userRole" );
 
 
-  // CALLING ME API
-
-//  const [user, setUser] = useState<UserProfile | null>(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(false);
-
-//   useEffect(() => {
-//     const fetchUser = async () => {
-//       try {
-//         const accessToken = localStorage.getItem("accessToken"); // Adjust key if needed
-//         const response = await API.get<UserProfile>(
-//           "/me/",
-        
-//         );
-//         setUser(response.data);
-//       } catch (err) {
-//         console.error("Failed to load user data:", err);
-//         setError(true);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUser();
-//   }, []);
-
-//   const getRoleName = (roleId: number): string => {
-//       const roleObj = role.find((r) => r.id === roleId);
-//       return roleObj ? roleObj.name : "Unknown";
-//     };
-
-//     getRoleName;
-  //ME API 
 
   useEffect(() => {
     let submenuMatched = false;
@@ -320,11 +293,11 @@ const AppSidebar: React.FC = () => {
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-xs text-gray-400 uppercase mb-4">Menu</h2>
+              <h2 className="text-xs text-gray-600 uppercase mb-4">Menu</h2>
               {renderMenuItems(navItems, "main")}
             </div>
             <div>
-              <h2 className="text-xs text-gray-400 uppercase mb-4">Others</h2>
+              <h2 className="text-xs text-gray-600 uppercase mb-4">Others</h2>
               {renderMenuItems(othersItems, "others")}
             </div>
           </div>

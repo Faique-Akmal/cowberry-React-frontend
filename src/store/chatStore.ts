@@ -96,9 +96,6 @@ export const axiosPostSendMsg = async (newMsg:AxiosPostSendMsg) => {
       }
 };
 
-// GET
-// /chat/messages/users/{user_id}/status/
-
 export const axiosGetUserStatus = async (userId:number) => {
   try {
           const res = await API.post(`chat/messages/users/${userId}/status/`);

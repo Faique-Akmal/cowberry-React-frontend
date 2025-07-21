@@ -7,7 +7,7 @@ import { Link } from "react-router";
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const {username , email} = JSON.parse(localStorage.getItem("meuser") || "{}"); // Retrieve username from localStorage
+  const {username , email} = JSON.parse(localStorage.getItem("meUser") || "{}"); // Retrieve username from localStorage
 
 
   function toggleDropdown() {

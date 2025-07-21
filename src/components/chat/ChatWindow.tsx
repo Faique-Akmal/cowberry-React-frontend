@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
-import { axiosGetMe } from "../../store/userStore";
+// import { axiosGetMe } from "../../store/userStore";
 import MemberDropdown from "./MemberDropdown";
 
 interface Props {
@@ -51,13 +51,8 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
   }
 
   useEffect(()=>{
-    ;(async ()=>{
-      const meData = await axiosGetMe();
-
-      if(meData){
-        setMeUserId(meData?.id);
-      }
-    })();
+      const localMeData = localStorage.getItem("meUser")!
+      setMeUserId(JSON.parse(localMeData)?.id);
   },[]);
 
   return (

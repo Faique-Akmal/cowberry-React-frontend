@@ -1,61 +1,87 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import axios from "axios";
+// import axios from "axios";
 import { role , department } from "../../store/store";
+import { AxiosGetMe } from "../../store/userStore";
 
+// {
+//     "id": 4,
+//     "username": "parthiv",
+//     "email": "parthiv.cowberry@gmail.com",
+//     "role": 1,
+//     "department": 1,
+//     "mobile_no": null,
+//     "birth_date": null,
+//     "address": null,
+//     "profile_image": null
+// }
 
 export default function UserInfoCard() {
-  const [user, setUser] = useState({
-    id: '',
-    username: '',
-    first_name: '',
-    last_name: '',
-    email: '',
-    role: '',
-    department: '',
-    mobile_no: '',
-    birth_date: '',
-    address: '',
-    profile_image: ''
-  });
+  const [user, setUser] = useState<AxiosGetMe| null>(null);
+  const [userRole, setRole] = useState<string>("");
+  const [userDepartment, setDepartment] = useState<string>("");
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // const [user, setUser] = useState({
+  //   id: '',
+  //   username: '',
+  //   first_name: '',
+  //   last_name: '',
+  //   email: '',
+  //   role: '',
+  //   department: '',
+  //   mobile_no: '',
+  //   birth_date: '',
+  //   address: '',
+  //   profile_image: ''
+  // });
+
+  const localMeData = localStorage.getItem("meUser")!
+  const meUserData = JSON.parse(localMeData)!
+
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState('');
 
   // Create a persistent Axios instance
 
-  const axiosInstance = axios.create({
-    baseURL: "http://192.168.0.144:8000/api",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  // const axiosInstance = axios.create({
+  //   baseURL: "http://192.168.0.144:8000/api",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  // });
      
-   const getRoleName = (roleId: number): string => {
+   const getRoleName = (roleId: number) => {
       const roleObj = role.find((r) => r.id === roleId);
-      return roleObj ? roleObj.name : "Unknown";
+      const roleName = roleObj ? roleObj.name : "Unknown";
+      if(user){
+        setRole(roleName);
+      }
     };
     
-  const getDepartmentName = (departmentId: number): string => {
+  const getDepartmentName = (departmentId: number) => {
       const departmentObj = department.find((d) => d.id === departmentId);
-      return departmentObj ? departmentObj.name : "Unknown";
+      const departmentName = departmentObj ? departmentObj.name : "Unknown";
+
+      if(user){
+        setDepartment(departmentName);
+      }
     };
   // Add request interceptor (runs once)
-  axiosInstance.interceptors.request.use((config) => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  });
+  // axiosInstance.interceptors.request.use((config) => {
+  //   const accessToken = localStorage.getItem("accessToken");
+  //   if (accessToken) {
+  //     config.headers.Authorization = `Bearer ${accessToken}`;
+  //   }
+  //   return config;
+  // });
 
   
 
   // Add response interceptor for token refreshing
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
+  // axiosInstance.interceptors.response.use(
+  //   (response) => response,
+  //   async (error) => {
+  //     const originalRequest = error.config;
 
 
   //     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -83,32 +109,43 @@ export default function UserInfoCard() {
   //     return Promise.reject(error);
   //   }
   // );
-    }
-    );
+  //   }
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
+    // const fetchUser = async () => {
+    //   try {
+    //     setLoading(true);
 
-        const response = await axiosInstance.get(`/me/`);
-     localStorage.setItem("meuser" , JSON.stringify(response.data)); 
+    //     const response = await axiosInstance.get(`/me/`);
+    //  localStorage.setItem("meuser" , JSON.stringify(response.data)); 
 
-        setUser(response.data);
 
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch user details.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      // } catch (err) {
+      //   console.error(err);
+      //   setError("Failed to fetch user details.");
+      // } finally {
+      //   setLoading(false);
+      // }
+    // };
 
-    fetchUser();
+    // fetchUser();
+    setUser(meUserData);
+
+    
   }, []);
 
-  if (loading) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-600">{error}</div>;
+  useEffect(()=>{
+    if(user){
+      getRoleName(user?.role);
+      getDepartmentName(user?.department);
+    }
+  },[user])
+
+  // console.log(user)
+
+  if (!meUserData) return <div className="p-4">Failed to load user data profile. Please try again later.</div>;
+  // if (loading) return <div className="p-4">Loading...</div>;
+  // if (error) return <div className="p-4 text-red-600">{error}</div>;
 
   return (
     <div className="p-3 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -127,7 +164,7 @@ export default function UserInfoCard() {
                 First Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-              {user.first_name|| "N/A"}
+              {user?.first_name|| "N/A"}
               </p>
             </div>
 
@@ -136,7 +173,7 @@ export default function UserInfoCard() {
                 Last Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-                {user.last_name|| "N/A"}
+                {user?.last_name|| "N/A"}
               </p>
             </div>
 
@@ -145,7 +182,7 @@ export default function UserInfoCard() {
                 Email address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-            {user.email}
+            {user?.email || "N/A"}
               </p>
             </div>
 
@@ -154,7 +191,7 @@ export default function UserInfoCard() {
                 Phone
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-              {user.mobile_no || "N/A"}
+              {user?.mobile_no || "N/A"}
               </p>
             </div>
 
@@ -163,7 +200,7 @@ export default function UserInfoCard() {
               Role
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-             {getRoleName(user.role)}
+             {userRole}
               </p>
             </div>
              <div>
@@ -171,7 +208,7 @@ export default function UserInfoCard() {
                 Department
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-             {getDepartmentName(user.department)}
+             {userDepartment}
               </p>
             </div>
                <div>
@@ -179,7 +216,7 @@ export default function UserInfoCard() {
                 Address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-             {user.address}
+             {user?.address || "N/A"}
               </p>
             </div>
           </div>

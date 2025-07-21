@@ -102,12 +102,12 @@ const navItems: NavItem[] = [
     path: "/task-show-page",
     role: ["employee"],
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "live location",
-  //   path: "/live-user-location",
+  {
+    icon: <CalenderIcon />,
+    name: "Employee Tracker",
+    path: "/live-tracking",
    
-  // },
+  },
   // {
   //   name: "Pages",
   //   icon: <PageIcon />,

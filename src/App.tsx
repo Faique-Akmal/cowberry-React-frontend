@@ -33,6 +33,7 @@ import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
 import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 import LiveUserLocation from "./pages/Employee/LiveUserLocation";
+import LiveTracking from "./pages/Employee/LiveTracking";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -87,10 +88,10 @@ export default function App() {
 
           
 
-         
-            <Route path="/user-location" element={<LiveCoordinates/>} />
+{/*          
+            <Route path="/user-location" element={<LiveCoordinates/>} /> */}
 
-            {/* <Route path="/live-user-location" element={<LiveUserLocation/>} /> */}
+            <Route path="/live-tracking" element={<LiveTracking/>} />
 
 
             

@@ -27,7 +27,6 @@ import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
-import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
@@ -61,7 +60,6 @@ export default function App() {
             {/* Employee Pages */}
             <Route path="/attandanceStart-page" element={<AttendanceForm />} />
             <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
-            <Route path="/user-location" element={<LiveCoordinates/>} />
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

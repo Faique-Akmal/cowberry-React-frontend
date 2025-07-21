@@ -45,7 +45,7 @@ const ChatBox: React.FC = () => {
   return (
      <div className="bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
       <div className="mb-4 w-full flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-        <ChatSocket />
+        <ChatSocket groupId={activeChatId} allMsg={allMsg} />
       </div>
       <div className="flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
         <ChatList groups={groups} activeChatId={activeChatId} onSelectChat={setActiveChatId} />

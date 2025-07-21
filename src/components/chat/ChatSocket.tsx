@@ -1,16 +1,20 @@
 // src/components/ChatSocket.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import ReconnectingWebSocket from 'reconnecting-websocket';
+import { AxiosGetGroupMsg } from "../../store/chatStore"
 
+interface Props {
+  groupId: number; 
+  allMsg: AxiosGetGroupMsg[];
+}
 interface WSMessage {
   sender: string;
   message: string;
 }
 
 const SOCKET_URL=import.meta.env.VITE_SOCKET_URL;
-const groupId = 1;
 
-const ChatSocket: React.FC = () => {
+const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const [input, setInput] = useState('');
   const socketRef = useRef<ReconnectingWebSocket | null>(null);
@@ -19,8 +23,17 @@ const ChatSocket: React.FC = () => {
   const localMeData = localStorage.getItem("meUser")!
   const meUserData = JSON.parse(localMeData)!
 
-  // console.log("me user data : ",meUserData)
+  const newMsg = allMsg?.map(({sender, content})=>({sender:`${sender}`, message:content}))
   
+  useEffect(()=>{
+    
+    setClientId(meUserData?.id);
+  }, []);
+  
+  useEffect(()=>{
+    setMessages(newMsg);    
+  }, [allMsg]);
+
   useEffect(() => {
     const ws = new ReconnectingWebSocket(`ws:${SOCKET_URL}/ws/chat/${groupId}/`);
     socketRef.current = ws;
@@ -30,19 +43,19 @@ const ChatSocket: React.FC = () => {
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)!;
-       console.log("data : ", data);
+      console.log("Raw event data:", event.data);
 
-      if (data.type === 'connection') {
-        setClientId(data.id);
-      } else if (data.message) {
-        setMessages(prev => [...prev, { sender: data.sender, message: data.message }]);
-//         setMessages(prev => [...prev, {
-//   action: "send_message",
-//   message_type: "text",
-//   content: "Hello via WebSocket!",
-//   recipient_id: 5
-// }]);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Parsed data:", data);
+
+        if (data.type === 'connection') {
+          setClientId(data?.id || meUserData?.id);
+        } else if (data.message) {
+          setMessages(prev => [...prev, { sender: data.sender, message: data.message }]);
+        }
+      } catch (err) {
+        console.warn("Failed to parse message ❌", err);
       }
     };
 
@@ -54,7 +67,7 @@ const ChatSocket: React.FC = () => {
     return () => {
       ws.close();
     };
-  }, []);
+  }, [groupId]);
 
   const sendMessage = () => {
     if (socketRef.current && input.trim() !== '') {
@@ -62,33 +75,19 @@ const ChatSocket: React.FC = () => {
       setMessages(prev => [...prev, { sender: clientId, message: input }]);
       setInput('');
     }
-    // console.log("send messages",sendMessage);
   };
 
 
   return (
     <div className='w-full'>
-      <h2>WebSocket Chat</h2>
-
-      {/* <div className="space-y-1 mb-4">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`p-2 rounded ${
-              msg.sender === clientId ? 'bg-blue-100 text-right' : 'bg-gray-200 text-left'
-            }`}
-          >
-            {msg.message}
-          </div>
-        ))}
-      </div> */}
+      <h2 className='text-dashboard-royalblue-200'>WebSocket Chat</h2>
 
       <div className="h-[50vh] custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {messages.length > 0 ? messages.map((msg, id) => (
           <div
             key={id}
             className={`max-w-xs flex flex-col p-2 rounded-lg ${
-              clientId === msg?.sender
+              +msg?.sender === +clientId
                 ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
                 : "bg-brand-400 text-white self-start rounded-bl-none"
             }`}

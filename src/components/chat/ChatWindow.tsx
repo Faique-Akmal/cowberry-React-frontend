@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
-// import { axiosGetMe } from "../../store/userStore";
 import MemberDropdown from "./MemberDropdown";
 
 interface Props {

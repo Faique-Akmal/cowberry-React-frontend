@@ -1,95 +1,70 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import API from "../../api/axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 
-const defaultIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+// Fix default icon issue
+import 'leaflet/dist/leaflet.css';
+import API from '../../api/axios';
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-interface EmployeeLocation {
+interface UserLocation {
   user: number;
   username: string;
-  latitude: string;
-  longitude: string;
-  battery_level: number;
+  latitude: number;
+  longitude: number;
+  battery_level?: number;
   is_paused: boolean;
 }
 
-const LiveTracking = () => {
-  const [locations, setLocations] = useState<EmployeeLocation[]>([]);
-  const [loading, setLoading] = useState(true);
+const LiveUserTracker = () => {
+  const [locations, setLocations] = useState<UserLocation[]>([]);
 
   const fetchLocations = async () => {
     try {
-      const res = await API.get("/locations/", {
+      const res = await API.get('/locations/', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
       if (Array.isArray(res.data)) {
         setLocations(res.data);
-      } else {
-        setLocations([]);
       }
-    } catch (error) {
-      console.error("Error fetching location logs:", error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching live locations:', err);
     }
   };
 
-
-  const sendCurrentLocation = async (lat: number, lng: number) => {
-  try {
-    const payload = {
-      latitude: lat,
-      longitude: lng,
-      user: 12, // employee ID
-      battery_level: 75,
-      is_paused: false,
-    };
-    await API.post("/locations/", payload, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
-    });
-  } catch (err) {
-    console.error("Error posting location", err);
-  }
-};
-
-
   useEffect(() => {
-    fetchLocations();
-    const interval = setInterval(fetchLocations, 30000); // Refresh every 30 sec
-    return () => clearInterval(interval); // Cleanup on unmount
+    fetchLocations(); // Initial load
+    const interval = setInterval(fetchLocations, 30000); // Update every 30 seconds
+    return () => clearInterval(interval); // Cleanup
   }, []);
 
-  if (loading) return <div>Loading Live Locations...</div>;
-
   return (
-    <div className="h-screen w-full p-4">
-      <h2 className="text-xl font-semibold mb-4">Live Employee Locations</h2>
-      <MapContainer center={[26.75, 83.92]} zoom={5} className="h-full w-full">
+    <div className="h-[90vh] w-full">
+      <h2 className="text-xl font-bold mb-4">Live User Location Tracker</h2>
+      <MapContainer center={[26.8467, 80.9462]} zoom={6} className="h-full w-full rounded-lg">
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
         />
         {locations.map((loc) => (
-          <Marker
-            key={loc.user}
-            position={[parseFloat(loc.latitude), parseFloat(loc.longitude)]}
-            icon={defaultIcon}
-          >
+          <Marker key={loc.user} position={[loc.latitude, loc.longitude]}>
             <Popup>
-              <strong>{loc.username}</strong> <br />
-              Battery: {loc.battery_level}% <br />
-              Status: {loc.is_paused ? "Paused" : "Active"}
+              <div>
+                <p><strong>User:</strong> {loc.username}</p>
+                <p><strong>Lat:</strong> {loc.latitude.toFixed(5)}</p>
+                <p><strong>Lng:</strong> {loc.longitude.toFixed(5)}</p>
+                <p><strong>Battery:</strong> {loc.battery_level ?? 'N/A'}%</p>
+                <p><strong>Status:</strong> {loc.is_paused ? 'Paused' : 'Active'}</p>
+              </div>
             </Popup>
           </Marker>
         ))}
@@ -98,4 +73,4 @@ const LiveTracking = () => {
   );
 };
 
-export default LiveTracking;
+export default LiveUserTracker;

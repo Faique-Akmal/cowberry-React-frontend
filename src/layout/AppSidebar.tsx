@@ -88,6 +88,7 @@ const navItems: NavItem[] = [
       { name: "Users List", path: "/basic-tables", role: ["admin", "department_head" ,"manager" , "hr"] },
       { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
       { name: "Assign Task form", path: "/assign-task-page", role: ["admin" , "department_head" ,"manager" , "hr"] },
+      { name: "Task Manager", path: "/admin-task-manager", role: ["admin" , "department_head" ,"manager" , "hr"] },
     ],
   },
   {
@@ -277,7 +278,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed top-0 px-5 left-0 bg-dashboard-brown-200 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen z-50 transition-all duration-300
+      className={`fixed top-0 px-5 left-0 bg-dashboard-brown-200 dark:bg-gray-900 border-r border-gray-200 dark:text-blue-light-25 dark:border-gray-800 h-screen z-50 transition-all duration-300
       ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
       ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}

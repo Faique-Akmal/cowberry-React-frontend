@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 
 import API from "../../api/axios";
 
@@ -103,7 +103,7 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
+    <div className="max-w-md mx-auto mt-10 p-6 bg-transparent rounded-xl shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

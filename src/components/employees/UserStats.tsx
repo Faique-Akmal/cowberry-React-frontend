@@ -5,7 +5,7 @@ import API from "../../api/axios";
 interface StatsData {
   activeGoals: number;
   progress: number; // as percentage
-  is_completed: number;
+  is_completed:"";
   dueTasks: number;
 }
 
@@ -13,7 +13,7 @@ const DashboardStats: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({
     activeGoals: 0,
     progress: 0,
-     is_completed: 0,
+     is_completed: "",
     dueTasks: 0,
   });
 

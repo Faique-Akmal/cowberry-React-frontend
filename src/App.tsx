@@ -27,13 +27,14 @@ import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
-import LiveCoordinates from "./pages/Employee/LocationFetcher";
+// import LiveCoordinates from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
-import ProtectedRoute from "./components/ProtectedRoutes";
+// import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
 import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
-import LiveUserLocation from "./pages/Employee/LiveUserLocation";
+// import LiveUserLocation from "./pages/Employee/LiveUserLocation";
 import LiveTracking from "./pages/Employee/LiveTracking";
+import AdminTaskManager from "./pages/Employee/TaskManager";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -60,9 +61,7 @@ export default function App() {
             <Route  path="/home" element={   <Home />  }  />
 
             {/* User Registration Page */}
-            <Route path="/user-register" element={ <RegistrationPage />
-             
-            } />
+            <Route path="/user-register" element={ <RegistrationPage />} />
 
 
            
@@ -108,6 +107,7 @@ export default function App() {
             {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables /> } />
             <Route path="/assign-task-page" element={ <TaskPage />} />
+            <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}

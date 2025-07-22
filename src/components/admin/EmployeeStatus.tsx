@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import API from '../../api/axios'; // Custom Axios instance
+import axios from 'axios';
 
 interface User {
   id: number;
@@ -10,6 +10,8 @@ interface User {
   is_active: boolean;
   profile_img: string;
 }
+
+const API_BASE_URL = 'http://192.168.0.144:8000/api/'; // ✅ Replace with your real backend API
 
 const StatusPill = ({ status }: { status: string }) => {
   const colorClass = status === 'Online' ? 'bg-green-500' : 'bg-red-500';
@@ -37,34 +39,40 @@ const EmployeeStatus = () => {
   const [employees, setEmployees] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchEmployees = async () => {
-    try {
-      const res = await API.get('/users/', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-      });
-
-      if (Array.isArray(res.data)) {
-        setEmployees(res.data);
-      } else {
-        console.warn('Expected array, received:', res.data);
-        setEmployees([]);
-      }
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-      setEmployees([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (!accessToken) {
+          console.error('Access token not found in localStorage');
+          setLoading(false);
+          return;
+        }
+
+        const res = await axios.get(`${API_BASE_URL}/users/`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (Array.isArray(res.data)) {
+          setEmployees(res.data);
+        } else {
+          console.warn('Expected array from /users/, got:', res.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch employee data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEmployees();
   }, []);
 
-  if (loading) return <p className="p-4 text-center">Loading...</p>;
-  if (employees.length === 0) return <p className="p-4 text-center">No employees found.</p>;
+  if (loading) return <p className="p-4 text-center">Loading employee data...</p>;
+  if (!employees.length) return <p className="p-4 text-center">No employee data found.</p>;
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6 overflow-auto">
@@ -82,9 +90,8 @@ const EmployeeStatus = () => {
         </div>
 
         {employees.map((user) => (
-          <Link to={`/employee/${user.id}`} className="no-underline text-inherit" key={user.id}>
+          <Link to={`/employee/${user.id}`} key={user.id} className="no-underline text-inherit">
             <div className="grid grid-cols-4 py-4 border-b last:border-none items-center">
-              {/* Name & Role */}
               <div className="flex items-center gap-3">
                 <img
                   src={user.profile_img || '/profile.webp'}
@@ -96,19 +103,9 @@ const EmployeeStatus = () => {
                   <p className="text-xs text-gray-500 capitalize">{user.role}</p>
                 </div>
               </div>
-
-              {/* Email */}
               <div className="text-sm text-gray-800">{user.email}</div>
-
-              {/* Home Office */}
-              <div>
-                <HomeOfficePill active={user.is_active} />
-              </div>
-
-              {/* Online / Offline */}
-              <div>
-                <StatusPill status={user.is_active ? 'Online' : 'Offline'} />
-              </div>
+              <div><HomeOfficePill active={user.is_active} /></div>
+              <div><StatusPill status={user.is_active ? 'Online' : 'Offline'} /></div>
             </div>
           </Link>
         ))}
@@ -118,4 +115,3 @@ const EmployeeStatus = () => {
 };
 
 export default EmployeeStatus;
-  

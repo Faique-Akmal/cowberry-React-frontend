@@ -144,7 +144,7 @@ const AdminTaskManager = () => {
             <div>
               <h3 className="font-semibold">{task.title}</h3>
               <p className="text-sm text-gray-600">
-                Assigned to: {task.assigned_to.username}
+                Assigned to: {task.id}
               </p>
               <p className="text-sm text-gray-500">
                 Date: {dayjs(task.date).format("DD MMM YYYY")}

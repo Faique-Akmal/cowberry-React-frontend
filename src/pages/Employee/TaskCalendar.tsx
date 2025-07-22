@@ -46,7 +46,7 @@ const TaskCalendar = () => {
       setError(null);
       const response = await API.get("/my-assigned-tasks/");
       
-      console.log("API Response:", response.data);
+      console.log("API Response:", response.data.results);
 
       // Handle different API response structures
       const tasks: Task[] = response.data.results || response.data || [];

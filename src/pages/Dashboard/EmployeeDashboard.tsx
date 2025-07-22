@@ -4,6 +4,7 @@ import DashboardStats from "../../components/employees/UserStats";
 import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios"; // Axios instance with baseURL + token setup
 import TaskCalendar from "../Employee/TaskCalendar";
+import { Link } from "react-router";
 // import { IoFlowerSharp } from "react-icons/io5";
 
 interface User {
@@ -40,17 +41,19 @@ function EmployeeDashboard() {
           <p className="text-gray-600 mb-6">
             Welcome to your dashboard! Here you can find your tasks, attendance, and other important information.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <UserMetaCard />
-          </div>
+         
+        <div className="col-span-3 space-x-4 xl:col-span-12">
+         <UserMetaCard/>
+        </div>
         </div>
 
         <div className="col-span-3 space-x-4 xl:col-span-12">
          <DashboardStats />
         </div>
 
-        <div className="col-span-3 space-x-4 xl:col-span-12">
+        <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
          
+            <Link to="/attandanceStart-page">   <b> GO TO ATTANDANCE PAGE </b>  </Link>
         </div>
 
         {/* <div className="col-span-3 space-x-4 xl:col-span-12">

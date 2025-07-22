@@ -47,8 +47,8 @@ export default function App() {
        
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
-           <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
-            
+           {/* <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
+             */}
               <Route  path="/" element={<SignIn />} />
               
           {/* Dashboard Layout */}

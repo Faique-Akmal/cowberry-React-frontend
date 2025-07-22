@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../../api/axios"; // adjust if your API file path differs
-// import { Link } from "react-router";
-// import ChangePasswordModal from "./ChangePasswordModal";
+import API from "../../api/axios";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -15,73 +13,54 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetToken, setResetToken] = useState(""); // ← Important
 
   const navigate = useNavigate();
 
   if (!isOpen) return null;
 
-  //  Send Link + Show Change Password Modal
   const handleSendLink = async () => {
     if (!email.trim()) {
-      setMessage("Please enter your email address.");
-      setIsError(true);
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setMessage("Please enter a valid email address.");
+      setMessage("Please enter your email.");
       setIsError(true);
       return;
     }
 
     setIsLoading(true);
-    setIsError(false);
     setMessage("");
+    setIsError(false);
 
     try {
-      const response = await API.post(
-        "/forgot-password/",
-        { email: email.trim().toLowerCase() },
-        {
-          headers: { "Content-Type": "application/json" },
-          timeout: 10000,
-        }
-      );
+      const res = await API.post("/forgot-password/", {
+        email: email.trim().toLowerCase()
+      });
 
-      if (response.data.status === "success" || response.status === 200) {
-        setMessage("Reset link sent. You can now set a new password.");
+      if (res.status === 200 && res.data.token) {
+        setMessage("Email sent. Please enter new password.");
         setShowChangePassword(true);
+        setResetToken(res.data.token); // Use this in real world, else mock token
       } else {
-        setMessage(response.data.message || "Failed to send reset link.");
-        setIsError(true);
+        setMessage("Email sent. Please check your inbox.");
+        setShowChangePassword(true);
+        // Remove the line above if your flow strictly needs the token from email link
       }
-    } catch (error: any) {
-      const status = error.response?.status;
-      const data = error.response?.data;
-
-      if (status === 404) setMessage("Email not found.");
-      else if (status === 422) setMessage(data.message || "Invalid email format.");
-      else if (status === 429) setMessage("Too many requests. Try again later.");
-      else if (status === 500) setMessage("Server error. Try again later.");
-      else setMessage(data?.message || `Error: ${status}`);
-
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to send reset email.";
+      setMessage(msg);
       setIsError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  //Handle Change Password Submission
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage("");
-    setIsError(false);
 
     if (!newPassword || !confirmPassword) {
-      setMessage("Please fill both fields.");
+      setMessage("Both fields are required.");
       setIsError(true);
       return;
     }
@@ -93,111 +72,98 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     }
 
     setIsLoading(true);
+    setMessage("");
+    setIsError(false);
 
     try {
-      const response = await API.post("/change-password/", {
+      const res = await API.post("/change-password/", {
         email: email.trim(),
         new_password: newPassword,
+        token: resetToken || undefined, // Include if your API requires it
       });
 
-      if (response.status === 200) {
+      if (res.status === 200) {
         setMessage("Password changed successfully.");
         setTimeout(() => {
           onClose();
           navigate("/signin");
         }, 1500);
       } else {
-        setMessage(response.data?.message || "Failed to change password.");
+        setMessage(res.data?.message || "Password change failed.");
         setIsError(true);
       }
-    } catch (error: any) {
+    } catch (err: any) {
+      console.error(err);
+      setMessage("Error occurred while changing password.");
       setIsError(true);
-      setMessage("Something went wrong while changing password.");
-      console.error("Change password error:", error.response?.data);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (!isLoading) {
-      setEmail("");
-      setMessage("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setShowChangePassword(false);
-      setIsError(false);
-      onClose();
-    }
+    setEmail("");
+    setMessage("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetToken("");
+    setIsError(false);
+    setShowChangePassword(false);
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg">
-        <h2 className="text-xl font-semibold mb-4 text-center">
-          {showChangePassword ? "Change Password" : "Forgot Password"}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-lg font-bold text-center mb-4">
+          {showChangePassword ? "Set New Password" : "Forgot Password"}
         </h2>
 
         {!showChangePassword ? (
           <>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-              Enter your email address
-            </label>
+            <label className="text-sm font-medium">Email</label>
             <input
               type="email"
-              placeholder="example@gmail.com"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
+              placeholder="your@example.com"
+              className="w-full border px-3 py-2 mt-1 rounded-md"
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
             />
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={handleClose}
-                className="text-gray-500 hover:underline"
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
+            <div className="mt-4 flex justify-end">
               <button
                 onClick={handleSendLink}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Sending..." : "Reset Password"}
+                {isLoading ? "Sending..." : "Send Reset Link"}
               </button>
             </div>
           </>
         ) : (
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form onSubmit={handleChangePassword}>
             <input
               type="password"
               placeholder="New Password"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-2"
               required
             />
             <input
               type="password"
               placeholder="Confirm New Password"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-4"
               required
             />
             <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-gray-500 hover:underline"
-              >
+              <button type="button" onClick={handleClose} className="text-gray-600">
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-                disabled={isLoading}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
               >
                 {isLoading ? "Saving..." : "Change Password"}
               </button>
@@ -206,7 +172,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         )}
 
         {message && (
-          <p className={`mt-4 text-sm ${isError ? "text-red-600" : "text-green-600"}`}>
+          <p className={`mt-4 text-sm ${isError ? "text-red-500" : "text-green-500"}`}>
             {message}
           </p>
         )}

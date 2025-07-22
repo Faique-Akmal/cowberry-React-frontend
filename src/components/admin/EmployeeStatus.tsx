@@ -11,7 +11,7 @@ interface User {
   profile_img: string;
 }
 
-const API_BASE_URL = 'http://192.168.0.144:8000/api/'; // ✅ Replace with your real backend API
+const API_BASE_URL = 'http://192.168.0.144:8000/api';
 
 const StatusPill = ({ status }: { status: string }) => {
   const colorClass = status === 'Online' ? 'bg-green-500' : 'bg-red-500';
@@ -42,27 +42,27 @@ const EmployeeStatus = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const accessToken = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('accessToken');
 
-        if (!accessToken) {
-          console.error('Access token not found in localStorage');
+        if (!token) {
+          console.error('No access token found.');
           setLoading(false);
           return;
         }
 
-        const res = await axios.get(`${API_BASE_URL}/users/`, {
+        const response = await axios.get(`${API_BASE_URL}/users/`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        if (Array.isArray(res.data)) {
-          setEmployees(res.data);
+        if (Array.isArray(response.data.results)) {
+          setEmployees(response.data.results);
         } else {
-          console.warn('Expected array from /users/, got:', res.data);
+          console.warn('API did not return an array:', response.data.results);
         }
       } catch (error) {
-        console.error('Failed to fetch employee data:', error);
+        console.error('Error fetching users:', error);
       } finally {
         setLoading(false);
       }

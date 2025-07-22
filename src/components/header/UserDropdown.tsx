@@ -11,9 +11,9 @@ export default function UserDropdown() {
   const {t, i18n} =  useTranslation()
   const [isOpen, setIsOpen] = useState(false);
 
-  const   // Retrieve username from localStorage        
- {   username , email}
-  = JSON.parse(localStorage.getItem("meuser") || "{}");
+     // Retrieve username from localStorage        
+const localMeData = localStorage.getItem("meUser")!
+  const {username , email} = JSON.parse(localMeData)!
 
   function toggleDropdown() {
     setIsOpen(!isOpen);

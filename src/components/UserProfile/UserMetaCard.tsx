@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import { role } from "../../store/store";
+import Alert from "../ui/alert/Alert";
 // import API from "../../api/axios";
 
 // interface UserProfile {
@@ -56,9 +57,12 @@ export default function UserMetaCard() {
   // if (loading) return <p className="text-center">Loading profile...</p>;
   if (!meUserData)
     return (
-      <p className="text-center text-red-500">
-        Failed to load meUserData profile. Please try again later.
-      </p>
+       <Alert
+        variant="warning"
+        title="Failed to load meUserData profile!"
+        message="Please try again later."
+        showLink={false}
+      />
     );
 
   return (

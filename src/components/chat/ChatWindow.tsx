@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
 import MemberDropdown from "./MemberDropdown";
+import Alert from "../ui/alert/Alert";
+import TimeZone from "../common/TimeZone";
 
 interface Props {
   group: AxiosAllGroup; 
@@ -11,6 +13,8 @@ interface Props {
 const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
   const [newMsg, setNewMsg] = useState<string>("");
   const [meUserId, setMeUserId] = useState<number>();
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const send = () => {
     if (!newMsg.trim()) return
@@ -37,17 +41,9 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
     setNewMsg("")
   }
 
-  const timeZone = (utcDateStr:string)=>{
-    const utcDate = new Date(utcDateStr);
-
-    // Format in IST using toLocaleString with timeZone
-    const istDateStr = utcDate.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      hour12: true, // Optional: for AM/PM format
-    });
-
-    return istDateStr;
-  }
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [allMsg]); // Triggers scroll on new messages
 
   useEffect(()=>{
       const localMeData = localStorage.getItem("meUser")!
@@ -56,14 +52,15 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="flex justify-between p-4 bg-cowberry-cream-500">
+      <div className="pl-12 p-4 md:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
         <h2 className="text-lg font-bold text-yellow-800">{group?.group_name || "No User?"}</h2>
-        <div>
+        <div> 
           <MemberDropdown members={group?.members || null} />
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {allMsg.length > 0 ? allMsg.map((msg) => (
+        
           <div
             key={msg?.id}
             className={`max-w-xs flex flex-col p-2 rounded-lg ${
@@ -77,12 +74,18 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
             </h4>
             <div className="pl-2 gap-3 flex flex-col">
               <p>{msg?.content}</p>
-              <small className="text-xs text-end text-gray-200">{timeZone(msg?.sent_at)}</small>
+              <small className="text-xs text-end text-gray-200">{<TimeZone utcDateStr={msg?.sent_at} />}</small>
             </div>
           </div>
         )): (
-          <p className="text-center w-full text-2xl font-bold text-dashboard-brown-200">Chat Not Found!</p>
-        )} 
+          <Alert
+          variant="warning"
+          title="Chat Not Found!"
+          message="Try again later!"
+          showLink={false}
+          />
+        )}
+        <div ref={bottomRef} />
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input
@@ -101,4 +104,4 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
   )
 }
 
-export default ChatWindow
+export default ChatWindow;

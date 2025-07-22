@@ -8,6 +8,7 @@ import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
 import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 import LastChatMsg from "./LastChatMsg";
+import Alert from "../ui/alert/Alert";
 
 interface Props {
   groups: AxiosAllGroup[];
@@ -68,8 +69,8 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   
   return (
     <>
-    <div className="w-full bg-dashboard-brown-200 md:w-1/3 h-[80vh]">
-      <div className="text-end h-1/12 m-2">
+    <div className="w-full bg-dashboard-brown-200 h-[80vh]">
+      <div className="flex justify-end items-center text-end h-17 p-2">
         <button
             onClick={openModal}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
@@ -93,71 +94,51 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
           </button>
       </div>
 
-      <div className="h-11/12 py-2 custom-scrollbar overflow-y-auto overflow-hidden">
+      <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
         {
           groups?.length <= 0 ?
           <div className="flex items-center justify-center">
-            <p className="text-white">Chat Group Not Found...</p> 
-            {/* <Spinner text="Loading Chat Group..." /> */}
+             <Alert
+                variant="warning"
+                title="Chat Group Not Found!"
+                message="Try again later!"
+                showLink={false}
+              />
           </div>
           : <div className="">
           {groups?.map((group) => (
-          <div
-          key={group?.group_id}
-          onClick={() => onSelectChat(group?.group_id)}
-          className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:bg-green-500 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
-        >
-          <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-            <img src="/images/user/owner.jpg" alt="User" />
-          </span>
-          <div>
-            <h3 className="font-semibold">{group?.group_name}</h3>
-            <div className="text-sm text-dashboard-brown-200">
-              <LastChatMsg groupId={group?.group_id} />
-            </div>
-          </div>
-        </div>
-        ))}
-        </div>
-
-        }
-        
-
-        {/* <div className="">
-          {chats.map((chat) => (
-          <div
-            key={chat.id}
-            onClick={() => onSelectChat(chat.id)}
-            className={`bg-cowberry-cream-500 flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:bg-green-500 ${
-              activeChatId === chat.id ? "bg-brand-500 " : ""
-            }`}
-          >
+            <div
+            key={group?.group_id}
+            onClick={() => onSelectChat(group?.group_id)}
+            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
+            >
             <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
               <img src="/images/user/owner.jpg" alt="User" />
             </span>
             <div>
-              <h3 className="font-semibold">{chat.name}</h3>
-              <p className="text-sm text-dashboard-brown-200">
-                {chat.messages[chat.messages.length - 1]?.text}
-              </p>
+              <h3 className="font-semibold">{group?.group_name}</h3>
+              <div className="text-sm text-dashboard-brown-200">
+                <LastChatMsg groupId={group?.group_id} />
+              </div>
             </div>
           </div>
-        ))}
-        </div> */}
+          ))}
+          </div>
+        }
 
       </div> 
       
       
     </div>
-    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4">
-        <div className="no-scrollbar relative w-full max-w-[500px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 md:translate-y-0">
+        <div className="no-scrollbar relative w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
           <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
               Create Chat Group
             </h4>
           </div>
           <form className="flex flex-col">
-            <div className="custom-scrollbar h-[400px] overflow-y-auto px-2 pb-3">
+            <div className="md:h-[45vh] px-2 pb-3">
               <div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5">
                   <div>

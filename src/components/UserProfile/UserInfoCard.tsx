@@ -3,18 +3,7 @@ import { useEffect, useState } from "react";
 // import axios from "axios";
 import { role , department } from "../../store/store";
 import { AxiosGetMe } from "../../store/userStore";
-
-// {
-//     "id": 4,
-//     "username": "parthiv",
-//     "email": "parthiv.cowberry@gmail.com",
-//     "role": 1,
-//     "department": 1,
-//     "mobile_no": null,
-//     "birth_date": null,
-//     "address": null,
-//     "profile_image": null
-// }
+import Alert from "../ui/alert/Alert";
 
 export default function UserInfoCard() {
   const [user, setUser] = useState<AxiosGetMe| null>(null);
@@ -143,7 +132,14 @@ export default function UserInfoCard() {
 
   // console.log(user)
 
-  if (!meUserData) return <div className="p-4">Failed to load user data profile. Please try again later.</div>;
+  if (!meUserData) return (
+     <Alert
+      variant="warning"
+      title="Failed to load user data profile.!"
+      message="Please try again later."
+      showLink={false}
+    />
+  )
   // if (loading) return <div className="p-4">Loading...</div>;
   // if (error) return <div className="p-4 text-red-600">{error}</div>;
 
@@ -164,7 +160,7 @@ export default function UserInfoCard() {
                 First Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
-              {user?.first_name|| "N/A"}
+              {user?.first_name || "N/A"}
               </p>
             </div>
 

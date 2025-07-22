@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import { AxiosGetGroupMsg } from "../../store/chatStore"
+import Alert from '../ui/alert/Alert';
 
 interface Props {
   groupId: number; 
@@ -101,7 +102,12 @@ const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
             </div>
           </div>
         )): (
-          <p className="text-center w-full text-2xl font-bold text-dashboard-brown-200">Chat Not Found!</p>
+          <Alert
+                variant="warning"
+                title="Chat Not Found!"
+                message="Try again later!"
+                showLink={false}
+              />
         )} 
       </div>
 

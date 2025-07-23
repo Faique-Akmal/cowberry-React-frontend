@@ -30,6 +30,7 @@ import AttendanceForm from "./pages/Employee/AttandanceStart";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
 import { Toaster } from "react-hot-toast";
+import CompTest from "./pages/CompTest";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -87,13 +88,16 @@ export default function App() {
             {/* Charts */}
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
+
+            {/* Test Route */}
+            <Route path="/test" element={<CompTest />} />
           </Route>
 
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/logout" element={<Logout />} />
-
+          
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

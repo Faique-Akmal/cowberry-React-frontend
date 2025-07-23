@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-import API from "../../api/axios";
 import { Link } from "react-router";
+import { axiosPostChangePassword } from "../../store/userStore";
+import toast from "react-hot-toast";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -18,10 +19,7 @@ export default function ChangePasswordModal({
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
-  const accessToken = localStorage.getItem("accessToken");
-
-    
-
+  // const accessToken = localStorage.getItem("accessToken");
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword) {
@@ -35,17 +33,25 @@ export default function ChangePasswordModal({
     setIsError(false);
 
     try {
-      const response = await API.post(
-        "/change-password/",
-        {
+      // const response = await API.post(
+      //   "/change-password/",
+        // {
+        //   old_password: oldPassword,
+        //   new_password: newPassword,
+        // }
+       
+      // );
+      const oldNewPass = await axiosPostChangePassword({
           old_password: oldPassword,
           new_password: newPassword,
-        }
-       
-      );
+        });
 
-      if (response.status === 200 || response.data.status === "success") {
+
+
+      if (oldNewPass.status === 200 || oldNewPass.data.status === "success") {
         setMessage("Password changed successfully!");
+        toast.success("Password changed successfully!");
+
         setIsError(false);
         setTimeout(() => {
           onClose();
@@ -55,15 +61,18 @@ export default function ChangePasswordModal({
         }, 1500);
       } else {
         setMessage("Failed to change password.");
+        toast.error("Failed to change password.");
+
         setIsError(true);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error:", error);
-      if (error.response?.data?.message) {
-        setMessage(error.response.data.message);
-      } else {
-        setMessage("Something went wrong. Please try again.");
-      }
+      // if (error.response?.data?.message) {
+      //   setMessage(error.response.data.message);
+      // } else {
+      //   setMessage("Something went wrong. Please try again.");
+      // }
+      toast.error("Something went wrong.Please try again.")
       setIsError(true);
     } finally {
       setIsLoading(false);

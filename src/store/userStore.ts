@@ -37,13 +37,43 @@ role: number;
 username:string
 }
 
-export const axiosGetUsers = async () => {
-      try {
-          const res = await API.get("/users/");
+export interface AxiosPostChangePassword{
+  old_password: string;
+  new_password: string;        
+}
+
+// export interface PaginatedResponse<T> {
+//   count: number;
+//   next: string | null;
+//   results: T[];
+// }
+
+// export const axiosGetUsers = async () => {
+//       try {
+//           const res = await API.get("/users/");
           
-          if(res.data){
-            return res.data?.results;
-          }
+//           if(res.data){
+//             return res.data?.results;
+//           }
+//       } catch (error) {
+//         console.error("/User get request error:", error);
+//       }
+//     }
+
+export const axiosGetUsers = async (
+  page: number,
+  limit: number,
+  signal?: AbortSignal
+) => {
+      try {
+        const res = await API.get("/users/", {
+          params: { page, limit },
+          signal,
+        });
+        
+        if(res.data){
+          return res.data?.results;
+        }
       } catch (error) {
         console.error("/User get request error:", error);
       }
@@ -60,3 +90,15 @@ export const axiosGetMe = async () => {
         console.error("/me/ get request error:", error);
       }
     }
+
+export const axiosPostChangePassword = async (oldNewPassword: AxiosPostChangePassword) => {
+  try {
+      const res = await API.post("/change-password/", oldNewPassword);
+      
+      if(res.data){
+        return res.data;
+      }
+  } catch (error) {
+    console.error("/change-password/ post request error:", error);
+  }
+}

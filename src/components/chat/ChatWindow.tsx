@@ -77,8 +77,8 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
             key={msg?.id}
             className={`max-w-xs flex flex-col p-2 rounded-lg ${
               meUserId === msg?.sender
-                ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
-                : "bg-brand-400 text-white self-start rounded-bl-none"
+                ? "bg-brand-400 text-white self-end ml-auto rounded-br-none"
+                : "bg-brand-500 text-white self-start rounded-bl-none"
             }`}
             >
             <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
@@ -97,7 +97,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
           showLink={false}
           />
         )}
-        <div ref={bottomRef} className="pt-4" />
+        <div ref={bottomRef} className="pt-6" />
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input

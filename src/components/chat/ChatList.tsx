@@ -1,14 +1,16 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import MultiSelect from "../form/MultiSelect";
+// import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
-import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
+// import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 import LastChatMsg from "./LastChatMsg";
 import Alert from "../ui/alert/Alert";
+import Avatar from "../ui/avatar/Avatar";
+import InfiniteScrollList from "../common/InfiniteScrollList";
 
 interface Props {
   groups: AxiosAllGroup[];
@@ -16,18 +18,28 @@ interface Props {
   onSelectChat: (id: number) => void;
 }
 
-interface Option {
-  value: number;
-  name: string;
-}
+// interface Option {
+//   value: number;
+//   name: string;
+// }
+
+// interface Users{
+//   id:number;
+//   username:string;
+//   first_name:string;
+//   email:string;
+//   profile_images:string;
+//   role:number;
+//   department: number;
+// }
 
 const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [users, setUsers] = useState<AxiosGetUsers[]>([]);
+  // const [users, setUsers] = useState<AxiosGetUsers[]>([]);
  
-  const [userOptions, setUserOptions] = useState<Option[]>([]);
+  // const [userOptions, setUserOptions] = useState<Option[]>([]);
 
   const handleSave = (e:FormEvent) => {
      e.preventDefault();
@@ -44,28 +56,35 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
     closeModal();
   };
 
-  useEffect(() => {
-    if (users.length > 0) {
-      const transformed = users.map<Option>(user => ({
-        value: user?.id,
-        name: user?.username,
-      }));
-      setUserOptions(transformed);
-    }
+//   useEffect(() => {
+//     if (users.length > 0) {
+//       const transformed = users.map<Option>(user => ({
+//         value: user?.id,
+//         name: user?.username,
+//       }));
+//       setUserOptions(transformed);
+//     }
 
-  }, [users]);
+//   }, [users]);
 
-  useEffect(() => {
-    ;(async ()=>{
-      const allUsers = await axiosGetUsers();
-
-      if(allUsers?.length > 0){
-        setUsers(allUsers);
-      }
-    }
-    )();
-  }, []);
+//   useEffect(() => {
+//     ;(async ()=>{
+//       try {
+//         const allUsers = await axiosGetUsers(1,25);
   
+//         if(allUsers?.length > 0){
+//           setUsers(allUsers);
+//         }
+        
+//       } catch (err) {
+//       console.error("/User get request error:", err);
+//       }
+//     }
+//   )();
+  
+// }, []);
+
+// console.log(users)
   
   return (
     <>
@@ -113,7 +132,8 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
             className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
             >
             <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-              <img src="/images/user/owner.jpg" alt="User" />
+              {/* <img src="/images/user/owner.jpg" alt="User" /> */}
+              <Avatar src="/images/user/user-01.jpg" size="large" />
             </span>
             <div>
               <h3 className="font-semibold">{group?.group_name}</h3>
@@ -152,16 +172,20 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
                     />
                   </div>
 
-                  <div className="capitalize">
-                    <MultiSelect
+                  <div>
+                    <InfiniteScrollList 
+                      onChange={(values) => setSelectedValues(values)}
+                      selectedValues={selectedValues}
+                    />
+                    
+                    {/* <MultiSelect
                       label="Multiple Select Options"
                       options={userOptions}
-                      defaultSelected={[]}
                       onChange={(values) => setSelectedValues(values)}
                     />
                     <p className="sr-only">
                       Selected Values: {selectedValues.join(", ")}
-                    </p>
+                    </p> */}
                   </div>  
                 </div>
               </div>

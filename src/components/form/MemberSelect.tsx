@@ -11,14 +11,16 @@ interface MultiSelectProps {
   options: Option[];
   defaultSelected?: string[];
   onChange?: (selected: string[]) => void;
+  lastItemObserver?: (node: HTMLDivElement | null) => void;
   disabled?: boolean;
 }
 
-const MultiSelect: React.FC<MultiSelectProps> = ({
+const MemberSelect: React.FC<MultiSelectProps> = ({
   label,
   options,
   defaultSelected = [],
   onChange,
+  lastItemObserver,
   disabled = false,
 }) => {
   const [selectedOptions, setSelectedOptions] =
@@ -134,9 +136,13 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col custom-scrollbar h-[200px] overflow-y-auto">
-                {options.length>0 ?  options.map((option, index) => (
+                {options.length>0 ?  options.map((option, index) =>{
+                  const isLast = index === options?.length - 1;
+                  
+                  return (
                   <div
                     key={index}
+                    ref={isLast ? lastItemObserver : null}
                     className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800`}
                     onClick={() => handleSelect(`${option.value}`)}
                   >
@@ -152,7 +158,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                       </div>
                     </div>
                   </div>
-                )): (<div className="mx-2 leading-6 text-center text-gray-800 dark:text-white/90">No selectable Member exist!</div>)}
+                )}): (<div className="mx-2 leading-6 text-center text-gray-800 dark:text-white/90">No selectable Member exist!</div>)}
               </div>
             </div>
           )}
@@ -162,4 +168,4 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   );
 };
 
-export default MultiSelect;
+export default MemberSelect;

@@ -110,6 +110,7 @@ const navItems: NavItem[] = [
      role: ["admin" , "department_head" ,"manager" , "hr"] 
    
   },
+   
   // {
   //   name: "Pages",
   //   icon: <PageIcon />,

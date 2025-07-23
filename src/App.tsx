@@ -38,6 +38,7 @@ import AdminTaskManager from "./pages/Employee/TaskManager";
 import LocationMap from "./pages/Employee/LiveTracking";
 import LiveLocationMap from "./components/Maps/LiveLocationMap";
 import LogoutButton from "./pages/AuthPages/Logout";
+import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -50,7 +51,9 @@ export default function App() {
        
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
-           {/* <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
+            <Route path="/change-password" element={ <ChangePasswordModal isOpen={true}  onClose={() => {}} />} />
+           {/*
+            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
              */}
               <Route  path="/" element={<SignIn />} />
               

@@ -56,7 +56,7 @@ const UserPagination: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   const getRoleName = (roleId: number): string => {
     const roleObj = role.find((r) => r.id === roleId);

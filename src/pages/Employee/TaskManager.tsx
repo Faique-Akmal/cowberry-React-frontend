@@ -25,13 +25,15 @@ const AdminTaskManager = () => {
   const [selectedUser, setSelectedUser] = useState<number | "all">("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(10); // Load 10 tasks initially
+
 
   const fetchUsers = async () => {
     try {
       const res = await API.get("/users/", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
+        // headers: {
+        //   Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        // },
       });
       setUsers(res.data.results || res.data);
     } catch (err) {
@@ -42,9 +44,9 @@ const AdminTaskManager = () => {
   const fetchTasks = async () => {
     try {
       const res = await API.get("/tasks/", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
+        // headers: {
+        //   Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        // },
       });
       setTasks(res.data.results || res.data);
     } catch (err) {
@@ -62,10 +64,27 @@ const AdminTaskManager = () => {
     setSelectedUser(userId);
   };
 
-  const filteredTasks =
-    selectedUser === "all"
-      ? tasks
-      : tasks.filter((task) => task.assigned_to.id === selectedUser);
+  const filteredTasks = (selectedUser === "all"
+  ? tasks
+  : tasks.filter((task) => task.assigned_to.id === selectedUser)
+).slice(0, visibleCount); // Show only visibleCount tasks
+
+
+useEffect(() => {
+  const handleScroll = () => {
+    const bottom =
+      Math.ceil(window.innerHeight + window.scrollY) >=
+      document.documentElement.scrollHeight;
+
+    if (bottom) {
+      setVisibleCount((prev) => prev + 10); // Load 10 more tasks
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+
 
   const openTaskModal = (task: Task) => {
     setSelectedTask(task);

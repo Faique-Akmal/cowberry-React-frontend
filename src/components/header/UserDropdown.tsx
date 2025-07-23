@@ -4,6 +4,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../context/AuthContext";
+import { RiLockPasswordFill } from "react-icons/ri";
 
 
 export default function UserDropdown() {
@@ -146,6 +147,14 @@ const localMeData = localStorage.getItem("meUser")!
             </DropdownItem>
           </li>
         </ul>
+         <Link
+         
+          to="/change-password"
+          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        >
+       <RiLockPasswordFill />
+        change password
+        </Link>
         <Link
           onClick={axiosLogout}
           to="/signin"
@@ -168,6 +177,8 @@ const localMeData = localStorage.getItem("meUser")!
           </svg>
           Sign out
         </Link>
+       
+
       </Dropdown>
     </div>
   );

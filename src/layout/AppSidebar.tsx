@@ -107,6 +107,7 @@ const navItems: NavItem[] = [
     icon: <CalenderIcon />,
     name: "Employee Tracker",
     path: "/live-tracking",
+     role: ["admin" , "department_head" ,"manager" , "hr"] 
    
   },
   // {
@@ -145,7 +146,8 @@ const othersItems: NavItem[] = [
     name: "Authentication",
     subItems: [
       { name: "Sign In", path: "/signin",  },
-      { name: "Sign Up", path: "/signup",  },
+      // { name: "Sign Up", path: "/signup",  },
+      { name: "Log Out", path: "/logout",  },
     ],
   },
 ];

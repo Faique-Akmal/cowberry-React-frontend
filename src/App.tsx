@@ -27,14 +27,17 @@ import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
-// import LiveCoordinates from "./pages/Employee/LocationFetcher";
+import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
 import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 // import LiveUserLocation from "./pages/Employee/LiveUserLocation";
-import LiveTracking from "./pages/Employee/LiveTracking";
+// import LiveTracking from "./pages/Employee/LiveTracking";
 import AdminTaskManager from "./pages/Employee/TaskManager";
+import LocationMap from "./pages/Employee/LiveTracking";
+import LiveLocationMap from "./components/Maps/LiveLocationMap";
+import LogoutButton from "./pages/AuthPages/Logout";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -89,8 +92,8 @@ export default function App() {
 
 {/*          
             <Route path="/user-location" element={<LiveCoordinates/>} /> */}
-
-            <Route path="/live-tracking" element={<LiveTracking/>} />
+{/* 
+            <Route path="/live-tracking" element={<LiveLocationMap/>} /> */}
 
 
             
@@ -125,7 +128,8 @@ export default function App() {
 
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
+          <Route path="/logout" element={<LogoutButton />} />
+          {/* <Route path="/signup" element={<SignUp />} /> */}
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

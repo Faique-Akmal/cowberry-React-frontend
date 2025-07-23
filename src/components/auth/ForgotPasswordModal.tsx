@@ -9,20 +9,20 @@ interface ForgotPasswordModalProps {
 
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetToken, setResetToken] = useState(""); // ← Important
+  const [resetToken, setResetToken] = useState("");
+
+  const [step, setStep] = useState<"email" | "reset">("email");
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
   if (!isOpen) return null;
 
-  const handleSendLink = async () => {
+  const handleSendResetLink = async () => {
     if (!email.trim()) {
       setMessage("Please enter your email.");
       setIsError(true);
@@ -30,33 +30,30 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     }
 
     setIsLoading(true);
-    setMessage("");
-    setIsError(false);
-
     try {
       const res = await API.post("/forgot-password/", {
         email: email.trim().toLowerCase()
       });
 
       if (res.status === 200 && res.data.token) {
-        setMessage("Email sent. Please enter new password.");
-        setShowChangePassword(true);
-        setResetToken(res.data.token); // Use this in real world, else mock token
+        setResetToken(res.data.token); 
+        setStep("reset");
+        setMessage("Token received. Please enter your new password.");
+        setIsError(false);
       } else {
-        setMessage("Email sent. Please check your inbox.");
-        setShowChangePassword(true);
-        // Remove the line above if your flow strictly needs the token from email link
+        setMessage("Reset link sent to your email.");
+        setStep("reset"); 
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Failed to send reset email.";
-      setMessage(msg);
+      console.error(err);
       setIsError(true);
+      setMessage("Failed to send reset link. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!newPassword || !confirmPassword) {
@@ -72,30 +69,28 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     }
 
     setIsLoading(true);
-    setMessage("");
-    setIsError(false);
-
     try {
       const res = await API.post("/change-password/", {
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         new_password: newPassword,
-        token: resetToken || undefined, // Include if your API requires it
+        token: resetToken || undefined
       });
 
       if (res.status === 200) {
         setMessage("Password changed successfully.");
+        setIsError(false);
         setTimeout(() => {
-          onClose();
+          handleClose();
           navigate("/signin");
         }, 1500);
       } else {
-        setMessage(res.data?.message || "Password change failed.");
+        setMessage("Failed to change password.");
         setIsError(true);
       }
     } catch (err: any) {
       console.error(err);
-      setMessage("Error occurred while changing password.");
       setIsError(true);
+      setMessage("Server error while changing password.");
     } finally {
       setIsLoading(false);
     }
@@ -103,62 +98,65 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
   const handleClose = () => {
     setEmail("");
-    setMessage("");
     setNewPassword("");
     setConfirmPassword("");
     setResetToken("");
+    setStep("email");
     setIsError(false);
-    setShowChangePassword(false);
+    setMessage("");
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-lg font-bold text-center mb-4">
-          {showChangePassword ? "Set New Password" : "Forgot Password"}
+        <h2 className="text-xl font-bold text-center mb-4">
+          {step === "email" ? "Forgot Password" : "Set New Password"}
         </h2>
 
-        {!showChangePassword ? (
+        {step === "email" ? (
           <>
             <label className="text-sm font-medium">Email</label>
             <input
               type="email"
               value={email}
-              placeholder="your@example.com"
-              className="w-full border px-3 py-2 mt-1 rounded-md"
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@example.com"
+              className="w-full border px-3 py-2 mt-1 rounded"
             />
-            <div className="mt-4 flex justify-end">
+            <div className="flex justify-end mt-4">
               <button
-                onClick={handleSendLink}
+                onClick={handleSendResetLink}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                disabled={isLoading}
               >
                 {isLoading ? "Sending..." : "Send Reset Link"}
               </button>
             </div>
           </>
         ) : (
-          <form onSubmit={handleChangePassword}>
+          <form onSubmit={handlePasswordReset}>
+            <label className="text-sm font-medium">New Password</label>
             <input
               type="password"
-              placeholder="New Password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-2"
+              placeholder="New password"
+              className="w-full border px-3 py-2 mt-1 rounded mb-3"
               required
             />
+
+            <label className="text-sm font-medium">Confirm Password</label>
             <input
               type="password"
-              placeholder="Confirm New Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-4"
+              placeholder="Confirm password"
+              className="w-full border px-3 py-2 mt-1 rounded mb-4"
               required
             />
+
             <div className="flex justify-between">
-              <button type="button" onClick={handleClose} className="text-gray-600">
+              <button type="button" onClick={handleClose} className="text-gray-500">
                 Cancel
               </button>
               <button
@@ -172,7 +170,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         )}
 
         {message && (
-          <p className={`mt-4 text-sm ${isError ? "text-red-500" : "text-green-500"}`}>
+          <p className={`mt-4 text-sm ${isError ? "text-red-500" : "text-green-600"}`}>
             {message}
           </p>
         )}

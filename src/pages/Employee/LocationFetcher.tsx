@@ -1,8 +1,6 @@
-// src/components/admin/LocationMap.tsx
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import axios from 'axios';
+import API from '../../api/axios';
 
 interface LocationData {
   latitude: number;
@@ -84,28 +82,29 @@ const LocationFetcher = () => {
     return () => clearInterval(interval);
   }, []);
 
+  return (
+    <div className="p-4 bg-white shadow-md rounded-lg space-y-4">
+      <h2 className="text-lg font-bold">📍 Location Tracker</h2>
 
-  return location ? (
-    <MapContainer
-      center={ [location.start_lat, startLocation.longitude]}
-      zoom={15}
-      style={{ height: '400px', width: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; OpenStreetMap contributors'
-        url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-      />
-      <Marker position={[location.start_lat, location.start_lng]} icon={customIcon}>
-        <Popup>
-          User ID: {id}
-          <br />
-          Lat: {location.start_lat.toFixed(4)}, Lng: {location.start_lng.toFixed(4)}
-        </Popup>
-      </Marker>
-    </MapContainer>
-  ) : (
-    <p>Loading user location...</p>
+      {startLocation ? (
+        <div className="text-sm text-gray-700">
+          <strong>Start Location:</strong> Lat: {startLocation.latitude}, Lng: {startLocation.longitude}
+        </div>
+      ) : (
+        <p className="text-sm text-red-500">Start location not available</p>
+      )}
+
+      {currentLocation ? (
+        <div className="text-sm text-gray-700">
+          <strong>Current Location:</strong> Lat: {currentLocation.latitude}, Lng: {currentLocation.longitude}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">Getting current location...</p>
+      )}
+
+      {error && <p className="text-red-500">{error}</p>}
+    </div>
   );
 };
 
-export default LocationMap;
+export default LocationFetcher;

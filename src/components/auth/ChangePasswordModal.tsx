@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import API from "../../api/axios";
-import { useModal } from "../../hooks/useModal";
+
 
 
 const ChangePasswordModal: React.FC = () => {
@@ -11,7 +11,7 @@ const ChangePasswordModal: React.FC = () => {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { closeModal } = useModal();
+
 
   // Reset form when modal closes
   const resetForm = () => {
@@ -24,7 +24,7 @@ const ChangePasswordModal: React.FC = () => {
 
   const handleClose = () => {
      resetForm();
-     closeModal();
+   
     setIsError(false);
     
   };

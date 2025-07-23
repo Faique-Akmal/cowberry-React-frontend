@@ -1,6 +1,7 @@
 // src/components/auth/ForgotPasswordModal.tsx
 import React, { useState } from "react";
 import API from "../../api/axios";
+import { Navigate, useNavigate } from "react-router";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const navigate =  useNavigate();
   const handleSendResetLink = async () => {
     if (!email.trim()) {
       setMessage("Please enter your email.");
@@ -29,6 +31,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       if (response.status === 200) {
         setMessage("Reset link sent successfully.");
         setIsError(false);
+       onClose();
+        navigate("/signin");
       } else {
         setMessage("Something went wrong. Please try again.");
         setIsError(true);

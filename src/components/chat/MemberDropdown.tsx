@@ -50,7 +50,7 @@ const MemberDropdown:React.FC<Props> = ({members}) => {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="-translate-x-12 absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
+        className="-translate-x-4 absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <ul className="custom-scrollbar overflow-y-auto overflow-hidden h-58 flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
          {members?.length > 0 ? members.map((member)=>(
@@ -66,7 +66,8 @@ const MemberDropdown:React.FC<Props> = ({members}) => {
                     src="/images/user/user-01.jpg"
                     size="large"
                     status={member?.is_online ? "online" : "offline"}
-                  />                </div>
+                  />
+                </div>
               <p className="capitalize">
               {member?.username}
               </p>

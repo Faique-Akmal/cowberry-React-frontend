@@ -6,6 +6,7 @@ import {axiosGetAllGroup, AxiosAllGroup, axiosGetGroupMsg } from "../../store/ch
 // import HamburgerSidebar from "../common/HamburgerSidebar";
 // import ChatRoom from "./ChatRoom";
 import { FaBars, FaTimes } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 const ChatBox: React.FC = () => {
   const [activeChatId, setActiveChatId] = useState<number>(1);
@@ -35,17 +36,25 @@ const ChatBox: React.FC = () => {
   useEffect(()=>{
 
     ;(async()=>{
+      
       if(activeChat){
-        const groupMsg = await axiosGetGroupMsg(activeChat?.group_id);
-        if(groupMsg.length > 0){
-          setAllMsg(groupMsg)
-        } else setAllMsg([]);
+        const toastId = toast.loading('Sending...');
+        try {
+          const groupMsg = await axiosGetGroupMsg(activeChat?.group_id);
+          if(groupMsg.length > 0){
+            setAllMsg(groupMsg)
+          } else setAllMsg([]);
+          toast.success("All messages are up to date.", {id:toastId});
+        } catch (error) {
+          console.error("Get message request error:", error);
+          toast.error("Failed to fetch all messages.", {id: toastId});  
+        }
       }
     })();
 
+    // console.count("ChatBox rendered");
   },[activeChat])
   
-  // console.count("ChatBox rendered");
 
   return (
     <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">

@@ -3,6 +3,7 @@ import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } f
 import MemberDropdown from "./MemberDropdown";
 import Alert from "../ui/alert/Alert";
 import TimeZone from "../common/TimeZone";
+import toast from 'react-hot-toast';
 
 interface Props {
   group: AxiosAllGroup; 
@@ -20,23 +21,35 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
     if (!newMsg.trim()) return
         
     if(meUserId && allMsg[0]?.group){
+      
       const createMsg = {
         sender: meUserId,
         group: allMsg[0]?.group,
         content: newMsg
       };
 
-      axiosPostSendMsg(createMsg);
+      try {
+        axiosPostSendMsg(createMsg);
+        toast.success("Message sent!");
+      } catch (error) {
+        console.error("Get message request error:", error);
+        toast.error("Failed to send message");        
+      }
     }
 
      ;(async () => {
-          if(group?.group_id){
+        if(group?.group_id){
+          
+          try {
             const groupMsg = await axiosGetGroupMsg(group?.group_id);
             if(groupMsg.length > 0){
               dispatch(groupMsg);
             } else dispatch([]);
+          } catch (error) {
+            console.error("Get message request error:", error);
           }
-        })();
+        }
+      })();
     
     setNewMsg("")
   }
@@ -59,8 +72,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
-        {allMsg.length > 0 ? allMsg.map((msg) => (
-        
+        {allMsg.length > 0 ? allMsg.map((msg) => (  
           <div
             key={msg?.id}
             className={`max-w-xs flex flex-col p-2 rounded-lg ${
@@ -85,7 +97,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
           showLink={false}
           />
         )}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="pt-4" />
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input

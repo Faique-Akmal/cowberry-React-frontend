@@ -29,6 +29,7 @@ import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
+import { Toaster } from "react-hot-toast";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -96,6 +97,21 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Toaster
+          position="bottom-right"
+          reverseOrder={true}
+          toastOptions={{
+            style: {
+              border: '1px solid #377355',
+              padding: '16px',
+              color: '#377355',
+            },
+            iconTheme: {
+              primary: '#377355',
+              secondary: '#FFFAEE',
+            },
+          }}
+        />
       </>
   );
 }

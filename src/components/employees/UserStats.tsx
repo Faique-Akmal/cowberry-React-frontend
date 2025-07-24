@@ -48,12 +48,12 @@ const DashboardStats: React.FC = () => {
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const cardClass =
-    "  flex flex-col  bg-[url('/123.png')] bg-cover bg-blur  items-center justify-center hover:text-[#ffff] text-gray-500 rounded-lg shadow-lg p-4 w-full sm:w-44 h-24 hover:bg-[#184719] transition-all";
+    "  flex flex-col  bg-[url('/123.png'),url('/old-paper-texture.jpg')] bg-cover font-extrabold  items-center justify-center hover:text-[#184719] text-gray rounded-lg shadow-lg p-4 w-full sm:w-44 h-24  transition-all";
 
   return (
     <>
-       <div className="relative flex justify-center p-5"  >
-         <b>  <h1 className="text-2xl  text-cowberry-green-600 ">Task Updates</h1></b>
+       <div className="relative flex justify-center"  >
+         <b>  <h1 className="text-2xl text-gray-600 ">TASK UPDATES</h1></b>
         </div>
     <div className="flex flex-wrap gap-4 p-4  justify-center">
      

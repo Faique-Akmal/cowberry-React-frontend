@@ -37,7 +37,7 @@ export default function TaskShowPage() {
           timeout: 10000,
         });
 
-        console.log("API response:", response.data); // 👈 Always log this to check structure
+        // console.log("API response:", response.data); // log this to check structure
 
         let responseTasks: Task[] = [];
         if (Array.isArray(response.data)) {

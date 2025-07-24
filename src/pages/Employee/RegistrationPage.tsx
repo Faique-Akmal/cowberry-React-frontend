@@ -103,7 +103,7 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-transparent rounded-xl shadow-md">
+    <div className="max-w-md mx-auto mt-10 p-6 rounded-xl shadow-md bg-[linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.2)),url('/123.png'),url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -134,17 +134,17 @@ export default function AttendanceEndForm() {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 bg-transparent rounded shadow-md">
+    <div className="max-w-xl mx-auto mt-10 p-6 bg-[linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.2)),url('/123.png'),url('/old-paper-texture.jpg')] bg-cover rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-center"> End Attendance</h2>
 
-      {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
+      {/* {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>} */}
 
       <button
         onClick={fetchUserAndLocation}
         disabled={locationFetched}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ? ' Location Fetched' : 'Get User Info & Location'}
+        {locationFetched ? '✅ Ready' : 'Click me'}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">

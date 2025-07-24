@@ -8,7 +8,8 @@ import toast from 'react-hot-toast';
 interface Props {
   group: AxiosAllGroup; 
   allMsg: AxiosGetGroupMsg[];
-  dispatch: React.Dispatch<React.SetStateAction<never[]>>;
+  dispatch: (values: AxiosGetGroupMsg[]) => void;
+  // dispatch: React.Dispatch<React.SetStateAction<never[]>>;
 }
 
 const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
@@ -65,7 +66,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="pl-12 p-4 md:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
+      <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
         <h2 className="text-lg font-bold text-yellow-800">{group?.group_name || "No User?"}</h2>
         <div> 
           <MemberDropdown members={group?.members || null} />
@@ -97,7 +98,7 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
           showLink={false}
           />
         )}
-        <div ref={bottomRef} className="pt-6" />
+        <div ref={bottomRef} className="pt-10" />
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input

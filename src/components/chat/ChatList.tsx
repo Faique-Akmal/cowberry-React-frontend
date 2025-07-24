@@ -92,7 +92,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
       <div className="flex justify-end items-center text-end h-17 p-2">
         <button
             onClick={openModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
+            className="flex w-fit items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
             <svg
               className="fill-current"
@@ -131,8 +131,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
             onClick={() => onSelectChat(group?.group_id)}
             className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
             >
-            <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-              {/* <img src="/images/user/owner.jpg" alt="User" /> */}
+            <span className="mr-3">
               <Avatar src="/images/user/user-01.jpg" size="large" />
             </span>
             <div>
@@ -150,7 +149,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
       
       
     </div>
-    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 md:translate-y-0">
+    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
         <div className="no-scrollbar relative w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
           <div className="px-2 pr-14">
             <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -158,7 +157,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
             </h4>
           </div>
           <form className="flex flex-col">
-            <div className="md:h-[45vh] px-2 pb-3">
+            <div className="lg:h-[50vh] px-2 pb-3">
               <div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5">
                   <div>
@@ -178,14 +177,6 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
                       selectedValues={selectedValues}
                     />
                     
-                    {/* <MultiSelect
-                      label="Multiple Select Options"
-                      options={userOptions}
-                      onChange={(values) => setSelectedValues(values)}
-                    />
-                    <p className="sr-only">
-                      Selected Values: {selectedValues.join(", ")}
-                    </p> */}
                   </div>  
                 </div>
               </div>

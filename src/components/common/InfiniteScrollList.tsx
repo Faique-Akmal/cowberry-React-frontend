@@ -48,7 +48,7 @@ const InfiniteScrollList: React.FC<Props> = ({ selectedValues, onChange }) => {
         setPage((prev) => prev + 1);
       }
     } catch (err) {
-      console.error(" my /User get request error:", err);
+      console.error(" /User get request error:", err);
       setError("Failed to load items. Try again.");
     } finally {
       setLoading(false);

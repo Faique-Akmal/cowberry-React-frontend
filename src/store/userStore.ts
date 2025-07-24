@@ -1,3 +1,4 @@
+import axios from "axios";
 import API from "../api/axios";
 
 export interface AxiosGetUsers {
@@ -75,8 +76,16 @@ export const axiosGetUsers = async (
           return res.data?.results;
         }
       } catch (error) {
-        console.error("/User get request error:", error);
-      }
+        if (axios.isCancel(error) || error.name === "CanceledError") {
+              // request was canceled intentionally (safe to ignore)
+              console.log("✅ Axios request cancelled");
+            } else {
+              // actual error (show toast, log, etc)
+              console.error("❌ /users/ Request failed", error);
+            }
+
+        }
+        // console.error("/User get request error:", error);
     }
 
 export const axiosGetMe = async () => {

@@ -24,6 +24,9 @@ const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
   const localMeData = localStorage.getItem("meUser")!
   const meUserData = JSON.parse(localMeData)!
 
+  const accessToken = localStorage.getItem("accessToken")!
+
+
   const newMsg = allMsg?.map(({sender, content})=>({sender:`${sender}`, message:content}))
   
   useEffect(()=>{
@@ -36,7 +39,7 @@ const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
   }, [allMsg]);
 
   useEffect(() => {
-    const ws = new ReconnectingWebSocket(`ws:${SOCKET_URL}/ws/chat/${groupId}/`);
+    const ws = new ReconnectingWebSocket(`ws:${SOCKET_URL}/ws/chat/${groupId}/?token=${accessToken}`);
     socketRef.current = ws;
 
     ws.onopen = () => {
@@ -72,7 +75,20 @@ const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
 
   const sendMessage = () => {
     if (socketRef.current && input.trim() !== '') {
-      socketRef.current.send(JSON.stringify({ message: input }));
+      const msgSchema = {  
+                          content: input, 
+                          sender: clientId, 
+                          group_id: groupId, 
+                          receiver_id: null,
+                          parent_id: null,
+                          msg_type:"text"
+                        };
+      console.log("my React obj : " ,msgSchema);
+      // {
+      //   message_type: 'group',
+      // }
+
+      socketRef.current.send(JSON.stringify(msgSchema));
       setMessages(prev => [...prev, { sender: clientId, message: input }]);
       setInput('');
     }
@@ -82,6 +98,7 @@ const ChatSocket: React.FC<Props> = ({ groupId, allMsg }) => {
   return (
     <div className='w-full'>
       <h2 className='text-dashboard-royalblue-200'>WebSocket Chat</h2>
+      <h3 className='text-dashboard-royalblue-200'>group : {groupId}, sender: {clientId}</h3>
 
       <div className="h-[50vh] custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {messages.length > 0 ? messages.map((msg, id) => (

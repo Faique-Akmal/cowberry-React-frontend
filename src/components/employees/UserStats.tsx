@@ -6,7 +6,7 @@ interface Task {
   title: string;
   status: string;
   is_completed: boolean;
-  due_date: string;
+  completed_at: string;
 }
 
 const DashboardStats: React.FC = () => {
@@ -40,7 +40,7 @@ const DashboardStats: React.FC = () => {
   const completedTasks = tasks.filter(task => task.is_completed).length;
   const activeTasks = tasks.filter(task => !task.is_completed).length;
   const dueTasks = tasks.filter(task => {
-    const dueDate = new Date(task.due_date);
+    const dueDate = new Date(task.completed_at);
     const today = new Date();
     return dueDate < today && !task.is_completed;
   }).length;
@@ -48,10 +48,15 @@ const DashboardStats: React.FC = () => {
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const cardClass =
-    "flex flex-col bg-transparent items-center justify-center bg-[#1c1c2e] text-black rounded-lg shadow-lg p-4 w-full sm:w-44 h-24 hover:bg-[#2c2c3e] transition-all";
+    "flex flex-col bg-transparent items-center justify-center hover:text-[#ffff] text-black rounded-lg shadow-lg p-4 w-full sm:w-44 h-24 hover:bg-[#184719] transition-all";
 
   return (
+    <>
+       <div className="flex justify-center p-5" >
+         <b>  <h1 className="text-2xl  text-cowberry-green-600 ">Task Updates</h1></b>
+        </div>
     <div className="flex flex-wrap gap-4 p-4  justify-center">
+     
       <div className={cardClass}>
         <p className="text-sm text-gray-400">Active Tasks</p>
         <p className="text-xl font-semibold">{activeTasks}</p>
@@ -69,6 +74,7 @@ const DashboardStats: React.FC = () => {
         <p className="text-xl font-semibold">{dueTasks}</p>
       </div>
     </div>
+    </>
   );
 };
 

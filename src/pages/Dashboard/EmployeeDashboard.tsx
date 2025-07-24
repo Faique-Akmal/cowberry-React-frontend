@@ -31,20 +31,34 @@ function EmployeeDashboard() {
     fetchUser();
   }, []);
 
+  
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    else if (hour < 17) return "Good Afternoon";
+    else return "Good Evening";
+  };
+
   return (
     <>
-      <PageMeta title="DASHBOARD" description="xgde" />
+      <PageMeta title="Employee Dashboard" description="Employee dashboard" />
       <div className="grid gap-12 md:gap-4">
         <div className="col-span-3 space-x-4 xl:col-span-12">
-          <h1 className="text-3xl font-bold mb-4 text-cowberry-green-600 " > WELCOME
-           <span className="  mx-3">{user?.full_name || user?.username || ""}  </span>  </h1>
-          <p className="text-gray-600 mb-6">
-            Welcome to your dashboard! Here you can find your tasks, attendance, and other important information.
-          </p>
-         
-        <div className="col-span-3 space-x-4 xl:col-span-12">
+      <h1 className="text-3xl font-bold mb-4 text-cowberry-green-600">
+        {getGreeting()}
+        <span className="mx-3">
+          {user?.full_name || user?.username || ""}
+        </span>
+      </h1>
+      <p className="text-gray-600 mb-6">
+        Welcome to your dashboard! Here you can find your tasks, attendance, and other important information.
+      </p>
+    </div>
+  
+
+           <div className="col-span-3 space-x-4 xl:col-span-12">
          <UserMetaCard/>
-        </div>
         </div>
 
         <div className="col-span-3 space-x-4 xl:col-span-12">

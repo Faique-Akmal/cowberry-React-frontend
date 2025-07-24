@@ -96,24 +96,46 @@ useEffect(() => {
     setSelectedTask(null);
   };
 
-  const updateTaskStatus = async (status: string) => {
-    if (!selectedTask) return;
-    try {
-      await API.patch(
-        `/tasks/${selectedTask.id}/`,
-        { status },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      fetchTasks();
-      closeModal();
-    } catch (err) {
-      console.error("Error updating task status", err);
+ const updateTaskStatus = async (status: string) => {
+  if (!selectedTask || !selectedTask.id) {
+    console.warn("No task selected for updating.");
+    return;
+  }
+
+  const accessToken = localStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    console.error("Access token missing.");
+    return;
+  }
+
+  try {
+    const response = await API.patch(
+      `/tasks/${selectedTask.id}/`,
+      { status },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (response.status === 200 || response.status === 204) {
+      console.log("Task updated successfully:", response.data);
+      fetchTasks(); // ✅ Refresh list
+      closeModal(); // ✅ Close modal after update
+    } else {
+      console.warn("Unexpected response:", response);
     }
-  };
+  } catch (err: any) {
+    const errorMessage =
+      err.response?.data?.detail ||
+      err.response?.data?.message ||
+      "Something went wrong while updating the task status.";
+    console.error("Update error:", errorMessage);
+    // Optionally show a toast or UI message here
+  }
+};
 
   const deleteTask = async () => {
     if (!selectedTask || !selectedTask.id) {

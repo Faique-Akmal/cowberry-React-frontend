@@ -48,29 +48,29 @@ const DashboardStats: React.FC = () => {
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const cardClass =
-    "flex flex-col bg-transparent items-center justify-center hover:text-[#ffff] text-black rounded-lg shadow-lg p-4 w-full sm:w-44 h-24 hover:bg-[#184719] transition-all";
+    "  flex flex-col  bg-[url('/123.png')] bg-cover bg-blur  items-center justify-center hover:text-[#ffff] text-gray-500 rounded-lg shadow-lg p-4 w-full sm:w-44 h-24 hover:bg-[#184719] transition-all";
 
   return (
     <>
-       <div className="flex justify-center p-5" >
+       <div className="relative flex justify-center p-5"  >
          <b>  <h1 className="text-2xl  text-cowberry-green-600 ">Task Updates</h1></b>
         </div>
     <div className="flex flex-wrap gap-4 p-4  justify-center">
      
-      <div className={cardClass}>
-        <p className="text-sm text-gray-400">Active Tasks</p>
+      <div className={cardClass}  >
+        <p className="text-sm ">Active Tasks</p>
         <p className="text-xl font-semibold">{activeTasks}</p>
       </div>
-      <div className={cardClass}>
-        <p className="text-sm text-gray-400">Progress</p>
+      <div className={cardClass} >
+        <p className="text-sm ">Progress</p>
         <p className="text-xl font-semibold">{progress}%</p>
       </div>
-      <div className={cardClass}>
-        <p className="text-sm text-gray-400">Completed Tasks</p>
+      <div className={cardClass} >
+        <p className="text-sm ">Completed Tasks</p>
         <p className="text-xl font-semibold">{completedTasks}</p>
       </div>
-      <div className={cardClass}>
-        <p className="text-sm text-gray-400">Due Tasks</p>
+      <div className={cardClass} >
+        <p className="text-sm  ">Due Tasks</p>
         <p className="text-xl font-semibold">{dueTasks}</p>
       </div>
     </div>

@@ -45,14 +45,14 @@ function EmployeeDashboard() {
       <PageMeta title="Employee Dashboard" description="Employee dashboard" />
       <div className="grid gap-12 md:gap-4">
         <div className="col-span-3 space-x-4 xl:col-span-12">
-      <h1 className="text-3xl font-bold mb-4 text-cowberry-green-600">
+      <h1 className="text-3xl font-bold mb-4 text-cowberry-green-500 animate-pulse">
         {getGreeting()}
         <span className="mx-3">
           {user?.full_name || user?.username || ""}
         </span>
       </h1>
       <p className="text-gray-600 mb-6">
-        Welcome to your dashboard! Here you can find your tasks, attendance, and other important information.
+        Welcome to your dashboard! let's make progress on your goals today! ✅💪
       </p>
     </div>
   
@@ -67,7 +67,7 @@ function EmployeeDashboard() {
 
         <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
          
-            <Link to="/attandanceStart-page">   <b> GO TO ATTANDANCE PAGE </b>  </Link>
+            <Link to="/attandanceStart-page ">   <b className="animate-pulse text-cowberry-green-500"> Go to Attandance Page </b>  </Link>
         </div>
 
         {/* <div className="col-span-3 space-x-4 xl:col-span-12">

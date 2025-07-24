@@ -71,7 +71,7 @@ const TaskPage = () => {
 
         <input type="date" name="date" required
           value={formData.date} onChange={handleChange}
-          className="w-full border p-2 rounded" />
+          className="w-full border p-2 rounded"   />
 
         <label className="flex items-center gap-2">
           <input type="checkbox" name="is_completed"

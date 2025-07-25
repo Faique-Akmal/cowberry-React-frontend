@@ -55,23 +55,25 @@ function EmployeeDashboard() {
     else return "GOOD EVENING";
   };
 
+ 
+
   return (
     <>
       <PageMeta title="Employee Dashboard" description="Employee dashboard" />
-      <div className="grid gap-12 md:gap-4">
-        <div className="col-span-3 space-x-4 xl:col-span-12">
-          <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif">
+      <div className="grid gap-12 md:gap-4 bg-white  rounded-2xl p-6">
+        <div className="col-span-3 space-x-4 xl:col-span-12 container border rounded-2xl p-5 ">
+          <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif text-cowberry-green-600 ">
             {getGreeting()}
-            <span className="mx-3">
+            <span className="mx-3 capitalize">
               {user?.full_name || user?.username || ""}
             </span>
-            {/* 🎉 Confetti Animation */}
+            {/* 🎉 Confetti Animation
             <Confetti
               width={windowSize.width}
               height={windowSize.height}
-              numberOfPieces={200}
+              numberOfPieces={400}
               recycle={false}
-            />
+            /> */}
           </h1>
           <p className="text-gray-600 mb-6 font-serif">
             Welcome to your dashboard! Let's make progress on your goals today!
@@ -88,7 +90,7 @@ function EmployeeDashboard() {
 
         <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
           <Link to="/attandanceStart-page">
-            <b className="animate-pulse font-extrabold">
+            <b className="animate-pulse font-extrabold text-dashboard-royalblue-200">
               Go to Attendance Page
             </b>
           </Link>

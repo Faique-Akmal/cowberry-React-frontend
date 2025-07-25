@@ -88,12 +88,12 @@ export default function SignInForm() {
     if (isVerified) {
       // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
 
-      navigate("/employee-dashboard", { replace: true });  
+      navigate("/attandance-start", { replace: true });  
     } else {
       navigate("/LoginWithOtp", { replace: true });    
     }
   } else {
-    if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+    if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
       if (isVerified) {
       navigate( "/home");  
     } else {

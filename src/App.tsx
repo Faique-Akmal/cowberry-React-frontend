@@ -39,6 +39,7 @@ import LocationMap from "./pages/Employee/LiveTracking";
 import LiveLocationMap from "./components/Maps/LiveLocationMap";
 import LogoutButton from "./pages/AuthPages/Logout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
+import AllAttendanceByDepartment from "./pages/Employee/AllAttandance";
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -52,14 +53,13 @@ export default function App() {
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
             <Route path="/change-password" element={ <ChangePasswordModal isOpen={true}  onClose={() => {}} />} />
-           {/*
+           
             <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
-             */}
+            
               <Route  path="/" element={<SignIn />} />
               
           {/* Dashboard Layout */}
           <Route  element={<AppLayout />}>
-
                 
                   
            {/* Home Page */}
@@ -114,6 +114,7 @@ export default function App() {
             <Route path="/basic-tables" element={<BasicTables /> } />
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
+            <Route path="/attandance-start-admin" element={ <AllAttendanceByDepartment />} />
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}

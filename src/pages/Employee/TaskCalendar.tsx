@@ -5,6 +5,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import dayjs from "dayjs";
 import API from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import { role } from "../../store/store";
 
 // Define proper TypeScript interfaces
 interface Task {
@@ -74,6 +75,11 @@ const TaskCalendar = () => {
       setLoading(false);
     }
   };
+
+   const getRoleName = (roleId: number): string => {
+      const roleObj = role.find((r) => r.id === roleId);
+      return roleObj ? roleObj.name : "Unknown";
+    };
 
   const handleEventClick = (clickInfo: any) => {
     setSelectedTask(clickInfo.event);
@@ -195,7 +201,8 @@ const TaskCalendar = () => {
               <div>
                 <span className="font-medium text-gray-700">Assigned By:</span>
                 <span className="ml-2 text-gray-900">
-                  {selectedTask.extendedProps?.assigned_by || 'Unknown'}
+                  {getRoleName(selectedTask.extendedProps?.assigned_by || 'Unknown')}
+                  {/* {selectedTask.extendedProps?.assigned_by || 'Unknown'} */}
                 </span>
               </div>
             </div>

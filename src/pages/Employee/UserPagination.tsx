@@ -11,7 +11,7 @@ type User = {
   employee_code: string;
   role: number;
   profile_image: string | null;
-  // is_active: boolean;
+  is_online: boolean;
 };
 
 type PaginationResponse = {
@@ -80,8 +80,8 @@ const UserPagination: React.FC = () => {
   };
 
   return (
-    <div className="">
-      <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
+    <div className="bg-[linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.2)),url('/123.png'),url('/old-paper-texture.jpg')] bg-cover">
+      <h2 className="text-2xl font-bold mb-4 text-center ">Users List</h2>
 
       <div className="mb-4 flex justify-center">
         <input
@@ -96,7 +96,7 @@ const UserPagination: React.FC = () => {
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>
       ) : (
-        <div className="overflow-x-auto shadow rounded-lg">
+        <div className="overflow-x-auto  rounded-lg bg-transparent">
           <table className="min-w-full bg-white border border-gray-200 text-sm">
             <thead className="bg-gray-100 text-gray-700">
               <tr>
@@ -111,7 +111,7 @@ const UserPagination: React.FC = () => {
                 <th className="py-2 px-4 text-left">Mobile</th>
                 <th className="py-2 px-4 text-left">Employee Code</th>
                 <th className="py-2 px-4 text-left">Role</th>
-                {/* <th className="py-2 px-4 text-left">Status</th> */}
+                <th className="py-2 px-4 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -124,13 +124,13 @@ const UserPagination: React.FC = () => {
                     <td className="py-2 px-4">{user.mobile_no || "N/A"}</td>
                     <td className="py-2 px-4">{user.employee_code}</td>
                     <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
-                    {/* <td className="py-2 px-4">
-                      {user.is_active ? (
-                        <span className="text-green-600 font-medium">Active</span>
+                    <td className="py-2 px-4">
+                      {user.is_online ? (
+                        <span className="text-green-600 font-medium">Online</span>
                       ) : (
-                        <span className="text-red-500 font-medium">Inactive</span>
+                        <span className="text-red-500 font-medium">Offline</span>
                       )}
-                    </td> */}
+                    </td>
                   </tr>
                 ))
               ) : (

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import Confetti from 'react-confetti';
+import API from '../../api/axios';
+import { role } from "../../store/store";
 
 interface User {
   id: number;
-  name: string;
+  username: string;
   role: string;
   birth_date: string;
   profile_img: string;
@@ -37,10 +38,15 @@ const BirthdayCardList: React.FC = () => {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
   };
 
+   const getRoleName = (roleId: number): string => {
+      const roleObj = role.find((r) => r.id === roleId);
+      return roleObj ? roleObj.name : "Unknown";
+    };
+  
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get('http://your-api-url.com/api/users/', {
+        const res = await API.get('/users/', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
@@ -70,34 +76,34 @@ const BirthdayCardList: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-lg w-full relative overflow-hidden">
+    <div className="p-6 bg-white rounded-2xl shadow-xl w-full h-full relative">
       {birthdayUsers.length > 0 && (
-        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={200} />
+        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={50} recycle={false} />
       )}
 
-      <h2 className="text-xl font-bold mb-4">🎉 Today’s Birthdays</h2>
+      <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">🎉 Today’s Birthdays</h2>
 
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500 text-center">Loading birthdays...</p>
       ) : birthdayUsers.length === 0 ? (
-        <p className="text-gray-500">No birthdays today.</p>
+        <p className="text-gray-500 text-center">No birthdays today.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="max-h-[400px] overflow-y-auto px-2 space-y-4 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-purple-100">
           {birthdayUsers.map((user) => (
             <div
               key={user.id}
-              className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg border border-blue-200 shadow hover:shadow-md"
+              className="flex items-center gap-4 p-4 bg-purple-50 rounded-xl border border-purple-200 shadow hover:shadow-lg transition"
             >
               <img
-                src={user.profile_img}
-                alt={user.name}
-                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+                src={user.profile_img || '/cowbrry-img.png'}
+               
+                className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow"
               />
               <div>
-                <h3 className="text-lg font-semibold">{user.name}</h3>
-                <p className="text-sm text-gray-600">{user.role}</p>
-                <p className="text-sm text-blue-600">
-                  🎂 {formatDate(user.birth_date)} ({calculateAge(user.birth_date)} years)
+                <h3 className="text-lg font-semibold text-purple-800">{user.username}</h3>
+                <p className="text-sm text-gray-600 capitalize">{getRoleName(user.role)}</p>
+                <p className="text-sm text-purple-600">
+                  🎂 {formatDate(user.birth_date)} &bull; {calculateAge(user.birth_date)} years
                 </p>
               </div>
             </div>

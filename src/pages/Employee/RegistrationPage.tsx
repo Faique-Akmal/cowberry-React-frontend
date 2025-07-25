@@ -1,15 +1,18 @@
 import React, { useState } from "react";
-// import axios from "axios";
-
 import API from "../../api/axios";
 
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
     username: "",
     email: "",
     password: "",
     role: "",
     department: "",
+    mobile_no: "",
+    birth_date: "",
+    address: "",
   });
 
   const [message, setMessage] = useState("");
@@ -30,7 +33,6 @@ export default function RegisterUserForm() {
     setIsError(false);
     setIsLoading(true);
 
-    // Validation
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
       setMessage("❌ All fields are required.");
       setIsError(true);
@@ -46,43 +48,39 @@ export default function RegisterUserForm() {
     }
 
     try {
-      // Payload setup - update according to backend expectations
       const payload = {
-        username: formData.username.trim(),
-        email: formData.email.trim(),
-        password: formData.password,
-        role: parseInt(formData.role, 10),
-        department: parseInt(formData.department, 10),
+        ...formData,
+        role: parseInt(formData.role),
+        department: parseInt(formData.department),
       };
 
-      console.log("Payload:", payload);
-
-      const response = await API.post("/register/", payload, {
-       
-      });
+      const response = await API.post("/register/", payload);
 
       if (response.status === 201 || response.status === 200) {
         setMessage("✅ User registered successfully!");
         setIsError(false);
         setFormData({
+          first_name: "",
+          last_name: "",
           username: "",
           email: "",
           password: "",
           role: "",
           department: "",
+          mobile_no: "",
+          birth_date: "",
+          address: "",
         });
       } else {
         setMessage("❌ Registration failed. Try again.");
         setIsError(true);
       }
     } catch (error: any) {
-      console.error("Error response:", error?.response?.data);
-
-      let errMsg = "❌ Something went wrong.";
       const data = error?.response?.data;
       const status = error?.response?.status;
+      let errMsg = "❌ Something went wrong.";
 
-      if (status === 400 && data && typeof data === "object") {
+      if (status === 400 && typeof data === "object") {
         const firstError = Object.values(data)[0];
         errMsg = Array.isArray(firstError) ? firstError[0] : String(firstError);
       } else if (status === 409) {
@@ -103,10 +101,28 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 rounded-xl shadow-md bg-[linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.2)),url('/123.png'),url('/old-paper-texture.jpg')] bg-cover">
+    <div className="max-w-md mx-auto mt-10 p-6 rounded-xl shadow-md bg-transparent">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          name="first_name"
+          placeholder="First Name"
+          value={formData.first_name}
+          onChange={handleChange}
+          required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
+        <input
+          type="text"
+          name="last_name"
+          placeholder="Last Name"
+          value={formData.last_name}
+          onChange={handleChange}
+          required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
         <input
           type="text"
           name="username"
@@ -116,7 +132,6 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-
         <input
           type="email"
           name="email"
@@ -126,7 +141,6 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-
         <input
           type="password"
           name="password"
@@ -134,10 +148,9 @@ export default function RegisterUserForm() {
           value={formData.password}
           onChange={handleChange}
           required
-          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
           minLength={6}
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-
         <select
           name="role"
           value={formData.role}
@@ -153,7 +166,6 @@ export default function RegisterUserForm() {
           <option value="5">Executive</option>
           <option value="6">Employee</option>
         </select>
-
         <select
           name="department"
           value={formData.department}
@@ -162,13 +174,42 @@ export default function RegisterUserForm() {
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="">Select Department</option>
-          <option value="1">HR</option>
-          <option value="2">Sales</option>
-          <option value="3">Support</option>
-          <option value="4">IT</option>
-          <option value="5">Product</option>
+          <option value="1">support</option>
+          <option value="2">Procurement</option>
+          <option value="3">Electric</option>
+          <option value="4">Order</option>
+          <option value="5">Marketing</option>
           <option value="6">Accountant</option>
+          <option value="7">IT</option>
+          <option value="8">HR</option>
         </select>
+        <input
+          type="tel"
+          name="mobile_no"
+          placeholder="Mobile No."
+          value={formData.mobile_no}
+          onChange={handleChange}
+          required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
+        <input
+          type="date"
+          name="birth_date"
+          placeholder="Birth Date"
+          value={formData.birth_date}
+          onChange={handleChange}
+          required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
+        <input
+          type="text"
+          name="address"
+          placeholder="Enter address here"
+          value={formData.address}
+          onChange={handleChange}
+          required
+          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
 
         {message && (
           <div className={`p-3 text-sm rounded ${isError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>

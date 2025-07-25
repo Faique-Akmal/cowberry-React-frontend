@@ -89,6 +89,7 @@ const navItems: NavItem[] = [
       { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
       { name: "Assign Task form", path: "/assign-task-page", role: ["admin" , "department_head" ,"manager" , "hr"] },
       { name: "Task Manager", path: "/admin-task-manager", role: ["admin" , "department_head" ,"manager" , "hr"] },
+      { name: "Attandance Start list ", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr"] },
     ],
   },
   {

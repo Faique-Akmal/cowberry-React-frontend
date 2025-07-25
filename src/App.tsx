@@ -69,7 +69,7 @@ export default function App() {
             <Route  path="/home" element={   <Home />  }  />
 
             {/* User Registration Page */}
-            <Route path="/user-register" element={ <RegistrationPage />} />
+            {/* <Route path="/user-register" element={ <RegistrationPage />} /> */}
 
 
            
@@ -84,16 +84,16 @@ export default function App() {
               <Route path="/task-show-page" element={<AttendanceGuard> <TaskShowPage /> </AttendanceGuard>}></Route>
               <Route path="/task-calendar" element={<AttendanceGuard><TaskCalendar /></AttendanceGuard>}></Route>
               <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
-              {/* <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route> */}
+              <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route>
 
             {/* <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} /> */}
 
       
-           <Route path="/task-show-page" element={
+           {/* <Route path="/task-show-page" element={
           <TaskShowPage />} />
-           <Route path="/task-calendar" element={  <TaskCalendar />} />
+           <Route path="/task-calendar" element={  <TaskCalendar />} /> */}
            {/* <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}></ProtectedRoute>} /> */}
-           <Route path="/employee-dashboard" element={<EmployeeDashboard/> } />
+           {/* <Route path="/employee-dashboard" element={<EmployeeDashboard/> } /> */}
 
 
 

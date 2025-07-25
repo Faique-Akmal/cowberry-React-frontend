@@ -59,6 +59,7 @@ export default function SignInForm() {
       
         
          localStorage.setItem("userRole", response.data.role); // e.g., "admin" or "employee"
+         localStorage.setItem("userId", response.data.userid); 
 
 
 

@@ -88,7 +88,7 @@ export default function SignInForm() {
     if (isVerified) {
       // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
 
-      navigate("/attandance-start", { replace: true });  
+      navigate("/attandanceStart-page", { replace: true });  
     } else {
       navigate("/LoginWithOtp", { replace: true });    
     }

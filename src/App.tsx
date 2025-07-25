@@ -40,6 +40,8 @@ import LiveLocationMap from "./components/Maps/LiveLocationMap";
 import LogoutButton from "./pages/AuthPages/Logout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import AllAttendanceByDepartment from "./pages/Employee/AllAttandance";
+import AttendanceGuard from "./guards/AttandanceGuard";
+
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -72,16 +74,19 @@ export default function App() {
 
            
             
-            {/* Dashboard Pages */}
-            {/* <Route path="/dashboard" element={
-           /> */}
-
+          
         
             {/* Employee Pages */}
-            {/* <Route path="/attandanceStart-page" element={<AttendanceForm/>}/> */}
+          
             <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
+              {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
+              <Route path="/attandanceEnd-page" element={<AttendanceGuard> <AttendanceEndForm /> </AttendanceGuard>}></Route>
+              <Route path="/task-show-page" element={<AttendanceGuard> <TaskShowPage /> </AttendanceGuard>}></Route>
+              <Route path="/task-calendar" element={<AttendanceGuard><TaskCalendar /></AttendanceGuard>}></Route>
+              <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
+              {/* <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route> */}
 
-            <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
+            {/* <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} /> */}
 
       
            <Route path="/task-show-page" element={
@@ -91,12 +96,7 @@ export default function App() {
            <Route path="/employee-dashboard" element={<EmployeeDashboard/> } />
 
 
-          
 
-{/*          
-            <Route path="/user-location" element={<LiveCoordinates/>} /> */}
-{/* 
-            <Route path="/live-tracking" element={<LiveLocationMap/>} /> */}
 
 
             

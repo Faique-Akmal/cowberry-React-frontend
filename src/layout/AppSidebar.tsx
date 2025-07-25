@@ -15,8 +15,10 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-
-
+import { MdAppRegistration } from "react-icons/md";
+import { FaTasks } from "react-icons/fa";
+import { FaHouseChimneyUser } from "react-icons/fa6";
+import { MdListAlt } from "react-icons/md";
 
 
 
@@ -85,12 +87,36 @@ const navItems: NavItem[] = [
     name: "Forms",
     icon: <TableIcon />,
     subItems: [
-      { name: "Users List", path: "/basic-tables", role: ["admin", "department_head" ,"manager" , "hr"] },
-      { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
+      // { name: "Users List", path: "/basic-tables", role: ["admin", "department_head" ,"manager" , "hr"] },
+      // { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
       { name: "Assign Task form", path: "/assign-task-page", role: ["admin" , "department_head" ,"manager" , "hr"] },
-      { name: "Task Manager", path: "/admin-task-manager", role: ["admin" , "department_head" ,"manager" , "hr"] },
-      { name: "Attandance Start list ", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr"] },
+      // { name: "Task Manager", path: "/admin-task-manager", role: ["admin" , "department_head" ,"manager" , "hr"] },
+      // { name: "Attandance Start list ", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr"] },
     ],
+  },
+   {
+    icon: <MdListAlt />,
+    name: "Attandance Start list",
+    path: "/attandance-start-admin",
+     role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
+  },
+  {
+    icon: <MdAppRegistration />,
+    name: "Register User form",
+    path: "/user-register",
+     role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
+  },
+  {
+    icon: <FaTasks />,
+    name: "Task Manager",
+    path: "/admin-task-manager",
+  role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
+  },
+   {
+    icon: <FaHouseChimneyUser />,
+    name: "All Users",
+    path: "/basic-tables",
+  role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
   },
   {
     icon: <CalenderIcon />,

@@ -64,7 +64,7 @@ export default function AllAttendanceByDepartment() {
   };
 
   const filteredData = selectedDept
-    ? attendances.filter((att) => att.department_name.toLowerCase() === selectedDept.toLowerCase())
+    ? attendances.filter((att) => att.department.toLowerCase() === selectedDept.toLowerCase())
     : attendances;
 
   return (
@@ -95,7 +95,7 @@ export default function AllAttendanceByDepartment() {
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Full Name</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">End Time</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Department</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Description</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>

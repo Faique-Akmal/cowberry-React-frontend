@@ -73,7 +73,7 @@ export default function AttendanceForm() {
             start_lat: position.coords.latitude.toString(),
             start_lng: position.coords.longitude.toString(),
           }));
-          setMessage('✅ User and location fetched successfully.');
+          
           setLocationFetched(true);
         },
         (err) => {
@@ -223,6 +223,7 @@ export default function AttendanceForm() {
         >
           {loading ? 'Submitting...' : '✅ Submit Attendance'}
         </button>
+        {message}
       </form>
     </div>
   );

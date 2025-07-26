@@ -28,6 +28,8 @@ interface Props {
   const { sendJson } = useChatSocket({
     chatGroupName,
     onMessage: (data) => {
+      console.log("got onMessage data :", data);
+
       switch (data.type) {
         case "message_history":
           setMessages(data.messages);
@@ -51,10 +53,14 @@ interface Props {
     },
   });
 
+
   // Load message history on mount
   useEffect(() => {
-    sendJson({ type: "message_history", receiver_id: receiverId });
-  }, [receiverId]);
+    ;(async()=>{
+      const resSocket = await sendJson({ type: "message_history", group_id: parseInt(chatGroupName) });
+      console.log("resSocket :", resSocket)
+    })();
+  }, [chatGroupName]);
 
   const sendMessage = () => {
     if (input.trim()) {
@@ -62,7 +68,7 @@ interface Props {
         type: "send_message",
         content: input,
         group_id: parseInt(chatGroupName),
-        receiver_id: receiverId,
+        receiver_id: null,
         parent_id: replyTo?.id,
       });
       setInput("");

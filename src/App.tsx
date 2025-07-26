@@ -30,7 +30,8 @@ import AttendanceForm from "./pages/Employee/AttandanceStart";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
 import { Toaster } from "react-hot-toast";
-import CompTest from "./pages/CompTest";
+// import CompTest from "./pages/CompTest";
+import CompTestHistorySocket from "./pages/CompTestHistorySocket";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -91,7 +92,8 @@ export default function App() {
             <Route path="/bar-chart" element={<BarChart />} />
 
             {/* Test Route */}
-            <Route path="/test" element={<CompTest />} />
+            <Route path="/test" element={<CompTestHistorySocket />} />
+            {/* <Route path="/test" element={<CompTest />} /> */}
             {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>
 

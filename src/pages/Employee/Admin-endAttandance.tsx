@@ -5,11 +5,11 @@ import API from "../../api/axios"; // your pre-configured axios instance
 interface Attendance {
   id: number;
   date: string;
-  start_time: string;
+  end_time: string;
   odometer_image: string;
   selfie_image: string;
-  start_lat: string;
-  start_lng: string;
+  end_lat: string;
+  end_lng: string;
   description: string;
   user: {
     id: number;
@@ -19,7 +19,7 @@ interface Attendance {
   };
 }
 
-export default function AllAttendanceByDepartment() {
+export default function AttandanceEndAdmin() {
     const allowedDepartments = ["admin", "department_head", "hr", "it", "accountant"];
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
@@ -31,7 +31,7 @@ export default function AllAttendanceByDepartment() {
 
   const fetchAttendances = async () => {
     try {
-      const res = await API.get("/attendance-start/");       setAttendances(res.data.results || []);
+      const res = await API.get("/attendance-end/");       setAttendances(res.data.results || []);
       const uniqueDepts = [
         ...new Set(res.data.results.map((item: Attendance) => item.user.department)),
       ];
@@ -93,11 +93,11 @@ const filteredData = selectedDept
                 <td className="px-4 py-2">{}</td>
                 {/* <td className="px-4 py-2">{item.id}</td> */}
                 <td className="px-4 py-2">{item.date}</td>
-                <td className="px-4 py-2">{item.start_time}</td>
+                <td className="px-4 py-2">{item.end_time}</td>
                 <td className="px-4 py-2">{item.user.username}</td>
                 <td className="px-4 py-2">{item.user.department}</td>
                 <td className="px-4 py-2">{item.description}</td>
-                <td className="px-4 py-2">{item.start_lat}, {item.start_lng}</td>
+                <td className="px-4 py-2">{item.end_lat}, {item.end_lng}</td>
                 <td className="px-4 py-2">
                   <img src={item.odometer_image} alt="Odometer" className="h-12 w-12 object-cover rounded" />
                 </td>

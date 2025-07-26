@@ -65,7 +65,7 @@ function EmployeeDashboard() {
           <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif text-cowberry-green-600 ">
             {getGreeting()}
             <span className="mx-3 capitalize">
-              {user?.full_name || user?.username || ""}
+            {user?.full_name || user?.username || ""}
             </span>
             {/* 🎉 Confetti Animation
             <Confetti
@@ -88,13 +88,13 @@ function EmployeeDashboard() {
           <DashboardStats />
         </div>
 
-        <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
+        {/* <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
           <Link to="/attandanceStart-page">
             <b className="animate-pulse font-extrabold text-dashboard-royalblue-200">
               Go to Attendance Page
             </b>
           </Link>
-        </div>
+        </div> */}
       </div>
     </>
   );

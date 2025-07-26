@@ -27,7 +27,7 @@ import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
-import LocationFetcher from "./pages/Employee/LocationFetcher";
+// import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
@@ -35,12 +35,13 @@ import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 // import LiveUserLocation from "./pages/Employee/LiveUserLocation";
 // import LiveTracking from "./pages/Employee/LiveTracking";
 import AdminTaskManager from "./pages/Employee/TaskManager";
-import LocationMap from "./pages/Employee/LiveTracking";
-import LiveLocationMap from "./components/Maps/LiveLocationMap";
+// import LocationMap from "./pages/Employee/LiveTracking";
+// import LiveLocationMap from "./components/Maps/LiveLocationMap";
 import LogoutButton from "./pages/AuthPages/Logout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
-import AllAttendanceByDepartment from "./pages/Employee/AllAttandance";
+import AllAttendanceByDepartment from "./pages/Employee/Admin-startAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
+import AttandanceEndAdmin from "./pages/Employee/Admin-endAttandance";
 
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AllAttendanceByDepartment />} />
+            <Route path="/attandance-end-admin" element={ <AttandanceEndAdmin/>} />
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}

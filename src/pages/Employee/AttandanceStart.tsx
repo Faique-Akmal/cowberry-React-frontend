@@ -39,12 +39,12 @@ export default function AttendanceForm() {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
-      setMessage(`❌ Unsupported file format for ${field}.`);
+      setMessage(` Unsupported file format for ${field}.`);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage(`❌ ${field} exceeds 5MB.`);
+      setMessage(` ${field} exceeds 5MB.`);
       return;
     }
 
@@ -78,13 +78,13 @@ export default function AttendanceForm() {
         },
         (err) => {
           console.error(err);
-          setMessage('❌ Failed to fetch location. Please allow GPS access.');
+          setMessage('Failed to fetch location. Please allow GPS access.');
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } catch (error) {
       console.error(error);
-      setMessage('❌ Failed to fetch user info.');
+      setMessage('Failed to fetch user info.');
     }
   };
 
@@ -116,7 +116,7 @@ export default function AttendanceForm() {
       });
 
       if (res.status === 200 || res.status === 201) {
-        setMessage('✅ Attendance submitted successfully.');
+        setMessage('Attendance submitted successfully.');
 
         // Set local attendance flag
         const today = new Date().toISOString().split('T')[0];
@@ -138,14 +138,14 @@ export default function AttendanceForm() {
 
         navigate('/employee-dashboard');
       } else {
-        setMessage('❌ Something went wrong, try again.');
+        setMessage(' Something went wrong, try again.');
       }
     } catch (err: any) {
       console.error('Error:', err);
       if (err.response?.data) {
-        setMessage(`❌ ${JSON.stringify(err.response.data)}`);
+        setMessage(` ${JSON.stringify(err.response.data)}`);
       } else {
-        setMessage('❌ Network or server error.');
+        setMessage(' Network or server error.');
       }
     } finally {
       setLoading(false);
@@ -154,7 +154,7 @@ export default function AttendanceForm() {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-center">📍 Start Attendance</h2>
+      <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
 
       {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
 
@@ -163,7 +163,7 @@ export default function AttendanceForm() {
         disabled={locationFetched}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ? '✅ Ready' : '📌 Click to Start Attendance'}
+        {locationFetched ? ' Ready to go ' : ' Click to Start Attendance'}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">

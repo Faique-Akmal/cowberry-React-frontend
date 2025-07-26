@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import ChatList from "./ChatList"
 import ChatWindow from "./ChatWindow"
 import {axiosGetAllGroup, AxiosAllGroup, axiosGetGroupMsg, AxiosGetGroupMsg } from "../../store/chatStore"
-import ChatSocket from "./ChatSocket";
+// import ChatSocket from "./ChatSocket";
 // import HamburgerSidebar from "../common/HamburgerSidebar";
 // import ChatRoom from "./ChatRoom";
 import { FaBars, FaTimes } from "react-icons/fa";
@@ -62,9 +62,11 @@ const ChatBox: React.FC = () => {
         <HamburgerSidebar />
       </div> */}
 
-      <div className="mb-4 w-full flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
+      {/* <div className="mb-4 w-full flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
         <ChatSocket groupId={activeChatId} allMsg={allMsg} />
-      </div>
+      </div> */}
+
+      
       {/* <div className="flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
         <ChatList groups={groups} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
         <ChatWindow group={activeChat} allMsg={allMsg} dispatch={setAllMsg} />
@@ -101,7 +103,7 @@ const ChatBox: React.FC = () => {
 
         {/* Main Chat Area */}
         <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-          <ChatWindow group={activeChat} allMsg={allMsg} dispatch={(values)=>setAllMsg(values)} />
+          <ChatWindow group={activeChat} allMsg={allMsg} />
         </div>
       </div>
     </div>

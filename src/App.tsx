@@ -31,6 +31,7 @@ import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
 import { Toaster } from "react-hot-toast";
 import CompTest from "./pages/CompTest";
+// import { SocketChatWindow } from "./components/chat/SocketChatWindow";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -91,6 +92,7 @@ export default function App() {
 
             {/* Test Route */}
             <Route path="/test" element={<CompTest />} />
+            {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>
 
           {/* Auth Layout */}

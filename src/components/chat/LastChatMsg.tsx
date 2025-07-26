@@ -20,7 +20,7 @@ function  LastChatMsg({groupId}:Props) {
   }, [groupId]);
 
   return (
-    <p className="font-semibold">{lastMsg}</p>
+    <p className="font-semibold">{lastMsg ? lastMsg : "No last message found."}</p>
   )
 }
 

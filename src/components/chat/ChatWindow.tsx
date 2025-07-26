@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from "react"
-import { AxiosAllGroup, AxiosGetGroupMsg, axiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
+import { AxiosAllGroup, AxiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
 import MemberDropdown from "./MemberDropdown";
+import MsgCard, { WSMessage } from "./MsgCard";
 import Alert from "../ui/alert/Alert";
-import TimeZone from "../common/TimeZone";
 import toast from 'react-hot-toast';
-
+ 
 interface Props {
   group: AxiosAllGroup; 
   allMsg: AxiosGetGroupMsg[];
-  dispatch: (values: AxiosGetGroupMsg[]) => void;
+  dispatch?: (values: AxiosGetGroupMsg[]) => void;
   // dispatch: React.Dispatch<React.SetStateAction<never[]>>;
 }
 
-const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
+const ChatWindow: React.FC<Props> = ({ group, allMsg }) => {
   const [newMsg, setNewMsg] = useState<string>("");
   const [meUserId, setMeUserId] = useState<number>();
+  const [messages, setMessages] = useState<WSMessage[]>([]);
+  
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,22 +40,35 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
       }
     }
 
-     ;(async () => {
-        if(group?.group_id){
+    //  ;(async () => {
+    //     if(group?.group_id){
           
-          try {
-            const groupMsg = await axiosGetGroupMsg(group?.group_id);
-            if(groupMsg.length > 0){
-              dispatch(groupMsg);
-            } else dispatch([]);
-          } catch (error) {
-            console.error("Get message request error:", error);
-          }
-        }
-      })();
+    //       try {
+    //         const groupMsg = await axiosGetGroupMsg(group?.group_id);
+    //         if(groupMsg.length > 0){
+    //           dispatch(groupMsg);
+    //         } else dispatch([]);
+    //       } catch (error) {
+    //         console.error("Get message request error:", error);
+    //       }
+    //     }
+    //   })();
     
     setNewMsg("")
   }
+
+  const mappedMsg = allMsg?.map((msg)=>({
+    message: msg?.content,
+    senderId: msg?.sender,
+    groupId: msg?.group,
+    messageId: msg?.id,
+    senderUsername:msg?.sender_username,
+    timestemp:msg?.sent_at
+  }));
+
+ useEffect(()=>{
+    setMessages(mappedMsg);    
+  }, [allMsg]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,8 +76,12 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
 
   useEffect(()=>{
       const localMeData = localStorage.getItem("meUser")!
-      setMeUserId(JSON.parse(localMeData)?.id);
+      const localUserID = JSON.parse(localMeData).id!
+      setMeUserId(localUserID);
   },[]);
+
+    console.count("ChatWindow rendered");
+
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
@@ -73,23 +92,8 @@ const ChatWindow: React.FC<Props> = ({ group, allMsg, dispatch }) => {
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
-        {allMsg.length > 0 ? allMsg.map((msg) => (  
-          <div
-            key={msg?.id}
-            className={`max-w-xs flex flex-col p-2 rounded-lg ${
-              meUserId === msg?.sender
-                ? "bg-brand-400 text-white self-end ml-auto rounded-br-none"
-                : "bg-brand-500 text-white self-start rounded-bl-none"
-            }`}
-            >
-            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
-              {`${msg?.sender_username}`}
-            </h4>
-            <div className="pl-2 gap-3 flex flex-col">
-              <p>{msg?.content}</p>
-              <small className="text-xs text-end text-gray-200">{<TimeZone utcDateStr={msg?.sent_at} />}</small>
-            </div>
-          </div>
+        {messages.length > 0 ? messages.map((msg) => (  
+         !!meUserId && <MsgCard key={msg?.messageId} meUserId={meUserId} msg={msg}/>
         )): (
           <Alert
           variant="warning"

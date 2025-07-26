@@ -38,13 +38,13 @@ export interface AxiosGetGroupMsg {
   sender_username: string;
   recipient: number | null;
   group: number;
-  group_name: string;
+  group_name?: string;
   content: string;
-  parent: number | null;
-  replies: AxiosGetGroupMsg[]; // Recursive structure
+  parent?: number | null;
+  replies?: AxiosGetGroupMsg[]; // Recursive structure
   sent_at: string; // ISO datetime string (can convert to Date if needed)
-  is_read: boolean;
-  read_at: string | null;
+  is_read?: boolean;
+  read_at?: string | null;
 }
 
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {
@@ -98,7 +98,7 @@ export const axiosPostSendMsg = async (newMsg:AxiosPostSendMsg) => {
 
 export const axiosGetUserStatus = async (userId:number) => {
   try {
-          const res = await API.post(`chat/messages/users/${userId}/status/`);
+          const res = await API.post(`/chat/messages/users/${userId}/status/`);
 
           if(res.data){
             console.log(res.data)
@@ -106,5 +106,18 @@ export const axiosGetUserStatus = async (userId:number) => {
           }
       } catch (error) {
         console.error("/chat/messages/users/{user_id}/status/ get request error:", error);
+      }
+};
+
+export const axiosDeleteMsg = async (messageId:number) => {
+  try {
+          const res = await API.delete(`/chat/messages/delete/${messageId}/`);
+
+          if(res?.data){
+            console.log(res?.data)
+            return res?.data;
+          }
+      } catch (error) {
+        console.error("/chat/messages/delete/{messages_id}/ message delete request error:", error);
       }
 };

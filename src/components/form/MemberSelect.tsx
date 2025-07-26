@@ -135,7 +135,7 @@ const MemberSelect: React.FC<MultiSelectProps> = ({
               className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-select dark:bg-gray-900"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex flex-col custom-scrollbar h-[200px] overflow-y-auto">
+              <div className="flex flex-col custom-scrollbar max-h-[200px] overflow-y-auto">
                 {options.length>0 ?  options.map((option, index) =>{
                   const isLast = index === options?.length - 1;
                   

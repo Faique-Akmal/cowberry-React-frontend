@@ -1,0 +1,65 @@
+import { useState } from "react"
+import MsgDropdown from "./MsgDropdown";
+// import TimeZone from "../common/TimeZone";
+
+export interface WSMessage {
+    type?: string;
+    message: string;
+    senderId: number;
+    groupId?: number;
+    messageId: number;
+    messageType?: string;
+    senderUsername:string;
+    timestemp:string;
+}
+
+interface Props {
+  meUserId: number;
+  msg: WSMessage;
+}
+
+function MsgCard({meUserId, msg}:Props) {
+const [isMsgDelete, setMsgDelete] = useState<boolean>(false)
+
+  return (
+    <div
+      className={`max-w-xs flex flex-col p-2 rounded-lg ${
+        meUserId === msg?.senderId
+          ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
+          : "bg-brand-700 text-white self-start rounded-bl-none"
+      }`}
+      >
+        {!isMsgDelete && (
+          <div className="relative flex justify-between gap-2">
+            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
+              {msg?.senderUsername}
+            </h4>
+            <MsgDropdown msgId={msg?.messageId} msgSender={msg?.senderId} meUserId={meUserId} onMsgDelete={()=>setMsgDelete(true)} />
+          </div>
+        )}
+      <div className="pl-2 gap-2 flex flex-col">
+        
+          {isMsgDelete?
+          <div className="flex gap-2 items-center text-gray-200">
+            <div title="delete icon">
+              <span>
+                <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" className="" fill="none"><title>recalled</title><path fillRule="evenodd" clipRule="evenodd" d="M7.75897 6.43054C8.93584 5.533 10.4057 5 12 5C15.866 5 19 8.13401 19 12C19 13.5943 18.467 15.0642 17.5695 16.241L7.75897 6.43054ZM6.35707 7.85707C5.50399 9.01706 5 10.4497 5 12C5 15.866 8.13401 19 12 19C13.5503 19 14.9829 18.496 16.1429 17.6429L6.35707 7.85707ZM12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3Z" fill="currentColor"></path></svg>
+              </span>
+            </div>
+            <div>
+              <em>
+                This message was deleted
+              </em>
+            </div>
+          </div> : <p>`${msg?.message}`</p>}  
+        
+        <small className="text-xs text-end text-gray-200">
+          {msg?.timestemp}
+          {/* <TimeZone utcDateStr={msg?.timestemp} /> */}
+        </small>
+      </div>
+    </div>
+  )
+}
+
+export default MsgCard

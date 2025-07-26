@@ -80,7 +80,7 @@ const UserPagination: React.FC = () => {
   };
 
   return (
-    <div className="bg-[linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.2)),url('/123.png'),url('/old-paper-texture.jpg')] bg-cover">
+    <div className="bg-[url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-2xl font-bold mb-4 text-center ">Users List</h2>
 
       <div className="mb-4 flex justify-center">

@@ -22,6 +22,8 @@ export default function EcommerceMetrics() {
 
         const userCount = response.data.count || response.data.results.length;
         setTotalUsers(userCount);
+            
+
       } catch (error) {
         console.error("Error fetching user count:", error);
       }
@@ -73,7 +75,7 @@ export default function EcommerceMetrics() {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+     <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {cards.map((card, index) => (
         <div
           key={index}
@@ -87,6 +89,7 @@ export default function EcommerceMetrics() {
             <div className={`p-2 rounded-full ${card.iconBg}`}>{card.icon}</div>
           </div>
           <div className="flex items-center mt-4 text-sm">
+           
             <span className={`${card.trendColor} font-semibold`}>{card.trend}</span>
             <span className="text-gray-500 ml-1">{card.trendText}</span>
           </div>

@@ -153,10 +153,10 @@ export default function AttendanceForm() {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md">
+    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
 
-      {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
+      {/* {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>} */}
 
       <button
         onClick={fetchUserAndLocation}

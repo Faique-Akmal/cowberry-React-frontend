@@ -70,7 +70,7 @@ const TaskPage = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-transparent shadow-lg rounded-lg">
+    <div className="max-w-lg mx-auto bg-transparent shadow-lg rounded-lg bg-[url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-2xl font-bold mb-4 text-center">Assign New Task</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -45,6 +45,8 @@ const DashboardStats: React.FC = () => {
     return dueDate < today && !task.is_completed;
   }).length;
 
+  
+
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const cardClass =
@@ -58,19 +60,24 @@ const DashboardStats: React.FC = () => {
     <div className="flex flex-wrap gap-4 p-4  justify-center">
      
       <div className={cardClass}  >
-        <p className="text-sm ">Active Tasks</p>
-        <p className="text-xl font-semibold">{activeTasks}</p>
+        <p className="text-xl ">Total Tasks</p>
+        <p className="text-xl font-semibold">{totalTasks}</p>
       </div>
       <div className={cardClass} >
-        <p className="text-sm ">Progress</p>
+        <p className="text-xl ">Progress</p>
         <p className="text-xl font-semibold">{progress}%</p>
       </div>
       <div className={cardClass} >
-        <p className="text-sm ">Completed Tasks</p>
+        <p className="text-xl ">Completed Tasks</p>
         <p className="text-xl font-semibold">{completedTasks}</p>
       </div>
       <div className={cardClass} >
-        <p className="text-sm  ">Due Tasks</p>
+        <p className="text-xl  ">Active Tasks</p>
+        <p className="text-xl font-semibold">{activeTasks}</p>
+      </div>
+
+       <div className={cardClass} >
+        <p className="text-xl  ">Due Tasks</p>
         <p className="text-xl font-semibold">{dueTasks}</p>
       </div>
     </div>

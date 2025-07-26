@@ -34,14 +34,14 @@ export default function RegisterUserForm() {
     setIsLoading(true);
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-      setMessage("❌ All fields are required.");
+      setMessage(" All fields are required.");
       setIsError(true);
       setIsLoading(false);
       return;
     }
 
     if (!formData.role || !formData.department) {
-      setMessage("❌ Please select both Role and Department.");
+      setMessage(" Please select both Role and Department.");
       setIsError(true);
       setIsLoading(false);
       return;
@@ -57,7 +57,7 @@ export default function RegisterUserForm() {
       const response = await API.post("/register/", payload);
 
       if (response.status === 201 || response.status === 200) {
-        setMessage("✅ User registered successfully!");
+        setMessage(" User registered successfully!");
         setIsError(false);
         setFormData({
           first_name: "",
@@ -72,25 +72,25 @@ export default function RegisterUserForm() {
           address: "",
         });
       } else {
-        setMessage("❌ Registration failed. Try again.");
+        setMessage(" Registration failed. Try again.");
         setIsError(true);
       }
     } catch (error: any) {
       const data = error?.response?.data;
       const status = error?.response?.status;
-      let errMsg = "❌ Something went wrong.";
+      let errMsg = "Something went wrong.";
 
       if (status === 400 && typeof data === "object") {
         const firstError = Object.values(data)[0];
         errMsg = Array.isArray(firstError) ? firstError[0] : String(firstError);
       } else if (status === 409) {
-        errMsg = "❌ User already exists.";
+        errMsg = " User already exists.";
       } else if (status === 422) {
-        errMsg = "❌ Validation error.";
+        errMsg = " Validation error.";
       } else if (status === 500) {
-        errMsg = "❌ Internal Server Error.";
+        errMsg = " Internal Server Error.";
       } else if (error.code === "ECONNABORTED") {
-        errMsg = "❌ Request timed out.";
+        errMsg = " Request timed out.";
       }
 
       setMessage(errMsg);
@@ -101,7 +101,7 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 rounded-xl shadow-md bg-transparent">
+    <div className="max-w-md mx-auto px-6 rounded-xl shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

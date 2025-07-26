@@ -50,7 +50,7 @@ const filteredData = selectedDept
   : attendances;
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-md">
+    <div className="p-4 bg-white rounded-xl shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
       <h2 className="text-xl font-bold mb-4">All Attendance Logs</h2>
 
       {/* Department Filter */}

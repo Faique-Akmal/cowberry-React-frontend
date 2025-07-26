@@ -41,7 +41,7 @@ interface Attendance {
   department_name: string;
 }
 
-export default function AttendancePathViewer() {
+export default function AttendanceList() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
   const [mapView, setMapView] = useState<Attendance | null>(null);
@@ -127,10 +127,11 @@ export default function AttendancePathViewer() {
             <th className="px-4 py-2">Name</th>
             <th className="px-4 py-2">Employee Code</th>
             <th className="px-4 py-2">Date</th>
+            <th className="px-4 py-2">Department</th>
             <th className="px-4 py-2">Start Time</th>
             <th className="px-4 py-2">End Time</th>
-            <th className="px-4 py-2">Location Path</th>
-            <th className="px-4 py-2">LOcation</th>
+            <th className="px-4 py-2">Location Co-ordinates</th>
+            <th className="px-4 py-2">Location</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -140,6 +141,7 @@ export default function AttendancePathViewer() {
               <td className="px-4 py-2">{item.first_name} {item.last_name}</td>
               <td className="px-4 py-2">{item.employee_code}</td>
               <td className="px-4 py-2">{item.date}</td>
+              <td className="px-4 py-2">{item.department_name}</td>
               <td className="px-4 py-2">{formatTime(item.start_time)}</td>
               <td className="px-4 py-2">{item.end_time ? formatTime(item.end_time) : "-"}</td>
               <td className="px-4 py-2 text-xs">
@@ -162,42 +164,74 @@ export default function AttendancePathViewer() {
       {/* Full Screen Map Modal */}
       {mapView && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center">
-          <div className="bg-white w-full h-full relative">
+          <div className="bg-transparent w-full h-full relative">
             <button
               onClick={() => setMapView(null)}
-              className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded"
+              className="absolute top-8 right-4 bg-red-500 text-white px-3 py-1 rounded  z-999"
             >
               Close Map
             </button>
 
-            <MapContainer
-              center={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
-              zoom={13}
-              scrollWheelZoom={true}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
-              />
-              <Marker
-                position={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
-              >
-                <Popup>Start Location</Popup>
-              </Marker>
-              <Marker
-                position={[parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)]}
-              >
-                <Popup>End Location</Popup>
-              </Marker>
-              <Polyline
-                positions={[
-                  [parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)],
-                  [parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)],
-                ]}
-                pathOptions={{ color: "blue" }}
-              />
-            </MapContainer>
+           <MapContainer
+  center={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
+  zoom={13}
+  scrollWheelZoom={true}
+  style={{ height: "100%", width: "100%" }}
+>
+ <TileLayer
+ url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+ 
+/>
+
+
+
+
+
+
+  {/* Start Marker (Blue) */}
+  <Marker
+    position={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
+    icon={L.icon({
+      iconUrl:
+        "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+      shadowUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    })}
+  >
+    <Popup>Start Location</Popup>
+  </Marker>
+
+  {/* End Marker (Red) */}
+  <Marker
+    position={[parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)]}
+    icon={L.icon({
+      iconUrl:
+        "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+      shadowUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    })}
+  >
+    <Popup>End Location</Popup>
+  </Marker>
+
+  {/* Line Between Start and End */}
+  <Polyline
+    positions={[
+      [parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)],
+      [parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)],
+    ]}
+    pathOptions={{ color: "green", weight: 4 }}
+  />
+</MapContainer>
+
           </div>
         </div>
       )}

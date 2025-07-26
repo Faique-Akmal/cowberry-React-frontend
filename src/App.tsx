@@ -3,7 +3,7 @@ import {Routes, Route } from "react-router";
 import 'leaflet/dist/leaflet.css';
 
 import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
+
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
@@ -39,9 +39,10 @@ import AdminTaskManager from "./pages/Employee/TaskManager";
 // import LiveLocationMap from "./components/Maps/LiveLocationMap";
 import LogoutButton from "./pages/AuthPages/Logout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
-import AllAttendanceByDepartment from "./pages/Employee/Admin-startAttandance";
+import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
-import AttandanceEndAdmin from "./pages/Employee/Admin-endAttandance";
+import AttendanceList from "./pages/Employee/AdminAttandance";
+
 
 // import SignInForm from "./components/auth/SignInForm";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
@@ -115,8 +116,8 @@ export default function App() {
             <Route path="/basic-tables" element={<BasicTables /> } />
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
-            <Route path="/attandance-start-admin" element={ <AllAttendanceByDepartment />} />
-            <Route path="/attandance-end-admin" element={ <AttandanceEndAdmin/>} />
+            <Route path="/attandance-start-admin" element={ <AttendanceList />} />
+            
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}

@@ -73,7 +73,7 @@ export default function AttendanceForm() {
             end_lat: position.coords.latitude.toString(),
             end_lng: position.coords.longitude.toString(),
           }));
-          setMessage('✅ User and location fetched successfully.');
+          setMessage(' User and location fetched successfully.');
           setLocationFetched(true);
         },
         (err) => {
@@ -108,7 +108,7 @@ export default function AttendanceForm() {
         data.append('selfie_image', formData.selfie_image, formData.selfie_image.name);
       }
 
-      const res = await API.post('/attendance-start/', data, {
+      const res = await API.post('/attendance-end/', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -154,7 +154,7 @@ export default function AttendanceForm() {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
-      <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
+      <h2 className="text-xl font-bold mb-4 text-center"> End Attendance</h2>
 
       {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
 

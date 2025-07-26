@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router';
 import API from '../../api/axios';
 
 interface FormDataState {
@@ -26,24 +26,37 @@ export default function AttendanceForm() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [locationFetched, setLocationFetched] = useState(false);
+  const [odometerPreview, setOdometerPreview] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'odometer_image' | 'selfie_image') => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'odometer_image' | 'selfie_image'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
-      setMessage(`Unsupported file format for ${field}.`);
+      setMessage(`❌ Unsupported file format for ${field}.`);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage(` ${field} exceeds 5MB.`);
+      setMessage(`❌ ${field} exceeds 5MB.`);
       return;
     }
 
     setFormData((prev) => ({ ...prev, [field]: file }));
     setMessage('');
+
+    const previewUrl = URL.createObjectURL(file);
+    if (field === 'odometer_image') {
+      setOdometerPreview(previewUrl);
+    } else {
+      setSelfiePreview(previewUrl);
+    }
   };
 
   const fetchUserAndLocation = async () => {
@@ -55,23 +68,23 @@ export default function AttendanceForm() {
         (position) => {
           setFormData((prev) => ({
             ...prev,
-            user: user.id || user.user_id || user.pk,
+            user: String(user.id || user.user_id || user.pk),
             username: user.name || user.username || '',
             start_lat: position.coords.latitude.toString(),
             start_lng: position.coords.longitude.toString(),
           }));
-          setMessage(' User and location fetched successfully');
+          setMessage('✅ User and location fetched successfully.');
           setLocationFetched(true);
         },
         (err) => {
           console.error(err);
-          setMessage(' Failed to fetch location. Please allow GPS access.');
+          setMessage('❌ Failed to fetch location. Please allow GPS access.');
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } catch (error) {
       console.error(error);
-      setMessage(' Failed to fetch user info');
+      setMessage('❌ Failed to fetch user info.');
     }
   };
 
@@ -88,26 +101,28 @@ export default function AttendanceForm() {
       data.append('description', formData.description);
 
       if (formData.odometer_image) {
-        const odoBlob = new Blob([formData.odometer_image], { type: formData.odometer_image.type });
-        data.append('odometer_image', odoBlob, formData.odometer_image.name);
+        data.append('odometer_image', formData.odometer_image, formData.odometer_image.name);
       }
 
       if (formData.selfie_image) {
-        const selfieBlob = new Blob([formData.selfie_image], { type: formData.selfie_image.type });
-        data.append('selfie_image', selfieBlob, formData.selfie_image.name);
+        data.append('selfie_image', formData.selfie_image, formData.selfie_image.name);
       }
 
-      const res = await API.post('/attendance-start/', data
-        , {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        }
-      );
+      const res = await API.post('/attendance-start/', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
 
       if (res.status === 200 || res.status === 201) {
-        setMessage(' Attendance submitted successfully');
+        setMessage('✅ Attendance submitted successfully.');
+
+        // Set local attendance flag
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.setItem(`attendance_${formData.user}_${today}`, 'submitted');
+
+        // Reset
         setFormData({
           user: '',
           username: '',
@@ -118,15 +133,19 @@ export default function AttendanceForm() {
           selfie_image: null,
         });
         setLocationFetched(false);
+        setOdometerPreview(null);
+        setSelfiePreview(null);
+
+        navigate('/employee-dashboard');
       } else {
-        setMessage('Something went wrong, try again');
+        setMessage('❌ Something went wrong, try again.');
       }
     } catch (err: any) {
       console.error('Error:', err);
       if (err.response?.data) {
-        setMessage(` ${JSON.stringify(err.response.data)}`);
+        setMessage(`❌ ${JSON.stringify(err.response.data)}`);
       } else {
-        setMessage('Network or server error');
+        setMessage('❌ Network or server error.');
       }
     } finally {
       setLoading(false);
@@ -134,37 +153,20 @@ export default function AttendanceForm() {
   };
 
   return (
-   
-    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md ">
-      <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
+    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md">
+      <h2 className="text-xl font-bold mb-4 text-center">📍 Start Attendance</h2>
 
-      {/* {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>} */}
+      {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}
 
       <button
         onClick={fetchUserAndLocation}
         disabled={locationFetched}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ? '✅ Ready' : 'Click me to start attandance'}
+        {locationFetched ? '✅ Ready' : '📌 Click to Start Attendance'}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* {formData.username && (
-          <div>
-            <label className="text-sm font-medium">Username:</label>
-            <p className="text-gray-700">{formData.username}</p>
-          </div>
-        )}
-
-        {formData.start_lat && formData.start_lng && (
-          <div>
-            <label className="text-sm font-medium">Coordinates:</label>
-            <p className="text-gray-700">
-              {formData.start_lat}, {formData.start_lng}
-            </p>
-          </div>
-        )} */}
-
         <div>
           <label className="block text-sm font-medium">Description:</label>
           <textarea
@@ -176,6 +178,7 @@ export default function AttendanceForm() {
           />
         </div>
 
+        {/* Odometer */}
         <div>
           <label className="block text-sm font-medium">Odometer Image:</label>
           <input
@@ -185,8 +188,16 @@ export default function AttendanceForm() {
             required
             className="w-full border px-3 py-2 rounded"
           />
+          {odometerPreview && (
+            <img
+              src={odometerPreview}
+              alt="Odometer Preview"
+              className="mt-2 w-32 h-32 object-cover rounded border"
+            />
+          )}
         </div>
 
+        {/* Selfie */}
         <div>
           <label className="block text-sm font-medium">Selfie Image:</label>
           <input
@@ -196,6 +207,13 @@ export default function AttendanceForm() {
             required
             className="w-full border px-3 py-2 rounded"
           />
+          {selfiePreview && (
+            <img
+              src={selfiePreview}
+              alt="Selfie Preview"
+              className="mt-2 w-32 h-32 object-cover rounded border"
+            />
+          )}
         </div>
 
         <button
@@ -203,7 +221,7 @@ export default function AttendanceForm() {
           disabled={loading}
           className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
         >
-          {loading ? 'Submitting...' : 'Submit Attendance'}
+          {loading ? 'Submitting...' : '✅ Submit Attendance'}
         </button>
       </form>
     </div>

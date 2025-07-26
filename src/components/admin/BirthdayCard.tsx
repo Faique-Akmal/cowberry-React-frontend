@@ -78,7 +78,9 @@ const BirthdayCardList: React.FC = () => {
   return (
     <div className="p-6 bg-white rounded-2xl shadow-xl w-full h-full relative">
       {birthdayUsers.length > 0 && (
-        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={50} recycle={false} />
+        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={400}
+        //  recycle={false} 
+         />
       )}
 
       <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">🎉 Today’s Birthdays</h2>

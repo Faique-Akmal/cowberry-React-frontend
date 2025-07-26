@@ -97,14 +97,10 @@ const navItems: NavItem[] = [
    {
     icon: <MdListAlt />,
     name: "Attandance list",
- subItems: [
-      { name: "Attandance Start list", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,},
-      { name: "Attandance End List ",path:"/attandance-end-admin", role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] , },
-    ],
-
     path: "/attandance-start-admin",
-     role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
-  },
+    role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
+ },
+    
   {
     icon: <MdAppRegistration />,
     name: "Register User form",

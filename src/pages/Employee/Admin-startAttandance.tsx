@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+import { FaEye } from "react-icons/fa";
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl,
@@ -13,8 +20,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl,
 });
 
-
-// Fix default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 interface Attendance {
@@ -23,39 +28,58 @@ interface Attendance {
   last_name: string;
   date: string;
   start_time: string;
-  odometer_image: string;
-  selfie_image: string;
+  end_time: string;
   start_lat: string;
   start_lng: string;
+  end_lat: string;
+  end_lng: string;
+  odometer_image: string;
+  selfie_image: string;
   description: string;
   username: string;
   employee_code: string;
   department_name: string;
 }
 
-export default function AllAttendanceByDepartment() {
-  const allowedDepartments = ["admin", "department_head", "hr", "it", "accountant", "order"];
+export default function AttendancePathViewer() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
+  const [mapView, setMapView] = useState<Attendance | null>(null);
 
   useEffect(() => {
-    fetchAttendances();
+    fetchData();
   }, []);
 
-  const fetchAttendances = async () => {
+  const fetchData = async () => {
     try {
-      const res = await API.get("/attendance-start/");
-      setAttendances(res.data.results || []);
-      setDepartments(allowedDepartments);
-    } catch (error) {
-      console.error("Failed to fetch attendance data:", error);
-    }
-  };
+      const [startRes, endRes] = await Promise.all([
+        API.get("/attendance-start/"),
+        API.get("/attendance-end/"),
+      ]);
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+      const startData = startRes.data.results || [];
+      const endData = endRes.data.results || [];
+
+      // Merge start and end data based on username and date
+      const mergedData = startData.map((startItem: any) => {
+        const match = endData.find(
+          (endItem: any) =>
+            endItem.username === startItem.username &&
+            endItem.date === startItem.date
+        );
+
+        return {
+          ...startItem,
+          end_time: match?.end_time || "",
+          end_lat: match?.end_lat || "",
+          end_lng: match?.end_lng || "",
+        };
+      });
+
+      setAttendances(mergedData);
+    } catch (err) {
+      console.error("Failed to fetch attendance data", err);
+    }
   };
 
   const formatTime = (timeStr: string) => {
@@ -63,103 +87,120 @@ export default function AllAttendanceByDepartment() {
     return `${hours}:${minutes}`;
   };
 
-  const filteredData = selectedDept
-    ? attendances.filter((att) => att.department_name.toLowerCase() === selectedDept.toLowerCase())
+  const filtered = selectedDept
+    ? attendances.filter(
+        (att) =>
+          att.department_name?.toLowerCase() === selectedDept.toLowerCase()
+      )
     : attendances;
 
-  return (
-    <div className="p-4 bg-white rounded-xl shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
-      <h2 className="text-xl font-bold mb-4">All Attendance Logs</h2>
+  const openMap = (record: Attendance) => {
+    setMapView(record);
+  };
 
-      {/* Department Filter */}
+  return (
+    <div className="p-4 bg-white rounded-xl shadow-md">
+      <h2 className="text-xl font-bold mb-4">Employee Attendance Records</h2>
+
       <div className="mb-4">
         <label className="block mb-1 font-medium text-gray-700">Filter by Department:</label>
         <select
-          className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
-          onChange={(e) => setSelectedDept(e.target.value)}
+          className="border border-gray-300 p-2 rounded-md"
           value={selectedDept}
+          onChange={(e) => setSelectedDept(e.target.value)}
         >
           <option value="">All Departments</option>
-          {departments.map((dept) => (
-            <option key={dept} value={dept}>{dept}</option>
-          ))}
+          {[...new Set(attendances.map((a) => a.department_name))].map(
+            (dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            )
+          )}
         </select>
       </div>
 
-      {/* Attendance Table */}
-      <div className="overflow-auto max-h-[550px] border rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100 sticky top-0">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Full Name</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Department</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Description</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Odometer</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Selfie</th>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
+            <th className="px-4 py-2">Name</th>
+            <th className="px-4 py-2">Employee Code</th>
+            <th className="px-4 py-2">Date</th>
+            <th className="px-4 py-2">Start Time</th>
+            <th className="px-4 py-2">End Time</th>
+            <th className="px-4 py-2">Location Path</th>
+            <th className="px-4 py-2">LOcation</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {filtered.map((item, index) => (
+            <tr key={item.id} className="hover:bg-gray-50">
+              <td className="px-4 py-2">{index + 1}</td>
+              <td className="px-4 py-2">{item.first_name} {item.last_name}</td>
+              <td className="px-4 py-2">{item.employee_code}</td>
+              <td className="px-4 py-2">{item.date}</td>
+              <td className="px-4 py-2">{formatTime(item.start_time)}</td>
+              <td className="px-4 py-2">{item.end_time ? formatTime(item.end_time) : "-"}</td>
+              <td className="px-4 py-2 text-xs">
+                Start: ({item.start_lat}, {item.start_lng})<br />
+                End: ({item.end_lat}, {item.end_lng})
+              </td>
+              <td className="px-4 py-2">
+                <button
+                  onClick={() => openMap(item)}
+                  className="text-blue-600 underline text-sm"
+                >
+               <FaEye />
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
-            {filteredData.map((item, index) => {
-              const lat = parseFloat(item.start_lat);
-              const lng = parseFloat(item.start_lng);
-              const validCoords = !isNaN(lat) && !isNaN(lng);
-              return (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">{index + 1}</td>
-                  <td className="px-4 py-2">{item.first_name} {item.last_name}</td>
-                  <td className="px-4 py-2">{item.employee_code}</td>
-                  <td className="px-4 py-2">{formatDate(item.date)}</td>
-                  <td className="px-4 py-2">{formatTime(item.start_time)}</td>
-                  <td className="px-4 py-2">{item.department_name}</td>
-                  <td className="px-4 py-2">{item.description}</td>
-                  <td className="px-4 py-2">
-                    {validCoords ? (
-                      <MapContainer
-                        center={[lat, lng]}
-                        zoom={13}
-                        scrollWheelZoom={false}
-                        style={{ height: "150px", width: "200px", borderRadius: "10px" }}
-                      >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
-                        />
-                        <Marker position={[lat, lng]}>
-                          <Popup>
-                            {item.first_name} {item.last_name}<br />
-                            ({lat.toFixed(4)}, {lng.toFixed(4)})
-                          </Popup>
-                        </Marker>
-                      </MapContainer>
-                    ) : (
-                      <span className="text-sm text-gray-500">No location</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <img
-                      src={item.odometer_image}
-                      alt="Odometer"
-                      className="h-12 w-12 object-cover rounded"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <img
-                      src={item.selfie_image}
-                      alt="Selfie"
-                      className="h-12 w-12 object-cover rounded-full"
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Full Screen Map Modal */}
+      {mapView && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center">
+          <div className="bg-white w-full h-full relative">
+            <button
+              onClick={() => setMapView(null)}
+              className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded"
+            >
+              Close Map
+            </button>
+
+            <MapContainer
+              center={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
+              zoom={13}
+              scrollWheelZoom={true}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+              />
+              <Marker
+                position={[parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)]}
+              >
+                <Popup>Start Location</Popup>
+              </Marker>
+              <Marker
+                position={[parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)]}
+              >
+                <Popup>End Location</Popup>
+              </Marker>
+              <Polyline
+                positions={[
+                  [parseFloat(mapView.start_lat), parseFloat(mapView.start_lng)],
+                  [parseFloat(mapView.end_lat), parseFloat(mapView.end_lng)],
+                ]}
+                pathOptions={{ color: "blue" }}
+              />
+            </MapContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

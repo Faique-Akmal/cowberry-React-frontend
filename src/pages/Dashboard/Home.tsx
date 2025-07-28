@@ -35,8 +35,8 @@ export default function Home() {
         </div>
 
 
- <div className="grid col-span-12 xl:col-span-4">
-          <Customers/>
+        <div className="grid col-span-12 xl:col-span-4">
+            <Customers/>
         </div>
 
         <div className="col-span-12 xl:col-span-4">

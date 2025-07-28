@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { role } from "../../store/store";
 
 interface User {
   id: number;
@@ -26,6 +27,8 @@ export default function EmployeeChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalEmployees, setTotalEmployees] = useState(0);
+
+// const role = JSON.parse(localStorage.getItem("role") || "null");    
 
   useEffect(() => {
     fetchUsers();
@@ -109,8 +112,8 @@ export default function EmployeeChart() {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+    <div className="bg-white rounded-xl shadow-lg p-2 max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6">
         Employee Distribution by Department
       </h2>
 

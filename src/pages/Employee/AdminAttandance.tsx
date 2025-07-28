@@ -21,12 +21,11 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Attendance {
-  id: number;
-  first_name: string;
-  last_name: string;
+
   date: string;
   start_time: string;
   end_time: string;
+  address:string;
   start_lat: string;
   start_lng: string;
   end_lat: string;
@@ -35,8 +34,17 @@ interface Attendance {
   selfie_image: string;
   description: string;
   username: string;
-  employee_code: string;
-  department_name: string;
+ 
+  department: string;
+  user:{
+      id:number;
+      name:string;
+      username:string,
+      first_name:string,
+      last_name:string,
+      employee_code: string;
+  }
+
 }
 
 export default function AttendanceList() {
@@ -76,11 +84,11 @@ export default function AttendanceList() {
 
       setAttendances(mergedData);
 
-      // Extract unique departments (keeping original case for display)
+      // // Extract unique departments (keeping original case for display)
       const uniqueDepartments = Array.from(
         new Set(
           mergedData
-            .map((a) => a.department_name?.trim())
+            .map((a) => a.department?.trim())
             .filter(Boolean)
         )
       );
@@ -100,7 +108,7 @@ export default function AttendanceList() {
   const filteredData = selectedDept
     ? attendances.filter(
         (att) =>
-          att.department_name?.trim().toLowerCase() === selectedDept.toLowerCase()
+          att.department?.trim().toLowerCase() === selectedDept.toLowerCase()
       )
     : attendances;
 
@@ -128,7 +136,7 @@ export default function AttendanceList() {
         >
           <option value="">All Departments</option>
           {departments.map((dept) => (
-            <option key={dept} value={dept}>
+            <option key={dept.id} value={dept.name}>
               {dept}
             </option>
           ))}
@@ -168,7 +176,7 @@ export default function AttendanceList() {
                 End Time
               </th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
-                Location Co-ordinates
+               Address
               </th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
                 Location
@@ -178,21 +186,22 @@ export default function AttendanceList() {
           <tbody className="divide-y divide-gray-100">
             {filteredData.length > 0 ? (
               filteredData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr key={item.user.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2">{index + 1}</td>
                   <td className="px-4 py-2">
-                    {item.first_name} {item.last_name}
+                    {item.user.first_name} {item.user.last_name}
                   </td>
-                  <td className="px-4 py-2">{item.employee_code}</td>
+                  <td className="px-4 py-2">{item.user.employee_code}</td>
                   <td className="px-4 py-2">{item.date}</td>
-                  <td className="px-4 py-2">{item.department_name}</td>
+                  <td className="px-4 py-2">{item.department}</td>
                   <td className="px-4 py-2">{formatTime(item.start_time)}</td>
                   <td className="px-4 py-2">{formatTime(item.end_time)}</td>
-                  <td className="px-4 py-2 text-xs">
+                  {/* <td className="px-4 py-2 text-xs">
                     Start: ({item.start_lat}, {item.start_lng})
                     <br />
                     End: ({item.end_lat || "N/A"}, {item.end_lng || "N/A"})
-                  </td>
+                  </td> */}
+                   <td className="px-4 py-2 text-xs">{item.address}</td>
                   <td className="px-4 py-2">
                     <button
                       onClick={() => openMap(item)}
@@ -259,7 +268,8 @@ export default function AttendanceList() {
                   <div>
                     <strong>Start Location</strong><br/>
                     Time: {formatTime(mapView.start_time)}<br/>
-                    Employee: {mapView.first_name} {mapView.last_name}
+                    start_co-ordinates: {mapView.start_lat} {mapView.start_lng}<br/>
+                    Employee: {mapView.user.first_name} {mapView.user.last_name}
                   </div>
                 </Popup>
               </Marker>
@@ -287,7 +297,8 @@ export default function AttendanceList() {
                       <div>
                         <strong>End Location</strong><br/>
                         Time: {formatTime(mapView.end_time)}<br/>
-                        Employee: {mapView.first_name} {mapView.last_name}
+                        End_co-ordinates: {mapView.end_lat} {mapView.end_lng}<br/>
+                          Employee: {mapView.user.first_name} {mapView.user.last_name}
                       </div>
                     </Popup>
                   </Marker>

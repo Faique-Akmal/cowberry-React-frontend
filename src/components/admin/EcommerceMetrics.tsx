@@ -44,7 +44,7 @@ export default function EcommerceMetrics() {
     },
     {
       title: "Total Order",
-      value: "10,293",
+       value: totalUsers !== null ? totalUsers.toLocaleString() : "Loading...",
       icon: <GroupIcon className="h-6 w-6 text-yellow-500" />,
       iconBg: "bg-yellow-100",
       trend: "1.3%",

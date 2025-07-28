@@ -76,10 +76,10 @@ const BirthdayCardList: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-xl w-full h-full relative">
+    <div className="p-6 bg-white rounded-2xl shadow-xl w-full h-full relative overflow-hidden">
       {birthdayUsers.length > 0 && (
-        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={400}
-        //  recycle={false} 
+        <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={600}
+         recycle={false} 
          />
       )}
 

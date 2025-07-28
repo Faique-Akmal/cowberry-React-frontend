@@ -24,27 +24,25 @@ export default function Home() {
         <div className="col-span-3 sapce-x-4 xl:col-span-12">
           <EcommerceMetrics />        
         </div>
-        <div className="col-span-3 sapce-x-4 xl:col-span-12">
-             <MonthlySalesChart />
+        <div className="col-span-12   w-full">
+           <EmployeeChart/> 
         </div>
           
-        <div className="grid col-span-12 xl:col-span-4">
-          <Customers/>
-        </div>
+       
          
-        <div className="col-span-12  xl:col-span-4">
-          <EmployeeChart/>
+        <div className="col-span-12  xl:col-span-12">
+           <MonthlySalesChart />
+        </div>
+
+
+ <div className="grid col-span-12 xl:col-span-4">
+          <Customers/>
         </div>
 
         <div className="col-span-12 xl:col-span-4">
           <BirthdaysToday/>
         </div>
-
-        <div className="col-span-12 xl:col-span-8">
-          <EmployeeStatus />
-        </div>
-           
-        <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
+          <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
           <div className="col-span-12 h-full xl:col-span-4">
             <JobApplicationCard/>
           </div>
@@ -52,6 +50,12 @@ export default function Home() {
               <JobRejectionCard />
           </div>
         </div>
+
+        <div className="col-span-12 xl:col-span-12">
+          <EmployeeStatus />
+        </div>
+           
+      
         <div className="col-span-12">
           <MapComponent />
         </div>

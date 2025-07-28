@@ -1,4 +1,4 @@
-import EcommerceMetrics from "../../components/admin/EcommerceMetrics";
+
 import MonthlySalesChart from "../../components/admin/MonthlySalesChart";
 
 import EmployeeStatus from "../../components/admin/EmployeeStatus";
@@ -10,6 +10,8 @@ import BirthdaysToday from "../../components/admin/BirthdayCard";
 import Customers from "../../components/admin/Customers";
 import JobApplicationCard from "../../components/admin/JobApplicationCard";
 import JobRejectionCard from "../../components/admin/JobRejectionCard";
+import Metrics from "../../components/admin/Metrics";
+
 
 
 
@@ -22,7 +24,7 @@ export default function Home() {
       />
       <div className="grid gap-12 md:gap-4">
         <div className="col-span-3 sapce-x-4 xl:col-span-12">
-          <EcommerceMetrics />        
+          <Metrics />        
         </div>
         <div className="col-span-12   w-full">
            <EmployeeChart/> 

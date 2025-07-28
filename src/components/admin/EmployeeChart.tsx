@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { role } from "../../store/store";
 
-interface User {
+interface DepartmentStats {
   id: number;
-  username: string;
-  first_name?: string;
-  last_name?: string;
-  department_name: string;
+  name: string;
+  employee_count: number;
 }
 
 interface DepartmentCount {
@@ -28,58 +25,27 @@ export default function EmployeeChart() {
   const [error, setError] = useState<string | null>(null);
   const [totalEmployees, setTotalEmployees] = useState(0);
 
-// const role = JSON.parse(localStorage.getItem("role") || "null");    
-
   useEffect(() => {
-    fetchUsers();
+    fetchDepartmentStats();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchDepartmentStats = async () => {
     try {
       setLoading(true);
-      let allUsers: User[] = [];
-      let page = 1;
-      let hasMore = true;
+      const response = await API.get("/employee-stats/");
+      const departments: DepartmentStats[] = response.data?.department_wise || [];
 
-      while (hasMore) {
-        const res = await API.get("/users/", { params: { page } });
-        let users: User[] = [];
-
-        if (Array.isArray(res.data)) {
-          users = res.data;
-          hasMore = false;
-        } else if (res.data.results) {
-          users = res.data.results;
-          hasMore = !!res.data.next;
-        } else if (res.data.data) {
-          users = res.data.data;
-          hasMore = false;
-        } else {
-          console.warn("Unexpected response:", res.data);
-          hasMore = false;
-        }
-
-        allUsers = [...allUsers, ...users];
-        page += 1;
-      }
-
-      const departmentMap: { [key: string]: number } = {};
-      allUsers.forEach((user) => {
-        const dept = user.department_name?.trim() || "Admins";
-        departmentMap[dept] = (departmentMap[dept] || 0) + 1;
-      });
-
-      const chartData = Object.entries(departmentMap).map(([name, value], i) => ({
-        name,
-        value,
+      const chartData: DepartmentCount[] = departments.map((dept, i) => ({
+        name: dept.name,
+        value: dept.employee_count,
         color: COLORS[i % COLORS.length],
-      })).sort((a, b) => b.value - a.value);
+      }));
 
       setData(chartData);
       setTotalEmployees(chartData.reduce((sum, item) => sum + item.value, 0));
     } catch (e) {
       console.error("Error:", e);
-      setError("Failed to fetch employee data.");
+      setError("Failed to fetch department stats.");
     } finally {
       setLoading(false);
     }
@@ -107,14 +73,14 @@ export default function EmployeeChart() {
   if (error) return (
     <div className="p-8 text-center text-red-600">
       <p>{error}</p>
-      <button onClick={fetchUsers} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Retry</button>
+      <button onClick={fetchDepartmentStats} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Retry</button>
     </div>
   );
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-2 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6">
-        Employee Distribution by Department
+        Users by Department
       </h2>
 
       <div className="flex flex-col lg:flex-row gap-10 items-center lg:items-start">
@@ -139,11 +105,11 @@ export default function EmployeeChart() {
             </PieChart>
           </ResponsiveContainer>
           <p className="text-center mt-4 text-sm text-gray-600">
-            Total Employees: <span className="font-bold text-blue-600">{totalEmployees}</span>
+            Total Users: <span className="font-bold text-blue-600">{totalEmployees}</span>
           </p>
         </div>
 
-        {/* Legend with Alternating Styles */}
+        {/* Legend */}
         <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {data.map((item, index) => {
             const percentage = ((item.value / totalEmployees) * 100).toFixed(1);
@@ -161,7 +127,7 @@ export default function EmployeeChart() {
                   <h4 className="font-semibold text-gray-800">{item.name}</h4>
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
-                  <p>Employees: <span className="font-bold">{item.value}</span></p>
+                  <p>Users: <span className="font-bold">{item.value}</span></p>
                   <p>Share: {percentage}%</p>
                 </div>
               </div>

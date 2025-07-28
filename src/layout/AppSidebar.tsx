@@ -317,7 +317,7 @@ const AppSidebar: React.FC = () => {
     >
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
         <Link to="/">
-          <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={40} />
+          <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={0} />
         </Link>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import {  useNavigate } from "react-router";
 import {  EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -8,6 +8,9 @@ import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import Home from "../../pages/Dashboard/Home";
+// import EmployeeDashboard from "../../pages/Dashboard/EmployeeDashboard";
+// import Home from "../../pages/Dashboard/Home";
 
 export default function SignInForm() {
   const { login } = useAuth();
@@ -30,6 +33,7 @@ export default function SignInForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    
     // Basic validation
     if (!employeeCode.trim() || !password.trim()) {
       setMessage("Please enter both employee code and password.");
@@ -49,14 +53,22 @@ export default function SignInForm() {
         }
       );
 
-
+         
       if (response.data?.message === "Login successful") {
         setMessage("Login successful!");
+      
         
+         localStorage.setItem("userRole", response.data.role); // e.g., "admin" or "employee"
+         localStorage.setItem("userId", response.data.userid); 
+
+
+
        
         // Save token if provided
 
         login(response.data?.refresh, response.data?.access);
+
+        
 
 
         const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
@@ -64,25 +76,34 @@ export default function SignInForm() {
         const isVerified = response.data?.is_employee_code_verified || false;
         
         // Navigate based on user role
-      setTimeout(() => {
+     setTimeout(() => {
+  // const allowedRoles = ["admin", "hr", "department_head", "manager", "employee"];
 
-  if ( userRole === "admin" || userRole === "employee"|| userRole === "hr" || userRole === "department_head" || userRole === "manager") {
+  // if (!allowedRoles.includes(userRole)) {
+  //   setMessage("Access denied. Invalid user role.");
+  //   setIsLoading(false);
+  //   return;
+  // }
 
-    // For employees, check verification status
+  if (userRole === "employee") {
     if (isVerified) {
-      // Verified employee goes to dashboard
-      navigate("/dashboard", { replace: true });
+      // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
+
+      navigate("/attandanceStart-page", { replace: true });  
     } else {
-      // Unverified employee goes to OTP verification
-      navigate("/LoginWithOtp", { replace: true });
+      navigate("/LoginWithOtp", { replace: true });    
     }
   } else {
-    // For other roles, show an error message
-    setMessage("Access denied. Invalid user role.");
-    setIsLoading(false);
-    return;
+    if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
+      if (isVerified) {
+      navigate( "/home");  
+    } else {
+      navigate("/LoginWithOtp", { replace: true });    
+    }   
+    } 
   }
-}, 1000); // Small delay to show success message
+}, 1000);
+ // Small delay to show success message
       } else {
         setMessage(response.data.message || "Login failed.");
       }

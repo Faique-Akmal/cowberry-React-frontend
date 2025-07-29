@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="COWBERRY SignIn"
-        description="This is React.js SignIn Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title=" Welcome to Cowberry SignIn"
+        description="Sign in to your Cowberry account"
       />
       <AuthLayout>
         <SignInForm />

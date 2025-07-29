@@ -3,7 +3,7 @@ import {Routes, Route } from "react-router";
 import 'leaflet/dist/leaflet.css';
 
 import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
+
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
@@ -23,6 +23,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
+<<<<<<< HEAD
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
@@ -34,6 +35,30 @@ import { Toaster } from "react-hot-toast";
 // import CompTest from "./pages/CompTest";
 // import ChatBox from "./components/chat/ChatBox";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
+=======
+import ChatBox from "./components/chat/ChatBox";
+import TaskShowPage from "./pages/Employee/TaskShowPage";
+import RegistrationPage from "./pages/Employee/RegistrationPage";
+import AttendanceForm from "./pages/Employee/AttandanceStart";
+// import LocationFetcher from "./pages/Employee/LocationFetcher";
+import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
+// import ProtectedRoute from "./components/ProtectedRoutes";
+import TaskCalendar from "./pages/Employee/TaskCalendar";
+import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
+// import LiveUserLocation from "./pages/Employee/LiveUserLocation";
+// import LiveTracking from "./pages/Employee/LiveTracking";
+import AdminTaskManager from "./pages/Employee/TaskManager";
+// import LocationMap from "./pages/Employee/LiveTracking";
+// import LiveLocationMap from "./components/Maps/LiveLocationMap";
+import LogoutButton from "./pages/AuthPages/Logout";
+import ChangePasswordModal from "./components/auth/ChangePasswordModal";
+import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
+import AttendanceGuard from "./guards/AttandanceGuard";
+import AttendanceList from "./pages/Employee/AdminAttandance";
+
+
+// import SignInForm from "./components/auth/SignInForm";
+>>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -42,30 +67,61 @@ export default function App() {
       
         <ScrollToTop />
         <Routes>
+       
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
-           <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
+            <Route path="/change-password" element={ <ChangePasswordModal isOpen={true}  onClose={() => {}} />} />
+           
+            <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
             
-
+              <Route  path="/" element={<SignIn />} />
               
           {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
+          <Route  element={<AppLayout />}>
+                
+                  
+           {/* Home Page */}
+
+            <Route  path="/home" element={   <Home />  }  />
 
             {/* User Registration Page */}
-            <Route path="/user-register" element={<RegistrationPage />} />
+            {/* <Route path="/user-register" element={ <RegistrationPage />} /> */}
 
 
-            {/* Home Page */}
-            <Route index path="/" element={<Home />} />
+           
             
-            {/* Dashboard Pages */}
-            <Route path="/dashboard" element={<Home />} />
-
+          
         
             {/* Employee Pages */}
+<<<<<<< HEAD
             <Route path="/attandanceStart-page" element={<AttendanceForm />} />
             <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
+=======
+>>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
           
+            <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
+              {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
+              <Route path="/attandanceEnd-page" element={<AttendanceGuard> <AttendanceEndForm /> </AttendanceGuard>}></Route>
+              <Route path="/task-show-page" element={<AttendanceGuard> <TaskShowPage /> </AttendanceGuard>}></Route>
+              <Route path="/task-calendar" element={<AttendanceGuard><TaskCalendar /></AttendanceGuard>}></Route>
+              <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
+              <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route>
+
+            {/* <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} /> */}
+
+      
+           {/* <Route path="/task-show-page" element={
+          <TaskShowPage />} />
+           <Route path="/task-calendar" element={  <TaskCalendar />} /> */}
+           {/* <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}></ProtectedRoute>} /> */}
+           {/* <Route path="/employee-dashboard" element={<EmployeeDashboard/> } /> */}
+
+
+
+
+
+            
+      
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/chat" element={<SocketChatBox />} />
@@ -76,9 +132,12 @@ export default function App() {
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-            <Route path="/task-page" element={<TaskPage />} />
-            <Route path="/task-show-page" element={<TaskShowPage />} />
+            <Route path="/basic-tables" element={<BasicTables /> } />
+            <Route path="/assign-task-page" element={ <TaskPage />} />
+            <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
+            <Route path="/attandance-start-admin" element={ <AttendanceList />} />
+            
+            {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />
@@ -100,9 +159,15 @@ export default function App() {
 
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
+<<<<<<< HEAD
           <Route path="/signup" element={<SignUp />} />
           <Route path="/logout" element={<Logout />} />
           
+=======
+          <Route path="/logout" element={<LogoutButton />} />
+          {/* <Route path="/signup" element={<SignUp />} /> */}
+
+>>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

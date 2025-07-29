@@ -63,6 +63,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         case 'edit_message':
           console.log("edit_message data : ", data)
           editMessage(data?.id, { content: data?.content })
+          // toast.success('Message edited (live)')
           break
         case 'delete_message':
           deleteMessage(data?.id);

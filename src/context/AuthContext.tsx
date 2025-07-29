@@ -14,9 +14,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const getMeData = async () => {
-    const meData = await axiosGetMe()!;
+    const meData = await axiosGetMe();
 
-    localStorage.setItem('meUser', JSON.stringify(meData));
+    if(meData){
+      localStorage.setItem('meUser', JSON.stringify(meData));
+    }
 
   }
 
@@ -26,6 +28,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getMeData()!;
   };
+
+  
+
 
   const axiosLogout = async () =>{
     try {

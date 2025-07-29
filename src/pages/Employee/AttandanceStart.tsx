@@ -1,247 +1,302 @@
-import React, { useState } from 'react';
-import API from '../../api/axios';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import API from "../../api/axios";
 
-const AttendanceForm = () => {
-  const [formData, setFormData] = useState({
-    id: '',
-    date: '',
-    start_time: '',
+interface FormDataState {
+  user: string;
+  username: string;
+  start_lat: string;
+  start_lng: string;
+  description: string;
+  odometer_image: File | null;
+  selfie_image: File | null;
+}
+
+interface LocationPayload {
+  user: number;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+}
+
+export default function AttendanceFormWithTracking() {
+  const [formData, setFormData] = useState<FormDataState>({
+    user: "",
+    username: "",
+    start_lat: "",
+    start_lng: "",
+    description: "",
     odometer_image: null,
     selfie_image: null,
-    start_lat: '',
-    start_lng: '',
-    description: '',
-    user: '',
   });
 
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [locationFetched, setLocationFetched] = useState(false);
+  const [odometerPreview, setOdometerPreview] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [liveLocation, setLiveLocation] = useState<{ lat: string; lng: string }>({ lat: "", lng: "" });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const navigate = useNavigate();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      setFormData(prev => ({ ...prev, [name]: files[0] }));
-    }
-  };
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "odometer_image" | "selfie_image"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleGetLocation = () => {
-    setLoading(true);
-    setError('');
-
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      setLoading(false);
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage(` Unsupported file format for ${field}.`);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage(` ${field} exceeds 5MB.`);
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: file }));
+    setMessage("");
+
+    const previewUrl = URL.createObjectURL(file);
+    if (field === "odometer_image") setOdometerPreview(previewUrl);
+    else setSelfiePreview(previewUrl);
+  };
+
+  const fetchUserAndLocation = async () => {
+    try {
+      const userRes = await API.get("/me/");
+      const user = userRes.data;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toString();
+          const lng = position.coords.longitude.toString();
+
+          setFormData((prev) => ({
+            ...prev,
+            user: String(user.id || user.user_id || user.pk),
+            username: user.name || user.username || "",
+            start_lat: lat,
+            start_lng: lng,
+          }));
+
+          setLiveLocation({ lat, lng });
+          setLocationFetched(true);
+        },
+        (err) => {
+          console.error(err);
+          setMessage("Failed to fetch location. Please allow GPS access.");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage("Failed to fetch user info.");
+    }
+  };
+
+  const cacheOfflineLocation = (payload: LocationPayload) => {
+  const cached = JSON.parse(localStorage.getItem("pendingLocationUpdates") || "[]");
+  cached.push(payload);
+  localStorage.setItem("pendingLocationUpdates", JSON.stringify(cached));
+};
+
+  const sendLocationUpdate = (lat: string, lng: string, user: string) => {
+  if (!lat || !lng || !user || user === "0") {
+    console.warn("Invalid data for location update:", { lat, lng, user });
+    return;
+  }
+
+  const payload: LocationPayload = {
+    user: parseInt(user),
+    latitude: parseFloat(lat),
+    longitude: parseFloat(lng),
+    timestamp: new Date().toISOString(),
+  };
+
+  if (navigator.onLine) {
+    API.post("/locations/", payload).catch((err) => {
+      console.error("Online post failed, storing offline:", err);
+      cacheOfflineLocation(payload);
+    });
+  } else {
+    cacheOfflineLocation(payload);
+  }
+};
+  const syncOfflineData = () => {
+    const cachedUpdates = JSON.parse(localStorage.getItem("pendingLocationUpdates") || "[]");
+
+    if (cachedUpdates.length > 0) {
+      Promise.all(
+        cachedUpdates.map((loc: LocationPayload) =>
+          API.post("/locations/", loc).catch((err) => console.error("Sync failed", err))
+        )
+      ).then(() => {
+        localStorage.removeItem("pendingLocationUpdates");
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!locationFetched) return;
+
+    const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-
-        setFormData(prev => ({
-          ...prev,
-          start_lat: latitude.toString(),
-          start_lng: longitude.toString(),
-        }));
-
-        setLocationFetched(true);
-        setLoading(false);
+        const lat = position.coords.latitude.toString();
+        const lng = position.coords.longitude.toString();
+        setLiveLocation({ lat, lng });
+        sendLocationUpdate(lat, lng, formData.user);
       },
-      (err) => {
-        setError(`Error: ${err.message}`);
-        setLoading(false);
+      (error) => {
+        console.error("Error getting location", error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 10000,
       }
     );
-  };
+
+    const interval = setInterval(() => {
+      if (liveLocation.lat && liveLocation.lng) {
+        sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
+      }
+    }, 20000);
+
+    window.addEventListener("online", syncOfflineData);
+
+    return () => {
+      clearInterval(interval);
+      navigator.geolocation.clearWatch(watchId);
+      window.removeEventListener("online", syncOfflineData);
+    };
+  }, [locationFetched, liveLocation.lat, liveLocation.lng]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage("");
     setLoading(true);
-    setMessage('');
-
-    const data = new FormData();
-    for (const key in formData) {
-      // @ts-ignore
-      data.append(key, formData[key]);
-    }
 
     try {
-      const response = await API.post('/attendance-start/', data);
-      setMessage('✅ Attendance submitted successfully!');
-      setFormData({
-        id: '',
-        date: '',
-        start_time: '',
-        odometer_image: null,
-        selfie_image: null,
-        start_lat: '',
-        start_lng: '',
-        description: '',
-        user: '',
+      const data = new FormData();
+      data.append("user", formData.user);
+      data.append("start_lat", formData.start_lat);
+      data.append("start_lng", formData.start_lng);
+      data.append("description", formData.description);
+
+      if (formData.odometer_image) {
+        data.append("odometer_image", formData.odometer_image, formData.odometer_image.name);
+      }
+      if (formData.selfie_image) {
+        data.append("selfie_image", formData.selfie_image, formData.selfie_image.name);
+      }
+
+      const res = await API.post("/attendance-start/", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
       });
-      setLocationFetched(false);
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error?.response?.data?.message || 'Submission failed'}`);
+
+      if (res.status === 200 || res.status === 201) {
+        setMessage("Attendance submitted successfully.");
+        const today = new Date().toISOString().split("T")[0];
+        localStorage.setItem(`attendance_${formData.user}_${today}`, "submitted");
+
+        setFormData({
+          user: "",
+          username: "",
+          start_lat: "",
+          start_lng: "",
+          description: "",
+          odometer_image: null,
+          selfie_image: null,
+        });
+
+        setLocationFetched(false);
+        setOdometerPreview(null);
+        setSelfiePreview(null);
+        navigate("/employee-dashboard");
+      } else {
+        setMessage(" Something went wrong, try again.");
+      }
+    } catch (err: any) {
+      console.error("Error:", err);
+      setMessage(err.response?.data ? JSON.stringify(err.response.data) : " Network or server error.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto px-6 py-8 bg-transparent rounded-lg shadow-md space-y-6"
-    >
-      <h2 className="text-2xl font-bold text-center">Employee Attendance Start</h2>
+    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
+      <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex flex-col">
-          <label htmlFor="id" className="mb-1 font-medium">ID</label>
-          <input
-            name="id"
-            id="id"
-            value={formData.id}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-            placeholder="Employee ID"
-          />
-        </div>
+      <button
+        onClick={fetchUserAndLocation}
+        disabled={locationFetched}
+        className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+      >
+        {locationFetched ? " Ready to go " : " Click to Start Attendance"}
+      </button>
 
-        <div className="flex flex-col">
-          <label htmlFor="date" className="mb-1 font-medium">Date</label>
-          <input
-            name="date"
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-            required
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label htmlFor="start_time" className="mb-1 font-medium">Start Time</label>
-          <input
-            name="start_time"
-            id="start_time"
-            type="time"
-            value={formData.start_time}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-            required
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label htmlFor="odometer_image" className="mb-1 font-medium">Odometer Image</label>
-          <input
-            name="odometer_image"
-            id="odometer_image"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="border rounded px-3 py-2"
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label htmlFor="selfie_image" className="mb-1 font-medium">Selfie Image</label>
-          <input
-            name="selfie_image"
-            id="selfie_image"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="border rounded px-3 py-2"
-          />
-        </div>
-
-        <div className="flex flex-col md:col-span-2">
-          <label htmlFor="description" className="mb-1 font-medium">Description</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium">Description:</label>
           <textarea
-            name="description"
-            id="description"
-            rows={3}
+            required
             value={formData.description}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-            placeholder="Work summary or remarks"
-            required
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            className="w-full border px-3 py-2 rounded"
           />
         </div>
 
-        <div className="md:col-span-2">
-          <button
-            type="button"
-            onClick={handleGetLocation}
-            className="bg-cowberry-green-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2"
-          >
-            Get Location
-          </button>
-          {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
-        </div>
-
-        <div className="flex flex-col">
-          <label htmlFor="start_lat" className="mb-1 font-medium">Start Latitude</label>
+        <div>
+          <label className="block text-sm font-medium">Odometer Image:</label>
           <input
-            name="start_lat"
-            id="start_lat"
-            value={formData.start_lat}
-            readOnly
-            className="border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
-            placeholder="Latitude"
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, "odometer_image")}
             required
+            className="w-full border px-3 py-2 rounded"
           />
+          {odometerPreview && <img src={odometerPreview} className="mt-2 w-32 h-32 object-cover rounded border" />}
         </div>
 
-        <div className="flex flex-col">
-          <label htmlFor="start_lng" className="mb-1 font-medium">Start Longitude</label>
+        <div>
+          <label className="block text-sm font-medium">Selfie Image:</label>
           <input
-            name="start_lng"
-            id="start_lng"
-            value={formData.start_lng}
-            readOnly
-            className="border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
-            placeholder="Longitude"
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, "selfie_image")}
             required
+            className="w-full border px-3 py-2 rounded"
           />
+          {selfiePreview && <img src={selfiePreview} className="mt-2 w-32 h-32 object-cover rounded border" />}
         </div>
 
-        <div className="flex flex-col md:col-span-2">
-          <label htmlFor="user" className="mb-1 font-medium">User ID / Username</label>
-          <input
-            name="user"
-            id="user"
-            value={formData.user}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-            placeholder="User ID or Username"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="text-center">
         <button
           type="submit"
-          disabled={loading || !locationFetched}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow disabled:opacity-60"
+          disabled={loading}
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
         >
-          {loading ? 'Submitting...' : 'Submit Attendance'}
+          {loading ? "Submitting..." : "✅ Submit Attendance"}
         </button>
-      </div>
 
-      {message && <p className="text-center text-sm text-red-600 mt-2">{message}</p>}
-    </form>
+        {message && <div className="text-sm text-red-600 mt-2">{message}</div>}
+      </form>
+
+      {locationFetched && (
+        <div className="mt-6 p-4 bg-white shadow rounded">
+          <p><strong>Live Latitude:</strong> {liveLocation.lat}</p>
+          <p><strong>Live Longitude:</strong> {liveLocation.lng}</p>
+          <p className="text-sm text-gray-500 mt-2">Location updates every 20 seconds. Works offline.</p>
+        </div>
+      )}
+    </div>
   );
-};
-
-export default AttendanceForm;
+} 

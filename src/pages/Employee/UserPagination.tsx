@@ -11,7 +11,7 @@ type User = {
   employee_code: string;
   role: number;
   profile_image: string | null;
-  is_active: boolean;
+  is_online: boolean;
 };
 
 type PaginationResponse = {
@@ -41,7 +41,7 @@ const UserPagination: React.FC = () => {
           },
           params: {
             page,
-            limit: 9,
+            limit: 10,
             username: username || "",
             sort_by: "username",
             sort_order: sortOrder,
@@ -56,7 +56,7 @@ const UserPagination: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   const getRoleName = (roleId: number): string => {
     const roleObj = role.find((r) => r.id === roleId);
@@ -80,8 +80,8 @@ const UserPagination: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Users List</h2>
+    <div className="bg-[url('/old-paper-texture.jpg')] bg-cover">
+      <h2 className="text-2xl font-bold mb-4 text-center ">Users List</h2>
 
       <div className="mb-4 flex justify-center">
         <input
@@ -96,7 +96,7 @@ const UserPagination: React.FC = () => {
       {loading ? (
         <p className="text-center text-gray-500">Loading...</p>
       ) : (
-        <div className="overflow-x-auto shadow rounded-lg">
+        <div className="overflow-x-auto  rounded-lg bg-transparent">
           <table className="min-w-full bg-white border border-gray-200 text-sm">
             <thead className="bg-gray-100 text-gray-700">
               <tr>
@@ -125,10 +125,10 @@ const UserPagination: React.FC = () => {
                     <td className="py-2 px-4">{user.employee_code}</td>
                     <td className="py-2 px-4 uppercase">{getRoleName(user.role)}</td>
                     <td className="py-2 px-4">
-                      {user.is_active ? (
-                        <span className="text-green-600 font-medium">Active</span>
+                      {user.is_online ? (
+                        <span className="text-green-600 font-medium">Online</span>
                       ) : (
-                        <span className="text-red-500 font-medium">Inactive</span>
+                        <span className="text-red-500 font-medium">Offline</span>
                       )}
                     </td>
                   </tr>

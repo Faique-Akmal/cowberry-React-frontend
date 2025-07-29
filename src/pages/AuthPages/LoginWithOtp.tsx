@@ -15,6 +15,7 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
   const [isError, setIsError] = useState(false);
 
   const accessToken = localStorage.getItem('accessToken');
+   const userRole = localStorage.getItem("userRole"); 
    const navigate = useNavigate();
   
   const handleVerifyOtp = async () => {
@@ -45,7 +46,12 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
       if (response.data.status === "success" || response.status === 200) {
         setMessage("OTP verified successfully!");
         setIsError(false);
-         navigate("/dashboard", { replace: true });
+       if (userRole === "employee") {
+    navigate("/attandanceStart-page", { replace: true });
+  } else {
+    navigate("/home", { replace: true });
+  }
+
         
         setTimeout(() => {
           onVerificationSuccess();

@@ -162,6 +162,8 @@ export default function UserDropdown() {
           </svg>
           Sign out
         </Link>
+       
+
       </Dropdown>
     </div>
   );

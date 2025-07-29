@@ -1,21 +1,23 @@
-import { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-// import Avatar from "../ui/avatar/Avatar";
-// import Alert from "../ui/alert/Alert";
-import { RiDeleteBin6Line } from "react-icons/ri";
-import { axiosDeleteMsg } from "../../store/chatStore";
-import toast from "react-hot-toast";
+import { RiEdit2Line , RiDeleteBin6Line } from "react-icons/ri";
+import { useSocketStore } from "../../store/socketStore";
+import { useMessageStore } from "../../store/messageStore";
 
 interface Props{
+  chatGroupName?: string;
   msgId: number;
-  msgSender: number;
+  // msg: ChatMessage;
   meUserId: number;
-  onMsgDelete:() => void;
 }
 
-const MemberDropdown:React.FC<Props> = ({msgId, msgSender, meUserId, onMsgDelete}) => {
+const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
   const [isOpen, setIsOpen] = useState(false);
+  const messages = useMessageStore((state) => state.messages.find((msg) => msg.id === msgId));
+  const { sendJson } = useSocketStore();
+
+  console.count("MsgDropdown rendered");
 
   // console.log(msgId);
   function toggleDropdown() {
@@ -26,39 +28,13 @@ const MemberDropdown:React.FC<Props> = ({msgId, msgSender, meUserId, onMsgDelete
     setIsOpen(false);
   }
 
-  async function deleteMsg (msgId:number) {
-    try {
-      const deleteRes = await axiosDeleteMsg(msgId)!;
-  
-      if(deleteRes){
-        onMsgDelete();
-        console.log(deleteRes);
-        toast.success("Message deleted successfuly.")
-      }
+const handleDelete = useCallback(() => {
+  sendJson({ type: "delete_message", message_id: msgId });
+}, [msgId, sendJson]);
 
-    } catch (error) {
-        console.error("Message delete request error:", error);
-        toast.error("Message delete error!")
-    }
-  }
-
-  function handleDelete (){
-    if(meUserId === msgSender){
-      deleteMsg(msgId);
-    } else {
-      toast.error("This is not your chat!",{
-        style: {
-        border: '1px solid #FA99A4',
-        padding: '16px',
-        color: '#FA99A4',
-      },
-      iconTheme: {
-        primary: '#FA99A4',
-        secondary: '#FFFAEE',
-      },
-      })
-    }
-  }
+const handleEdit = useCallback((id: number, newContent: string) => {
+  sendJson({ type: "edit_message", message_id: id, is_edited: true, new_content: newContent });
+}, [sendJson]);
 
   return (
     <div>
@@ -92,27 +68,53 @@ const MemberDropdown:React.FC<Props> = ({msgId, msgSender, meUserId, onMsgDelete
         className="absolute right-0 flex w-[200px] flex-col rounded-2xl border border-gray-200 bg-white p-1 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <ul className="custom-scrollbar overflow-y-auto overflow-hidden max-h-58 flex flex-col gap-1 pt-4 pb-3 ">
-          {/* Delete Button */}
-          <li className="pt-2 border-t border-gray-200">
-            <DropdownItem
-              onItemClick={closeDropdown}
-              tag="button"
-              onClick={handleDelete}
-              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-delete dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
-            >
-              <div>
-                <RiDeleteBin6Line />
-              </div>
-              <p className="capitalize">
-                Delete
-              </p>
-            </DropdownItem>
-          </li>
 
+{/* <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
+                     Edit
+                   </button> */}
+
+          {messages?.sender === meUserId && (
+          <>
+            {/* Edit Button */}
+            <li className="pt-2 border-gray-200">
+              <DropdownItem
+                onItemClick={closeDropdown}
+                tag="button"
+                onClick={() => handleEdit(messages?.id, prompt("Edit message:", messages?.content) || messages?.content)}
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-dashboard-royalblue-200 dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
+              >
+                <div className="text-xl">
+                  <RiEdit2Line  />
+                </div>
+                <p className="capitalize">
+                  Edit
+                </p>
+              </DropdownItem>
+            </li>
+
+            {/* Delete Button */}
+            <li className="pt-2 border-t border-gray-200">
+              <DropdownItem
+                onItemClick={closeDropdown}
+                tag="button"
+                onClick={handleDelete}
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-delete dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
+              >
+                <div className="text-lg">
+                  <RiDeleteBin6Line />
+                </div>
+                <p className="capitalize">
+                  Delete
+                </p>
+              </DropdownItem>
+            </li>
+          </>
+          )}
+          
         </ul>
       </Dropdown>
     </div>
   )
-}
+});
 
-export default MemberDropdown
+export default MsgDropdown

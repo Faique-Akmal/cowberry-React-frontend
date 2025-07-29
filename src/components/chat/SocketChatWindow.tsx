@@ -1,115 +1,127 @@
-// components/SocketSocketChatWindow.tsx
-import React, { useEffect, useState } from "react";
-import { useChatSocket } from "../../hooks/useChatSocket";
-
-interface Message {
-  id: number;
-  sender: number;
-  sender_username: string;
-  content: string;
-  sent_at: string;
-  is_read: boolean;
-  parent?: Message;
-  replies?: Message[];
-  is_deleted?: boolean;
-}
+// components/SocketChatWindow.tsx
+import React, { useEffect, useRef, useState } from "react";
+import MsgCard from "./MsgCard";
+import { ChatMessage } from "../../types/chat";
+import { useMessageStore } from "../../store/messageStore";
+import { useSocketStore } from '../../store/socketStore';
 
 interface Props {
-  chatGroupName: string;
-  currentUserId: number;
-  receiverId?: number;
+  groupId: string;
 }
 
- const SocketChatWindow: React.FC<Props> = ({ chatGroupName, currentUserId, receiverId }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+ const SocketChatWindow: React.FC<Props> = ({ groupId }) => {
+  const { connect, disconnect, sendJson, isConnected } = useSocketStore();
+  const messages = useMessageStore((state) => state.messages);
+  
   const [input, setInput] = useState("");
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const { sendJson } = useChatSocket({
-    chatGroupName,
-    onMessage: (data) => {
-      console.log("got onMessage data :", data);
+  const accessToken = localStorage.getItem('accessToken');
 
-      switch (data.type) {
-        case "message_history":
-          setMessages(data.messages);
-          break;
-        case "chat_message":
-          setMessages((prev) => [...prev, data]);
-          break;
-        case "edit_message":
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === data.id ? { ...msg, content: data.content } : msg))
-          );
-          break;
-        case "delete_message":
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === data.id ? { ...msg, content: "", is_deleted: true } : msg))
-          );
-          break;
-        default:
-          console.log("Unhandled:", data);
-      }
-    },
-  });
+  const localMeData = localStorage.getItem("meUser")!;
+  const {id} = JSON.parse(localMeData)!;
 
-
-  // Load message history on mount
   useEffect(() => {
-    ;(async()=>{
-      const resSocket = await sendJson({ type: "message_history", group_id: parseInt(chatGroupName) });
-      console.log("resSocket :", resSocket)
-    })();
-  }, [chatGroupName]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]); // Triggers scroll on new messages
+
+   useEffect(() => {
+    connect(groupId, accessToken!)
+
+    return () => {
+      disconnect()
+    }
+  }, [groupId])
+
+  console.log("react State Array", messages);
+
+  console.count("SocketChatWindow rendered");
 
   const sendMessage = () => {
     if (input.trim()) {
       sendJson({
         type: "send_message",
         content: input,
-        group_id: parseInt(chatGroupName),
+        group_id: parseInt(groupId),
         receiver_id: null,
         parent_id: replyTo?.id,
       });
+
       setInput("");
       setReplyTo(null);
     }
   };
 
-  const handleEdit = (id: number, newContent: string) => {
-    sendJson({ type: "edit_message", message_id: id, new_content: newContent });
-  };
+  // const sendMessage = () => {
+  //   if (input.trim()) {
+  //     sendJson({
+  //       type: "send_message",
+  //       content: input,
+  //       group_id: parseInt(groupId),
+  //       // group_id: null,
+  //       // receiver_id: parseInt(chatGroupName),
+  //       receiver_id: null,
+  //       parent_id: replyTo?.id,
+  //     });
+  //     setInput("");
+  //     setReplyTo(null);
+  //   }
+  // }
 
-  const handleDelete = (id: number) => {
-    sendJson({ type: "delete_message", message_id: id });
-  };
+  // const handleEdit = (id: number, newContent: string) => {
+  //   sendJson({ type: "edit_message", message_id: id, is_edited: true, new_content: newContent });
+  // };
+
+  // const handleDelete = (id: number) => {
+  //   sendJson({ type: "delete_message", message_id: id });
+  // };
 
   return (
-    <div>
-      <div className="chat-messages">
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ marginBottom: "1rem" }}>
-            <strong>{msg.sender_username}</strong>:{" "}
-            {msg.is_deleted ? <i>Message deleted</i> : msg.content}
-            <div>
-              <button onClick={() => setReplyTo(msg)}>Reply</button>
-              {msg.sender === currentUserId && (
-                <>
-                  <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(msg.id)}>Delete</button>
-                </>
-              )}
-            </div>
-            {/* {msg?.replies.length > 0 &&
-              msg?.replies.map((r) => (
-                <div key={r.id} style={{ marginLeft: "2rem", fontStyle: "italic" }}>
-                  ↳ {r.sender_username}: {r.content}
-                </div>
-              ))} */}
-          </div>
+    <div className="flex flex-col h-[80vh] w-full">
+      <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
+        <h2 className="text-lg font-bold text-yellow-800"> 
+          No User?
+          {/* {group?.group_name || "No User?"} */}
+        </h2>
+        <p className="text-lg font-bold text-yellow-800">
+          Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+        </p>
+        {/* <div> 
+          <MemberDropdown members={group?.members || null} />
+        </div> */}
+      </div>
+      <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
+        {messages?.map((msg) => (
+          <MsgCard 
+          key={msg?.id}
+          chatGroupName={groupId} meUserId={id} msg={msg} />
+          
+          // <div key={msg.id} style={{ marginBottom: "1rem" }}>
+          //   <strong>{msg.sender_username}</strong>:{" "}
+          //   {msg.is_deleted ? <em>Message deleted</em> : msg.content}
+          //   <div>
+          //     <button onClick={() => setReplyTo(msg)}>Reply</button>
+          //     {msg.sender === currentUserId && (
+          //       <>
+          //         <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
+          //           Edit
+          //         </button>
+          //         <button onClick={() => handleDelete(msg.id)}>Delete</button>
+          //       </>
+          //     )}
+          //   </div>
+          //   {!!msg?.replies && (
+          //     !!(msg?.replies?.length > 0) && (
+          //       msg?.replies.map((r) => (
+          //         <div key={r.id} style={{ marginLeft: "2rem", fontStyle: "italic" }}>
+          //           ↳ {r.sender_username}: {r.content}
+          //         </div>)))
+          //     )}
+          // </div>
         ))}
+        
+        <div ref={bottomRef} className="pt-10" />
       </div>
       {replyTo && (
         <div>
@@ -117,13 +129,21 @@ interface Props {
           <button onClick={() => setReplyTo(null)}>Cancel</button>
         </div>
       )}
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Type a message..."
-      />
-      <button onClick={sendMessage}>Send</button>
+
+      <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2">
+        <input
+          className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Type a message..."
+        />
+        <button onClick={sendMessage} className="bg-brand-500 text-white px-4 py-2 rounded">
+          Send
+        </button>
+      </div>
+      
     </div>
   );
 };

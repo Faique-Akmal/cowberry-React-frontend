@@ -1,0 +1,16 @@
+export interface ChatMessage {
+  type?:string;
+  id: number;
+  sender: number;
+  sender_username: string;
+  recipient: number | null;
+  group: number | null;
+  group_name: string;
+  content: string;
+  parent?: number |null ;
+  replies?: ChatMessage[];
+  sent_at: string;
+  is_read?: boolean;
+  read_at?: null;
+  is_deleted?: boolean;
+}

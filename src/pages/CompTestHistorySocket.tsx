@@ -11,9 +11,6 @@ const CompTest: React.FC = () => {
   // const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
   // const [allMsg, setAllMsg] = useState<AxiosGetGroupMsg[]>([]);
 
-  const localMeData = localStorage.getItem("meUser")!;
-  const meUserData = JSON.parse(localMeData);
-
   // useEffect(() => {
   //     ;(async ()=>{
   //       const allGroups = await axiosGetAllGroup();
@@ -58,7 +55,7 @@ const CompTest: React.FC = () => {
     <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
 
       <div className="mb-4 w-full flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-        <SocketChatWindow chatGroupName={"1"} currentUserId={meUserData?.id}  />
+        <SocketChatWindow groupId={"1"}  />
       </div>
 
     </div>

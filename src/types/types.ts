@@ -1,4 +1,4 @@
-import { Members } from "./store/chatStore"
+import { Members } from "../store/chatStore"
 
 export interface Message {
   id: number

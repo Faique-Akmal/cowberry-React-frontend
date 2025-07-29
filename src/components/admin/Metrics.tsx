@@ -3,14 +3,20 @@ import { GroupIcon } from "../../icons";
 import { GrResources } from "react-icons/gr";
 import API from "../../api/axios";
 
-export default function Metrics() {
+// 👇 Accepting user role and department as props (can come from auth context too)
+interface MetricsProps {
+  userRole: string;
+  userDepartment: string | null;
+}
+
+export default function Metrics({ userRole, userDepartment }: MetricsProps) {
   const [loading, setLoading] = useState(true);
   const [roleStats, setRoleStats] = useState({
     employee: 0,
     department_head: 0,
     manager: 0,
     hr: 0,
-    admin:0,
+    admin: 0,
   });
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -24,20 +30,30 @@ export default function Metrics() {
         department_head: 0,
         manager: 0,
         hr: 0,
-        admin:0,
+        admin: 0,
       };
 
       let total = 0;
 
       combinations.forEach((item: any) => {
         const role = item.role__name?.toLowerCase();
+        const department = item.department__name;
         const count = item.count || 0;
 
-        if (counts.hasOwnProperty(role)) {
+       
+        if (!counts.hasOwnProperty(role)) return;
+
+      
+        if (userRole === "admin") {
           counts[role] += count;
+          total += count;
         }
 
-        total += count;
+        
+        else if (userRole === "department_head" && department === userDepartment) {
+          counts[role] += count;
+          total += count;
+        }
       });
 
       setRoleStats(counts);
@@ -84,16 +100,16 @@ export default function Metrics() {
       icon: <GrResources className="h-6 w-6 text-orange-500" />,
       iconBg: "bg-orange-100",
     },
-     {
-      title: "Total Admin",
+    {
+      title: "Total Admins",
       value: loading ? "..." : roleStats.admin.toLocaleString(),
-      icon: <GrResources className="h-6 w-6 text-orange-500" />,
-      iconBg: "bg-orange-100",
+      icon: <GrResources className="h-6 w-6 text-red-500" />,
+      iconBg: "bg-red-100",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4 w-full">
       {cards.map((card, index) => (
         <div
           key={index}

@@ -308,20 +308,24 @@ const AppSidebar: React.FC = () => {
   );
 
   return (
-    <aside
-      className={`fixed top-0 px-5 left-0 bg-dashboard-brown-200 dark:bg-gray-900 border-r border-gray-200 dark:text-blue-light-25 dark:border-gray-800 h-screen z-50 transition-all duration-300
-      ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
-      ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
+  
+  <aside
+    className={`fixed top-0 left-0 bg-dashboard-brown-200 dark:bg-gray-900 border-r border-gray-200 dark:text-blue-light-25 dark:border-gray-800 h-screen z-50 transition-all duration-300
+    ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
+    ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+    onMouseEnter={() => !isExpanded && setIsHovered(true)}
+    onMouseLeave={() => setIsHovered(false)}
+  >
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>
         <Link to="/">
           <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={0} />
         </Link>
       </div>
 
-      <div className="flex flex-col overflow-y-auto no-scrollbar">
+      {/* Scrollable Area */}
+      <div className="flex-1 overflow-y-auto no-scrollbar px-5">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
@@ -336,8 +340,11 @@ const AppSidebar: React.FC = () => {
         </nav>
         {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
       </div>
-    </aside>
-  );
+    </div>
+  </aside>
+);
+
+
 };
 
 export default AppSidebar;

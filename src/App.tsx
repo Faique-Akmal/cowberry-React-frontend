@@ -23,11 +23,6 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
-<<<<<<< HEAD
-import TaskShowPage from "./pages/Employee/TaskShowPage";
-import RegistrationPage from "./pages/Employee/RegistrationPage";
-import AttendanceForm from "./pages/Employee/AttandanceStart";
-import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
 import CompTestHistorySocket from "./pages/CompTestHistorySocket";
 import SocketChatBox from "./components/chat/SocketChatBox";
@@ -35,8 +30,7 @@ import { Toaster } from "react-hot-toast";
 // import CompTest from "./pages/CompTest";
 // import ChatBox from "./components/chat/ChatBox";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
-=======
-import ChatBox from "./components/chat/ChatBox";
+// import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
@@ -50,15 +44,14 @@ import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 import AdminTaskManager from "./pages/Employee/TaskManager";
 // import LocationMap from "./pages/Employee/LiveTracking";
 // import LiveLocationMap from "./components/Maps/LiveLocationMap";
-import LogoutButton from "./pages/AuthPages/Logout";
+// import LogoutButton from "./pages/AuthPages/Logout";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
-import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
+// import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/AdminAttandance";
 
 
 // import SignInForm from "./components/auth/SignInForm";
->>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
 export default function App() {
@@ -93,11 +86,6 @@ export default function App() {
           
         
             {/* Employee Pages */}
-<<<<<<< HEAD
-            <Route path="/attandanceStart-page" element={<AttendanceForm />} />
-            <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} />
-=======
->>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
           
             <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
               {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
@@ -159,15 +147,9 @@ export default function App() {
 
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
-<<<<<<< HEAD
-          <Route path="/signup" element={<SignUp />} />
           <Route path="/logout" element={<Logout />} />
-          
-=======
-          <Route path="/logout" element={<LogoutButton />} />
           {/* <Route path="/signup" element={<SignUp />} /> */}
 
->>>>>>> c1afa590f0ee097bf19407e5e6b83ebf451bd1b9
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

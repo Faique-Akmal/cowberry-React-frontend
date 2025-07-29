@@ -1,8 +1,8 @@
 // src/stores/socketStore.ts
-import { create } from 'zustand'
-import { useMessageStore } from './messageStore'
-import toast from 'react-hot-toast'
-// import { ChatMessage } from '../types/chat'
+import { create } from 'zustand';
+import { useMessageStore } from './messageStore';
+import toast from 'react-hot-toast';
+// import { ChatMessage } from '../types/chat';
 
 interface SocketState {
   socket: WebSocket | null
@@ -37,7 +37,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
       switch (data?.type) {
         case 'message_history':
-          loadMessages(data?.messages)
+          loadMessages(data?.messages);
           break
         case 'chat_message':
           console.log('👺 chat_message:', data);
@@ -61,22 +61,11 @@ export const useSocketStore = create<SocketState>((set, get) => ({
           addMessage(data);
           break
         case 'edit_message':
+          console.log("edit_message data : ", data)
           editMessage(data?.id, { content: data?.content })
-          toast.success('Message edited (live)')
           break
         case 'delete_message':
-          deleteMessage(data?.id)
-          toast.success('Message deleted (live)', {
-            style: {
-              border: '1px solid #FA99A4',
-              padding: '16px',
-              color: '#FA99A4',
-            },
-            iconTheme: {
-              primary: '#FA99A4',
-              secondary: '#FFFAEE',
-            },
-          })
+          deleteMessage(data?.id);
           break
         default:
           console.warn('🤷‍♂️ Unknown WebSocket type:', data)

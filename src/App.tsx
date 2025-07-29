@@ -23,15 +23,16 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
-import ChatBox from "./components/chat/ChatBox";
 import TaskShowPage from "./pages/Employee/TaskShowPage";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 import Logout from "./pages/AuthPages/Logout";
+import CompTestHistorySocket from "./pages/CompTestHistorySocket";
+import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 // import CompTest from "./pages/CompTest";
-import CompTestHistorySocket from "./pages/CompTestHistorySocket";
+// import ChatBox from "./components/chat/ChatBox";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
 // import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
 
@@ -67,7 +68,7 @@ export default function App() {
           
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/chat" element={<ChatBox />} />
+            <Route path="/chat" element={<SocketChatBox />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 

@@ -3,17 +3,6 @@ import MsgDropdown from "./MsgDropdown";
 import TimeZone from "../common/TimeZone";
 import { ChatMessage } from "../../types/chat";
 
-// export interface WSMessage {
-//     type?: string;
-//     message: string;
-//     senderId: number;
-//     groupId?: number;
-//     messageId: number;
-//     messageType?: string;
-//     senderUsername:string;
-//     timestemp:string;
-// }
-
 interface Props {
   chatGroupName:string;
   meUserId: number;
@@ -38,7 +27,7 @@ const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msg}) => {
             <MsgDropdown chatGroupName={chatGroupName} msgId={msg?.id} meUserId={meUserId} />
           </div>
         )}
-      <div className="pl-2 gap-2 flex flex-col">
+      <div className="px-1 gap-2 flex flex-col">
         
         {msg.is_deleted ?
         <div className="flex gap-2 items-center text-gray-200">
@@ -54,7 +43,8 @@ const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msg}) => {
           </div>
         </div> : <p>{msg?.content}</p>}  
         
-        <small className="text-xs text-end text-gray-200">
+        <small className="flex gap-2 text-xs text-end text-gray-200">
+          {/* {msg?.is_edited} */}
           {/* {msg?.sent_at} */}
           <TimeZone utcDateStr={msg?.sent_at} />
         </small>

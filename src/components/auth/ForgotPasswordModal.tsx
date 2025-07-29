@@ -1,8 +1,7 @@
+// src/components/auth/ForgotPasswordModal.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import API from "../../api/axios"; // adjust if your API file path differs
-// import { Link } from "react-router";
-// import ChangePasswordModal from "./ChangePasswordModal";
+import API from "../../api/axios";
+import { Navigate, useNavigate } from "react-router";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -12,156 +11,86 @@ interface ForgotPasswordModalProps {
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate();
-
-  // Change Password Modal
-  const [openChangeModal, setOpenChangeModal] = useState(false);
-
-  const handleSuccess = () => {
-  setOpenChangeModal(true);
-  onClose(); // Close forgot modal
-};
-
-   const action = () =>{
-        handleSuccess();
-            onClose();
-            handleSendLink();
-   }
-    
-   
-
-  const handleSendLink = async () => {
+  const navigate =  useNavigate();
+  const handleSendResetLink = async () => {
     if (!email.trim()) {
-      setMessage("Please enter your email address.");
-      setIsError(true);
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setMessage("Please enter a valid email address.");
+      setMessage("Please enter your email.");
       setIsError(true);
       return;
     }
 
     setIsLoading(true);
-    setIsError(false);
-    setMessage("");
-
     try {
-      const response = await API.post(
-        "/forgot-password/",
-        { email: email.trim().toLowerCase() },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000,
-        }
-      );
+      const response = await API.post("/forgot-password/", {
+        email: email.trim().toLowerCase(),
+      });
 
-      console.log("Server response:", response);
-
-      if (response.data.status === "success" || response.status === 200) {
-        setMessage("Password reset link sent to your email.");
+      if (response.status === 200) {
+        setMessage("Reset link sent successfully.");
         setIsError(false);
-
-        // Wait and then close modal + navigate
-        setTimeout(() => {
-          setEmail("");
-          setMessage("");
-          onClose(); // Close modal
-          navigate("/signin"); // Navigate after modal closes
-        }, 2000);
+       onClose();
+        navigate("/signin");
       } else {
-        setMessage(response.data.message || "Failed to send reset link.");
+        setMessage("Something went wrong. Please try again.");
         setIsError(true);
       }
     } catch (error: any) {
       console.error("Forgot password error:", error);
-
-      if (error.response) {
-        const status = error.response.status;
-        const data = error.response.data;
-
-        if (status === 404) setMessage("Email not found.");
-        else if (status === 422) setMessage(data.message || "Invalid email format.");
-        else if (status === 429) setMessage("Too many requests. Try again later.");
-        else if (status === 500) setMessage("Server error. Try again later.");
-        else setMessage(data.message || `Error: ${status}`);
-      } else if (error.request) {
-        setMessage("No response from server.");
-      } else {
-        setMessage("Unexpected error occurred.");
-      }
-
+      setMessage(
+        error.response?.data?.message ||
+        "Server error. Please try again later."
+      );
       setIsError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !isLoading) {
-      handleSendLink();
-    }
-  };
-
-  const handleClose = () => {
-    if (!isLoading) {
-      setEmail("");
-      setMessage("");
-      setIsError(false);
-      onClose();
-      navigate("/signin");
-    }
+  const handleCloseAll = () => {
+    setEmail("");
+    setMessage("");
+    setIsError(false);
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg">
-        <h2 className="text-xl font-semibold mb-4 text-center">Forgot Password</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4 text-center">Forgot Password</h2>
 
-        <label className="text-sm font-medium text-gray-700 block mb-1">
-          Enter your email address
-        </label>
+        <label className="block text-sm mb-1">Email</label>
         <input
           type="email"
-          placeholder="example@gmail.com"
-          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={isLoading}
+          placeholder="your@email.com"
+          className="w-full border px-3 py-2 rounded mb-4"
         />
 
         {message && (
-          <p className={`mt-2 text-sm ${isError ? "text-red-600" : "text-green-600"}`}>
+          <p className={`text-sm ${isError ? "text-red-600" : "text-green-600"}`}>
             {message}
           </p>
         )}
 
-        <div className="mt-6 flex justify-between">
+        <div className="flex justify-end gap-2 mt-4">
           <button
-            onClick={handleClose}
+            onClick={handleCloseAll}
             className="text-gray-500 hover:underline"
-            disabled={isLoading}
           >
             Cancel
           </button>
           <button
-            
-           
-            onClick={handleSendLink}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            onClick={handleSendResetLink}
             disabled={isLoading}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {isLoading ? "Sending..." : "Reset Password"}
+            {isLoading ? "Sending..." : "Send Link"}
           </button>
         </div>
       </div>

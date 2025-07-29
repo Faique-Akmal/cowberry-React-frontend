@@ -36,31 +36,31 @@ export const role= [
   export const department =  [
     {
       "id": 1,
-      "name": "hr",
-      "description": "hr"
+      "name": "support",
+      "description": "support"
     },
      {
       "id": 2,
-      "name": "sales",
-      "description": "sales"
+      "name": "procurement",
+      "description": "procurement"
     },
      
       {
       "id": 3,
-      "name": "support",
-      "description": "support"
+      "name": "Electric",
+      "description": "Electric"
     },
     
     {
       "id": 4,
-      "name": "IT",
-      "description": "IT"
+      "name": "Order",
+      "description": "Order"
     },
     
     {
       "id": 5,
-      "name": "Product",
-      "description": "product"
+      "name": "Marketing",
+      "description": "Marketing"
     },
     {
       "id": 6,
@@ -68,4 +68,14 @@ export const role= [
       "description": "Accountant"
     },
    
+    {
+      "id": 7,
+      "name": "IT",
+      "description": "IT"
+    },
+    {
+      "id": 8,
+      "name": "HR",
+      "description": "HR"
+    },
   ]

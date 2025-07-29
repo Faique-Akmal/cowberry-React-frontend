@@ -37,7 +37,7 @@ export default function TaskShowPage() {
           timeout: 10000,
         });
 
-        console.log("API response:", response.data); // 👈 Always log this to check structure
+        // console.log("API response:", response.data); // log this to check structure
 
         let responseTasks: Task[] = [];
         if (Array.isArray(response.data)) {
@@ -139,6 +139,9 @@ export default function TaskShowPage() {
             <h2 className="text-lg font-semibold">{task.title}</h2>
             <p className="text-sm text-gray-600 mb-2">
               {task.description || "No description"}
+            </p>
+              <p className="text-sm text-gray-600 mb-2">
+              <b>{task.completion_description || "No description"}</b>
             </p>
             <div className="flex justify-between items-center text-sm">
               <span

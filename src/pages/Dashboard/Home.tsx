@@ -1,50 +1,50 @@
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
 
-import EmployeeStatus from "../../components/ecommerce/EmployeeStatus";
+import MonthlySalesChart from "../../components/admin/MonthlySalesChart";
+
+import EmployeeStatus from "../../components/admin/EmployeeStatus";
 // import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
 import MapComponent from "../../components/Maps/MapComponent";
-import EmployeeChart from "../../components/ecommerce/EmployeeChart";
-import BirthdaysToday from "../../components/ecommerce/BirthdayCard";
-import Customers from "../../components/ecommerce/Customers";
-import JobApplicationCard from "../../components/ecommerce/JobApplicationCard";
-import JobRejectionCard from "../../components/ecommerce/JobRejectionCard";
-import ChatBox from "../../components/chat/ChatBox";
+import EmployeeChart from "../../components/admin/EmployeeChart";
+import BirthdaysToday from "../../components/admin/BirthdayCard";
+import Customers from "../../components/admin/Customers";
+import JobApplicationCard from "../../components/admin/JobApplicationCard";
+import JobRejectionCard from "../../components/admin/JobRejectionCard";
+import Metrics from "../../components/admin/Metrics";
+
+
 
 
 export default function Home() {
   return (
     <>
       <PageMeta
-        title="Field Employee Location Tracker & Task Management System"
-        description="To build a mobile-based location tracker app for field employees and a web-based dashboard for HR/Admin and reporting managers to monitor attendance, task completion, and real-time location tracking."
+        title="DASHBOARD"
+        description=""
       />
       <div className="grid gap-12 md:gap-4">
-        <div className="col-span-3 sapce-x-4 xl:col-span-12">
-          <EcommerceMetrics />        
+        <div className="col-span-9 xl:col-span-12">
+          <Metrics />        
         </div>
-        <div className="col-span-3 sapce-x-4 xl:col-span-12">
-             <MonthlySalesChart />
+        <div className="col-span-12 xl:col-span-12   w-full">
+           <EmployeeChart/> 
         </div>
           
-        <div className="grid col-span-12 xl:col-span-4">
-          <Customers/>
-        </div>
+       
          
-        <div className="col-span-12  xl:col-span-4">
-          <EmployeeChart/>
+        <div className="col-span-12  xl:col-span-12">
+           <MonthlySalesChart />
+        </div>
+
+
+        <div className="grid col-span-12 xl:col-span-4">
+            <Customers/>
         </div>
 
         <div className="col-span-12 xl:col-span-4">
           <BirthdaysToday/>
         </div>
-
-        <div className="col-span-12 xl:col-span-8">
-          <EmployeeStatus />
-        </div>
-           
-        <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
+          <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
           <div className="col-span-12 h-full xl:col-span-4">
             <JobApplicationCard/>
           </div>
@@ -52,6 +52,12 @@ export default function Home() {
               <JobRejectionCard />
           </div>
         </div>
+
+        <div className="col-span-12 xl:col-span-12">
+          <EmployeeStatus />
+        </div>
+           
+      
         <div className="col-span-12">
           <MapComponent />
         </div>

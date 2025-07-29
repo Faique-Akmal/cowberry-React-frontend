@@ -3,20 +3,14 @@ import { GroupIcon } from "../../icons";
 import { GrResources } from "react-icons/gr";
 import API from "../../api/axios";
 
-// 👇 Accepting user role and department as props (can come from auth context too)
-interface MetricsProps {
-  userRole: string;
-  userDepartment: string | null;
-}
-
-export default function Metrics({ userRole, userDepartment }: MetricsProps) {
+export default function Metrics() {
   const [loading, setLoading] = useState(true);
   const [roleStats, setRoleStats] = useState({
     employee: 0,
     department_head: 0,
     manager: 0,
     hr: 0,
-    admin: 0,
+    admin:0,
   });
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -30,30 +24,20 @@ export default function Metrics({ userRole, userDepartment }: MetricsProps) {
         department_head: 0,
         manager: 0,
         hr: 0,
-        admin: 0,
+        admin:0,
       };
 
       let total = 0;
 
       combinations.forEach((item: any) => {
         const role = item.role__name?.toLowerCase();
-        const department = item.department__name;
         const count = item.count || 0;
 
-       
-        if (!counts.hasOwnProperty(role)) return;
-
-      
-        if (userRole === "admin") {
+        if (counts.hasOwnProperty(role)) {
           counts[role] += count;
-          total += count;
         }
 
-        
-        else if (userRole === "department_head" && department === userDepartment) {
-          counts[role] += count;
-          total += count;
-        }
+        total += count;
       });
 
       setRoleStats(counts);
@@ -100,34 +84,35 @@ export default function Metrics({ userRole, userDepartment }: MetricsProps) {
       icon: <GrResources className="h-6 w-6 text-orange-500" />,
       iconBg: "bg-orange-100",
     },
-    {
-      title: "Total Admins",
+     {
+      title: "Total Admin",
       value: loading ? "..." : roleStats.admin.toLocaleString(),
-      icon: <GrResources className="h-6 w-6 text-red-500" />,
-      iconBg: "bg-red-100",
+      icon: <GrResources className="h-6 w-6 text-orange-500" />,
+      iconBg: "bg-orange-100",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4 w-full">
-      {cards.map((card, index) => (
-        <div
-          key={index}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300"
-        >
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="text-sm text-gray-500 dark:text-gray-300 font-medium">
-                {card.title}
-              </h4>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                {card.value}
-              </p>
-            </div>
-            <div className={`p-3 rounded-full ${card.iconBg}`}>{card.icon}</div>
-          </div>
+   <div className="grid grid-cols-2 gap-4 md:grid-cols-3 w-full">
+  {cards.map((card, index) => (
+    <div
+      key={index}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 w-full flex flex-col justify-between hover:shadow-lg transition-shadow duration-300"
+    >
+      <div className="flex justify-between items-center">
+        <div>
+          <h4 className="text-sm text-gray-500 dark:text-gray-300 font-medium">
+            {card.title}
+          </h4>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+            {card.value}
+          </p>
         </div>
-      ))}
+        <div className={`p-3 rounded-full ${card.iconBg}`}>{card.icon}</div>
+      </div>
     </div>
+  ))}
+</div>
+
   );
 }

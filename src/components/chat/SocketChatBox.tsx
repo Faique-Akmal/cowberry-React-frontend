@@ -1,20 +1,29 @@
 import { useEffect, useState } from "react"
 import ChatList from "./ChatList"
-import ChatWindow from "./ChatWindow"
-import {axiosGetAllGroup, AxiosAllGroup, axiosGetGroupMsg, AxiosGetGroupMsg } from "../../store/chatStore"
-// import ChatSocket from "./ChatSocket";
-// import HamburgerSidebar from "../common/HamburgerSidebar";
-// import ChatRoom from "./ChatRoom";
+import SocketChatWindow from "./SocketChatWindow"
+import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore"
 import { FaBars, FaTimes } from "react-icons/fa";
-import toast from "react-hot-toast";
+import { useSocketStore } from "../../store/socketStore";
+// import toast from "react-hot-toast";
 
-const ChatBox: React.FC = () => {
+const SocketChatBox: React.FC = () => {
+    const { connect, disconnect } = useSocketStore();
+  
   const [activeChatId, setActiveChatId] = useState<number>(1);
   const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
-  const [allMsg, setAllMsg] = useState<AxiosGetGroupMsg[]>([]);
+
+  const accessToken = localStorage.getItem('accessToken');
+
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    useEffect(() => {
+      connect(`${activeChatId}`, accessToken!)
+  
+      return () => {
+        disconnect()
+      }
+    }, [activeChatId, accessToken, connect])
 
   useEffect(() => {
       ;(async ()=>{
@@ -33,46 +42,31 @@ const ChatBox: React.FC = () => {
 
   const activeChat = groups.find((group) => group.group_id === activeChatId)!  
 
-  useEffect(()=>{
+  // useEffect(()=>{
 
-    ;(async()=>{
+  //   ;(async()=>{
       
-      if(activeChat){
-        const toastId = toast.loading('Sending...');
-        try {
-          const groupMsg = await axiosGetGroupMsg(activeChat?.group_id);
-          if(groupMsg.length > 0){
-            setAllMsg(groupMsg)
-          } else setAllMsg([]);
-          toast.success("All messages are up to date.", {id:toastId});
-        } catch (error) {
-          console.error("Get message request error:", error);
-          toast.error("Failed to fetch all messages.", {id: toastId});  
-        }
-      }
-    })();
-
-    // console.count("ChatBox rendered");
-  },[activeChat])
+  //     if(activeChat){
+  //       const toastId = toast.loading('Sending...');
+  //       try {
+  //         const groupMsg = await axiosGetGroupMsg(activeChat?.group_id);
+  //         if(groupMsg.length > 0){
+  //           setAllMsg(groupMsg)
+  //         } else setAllMsg([]);
+  //         toast.success("All messages are up to date.", {id:toastId});
+  //       } catch (error) {
+  //         console.error("Get message request error:", error);
+  //         toast.error("Failed to fetch all messages.", {id: toastId});  
+  //       }
+  //     }
+  //   })();
+  // },[activeChat])
+  console.log(activeChat)
+  console.count("SocketChatBox rendered");
   
 
   return (
     <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
-      {/* <div className="mb-4 relative w-full h-full flex rounded-xl bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-        <HamburgerSidebar />
-      </div> */}
-
-      {/* <div className="mb-4 w-full flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-        <ChatSocket groupId={activeChatId} allMsg={allMsg} />
-      </div> */}
-
-      
-      {/* <div className="flex rounded-xl overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-        <ChatList groups={groups} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
-        <ChatWindow group={activeChat} allMsg={allMsg} dispatch={setAllMsg} />
-      </div> */}
-
-
       {/* with sidebar */}
       <div className="w-full overflow-clip rounded-xl bg-white h-[80vh] dark:bg-white/[0.03] flex flex-col lg:flex-row relative">
         {/* Top Mobile Bar */}
@@ -103,11 +97,11 @@ const ChatBox: React.FC = () => {
 
         {/* Main Chat Area */}
         <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-          <ChatWindow group={activeChat} allMsg={allMsg} />
+          <SocketChatWindow groupId={`${activeChatId}`} chatName={activeChat?.group_name} />
         </div>
       </div>
     </div>
   );
 };
 
-export default ChatBox;
+export default SocketChatBox;

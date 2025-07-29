@@ -9,7 +9,7 @@ export interface Members {
                 id: number;
                 username: string;
                 is_online: boolean;
-                last_seen: Date
+                last_seen: Date;
             }
 
 export interface Created_By {
@@ -24,6 +24,27 @@ export interface AxiosAllGroup{
   created_by: Created_By;
   created_at: Date;
   members: Members[];
+}
+
+export interface AxiosPostSendMsg {
+  sender: number;
+  group: number;
+  content: string
+}
+
+export interface AxiosGetGroupMsg {
+  id: number;
+  sender: number;
+  sender_username: string;
+  recipient: number | null;
+  group: number;
+  group_name?: string;
+  content: string;
+  parent?: number | null;
+  replies?: AxiosGetGroupMsg[]; // Recursive structure
+  sent_at: string; // ISO datetime string (can convert to Date if needed)
+  is_read?: boolean;
+  read_at?: string | null;
 }
 
 export const axiosPostCreateGroup = async (newGroup:AxiosPostCreateGroup) => {
@@ -49,4 +70,54 @@ export const axiosGetAllGroup = async () => {
       } catch (error) {
         console.error("/User get request error:", error);
       }
-}
+};
+
+export const axiosGetGroupMsg = async (group_id:number) => {
+    try {
+          const res = await API.get(`chat/messages/group/${group_id}/`);
+          if(res.data){
+            return res.data;
+          }
+      } catch (error) {
+        console.error("chat/messages/group/{group_id}/ get request error:", error);
+      }
+};
+
+export const axiosPostSendMsg = async (newMsg:AxiosPostSendMsg) => {
+  try {
+          const res = await API.post("/chat/message/send/", newMsg);
+
+          if(res.data){
+            console.log(res.data)
+            return res.data;
+          }
+      } catch (error) {
+        console.error("'/chat/group/create/' post error:", error);
+      }
+};
+
+export const axiosGetUserStatus = async (userId:number) => {
+  try {
+          const res = await API.post(`/chat/messages/users/${userId}/status/`);
+
+          if(res.data){
+            console.log(res.data)
+            return res.data;
+          }
+      } catch (error) {
+        console.error("/chat/messages/users/{user_id}/status/ get request error:", error);
+      }
+};
+
+export const axiosDeleteMsg = async (messageId:number) => {
+  try {
+          const res = await API.delete(`/chat/messages/delete/${messageId}/`);
+
+          if(res?.data){
+            console.log(res?.data)
+            return res?.data;
+          }
+      } catch (error) {
+        console.error("/chat/messages/delete/{messages_id}/ message delete request error:", error);
+      }
+};

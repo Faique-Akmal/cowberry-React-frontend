@@ -2,19 +2,13 @@ import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
-import { useTranslation } from 'react-i18next';
-import { useAuth } from "../../context/AuthContext";
-import { RiLockPasswordFill } from "react-icons/ri";
-
+// import { useTranslation } from 'react-i18next';
 
 export default function UserDropdown() {
-  const {axiosLogout} = useAuth();
-  const {t, i18n} =  useTranslation()
   const [isOpen, setIsOpen] = useState(false);
 
-     // Retrieve username from localStorage        
-const localMeData = localStorage.getItem("meUser")!
-  const {username , email} = JSON.parse(localMeData)!
+  const {username , email} = JSON.parse(localStorage.getItem("meUser") || "{}"); // Retrieve username from localStorage
+
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -31,7 +25,7 @@ const localMeData = localStorage.getItem("meUser")!
       >
         <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
         
-          <img src= "/cowberry-img.png" alt="User" className="bg-cover" />
+          <img src= "/cowberry_logo_with_bg.jpg" alt="User" className="bg-cover" />
       
         </div>
 
@@ -147,17 +141,8 @@ const localMeData = localStorage.getItem("meUser")!
             </DropdownItem>
           </li>
         </ul>
-         <Link
-         
-          to="/change-password"
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-        >
-       <RiLockPasswordFill />
-        change password
-        </Link>
         <Link
-          onClick={axiosLogout}
-          to="/signin"
+          to="/logout"
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg

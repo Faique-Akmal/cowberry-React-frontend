@@ -1,3 +1,5 @@
+import { Members } from "../store/chatStore"
+
 export interface Message {
   id: number
   sender: "me" | "them"
@@ -8,5 +10,6 @@ export interface Message {
 export interface Chat {
   id: number
   name: string
-  messages: Message[]
+  members: Members[]
 }
+

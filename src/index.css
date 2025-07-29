@@ -49,6 +49,8 @@ layer(base);
 
   --color-cowberry-cream-500: #DAC495;
 
+  --color-delete:#FA99A4;
+
   --color-dashboard-brown-200: #B17F59;
   --color-dashboard-gray-600: #4C585B;
   --color-dashboard-royalblue-200: #0D5EA6;
@@ -63,8 +65,8 @@ layer(base);
   --color-brand-400: #67bc38;
   --color-brand-500: #377355;
   --color-brand-600: #184719;
+  --color-brand-700: #144D37;
 
-  --color-brand-700: #2a31d8;
   --color-brand-800: #252dae;
   --color-brand-900: #262e89;
   --color-brand-950: #161950;

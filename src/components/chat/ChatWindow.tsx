@@ -1,42 +1,108 @@
-import { Chat } from "../../types"
-import { useState } from "react"
-
+import { useEffect, useRef, useState } from "react"
+import { AxiosAllGroup, AxiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
+import MemberDropdown from "./MemberDropdown";
+import MsgCard, { WSMessage } from "./MsgCard";
+import Alert from "../ui/alert/Alert";
+import toast from 'react-hot-toast';
+ 
 interface Props {
-  chat: Chat
-  onSendMessage: (chatId: number, text: string) => void
+  group: AxiosAllGroup; 
+  allMsg: AxiosGetGroupMsg[];
+  dispatch?: (values: AxiosGetGroupMsg[]) => void;
+  // dispatch: React.Dispatch<React.SetStateAction<never[]>>;
 }
 
-const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
-  const [newMsg, setNewMsg] = useState("")
+const ChatWindow: React.FC<Props> = ({ group, allMsg }) => {
+  const [newMsg, setNewMsg] = useState<string>("");
+  const [meUserId, setMeUserId] = useState<number>();
+  const [messages, setMessages] = useState<WSMessage[]>([]);
+  
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const send = () => {
     if (!newMsg.trim()) return
-    onSendMessage(chat.id, newMsg)
+        
+    if(meUserId && allMsg[0]?.group){
+      
+      const createMsg = {
+        sender: meUserId,
+        group: allMsg[0]?.group,
+        content: newMsg
+      };
+
+      try {
+        axiosPostSendMsg(createMsg);
+        toast.success("Message sent!");
+      } catch (error) {
+        console.error("Get message request error:", error);
+        toast.error("Failed to send message");        
+      }
+    }
+
+    //  ;(async () => {
+    //     if(group?.group_id){
+          
+    //       try {
+    //         const groupMsg = await axiosGetGroupMsg(group?.group_id);
+    //         if(groupMsg.length > 0){
+    //           dispatch(groupMsg);
+    //         } else dispatch([]);
+    //       } catch (error) {
+    //         console.error("Get message request error:", error);
+    //       }
+    //     }
+    //   })();
+    
     setNewMsg("")
   }
 
+  const mappedMsg = allMsg?.map((msg)=>({
+    message: msg?.content,
+    senderId: msg?.sender,
+    groupId: msg?.group,
+    messageId: msg?.id,
+    senderUsername:msg?.sender_username,
+    timestemp:msg?.sent_at
+  }));
+
+ useEffect(()=>{
+    setMessages(mappedMsg);    
+  }, [allMsg]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [allMsg]); // Triggers scroll on new messages
+
+  useEffect(()=>{
+      const localMeData = localStorage.getItem("meUser")!
+      const localUserID = JSON.parse(localMeData).id!
+      setMeUserId(localUserID);
+  },[]);
+
+    console.count("ChatWindow rendered");
+
+
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="flex justify-between p-4 bg-cowberry-cream-500">
-        <h2 className="text-lg font-bold text-yellow-800">{chat.name}</h2>
-        <div>
-          <button>Group Members</button>
+      <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
+        <h2 className="text-lg font-bold text-yellow-800">{group?.group_name || "No User?"}</h2>
+        <div> 
+          <MemberDropdown members={group?.members || null} />
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
-        {chat.messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`max-w-xs flex flex-col p-2 rounded-lg ${
-              msg.sender === "me"
-                ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
-                : "bg-brand-400 text-white self-start rounded-bl-none"
-            }`}
-          >
-            <p>{msg.text}</p>
-            <small className=" text-xs text-end text-gray-200">{msg.timestamp}</small>
-          </div>
-        ))}
+        {messages.length > 0 ? messages.map((msg) => (  
+         !!meUserId && <MsgCard key={msg?.messageId} meUserId={meUserId} msg={msg}/>
+        )): (
+          <Alert
+          variant="warning"
+          title="Chat Not Found!"
+          message="Try again later!"
+          showLink={false}
+          />
+        )}
+        <div ref={bottomRef} className="pt-10" />
       </div>
       <div className="p-4 bg-cowberry-cream-500 flex gap-2">
         <input
@@ -55,4 +121,4 @@ const ChatWindow: React.FC<Props> = ({ chat, onSendMessage }) => {
   )
 }
 
-export default ChatWindow
+export default ChatWindow;

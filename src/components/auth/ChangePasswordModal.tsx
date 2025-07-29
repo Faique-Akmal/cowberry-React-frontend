@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import axios from "axios";
-import API from "../../api/axios";
+import { useState } from "react";
 
+import { Link } from "react-router";
+import { axiosPostChangePassword } from "../../store/userStore";
+import toast from "react-hot-toast";
 
 
 const ChangePasswordModal: React.FC = () => {
@@ -10,121 +11,63 @@ const ChangePasswordModal: React.FC = () => {
   // const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const [loading, setLoading] = useState(false);
 
+  // const accessToken = localStorage.getItem("accessToken");
 
-  // Reset form when modal closes
-  const resetForm = () => {
-    setOldPassword("");
-    setNewPassword("");
-    // setConfirmPassword("");
-    setMessage("");
-    setIsError(false);
-  };
-
-  const handleClose = () => {
-     resetForm();
-   
-    setIsError(false);
-    
-  };
-
-  // Password validation
-  const validatePasswords = () => {
-    if (!oldPassword || !newPassword ) {
-      setMessage("All fields are required.");
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      setMessage("Both fields are required.");
       setIsError(true);
-      return false;
-    }
-
-    if (newPassword.length < 8) {
-      setMessage("New password must be at least 8 characters long.");
-      setIsError(true);
-      return false;
-    }
-
-   
-
-    if (oldPassword === newPassword) {
-      setMessage("New password must be different from old password.");
-      setIsError(true);
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    if (!validatePasswords()) {
       return;
     }
 
-    try {
-      setLoading(true);
-      setMessage("");
-      setIsError(false);
+    setIsLoading(true);
+    setMessage("");
+    setIsError(false);
 
-      const response = await API.post(
-        "/change-password/",
-        {
+    try {
+      // const response = await API.post(
+      //   "/change-password/",
+        // {
+        //   old_password: oldPassword,
+        //   new_password: newPassword,
+        // }
+       
+      // );
+      const oldNewPass = await axiosPostChangePassword({
           old_password: oldPassword,
           new_password: newPassword,
-       
-        },
-        // {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`,
-        //     "Content-Type": "application/json",
-        //   },
-        // }
-      );
+        });
 
-      // Handle successful response
-      if (response.status === 200 || response.status === 201) {
+
+
+      if (oldNewPass.status === 200 || oldNewPass.data.status === "success") {
         setMessage("Password changed successfully!");
+        toast.success("Password changed successfully!");
+
         setIsError(false);
         
         // Close modal after 2 seconds
         setTimeout(() => {
-          handleClose();
-        }, 2000);
-      }
-    } catch (err: any) {
-      console.error("Change password error:", err);
-      
-      // Handle different types of errors
-      let errorMessage = "Something went wrong. Please try again.";
-      
-      if (err?.response?.data) {
-        const errorData = err.response.data;
-        
-        // Handle field-specific errors
-        if (errorData.old_password) {
-          errorMessage = Array.isArray(errorData.old_password) 
-            ? errorData.old_password[0] 
-            : errorData.old_password;
-        } else if (errorData.new_password) {
-          errorMessage = Array.isArray(errorData.new_password) 
-            ? errorData.new_password[0] 
-            : errorData.new_password;
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        } else if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        }
-      } else if (err?.response?.status === 401) {
-        errorMessage = "Authentication failed. Please login again.";
-      } else if (err?.response?.status === 400) {
-        errorMessage = "Invalid request. Please check your input.";
-      } else if (err?.message) {
-        errorMessage = err.message;
-      }
+          onClose();
+          setOldPassword("");
+          setNewPassword("");
+          setMessage("");
+        }, 1500);
+      } else {
+        setMessage("Failed to change password.");
+        toast.error("Failed to change password.");
 
-      setMessage(errorMessage);
+        setIsError(true);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      // if (error.response?.data?.message) {
+      //   setMessage(error.response.data.message);
+      // } else {
+      //   setMessage("Something went wrong. Please try again.");
+      // }
+      toast.error("Something went wrong.Please try again.")
       setIsError(true);
     } finally {
       setLoading(false);

@@ -2,16 +2,16 @@ import React from "react";
 import MsgDropdown from "./MsgDropdown";
 import TimeZone from "../common/TimeZone";
 import { useMessageStore } from "../../store/messageStore";
-import { ChatMessage } from "../../types/chat";
+import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 
 interface Props {
-  chatGroupName:string;
+  activeChatInfo?:ActiveChatInfo;
   meUserId: number;
   msgId: number;
   replyMsg:(msg:ChatMessage)=>void;
 }
 
-const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msgId, replyMsg}) => {
+const MsgCard:React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg}) => {
     const { getMessageById } = useMessageStore();
     const msg = getMessageById(msgId!)!;
     const parentMessage = getMessageById(msg.parent!);
@@ -29,7 +29,7 @@ const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msgId, rep
             <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
               { msg?.sender === meUserId ? `${msg?.sender_username} (You)` : msg?.sender_username}
             </h4>
-            <MsgDropdown chatGroupName={chatGroupName} msgId={msg?.id} meUserId={meUserId} replyMsg={replyMsg} />
+            <MsgDropdown msgId={msg?.id} meUserId={meUserId} replyMsg={replyMsg} />
           </div>
         )}
 

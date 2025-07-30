@@ -24,7 +24,7 @@ import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import Logout from "./pages/AuthPages/Logout";
-import CompTestHistorySocket from "./pages/CompTestHistorySocket";
+// import CompTestHistorySocket from "./pages/CompTestHistorySocket";
 import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 // import CompTest from "./pages/CompTest";
@@ -49,6 +49,7 @@ import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 // import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/AdminAttandance";
+import ChatComponent from "./components/chat/ChatComponent";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -140,7 +141,7 @@ export default function App() {
             <Route path="/bar-chart" element={<BarChart />} />
 
             {/* Test Route */}
-            <Route path="/test" element={<CompTestHistorySocket />} />
+            <Route path="/test" element={<ChatComponent />} />
             {/* <Route path="/test" element={<CompTest />} /> */}
             {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>

@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import ChatList from "./ChatList"
 import SocketChatWindow from "./SocketChatWindow"
 import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore"
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocketStore } from "../../store/socketStore";
+import { ActiveChatInfo } from "../../types/chat";
 // import toast from "react-hot-toast";
+
 
 const SocketChatBox: React.FC = () => {
     const { connect, disconnect } = useSocketStore();
   
-  const [activeChatId, setActiveChatId] = useState<number>(1);
+  // const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const [activeChatInfo, setActiveChatInfo] = useState<ActiveChatInfo | null>(null);
   const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
 
   const accessToken = localStorage.getItem('accessToken');
@@ -17,30 +20,40 @@ const SocketChatBox: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    useEffect(() => {
-      connect(`${activeChatId}`, accessToken!)
-  
-      return () => {
-        disconnect()
-      }
-    }, [activeChatId, accessToken, connect])
+   // Fetch groups once
+   useEffect(() => {
+     const fetchGroups = async () => {
+       try {
+         const allGroups = await axiosGetAllGroup();
+         if (allGroups.length > 0) {
+           setGroups(allGroups);
+           setActiveChatInfo({chatId:allGroups[0].group_id, chatType: "group"});
+         }
+       } catch (err) {
+         console.error("Failed to fetch groups:", err);
+       }
+     };
+     fetchGroups();
+   }, []);
 
   useEffect(() => {
-      ;(async ()=>{
-        const allGroups = await axiosGetAllGroup();
+    if (!accessToken || activeChatInfo === null) return;
 
-        if(allGroups.length > 0){
-          setGroups(allGroups);
-          
-          const firstGroupId = allGroups[0]?.group_id;
-          setActiveChatId(firstGroupId)
-        }
-      }
-      )();
-  
+    // Disconnect current connection before creating new one
+    disconnect();
+    connect(`${activeChatInfo?.chatId}`, accessToken);
+
+    return () => {
+      disconnect(); // clean up on unmount or before next connect
+    };
+  }, [activeChatInfo]);
+
+    const handleSelectChat = useCallback((chatInfo:ActiveChatInfo) => {
+      setActiveChatInfo(chatInfo);
+      setIsSidebarOpen(false);
     }, []);
 
-  const activeChat = groups.find((group) => group.group_id === activeChatId)!  
+  const activeChat = groups.find((group) => group.group_id === activeChatInfo?.chatId)!  
 
   return (
     <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
@@ -64,17 +77,14 @@ const SocketChatBox: React.FC = () => {
         >
             <ChatList
               groups={groups}
-              activeChatId={activeChatId}
-              onSelectChat={(id) => {
-                setActiveChatId(id);
-                setIsSidebarOpen(false); // close sidebar on select (mobile)
-              }}
+              activeChatInfo={activeChatInfo!}
+              onSelectChat={handleSelectChat}
             />
         </div>
 
         {/* Main Chat Area */}
         <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-          <SocketChatWindow groupId={`${activeChatId}`} chatName={activeChat?.group_name} />
+          <SocketChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} />
         </div>
       </div>
     </div>

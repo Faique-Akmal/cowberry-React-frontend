@@ -1,17 +1,20 @@
 // components/SocketChatWindow.tsx
 import React, { useEffect, useRef, useState } from "react";
 import MsgCard from "./MsgCard";
-import { ChatMessage } from "../../types/chat";
+import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
 import { useSocketStore } from '../../store/socketStore';
 import { RiCloseFill } from "react-icons/ri";
+import MemberDropdown from "./MemberDropdown";
+import {Members} from "../../store/chatStore"
 
 interface Props {
-  groupId: string;
-  chatName: string;
+  activeChatInfo: ActiveChatInfo;
+  chatName?: string;
+  groupMembers: Members[] | null;
 }
 
- const SocketChatWindow: React.FC<Props> = ({ groupId, chatName }) => {
+ const SocketChatWindow: React.FC<Props> = ({ activeChatInfo, groupMembers }) => {
   const { sendJson, isConnected } = useSocketStore();
   const messages = useMessageStore((state) => state.messages);
   
@@ -28,13 +31,23 @@ interface Props {
 
   const sendMessage = () => {
     if (input.trim()) {
-      sendJson({
-        type: "send_message",
-        content: input,
-        group_id: parseInt(groupId),
-        receiver_id: null,
-        parent_id: replyTo?.id,
-      });
+      if(activeChatInfo?.chatType === "personal") {
+        sendJson({
+          type: "send_message",
+          content: input,
+          group_id: null,
+          receiver_id: activeChatInfo?.chatId,
+          parent_id: replyTo?.id,
+        });
+      } else if(activeChatInfo?.chatType === "group") {
+        sendJson({
+          type: "send_message",
+          content: input,
+          group_id: activeChatInfo.chatId,
+          receiver_id: null,
+          parent_id: replyTo?.id,
+        });
+      }
 
       setInput("");
       setReplyTo(null);
@@ -48,44 +61,21 @@ interface Props {
     <div className="flex flex-col h-[80vh] w-full">
       <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
         <h2 className="text-lg font-bold text-yellow-800"> 
-          {chatName || "No User?"}
+          {activeChatInfo?.chatName || "No User?"}
         </h2>
+        <div className="flex items-center gap-2"> 
+          {(activeChatInfo.chatType === "personal") && <MemberDropdown members={groupMembers!} />}
         <p className="text-lg font-bold text-yellow-800">
           {isConnected ? '🟢' : '🔴'}
         </p>
-        {/* <div> 
-          <MemberDropdown members={group?.members || null} />
-        </div> */}
+        </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {messages?.map((msg) => (
           
           <MsgCard 
           key={msg?.id}
-          chatGroupName={groupId} meUserId={id!} msgId={msg?.id} replyMsg={(reMsg)=> setReplyTo(reMsg)} />
-          
-          // <div key={msg.id} style={{ marginBottom: "1rem" }}>
-          //   <strong>{msg.sender_username}</strong>:{" "}
-          //   {msg.is_deleted ? <em>Message deleted</em> : msg.content}
-          //   <div>
-          //     {msg.sender === currentUserId && (
-          //       <>
-          //         <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
-          //           Edit
-          //         </button>
-          //         <button onClick={() => handleDelete(msg.id)}>Delete</button>
-          //       </>
-          //     )}
-          //   </div>
-          // {/* <button onClick={() => setReplyTo(msg)}>Reply</button>
-          // {!!msg?.replies && (
-          //   !!(msg?.replies?.length > 0) && (
-          //     msg?.replies.map((r) => (
-          //       <div key={r.id} style={{ color:"red", marginLeft: "2rem", fontStyle: "italic" }}>
-          //         ↳ {r.sender_username}: {r.content}
-          //       </div>)))
-          //   )} */}
-          // </div>
+          activeChatInfo={activeChatInfo} meUserId={id!} msgId={msg?.id} replyMsg={(reMsg)=> setReplyTo(reMsg)} />
         ))}
         
         <div ref={bottomRef} className="pt-10" />

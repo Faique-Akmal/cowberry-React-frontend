@@ -8,7 +8,7 @@ import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
-import Home from "../../pages/Dashboard/Home";
+// import Home from "../../pages/Dashboard/Home";
 // import EmployeeDashboard from "../../pages/Dashboard/EmployeeDashboard";
 // import Home from "../../pages/Dashboard/Home";
 
@@ -107,7 +107,7 @@ export default function SignInForm() {
       } else {
         setMessage(response.data.message || "Login failed.");
       }
-    } catch (error: any) {
+    } catch (error:any) {
       console.error("Login error:", error);
       
       if (error.response) {
@@ -191,6 +191,7 @@ export default function SignInForm() {
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
               <button
+                type="button"
                 onClick={openForgotModal}
                 className="text-sm text-brand-500 hover:underline"
               >

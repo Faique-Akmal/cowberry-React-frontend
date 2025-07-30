@@ -11,80 +11,39 @@ import LastChatMsg from "./LastChatMsg";
 import Alert from "../ui/alert/Alert";
 import Avatar from "../ui/avatar/Avatar";
 import InfiniteScrollList from "../common/InfiniteScrollList";
+import ChatUserList from "./ChatUserList";
+import { ActiveChatInfo } from "../../types/chat";
 
 interface Props {
   groups: AxiosAllGroup[];
-  activeChatId: number;
-  onSelectChat: (id: number) => void;
+  activeChatInfo: ActiveChatInfo;
+  onSelectChat: (activeInfo:ActiveChatInfo) => void;
 }
 
-// interface Option {
-//   value: number;
-//   name: string;
-// }
 
-// interface Users{
-//   id:number;
-//   username:string;
-//   first_name:string;
-//   email:string;
-//   profile_images:string;
-//   role:number;
-//   department: number;
-// }
-
-const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
+const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  // const [users, setUsers] = useState<AxiosGetUsers[]>([]);
- 
-  // const [userOptions, setUserOptions] = useState<Option[]>([]);
 
-  const handleSave = (e:React.FormEvent) => {
-     e.preventDefault();
-    // Handle save logic here
 
-    axiosPostCreateGroup({
-            name: groupName.trim(),
-            members: [...selectedValues] 
-          });
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    console.log("Saving changes...");
-    setGroupName("");
-    setSelectedValues([]);
-    closeModal();
+    try {
+      await axiosPostCreateGroup({
+        name: groupName.trim(),
+        members: selectedValues,
+      });
+
+      setGroupName('');
+      setSelectedValues([]);
+      closeModal();
+    } catch (err) {
+      console.error("Group creation failed:", err);
+    }
   };
 
-//   useEffect(() => {
-//     if (users.length > 0) {
-//       const transformed = users.map<Option>(user => ({
-//         value: user?.id,
-//         name: user?.username,
-//       }));
-//       setUserOptions(transformed);
-//     }
-
-//   }, [users]);
-
-//   useEffect(() => {
-//     ;(async ()=>{
-//       try {
-//         const allUsers = await axiosGetUsers(1,25);
-  
-//         if(allUsers?.length > 0){
-//           setUsers(allUsers);
-//         }
-        
-//       } catch (err) {
-//       console.error("/User get request error:", err);
-//       }
-//     }
-//   )();
-  
-// }, []);
-
-// console.log(users)
   
   return (
     <>
@@ -125,11 +84,16 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
               />
           </div>
           : <div className="">
+          
+          {/* groups chat lists */}
           {groups?.map((group) => (
             <div
             key={group?.group_id}
-            onClick={() => onSelectChat(group?.group_id)}
-            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
+            onClick={() => onSelectChat({
+              chatId: group?.group_id, 
+              chatType: "group",
+              chatName: group?.group_name})}
+            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType ==="group")&&(activeChatInfo?.chatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500")}`}
             >
             <span className="mr-3">
               <Avatar src="/images/user/user-01.jpg" size="large" />
@@ -142,6 +106,10 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
             </div>
           </div>
           ))}
+
+          {/* user chat lists */}
+          <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
+
           </div>
         }
 
@@ -149,17 +117,15 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
       
       
     </div>
-    {/* <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
-        <div className="absolute no-scrollbar w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4"> */}
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
-              <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
+        <div className="relative no-scrollbar w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
           <div className="px-2 pr-14">
             <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
               Create Chat Group
             </h4>
           </div>
           <form className="flex flex-col">
-            <div className="lg:h-[50vh] px-2 pb-3">
+            <div className="lg:h-[35vh] px-2 pb-3">
               <div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5">
                   <div>
@@ -183,17 +149,17 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
               <Button size="sm" onClick={handleSave}>
-                Save Changes
+                Create
               </Button>
             </div>
           </form>
         </div>
-      </Modal>
+    </Modal>
     </>
   )
 }

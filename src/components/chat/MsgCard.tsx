@@ -1,19 +1,24 @@
 import React from "react";
 import MsgDropdown from "./MsgDropdown";
 import TimeZone from "../common/TimeZone";
+import { useMessageStore } from "../../store/messageStore";
 import { ChatMessage } from "../../types/chat";
 
 interface Props {
   chatGroupName:string;
   meUserId: number;
-  msg: ChatMessage;
+  msgId: number;
+  replyMsg:(msg:ChatMessage)=>void;
 }
 
-const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msg}) => {
+const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msgId, replyMsg}) => {
+    const { getMessageById } = useMessageStore();
+    const msg = getMessageById(msgId!)!;
+    const parentMessage = getMessageById(msg.parent!);
 
   return (
     <div
-      className={`max-w-xs flex flex-col p-2 rounded-lg ${
+      className={`max-w-xs flex flex-col gap-1 p-2 rounded-lg ${
         meUserId === msg?.sender
           ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
           : "bg-brand-700 text-white self-start rounded-bl-none"
@@ -22,13 +27,25 @@ const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msg}) => {
         {!msg?.is_deleted && (
           <div className="relative flex justify-between gap-2">
             <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
-              {msg?.sender_username}
+              { msg?.sender === meUserId ? `${msg?.sender_username} (You)` : msg?.sender_username}
             </h4>
-            <MsgDropdown chatGroupName={chatGroupName} msgId={msg?.id} meUserId={meUserId} />
+            <MsgDropdown chatGroupName={chatGroupName} msgId={msg?.id} meUserId={meUserId} replyMsg={replyMsg} />
           </div>
         )}
+
+      {!msg?.is_deleted && !!msg?.parent &&
+        <div>
+          <div className="w-full bg-green-600 p-2 rounded-lg border-l-5 border-cowberry-cream-500">
+            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
+                {parentMessage?.sender_username}
+            </h4>
+            <p>
+              {parentMessage?.content}
+            </p>
+          </div>
+        </div>
+      }
       <div className="px-1 gap-2 flex flex-col">
-        
         {msg.is_deleted ?
         <div className="flex gap-2 items-center text-gray-200">
           <div title="delete icon">
@@ -43,7 +60,7 @@ const MsgCard:React.FC<Props> = React.memo(({chatGroupName, meUserId, msg}) => {
           </div>
         </div> : <p>{msg?.content}</p>}  
         
-        <small className="flex gap-2 text-xs text-end text-gray-200">
+        <small className="flex gap-2 text-xs justify-end text-gray-200">
           {/* {msg?.is_edited} */}
           {/* {msg?.sent_at} */}
           <TimeZone utcDateStr={msg?.sent_at} />

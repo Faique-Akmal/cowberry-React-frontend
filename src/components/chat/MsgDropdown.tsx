@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState} from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { RiReplyLine, RiFileCopyLine, RiEdit2Line, RiDeleteBin6Line } from "react-icons/ri";
@@ -9,58 +9,79 @@ import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import toast from "react-hot-toast";
 import Button from "../ui/button/Button";
-// import { Label } from "recharts";
 import Input from "../form/input/InputField";
 import TimeZone from "../common/TimeZone";
+import { ChatMessage } from "../../types/chat";
 
 interface Props{
   chatGroupName?: string;
   msgId: number;
-  // msg: ChatMessage;
   meUserId: number;
+  replyMsg: (msg: ChatMessage)=>void;
 }
 
-const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
+const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId, replyMsg}) => {
    const { isOpen, openModal, closeModal } = useModal();
-  const [isDropdownOpen, setIsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [editedMessage, setEditedMessage] = useState("");
-  const messages = useMessageStore((state) => state.messages.find((msg) => msg.id === msgId))!;
   const {sendJson} = useSocketStore();
+  const { getMessageById } = useMessageStore();
+  const message = getMessageById(msgId);
 
-  console.count("MsgDropdown rendered");
+  const [loading, setLoading] = useState(false);
+
+  // console.count("MsgDropdown rendered");
   
   function toggleDropdown() {
-    setIsOpen(!isOpen);
+    setIsDropdownOpen(!isDropdownOpen);
   }
 
   function closeDropdown() {
-    setIsOpen(false);
+    setIsDropdownOpen(false);
   }
 
   const handleReply = useCallback(() => {
     try {
-      // openModal("reply", messages);
+      replyMsg(message!);
     } catch (error) {
       console.error(error);
       toast.error('Failed to reply message');
     }
-  }, []);
+  }, [replyMsg, message]);
   
   const handleCopy = (msgContent:string) => {
     copyToClipboard(msgContent);
   }
 
-  const handleEdit = () => {
+  const handleEditOpen = () => {
+    setEditedMessage(message?.content || "");
+    openModal();
+  };
+
+
+  const handleEdit = async (e:React.FormEvent) => {
+     e.preventDefault();
+
+    if (!editedMessage.trim()) return;
+
+    setLoading(true);
+
     if (editedMessage.trim()) {
-      console.log(editedMessage);
       try {
-        // openModal('edit', messages);
-        sendJson({ type: "edit_message", message_id: msgId, is_edited: true, new_content: editedMessage || messages?.content });
+        await sendJson({ 
+          type: "edit_message",
+          message_id: msgId,
+          is_edited: true,
+          new_content: editedMessage
+        });
         toast.success('Message edited (live)')
+        closeModal();
         setEditedMessage("");
       } catch (error) {
         console.error(error);
         toast.error('Failed to edit message');
+      } finally {
+        setLoading(false);
       }
     }
   }
@@ -84,6 +105,8 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
       toast.error('Failed to delete message');
     }
   }, [msgId, sendJson]);
+
+  if (!message) return null;
 
   return (
     <>
@@ -122,7 +145,7 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
               {/* Reply Button */}
               <li className="pt-2 border-gray-200">
                 <DropdownItem
-                  // onItemClick={closeDropdown}
+                  onItemClick={closeDropdown}
                   tag="button"
                   onClick={handleReply}
                   className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-dashboard-royalblue-200 dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
@@ -139,9 +162,9 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
               {/* Copy Button */}
               <li className="pt-2 border-gray-200">
                 <DropdownItem
-                  // onItemClick={closeDropdown}
+                  onItemClick={closeDropdown}
                   tag="button"
-                  onClick={() => handleCopy(messages?.content)}
+                  onClick={() => handleCopy(message?.content)}
                   className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-dashboard-royalblue-200 dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
                 >
                   <div className="text-xl">
@@ -153,15 +176,14 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
                 </DropdownItem>
               </li>
 
-            {messages?.sender === meUserId && (
+            {message?.sender === meUserId && (
             <>
               {/* Edit Button */}
               <li className="pt-2 border-gray-200">
                 <DropdownItem
-                  // onItemClick={closeDropdown}
+                  onItemClick={closeDropdown}
                   tag="button"
-                  onClick={openModal}
-                  // onClick={() => handleEdit(messages?.id, prompt("Edit message:", messages?.content) || messages?.content)}
+                  onClick={handleEditOpen}
                   className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 hover:text-dashboard-royalblue-200 dark:text-gray-400 rounded-lg group text-theme-sm hover:bg-gray-100 dark:hover:bg-white/5"
                 >
                   <div className="text-xl">
@@ -198,30 +220,27 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            <h4 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
               Edit Message
             </h4>
-            {/* <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
-            </p> */}
           </div>
-          <div className="py-6 flex items-center justify-center">
+          <div className="rounded-lg mx-2 bg-[url(/123.png)] bg-size-[25%] bg-repeat py-6 flex items-center justify-center">
             <div className="max-w-xs flex flex-col p-2 space-y-2 rounded-lg bg-brand-700 text-white">
               <p className="mt-1">
-                {messages?.content}
+                {message?.content}
               </p>
               <div>
                 <small className="flex gap-2 justify-end text-xs text-end text-gray-200">
-                  <TimeZone utcDateStr={messages?.sent_at} />
+                  <TimeZone utcDateStr={message?.sent_at} />
                 </small>
               </div>
             </div>
           </div>
-          <form className="flex flex-col">
+          <form className="pt-4 flex flex-col">
             <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
-              <div>
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div>
+              <div className="">
+                <div className="grid gap-x-6 gap-y-5">
+                  <div className="">
                     <Input
                       type="text"
                       placeholder="Type a message"
@@ -233,13 +252,18 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId}) => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-start">
               <Button
                size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleEdit}>
-                Save Changes
+              <Button 
+                size="sm" 
+                type="submit" 
+                onClick={(e) => handleEdit(e)}
+                disabled={loading}
+                >
+                 {loading ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

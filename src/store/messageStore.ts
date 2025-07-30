@@ -12,9 +12,11 @@ interface MessageState {
   deleteMessage: (id: number) => void
   addReply: (parentId: number, reply: ChatMessage) => void
   clearMessages: () => void
+
+  getMessageById: (id: number) => ChatMessage | undefined
 }
 
-export const useMessageStore = create<MessageState>((set) => ({
+export const useMessageStore = create<MessageState>((set, get) => ({
   messages: [],
 
   loadMessages: (newMessages) => set({ messages: newMessages }),
@@ -63,4 +65,9 @@ export const useMessageStore = create<MessageState>((set) => ({
     })),
 
   clearMessages: () => set({ messages: [] }),
+
+  getMessageById: (id) => {
+    const { messages } = get()
+    return messages.find((msg) => msg.id === id)
+  },
 }))

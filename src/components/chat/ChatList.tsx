@@ -1,11 +1,11 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-// import MultiSelect from "../form/MultiSelect";
 import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
+// import MultiSelect from "../form/MultiSelect";
 // import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 import LastChatMsg from "./LastChatMsg";
 import Alert from "../ui/alert/Alert";
@@ -41,7 +41,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
  
   // const [userOptions, setUserOptions] = useState<Option[]>([]);
 
-  const handleSave = (e:FormEvent) => {
+  const handleSave = (e:React.FormEvent) => {
      e.preventDefault();
     // Handle save logic here
 
@@ -149,8 +149,10 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
       
       
     </div>
-    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
-        <div className="no-scrollbar relative w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
+    {/* <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
+        <div className="absolute no-scrollbar w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4"> */}
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
+              <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
               Create Chat Group

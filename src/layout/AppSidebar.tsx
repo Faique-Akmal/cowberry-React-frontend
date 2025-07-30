@@ -25,11 +25,11 @@ import { MdListAlt } from "react-icons/md";
 
 
 
-interface UserProfile {
+// interface UserProfile {
 
-  role: string;
+//   role: string;
  
-}
+// }
 
 
 type SubItem = {
@@ -235,10 +235,10 @@ const AppSidebar: React.FC = () => {
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-4">
       {items
-        .filter(nav => !nav.role || nav.role.includes(userRole)) // Main item role check
+        .filter(nav => !nav.role || nav.role.includes(userRole!)) // Main item role check
         .map((nav, index) => {
           const visibleSubItems = nav.subItems?.filter(
-            sub => !sub.role || sub.role.includes(userRole)
+            sub => !sub.role || sub.role.includes(userRole!)
           );
 
           if (nav.subItems && (!visibleSubItems || visibleSubItems.length === 0)) return null;

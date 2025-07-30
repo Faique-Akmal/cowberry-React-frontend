@@ -1,5 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
-layer(base);
+/* @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
+layer(base); */
 
 
 @import "tailwindcss";
@@ -47,6 +47,8 @@ layer(base);
   --color-cowberry-green-500: #377355;
   --color-cowberry-green-600: #184719;
 
+  
+  --color-cowberry-cream-400: #FFD279;
   --color-cowberry-cream-500: #DAC495;
 
   --color-delete:#FA99A4;
@@ -59,8 +61,9 @@ layer(base);
   --color-brand-25: #f2f7ff;
   --color-brand-50: #ecf3ff;
   --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-
+  
+  /* used for cowberry theme-standard */
+  --color-brand-200: #06CF9C;
   --color-brand-300: #9BB9AA;
   --color-brand-400: #67bc38;
   --color-brand-500: #377355;

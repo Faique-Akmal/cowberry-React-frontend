@@ -4,6 +4,7 @@ import MsgCard from "./MsgCard";
 import { ChatMessage } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
 import { useSocketStore } from '../../store/socketStore';
+import { RiCloseFill } from "react-icons/ri";
 
 interface Props {
   groupId: string;
@@ -19,15 +20,11 @@ interface Props {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const localMeData = localStorage.getItem("meUser")!;
-  const {id} = JSON.parse(localMeData)!;
+  const { id } = JSON.parse(localMeData!);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]); // Triggers scroll on new messages
-
-  console.log("react State Array", messages);
-
-  console.count("SocketChatWindow rendered");
 
   const sendMessage = () => {
     if (input.trim()) {
@@ -44,6 +41,9 @@ interface Props {
     }
   };
 
+  console.count("SocketChatWindow.tsx rendered");
+
+
   return (
     <div className="flex flex-col h-[80vh] w-full">
       <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
@@ -59,43 +59,54 @@ interface Props {
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
         {messages?.map((msg) => (
-          <>
+          
           <MsgCard 
           key={msg?.id}
-          chatGroupName={groupId} meUserId={id} msg={msg} />
+          chatGroupName={groupId} meUserId={id!} msgId={msg?.id} replyMsg={(reMsg)=> setReplyTo(reMsg)} />
           
-          {/* // <div key={msg.id} style={{ marginBottom: "1rem" }}>
+          // <div key={msg.id} style={{ marginBottom: "1rem" }}>
           //   <strong>{msg.sender_username}</strong>:{" "}
           //   {msg.is_deleted ? <em>Message deleted</em> : msg.content}
           //   <div>
           //     {msg.sender === currentUserId && (
-            //       <>
-            //         <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
-            //           Edit
-            //         </button>
-            //         <button onClick={() => handleDelete(msg.id)}>Delete</button>
-            //       </>
-            //     )}
-            //   </div> */}
-            {/* <button onClick={() => setReplyTo(msg)}>Reply</button>
-            {!!msg?.replies && (
-              !!(msg?.replies?.length > 0) && (
-                msg?.replies.map((r) => (
-                  <div key={r.id} style={{ color:"red", marginLeft: "2rem", fontStyle: "italic" }}>
-                    ↳ {r.sender_username}: {r.content}
-                  </div>)))
-              )} */}
-
-              </>
+          //       <>
+          //         <button onClick={() => handleEdit(msg.id, prompt("Edit message:", msg.content) || msg.content)}>
+          //           Edit
+          //         </button>
+          //         <button onClick={() => handleDelete(msg.id)}>Delete</button>
+          //       </>
+          //     )}
+          //   </div>
+          // {/* <button onClick={() => setReplyTo(msg)}>Reply</button>
+          // {!!msg?.replies && (
+          //   !!(msg?.replies?.length > 0) && (
+          //     msg?.replies.map((r) => (
+          //       <div key={r.id} style={{ color:"red", marginLeft: "2rem", fontStyle: "italic" }}>
+          //         ↳ {r.sender_username}: {r.content}
+          //       </div>)))
+          //   )} */}
           // </div>
         ))}
         
         <div ref={bottomRef} className="pt-10" />
       </div>
-      {replyTo && (
-        <div>
-          Replying to: <strong>{replyTo.sender_username}</strong> — {replyTo.content}
-          <button onClick={() => setReplyTo(null)}>Cancel</button>
+      {!!replyTo && (
+        <div className="relative p-1 bg-cowberry-cream-500 rounded-tl-xl rounded-tr-xl">
+          <div className="w-full bg-brand-500 p-2 rounded-lg border-l-5 border-brand-400 text-gray-200">
+            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
+                {replyTo?.sender == id! ? `${replyTo?.sender_username} (You)` : replyTo?.sender_username}
+            </h4>
+            <p>
+              {replyTo?.content}
+            </p>
+            <button
+              type="button"
+              className="absolute top-2 right-2 border-none text-xl text-gray-200" 
+              onClick={() => setReplyTo(null)}>
+              <RiCloseFill />
+            </button>
+          </div>
+          {/* <strong>{replyTo.sender_username}</strong> — {replyTo.content} */}
         </div>
       )}
 

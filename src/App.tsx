@@ -50,6 +50,7 @@ import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/AdminAttandance";
 import NotificationListener from "./NotificationListener";
+import AnnouncementForm from "./pages/Announcement";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -126,7 +127,7 @@ export default function App() {
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AttendanceList />} />
-            <Route path="/announcement" element={ <AttendanceList />} />
+            <Route path="/announcement" element={ <AnnouncementForm />} />
             
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 

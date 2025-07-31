@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 
 
 import { Link } from "react-router";
-import axios from "axios";
-import API from "../../api/axios";
-import { Dropdown } from "../../components/ui/dropdown/Dropdown";
-import { DropdownItem } from "../../components/ui/dropdown/DropdownItem";
+
+
 import { TfiAnnouncement } from "react-icons/tfi";
+import API from "../api/axios";
+import { Dropdown } from "../components/ui/dropdown/Dropdown";
+import { DropdownItem } from "../components/ui/dropdown/DropdownItem";
 
 interface Announcement {
   id: number;

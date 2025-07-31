@@ -1,20 +1,37 @@
-import React, { useState } from "react";
-import API from "../../api/axios"; // Your Axios instance
+import React, { useState, useEffect, useRef } from "react";
+import API from "../api/axios"; // Axios instance
 
 const AnnouncementForm = () => {
   const [title, setTitle] = useState("");
-  const [created_by, setCreated_by] = useState(""); // Set this manually or from localStorage
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createdBy, setCreatedBy] = useState("");
+  const socketRef = useRef<WebSocket | null>(null);
 
-  // Uncomment this line if you're storing userId in localStorage
-  // useEffect(() => {
-  //   const storedUserId = localStorage.getItem("userId");
-  //   if (storedUserId) {
-  //     setCreated_by(storedUserId);
-  //   }
-  // }, []);
+  // Set user ID and WebSocket connection
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+    const token = localStorage.getItem("authToken");
+
+    if (storedUserId) {
+      setCreatedBy(storedUserId);
+    }
+
+    if (token) {
+      const socket = new WebSocket(`wss://yourdomain.com/ws/notifications/?token=${token}`);
+      socketRef.current = socket;
+
+      socket.onopen = () => console.log("WebSocket connected");
+      socket.onmessage = (event) => console.log("Message from server:", event.data);
+      socket.onerror = (err) => console.error("WebSocket error:", err);
+      socket.onclose = () => console.log("WebSocket closed");
+
+      return () => {
+        socket.close();
+      };
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,23 +41,34 @@ const AnnouncementForm = () => {
       return;
     }
 
-    if (!created_by.trim()) {
-      setError("Created By (user ID) is required.");
+    if (!createdBy.trim()) {
+      setError("User ID is missing.");
       return;
     }
 
     try {
       setLoading(true);
-      await API.post("/hrms/announcements/", {
+      const response = await API.post("/hrms/announcements/", {
         title,
         content,
-        created_by,
+        created_by: createdBy,
       });
+
+      // Send WebSocket notification
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        const wsPayload = {
+          type: "announcement_created",
+          title,
+          content,
+          created_by: createdBy,
+          timestamp: new Date().toISOString(),
+        };
+        socketRef.current.send(JSON.stringify(wsPayload));
+      }
 
       // Reset fields
       setTitle("");
       setContent("");
-      setCreated_by("");
       setError("");
       alert("Announcement created successfully!");
     } catch (err) {
@@ -74,18 +102,6 @@ const AnnouncementForm = () => {
             onChange={(e) => setContent(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded"
             rows={4}
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Created By (User ID)</label>
-          <input
-            type="text"
-            value={created_by}
-            maxLength={5}
-            onChange={(e) => setCreated_by(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded"
             required
           />
         </div>

@@ -1,5 +1,5 @@
 // src/components/admin/AttendanceList.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import API from "../../api/axios";
 import {
   MapContainer,
@@ -33,8 +33,6 @@ interface Attendance {
   department: string;
   user: {
     id: number;
-    name: string;
-    username: string;
     first_name: string;
     last_name: string;
     employee_code: string;
@@ -42,28 +40,45 @@ interface Attendance {
 }
 
 interface LocationLog {
-  latitude: number;
-  longitude: number;
+  latitude: string | number;
+  longitude: string | number;
   timestamp: string;
+  battery_level?: number | null;
+  id?: number;
+  is_paused?: boolean;
+  user?: number;
 }
 
 export default function AttendanceList() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
   const [mapView, setMapView] = useState<Attendance | null>(null);
-  const [locationLogs, setLocationLogs] = useState<LocationLog[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchData();
   }, []);
 
-
   useEffect(() => {
-  if (mapView) {
-    fetchLocationLogs(mapView.user.id, mapView.date);
-  }
-}, [mapView]);
+    if (mapView) {
+      fetchLocations(mapView.user.id, mapView.date);
+
+      if (!mapView.end_lat || !mapView.end_lng) {
+        locationIntervalRef.current = setInterval(() => {
+          fetchLocations(mapView.user.id, mapView.date);
+        }, 12000);
+      }
+    }
+
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [mapView]);
 
   const fetchData = async () => {
     try {
@@ -75,86 +90,93 @@ export default function AttendanceList() {
       const startData = startRes.data.results || [];
       const endData = endRes.data.results || [];
 
-      const mergedData = startData.map((startItem: any) => {
-        const match = endData.find(
-          (endItem: any) =>
-            endItem.username === startItem.username &&
-            endItem.date === startItem.date
-        );
+   const merged = startData.map((start: any) => {
+  const startUserId = typeof start.user === 'object' ? start.user.id : start.user;
 
-        return {
-          ...startItem,
-          end_time: match?.end_time || "",
-          end_lat: match?.end_lat || "",
-          end_lng: match?.end_lng || "",
-        };
-      });
+  const match = endData.find((end: any) => {
+    const endUserId = typeof end.user === 'object' ? end.user.id : end.user;
+    return endUserId === startUserId && end.date === start.date;
+  });
 
-      setAttendances(mergedData);
+  return {
+    ...start,
+    end_time: match?.end_time || "",
+    end_lat: match?.end_lat || "",
+    end_lng: match?.end_lng || "",
+  };
+});
 
-      const uniqueDepartments = Array.from(
-        new Set(mergedData.map((a) => a.department?.trim()).filter(Boolean))
+
+
+
+      setAttendances(merged);
+      const uniqueDepts = Array.from(
+        new Set(merged.map((a) => a.department?.trim()).filter(Boolean))
       );
-      setDepartments(uniqueDepartments);
+      setDepartments(uniqueDepts);
     } catch (err) {
       console.error("Failed to fetch attendance data", err);
     }
   };
 
-  const fetchLocationLogs = async (userId: number, date: string) => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const res = await API.get(`/locations/${userId}/?date=${date}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const logs: LocationLog[] = res.data.results || [];
-
-      const sortedLogs = logs.sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-
-      setLocationLogs(sortedLogs);
-    } catch (error) {
-      console.error("Failed to fetch location logs", error);
-      setLocationLogs([]);
-    }
-  };
-
-  const pauseMarkers = () => {
-    const markers = [];
-    for (let i = 1; i < locationLogs.length; i++) {
-      const prevTime = new Date(locationLogs[i - 1].timestamp).getTime();
-      const currTime = new Date(locationLogs[i].timestamp).getTime();
-      const diff = (currTime - prevTime) / 60000;
-      if (diff > 2) {
-        markers.push(locationLogs[i]);
-      }
-    }
-    return markers;
-  };
-
- const openMap = async (record: Attendance) => {
-  if (!record.start_lat || !record.start_lng) {
-    alert("Start location coordinates are missing");
-    return;
-  }
-
-  await fetchLocationLogs(record.user.id, record.date);
-
-  // Delay state update slightly to allow locationLogs to populate
-  setTimeout(() => {
-    setMapView(record);
-  }, 100); // Short delay to allow state update (React batching behavior)
-};
-
-{console.log("Location Logs", locationLogs)}
-
-
-  const formatTime = (timeStr: string) => {
+    const formatTime = (timeStr: string) => {
     if (!timeStr) return "-";
     const [hours, minutes] = timeStr.split(":");
     return `${hours}:${minutes}`;
+  };
+
+
+
+const fetchLocations = async (userId: number, date: string) => {
+  try {
+    const res = await API.get(`/locations/?user=${userId}&date=${date}`);
+
+    let logs: LocationLog[] = [];
+
+    if (Array.isArray(res.data)) {
+      logs = res.data;
+    } else if (res.data.results && Array.isArray(res.data.results)) {
+      logs = res.data.results;
+    } else if (res.data.data && Array.isArray(res.data.data)) {
+      logs = res.data.data;
+    } else if (res.data && typeof res.data === "object") {
+      logs = [res.data];
+    }
+
+    console.log("Parsed location logs:", logs);
+    setLocations(logs);
+  } catch (err) {
+    console.error("Failed to fetch location logs", err);
+  }
+};
+
+
+
+  
+
+  const pauseMarkers = () => {
+    const pauses = [];
+    for (let i = 1; i < locations.length; i++) {
+      const prev = new Date(locations[i - 1].timestamp).getTime();
+      const curr = new Date(locations[i].timestamp).getTime();
+      const diff = (curr - prev) / 60000;
+      if (diff > 2) pauses.push(locations[i]);
+    }
+    return pauses;
+  };
+
+  const openMap = (record: Attendance) => {
+    setMapView(record);
+    setLocations([]);
+  };
+
+  const closeMap = () => {
+    setMapView(null);
+    setLocations([]);
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
   };
 
   const filteredData = selectedDept
@@ -190,60 +212,51 @@ export default function AttendanceList() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-2">Sr.no</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Employee Code</th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Department</th>
-              <th className="px-4 py-2">Start Time</th>
-              <th className="px-4 py-2">End Time</th>
-              <th className="px-4 py-2">Address</th>
-              <th className="px-4 py-2">Location</th>
+               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Department</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">End Time</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Address</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>
+
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredData.length > 0 ? (
-              filteredData.map((item, index) => (
-                <tr key={item.user.id}>
-                  <td className="px-4 py-2">{index + 1}</td>
-                  <td className="px-4 py-2">
-                    {item.user.first_name} {item.user.last_name}
-                  </td>
-                  <td className="px-4 py-2">{item.user.employee_code}</td>
-                  <td className="px-4 py-2">{item.date}</td>
-                  <td className="px-4 py-2">{item.department}</td>
-                  <td className="px-4 py-2">{formatTime(item.start_time)}</td>
-                  <td className="px-4 py-2">{formatTime(item.end_time)}</td>
-                  <td className="px-4 py-2 text-xs">{item.address}</td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => openMap(item)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                      title="View on Map"
-                    >
-                      <FaEye />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={9} className="text-center py-4 text-gray-500">
-                  No attendance records found
+          <tbody>
+            {filteredData.map((item, idx) => (
+              <tr key={item.user.id + "-" + item.date}>
+                <td className="px-4 py-2">{idx + 1}</td>
+                <td className="px-4 py-2">
+                  {item.user.first_name} {item.user.last_name}
+                </td>
+                <td className="px-4 py-2">{item.user.employee_code}</td>
+                <td className="px-4 py-2">{item.date}</td>
+                <td className="px-4 py-2">{item.department}</td>
+                <td className="px-4 py-2">{formatTime(item.start_time)}</td>
+                <td className="px-4 py-2">{formatTime(item.end_time) || "-"}</td>
+                 <td className="px-4 py-2 text-xs ">{item.address}</td>
+                <td className="px-4 py-2">
+                  <button
+                    className="text-blue-600"
+                    onClick={() => openMap(item)}
+                  >
+                    <FaEye />
+                  </button>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Map Modal */}
       {mapView && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center">
           <div className="bg-transparent w-full h-full relative">
             <button
-              onClick={() => setMapView(null)}
-              className="absolute top-8 right-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded z-[999]"
+              onClick={closeMap}
+              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded z-[999]"
             >
               Close Map
             </button>
@@ -254,11 +267,16 @@ export default function AttendanceList() {
                 parseFloat(mapView.start_lng),
               ]}
               zoom={13}
-              scrollWheelZoom={true}
+              scrollWheelZoom
               style={{ height: "100%", width: "100%" }}
+              key={`map-${mapView.user.id}-${mapView.date}`}
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+               <TileLayer
+                          attribution="Google Maps"
+                          url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                    />
 
+              {/* Start */}
               <Marker
                 position={[
                   parseFloat(mapView.start_lat),
@@ -266,47 +284,22 @@ export default function AttendanceList() {
                 ]}
                 icon={L.icon({
                   iconUrl:
-                    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-                  shadowUrl:
-                    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+                    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+                  shadowUrl,
                   iconSize: [25, 41],
-                  iconAnchor: [12, 41],
-                  popupAnchor: [1, -34],
-                  shadowSize: [41, 41],
                 })}
               >
                 <Popup>
-                  <strong>Start Location</strong>
-                  <br />
-                  Time: {formatTime(mapView.start_time)}
+                  <div>
+                    <strong>Start Location</strong><br />
+                    Employee: {mapView.user.first_name} {mapView.user.last_name}<br />
+                    Time: {formatTime(mapView.start_time)}<br />
+                    Address: {mapView.address}
+                  </div>
                 </Popup>
               </Marker>
 
-              {/* Pause markers */}
-              {pauseMarkers().map((pause, idx) => (
-                <Marker
-                  key={`pause-${idx}`}
-                  position={[pause.latitude, pause.longitude]}
-                  icon={L.icon({
-                    iconUrl:
-                      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-                    shadowUrl:
-                      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41],
-                  })}
-                >
-                  <Popup>
-                    <strong>Pause</strong>
-                    <br />
-                    Time: {new Date(pause.timestamp).toLocaleTimeString()}
-                  </Popup>
-                </Marker>
-              ))}
-
-              {/* End location */}
+              {/* End */}
               {mapView.end_lat && mapView.end_lng && (
                 <Marker
                   position={[
@@ -316,32 +309,122 @@ export default function AttendanceList() {
                   icon={L.icon({
                     iconUrl:
                       "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-                    shadowUrl:
-                      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+                    shadowUrl,
                     iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41],
                   })}
                 >
                   <Popup>
-                    <strong>End Location</strong>
-                    <br />
-                    Time: {formatTime(mapView.end_time)}
+
+                      
+
+                  <div>
+                      <strong>End Location</strong><br />
+                      Employee: {mapView.user.first_name} {mapView.user.last_name}<br />
+                      Time: {formatTime(mapView.end_time)}<br/>
+                      location:{mapView.end_lat} {mapView.end_lng}<br/>
+                    </div>
+
+
                   </Popup>
                 </Marker>
               )}
 
-              {/* User movement path using locationLogs */}
-               {locationLogs.length > 1 && (
-                  <Polyline
-                    positions={locationLogs.map((log) => [
-                      log.latitude,
-                      log.longitude,
-                    ])}
-                    pathOptions={{ color: "blue", weight: 3 }}
-                  />
-                )}
+              {/* Polyline from start to latest location */}
+             {/* Dynamic Polyline logic */}
+{/* Full route Polyline including start, logs, and end */}
+                  {(() => {
+                    const path: [number, number][] = [];
+
+                    // Start
+                    if (mapView?.start_lat && mapView?.start_lng) {
+                      path.push([
+                        parseFloat(mapView.start_lat),
+                        parseFloat(mapView.start_lng),
+                      ]);
+                    }
+
+                    // Location logs
+                    locations.forEach((log) => {
+                      const lat = typeof log.latitude === "string" ? parseFloat(log.latitude) : log.latitude;
+                      const lng = typeof log.longitude === "string" ? parseFloat(log.longitude) : log.longitude;
+
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        path.push([lat, lng]);
+                      }
+                    });
+
+                    // End
+                    if (mapView?.end_lat && mapView?.end_lng) {
+                      path.push([
+                        parseFloat(mapView.end_lat),
+                        parseFloat(mapView.end_lng),
+                      ]);
+                    }
+
+                    // Only draw if path has 2 or more points
+                    if (path.length >= 2) {
+                      return (
+                        <Polyline
+                          positions={path}
+                          pathOptions={{ color: "blue", weight: 4 }}
+                        />
+                      );
+                    }
+
+                    return null;
+                  })()}
+
+              {/* Location logs */}
+             {locations.map((log, i) => {
+  // coerce to number (in case it's still a string)
+  const lat =
+    typeof log.latitude === "string"
+      ? parseFloat(log.latitude)
+      : log.latitude;
+  const lng =
+    typeof log.longitude === "string"
+      ? parseFloat(log.longitude)
+      : log.longitude;
+
+  // if for whatever reason parsing failed, skip rendering this point
+  if (isNaN(lat) || isNaN(lng)) return null;
+
+  return (
+    <Marker
+      key={i}
+      position={[lat, lng]}
+      icon={L.icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+        shadowUrl,
+        iconSize: [12, 20],
+      })}
+    >
+      <Popup>
+        {new Date(log.timestamp).toLocaleTimeString()}
+        <br />
+        Lat: {lat.toFixed(5)}, Lng: {lng.toFixed(5)}
+      </Popup>
+    </Marker>
+  );
+})}
+
+
+              {/* Pause markers */}
+              {pauseMarkers().map((log, i) => (
+                <Marker
+                  key={`pause-${i}`}
+                  position={[log.latitude, log.longitude]}
+                  icon={L.icon({
+                    iconUrl:
+                      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+                    shadowUrl,
+                    iconSize: [20, 32],
+                  })}
+                >
+                  <Popup>Paused at {new Date(log.timestamp).toLocaleTimeString()}</Popup>
+                </Marker>
+              ))}
             </MapContainer>
           </div>
         </div>

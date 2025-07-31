@@ -141,6 +141,13 @@ const navItems: NavItem[] = [
      role: ["admin" , "department_head" ,"manager" , "hr"] 
    
   },
+  {
+    icon: <CalenderIcon />,
+    name: "Announcement",
+    path: "/announcement",
+     role: ["admin" ,  "hr"] 
+   
+  },
    
   // {
   //   name: "Pages",

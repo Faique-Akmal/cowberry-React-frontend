@@ -5,6 +5,7 @@ import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import LangToggleButton from "../components/common/LangToggleButton";
+import AnnouncementNotification from "../pages/AnnouncementNotification";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -110,6 +111,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-2">
             <LangToggleButton />
             <ThemeToggleButton />
+            <AnnouncementNotification/>
             <NotificationDropdown />
           </div>
           <UserDropdown />

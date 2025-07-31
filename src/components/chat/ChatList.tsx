@@ -83,7 +83,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
                 showLink={false}
               />
           </div>
-          : <div className="">
+          : <div>
           
           {/* groups chat lists */}
           {groups?.map((group) => (
@@ -93,24 +93,24 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
               chatId: group?.group_id, 
               chatType: "group",
               chatName: group?.group_name})}
-            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType ==="group")&&(activeChatInfo?.chatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500")}`}
+            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType ==="group")&&(activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
             >
-            <span className="mr-3">
-              <Avatar src="/images/user/user-01.jpg" size="large" />
-            </span>
-            <div>
-              <h3 className="font-semibold">{group?.group_name}</h3>
-              <div className="text-sm text-dashboard-brown-200">
-                <LastChatMsg groupId={group?.group_id} />
+              <span className="mr-3">
+                <Avatar src="/images/user/user-01.jpg" size="large" />
+              </span>
+              <div>
+                <h3 className="font-semibold">{group?.group_name}</h3>
+                <div className="text-sm text-dashboard-brown-200">
+                  <LastChatMsg groupId={group?.group_id} />
+                </div>
               </div>
             </div>
-          </div>
           ))}
 
           {/* user chat lists */}
           <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
 
-          </div>
+        </div>
         }
 
       </div> 

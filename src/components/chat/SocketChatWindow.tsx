@@ -21,6 +21,7 @@ interface Props {
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const sendMsgInputRef = useRef<HTMLInputElement | null>(null);
 
   const localMeData = localStorage.getItem("meUser")!;
   const { id } = JSON.parse(localMeData!);
@@ -29,42 +30,49 @@ interface Props {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]); // Triggers scroll on new messages
 
-  const sendMessage = () => {
-    if (input.trim()) {
-      if(activeChatInfo?.chatType === "personal") {
-        sendJson({
-          type: "send_message",
-          content: input,
-          group_id: null,
-          receiver_id: activeChatInfo?.chatId,
-          parent_id: replyTo?.id,
-        });
-      } else if(activeChatInfo?.chatType === "group") {
-        sendJson({
-          type: "send_message",
-          content: input,
-          group_id: activeChatInfo.chatId,
-          receiver_id: null,
-          parent_id: replyTo?.id,
-        });
-      }
-
-      setInput("");
-      setReplyTo(null);
+  useEffect(() => {
+    if (sendMsgInputRef?.current) {
+      sendMsgInputRef?.current.focus();
     }
+  }, [replyTo]);
+
+  const sendMessage = () => {
+    try {
+      if (input?.trim()) {
+        const sendData = {
+          type: "send_message",
+          content: input.trim(),
+          group_id: activeChatInfo?.chatType === "group" ? activeChatInfo.chatId : null,
+          receiver_id: activeChatInfo?.chatType === "personal" ? activeChatInfo.chatId : null,
+          parent_id: replyTo?.id || null,
+        };
+
+        console.log("React sendData : ", sendData);
+
+        sendJson(sendData!);
+
+        setInput("");
+        setReplyTo(null);
+      }
+    } catch (error) {
+      console.error("message sendind error : ", error);
+      // toast.error('Failed to reply message');
+    }
+
+   
   };
 
-  console.count("SocketChatWindow.tsx rendered");
-
+  // console.count("SocketChatWindow.tsx rendered");
+console.log(activeChatInfo)
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
       <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
-        <h2 className="text-lg font-bold text-yellow-800"> 
+        <h2 className="text-lg font-bold text-yellow-800 truncate w-1/3"> 
           {activeChatInfo?.chatName || "No User?"}
         </h2>
         <div className="flex items-center gap-2"> 
-          {(activeChatInfo.chatType === "personal") && <MemberDropdown members={groupMembers!} />}
+          {(activeChatInfo?.chatType === "group") && <MemberDropdown members={groupMembers!} />}
         <p className="text-lg font-bold text-yellow-800">
           {isConnected ? '🟢' : '🔴'}
         </p>
@@ -104,6 +112,7 @@ interface Props {
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
+          ref={sendMsgInputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}

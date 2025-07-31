@@ -11,10 +11,10 @@ import toast from "react-hot-toast";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import TimeZone from "../common/TimeZone";
-import { ChatMessage } from "../../types/chat";
+import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 
 interface Props{
-  chatGroupName?: string;
+  chatGroupName?: ActiveChatInfo;
   msgId: number;
   meUserId: number;
   replyMsg: (msg: ChatMessage)=>void;
@@ -72,7 +72,7 @@ const MsgDropdown:React.FC<Props> = React.memo(({ msgId, meUserId, replyMsg}) =>
           type: "edit_message",
           message_id: msgId,
           is_edited: true,
-          new_content: editedMessage
+          new_content: editedMessage.trim()
         });
         toast.success('Message edited (live)')
         closeModal();

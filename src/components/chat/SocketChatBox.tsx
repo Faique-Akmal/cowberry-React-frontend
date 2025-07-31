@@ -5,13 +5,13 @@ import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore"
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocketStore } from "../../store/socketStore";
 import { ActiveChatInfo } from "../../types/chat";
+import { useMessageStore } from "../../store/messageStore";
 // import toast from "react-hot-toast";
 
 
 const SocketChatBox: React.FC = () => {
-    const { connect, disconnect } = useSocketStore();
-  
-  // const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const { connect, disconnect } = useSocketStore();
+  const { clearMessages } = useMessageStore();
   const [activeChatInfo, setActiveChatInfo] = useState<ActiveChatInfo | null>(null);
   const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
 
@@ -25,9 +25,9 @@ const SocketChatBox: React.FC = () => {
      const fetchGroups = async () => {
        try {
          const allGroups = await axiosGetAllGroup();
-         if (allGroups.length > 0) {
+         if (allGroups?.length > 0) {
            setGroups(allGroups);
-           setActiveChatInfo({chatId:allGroups[0].group_id, chatType: "group"});
+           setActiveChatInfo({chatId:allGroups[0]?.group_id, chatType: "group", chatName: allGroups[0]?.group_name});
          }
        } catch (err) {
          console.error("Failed to fetch groups:", err);
@@ -38,10 +38,12 @@ const SocketChatBox: React.FC = () => {
 
   useEffect(() => {
     if (!accessToken || activeChatInfo === null) return;
+    // cler all previous messages
+    clearMessages();
 
     // Disconnect current connection before creating new one
     disconnect();
-    connect(`${activeChatInfo?.chatId}`, accessToken);
+    connect(activeChatInfo!, accessToken!);
 
     return () => {
       disconnect(); // clean up on unmount or before next connect

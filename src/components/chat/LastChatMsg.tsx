@@ -10,7 +10,7 @@ function  LastChatMsg({groupId}:Props) {
 
   const getAllLastMsg = async (groupId:number) => {
     const groupMsg = await axiosGetGroupMsg(groupId);
-      if(groupMsg.length > 0){
+      if(groupMsg?.length > 0){
       setLastMsg(groupMsg[groupMsg?.length-1]?.content);
         }
   }

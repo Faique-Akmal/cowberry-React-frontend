@@ -20,6 +20,9 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const meUser = JSON.parse(localStorage.getItem("meUser")!);
+  const meUserId = meUser?.id;
+
   const observer = useRef<IntersectionObserver | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
@@ -73,21 +76,23 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
   }, []);
 
   return (
-    <div>
+    <div className="pb-26 lg:pb-10">
       {users?.map((item, index) => {
         const isLast = index === users?.length - 1;
+        if (!item) return null; // Skip if item is undefined or null
+        if (item?.id === meUserId) return null; // Skip if it's the current user
         return (
           <div
             key={item?.id}
             ref={isLast ? lastItemObserver : null}
             onClick={() => onSelectChat({chatId:item?.id, chatType:"personal", chatName:item?.username})}
-            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal")&&(activeChatInfo?.chatId === item?.id ? "bg-brand-500": "bg-cowberry-cream-500")}`}
+            className={`flex lg:max-w-76 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal")&&(activeChatInfo?.chatId === item?.id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
             >
             <span className="mr-3">
               <Avatar src="/images/user/user-01.jpg" size="large" />
             </span>
-            <div>
-              <h3 className="font-semibold">{item?.username}</h3>
+            <div className="truncate">
+              <h3 className="font-semibold" title={item?.username}>{item?.username}</h3>
               <div className="text-sm text-dashboard-brown-200">
                 <LastChatMsg groupId={item?.id} />
               </div>

@@ -2,13 +2,14 @@
 import { create } from 'zustand';
 import { useMessageStore } from './messageStore';
 import toast from 'react-hot-toast';
+import { ActiveChatInfo } from '../types/chat';
 // import { ChatMessage } from '../types/chat';
 
 interface SocketState {
   socket: WebSocket | null
   isConnected: boolean
 
-  connect: (groupId: string, token: string) => void
+  connect: (chatInfo: ActiveChatInfo, token: string) => void
   disconnect: () => void
   sendJson: (data: any) => void
 }
@@ -17,18 +18,27 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
   isConnected: false,
 
-  connect: (groupId, token) => {
+  connect: (chatInfo, token) => {
     const { addMessage, loadMessages, editMessage, deleteMessage } = useMessageStore.getState()
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${groupId}/?token=${token}`
+    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo?.chatId}/?token=${token}`
 
     const ws = new WebSocket(socketUrl)
 
     ws.onopen = () => {
       console.log('✅ WebSocket connected')
       set({ socket: ws, isConnected: true })
-      get().sendJson({ type: 'message_history', group_id: parseInt(groupId) })
+      get().sendJson({ 
+        type: 'message_history', 
+        group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null, 
+        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null })
+
+      console.log('🔗 Requesting message history...', { 
+      type: 'message_history', 
+      group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null, 
+      receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null
+      });
     }
 
     ws.onmessage = (event) => {
@@ -40,30 +50,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
           loadMessages(data?.messages);
           break
         case 'chat_message':
-          console.log('👺 chat_message:', data);
-        
-          // const newMsgData = {
-          //   id: data?.id,
-          //   sender: data?.sender,
-          //   sender_username: data?.sender_username,
-          //   recipient: data?.recipient ?? null,
-          //   group: data?.group ?? null,
-          //   group_name: data?.group_name ?? null,
-          //   content: `by chat_message ${data?.content}`,
-          //   parent: data?.parent ?? null,
-          //   replies: data?.replies ?? [],
-          //   sent_at: data?.sent_at,
-          //   is_read: data?.is_read ?? false,
-          //   read_at: data?.read_at ?? null,
-          //   is_deleted: data?.is_deleted ?? false
-          // };
-
           addMessage(data);
           break
         case 'edit_message':
-          console.log("edit_message data : ", data)
           editMessage(data?.id, { content: data?.content })
-          // toast.success('Message edited (live)')
           break
         case 'delete_message':
           deleteMessage(data?.id);

@@ -51,6 +51,8 @@ import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
 import NotificationListener from "./NotificationListener";
 import AnnouncementForm from "./pages/Announcement";
+import AnimatedUserMap from "./pages/Employee/LocationFetcher";
+import LocationFetcher from "./pages/Employee/LocationFetcher";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -128,6 +130,7 @@ export default function App() {
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AttendanceList />} />
             <Route path="/announcement" element={ <AnnouncementForm />} />
+            <Route path="/live-tracking" element={ <LocationFetcher />} />
             
             {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
 

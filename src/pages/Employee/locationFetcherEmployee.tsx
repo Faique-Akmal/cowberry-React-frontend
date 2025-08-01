@@ -147,6 +147,7 @@ const fetchLocations = async (userId: number) => {
 
     // Optional: sort by timestamp
     logs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
 
    setLocations((prevLogs) => {
   const seen = new Set(prevLogs.map((log) => log.timestamp));

@@ -80,7 +80,7 @@ const AnnouncementForm = () => {
   };
 
   return (
-    <div className="w-full mx-auto mt-8 p-4 shadow-lg bg-white rounded">
+    <div className="w-full mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl">
       <h2 className="text-xl font-semibold mb-4">Create Announcement</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">

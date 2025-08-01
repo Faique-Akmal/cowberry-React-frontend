@@ -101,11 +101,14 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-6 rounded-xl shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
+    <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
+       <div className="grid grid-cols-2 space-y-2 gap-5 ">
+
+         <div>
+           <input
           type="text"
           name="first_name"
           placeholder="First Name"
@@ -114,7 +117,9 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-        <input
+         </div>
+       <div>
+         <input
           type="text"
           name="last_name"
           placeholder="Last Name"
@@ -123,6 +128,8 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
+       </div>
+       </div>
         <input
           type="text"
           name="username"

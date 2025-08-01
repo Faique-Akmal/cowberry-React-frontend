@@ -48,7 +48,7 @@ import AdminTaskManager from "./pages/Employee/TaskManager";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 // import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
-import AttendanceList from "./pages/Employee/AdminAttandance";
+import AttendanceList from "./pages/Employee/locationFetcherEmployee";
 import NotificationListener from "./NotificationListener";
 import AnnouncementForm from "./pages/Announcement";
 

@@ -3,8 +3,8 @@ import PageMeta from "../../components/common/PageMeta";
 import DashboardStats from "../../components/employees/UserStats";
 import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios";
-import { Link } from "react-router-dom"; // ✅ Correct import
-import Confetti from "react-confetti";
+// import { Link } from "react-router-dom"; // ✅ Correct import
+// import Confetti from "react-confetti";
 
 interface User {
   id: number;
@@ -16,10 +16,10 @@ interface User {
 
 function EmployeeDashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const [windowSize, setWindowSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  // const [windowSize, setWindowSize] = useState({
+  //   width: window.innerWidth,
+  //   height: window.innerHeight,
+  // });
 
   // ✅ Fetch user
   useEffect(() => {
@@ -35,18 +35,18 @@ function EmployeeDashboard() {
     fetchUser();
   }, []);
 
-  // ✅ Handle confetti window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
+  // // ✅ Handle confetti window resize
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     setWindowSize({
+  //       width: window.innerWidth,
+  //       height: window.innerHeight,
+  //     });
+  //   };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  //   window.addEventListener("resize", handleResize);
+  //   return () => window.removeEventListener("resize", handleResize);
+  // }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();

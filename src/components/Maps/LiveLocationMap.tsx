@@ -5,15 +5,15 @@ import L, { LatLngExpression, Marker as LeafletMarker } from 'leaflet';
 // import { db } from '../firebase';
 
 // [latitude, longitude]
-// const dummyPath: LatLngExpression[] = [
-//   [28.6139, 77.2090],
-//   [28.6145, 77.2100],
-//   [28.6150, 77.2110],
-//   [28.6155, 77.2120],
-//   [28.6160, 77.2130],
-//   [28.6165, 77.2140],
-//   [28.6170, 77.2150],
-// ];
+const dummyPath: LatLngExpression[] = [
+  [28.6139, 77.2090],
+  [28.6145, 77.2100],
+  [28.6150, 77.2110],
+  [28.6155, 77.2120],
+  [28.6160, 77.2130],
+  [28.6165, 77.2140],
+  [28.6170, 77.2150],
+];
 
 
 const icon = L.icon({
@@ -74,7 +74,7 @@ const LiveLocationMap: React.FC = () => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Marker position={position} icon={icon} ref={markerRef} />
-      <LocationUpdater position={position} markerRef={markerRef} />
+      <LocationUpdater position={dummyPath} markerRef={markerRef} />
       <Polyline positions={path} color="blue" />
     </MapContainer>
   );

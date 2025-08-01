@@ -40,8 +40,8 @@ interface Attendance {
 }
 
 interface LocationLog {
-  latitude: string | number;
-  longitude: string | number;
+  latitude:  number;
+  longitude:  number;
   timestamp: string;
   battery_level?: number | null;
   id?: number;
@@ -56,6 +56,7 @@ export default function AttendanceList() {
   const [mapView, setMapView] = useState<Attendance | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   useEffect(() => {
     fetchData();
@@ -63,13 +64,15 @@ export default function AttendanceList() {
 
   useEffect(() => {
     if (mapView) {
-      fetchLocations(mapView.user.id, mapView.date);
+      fetchLocations(mapView.user.id);
 
-      if (!mapView.end_lat || !mapView.end_lng) {
-        locationIntervalRef.current = setInterval(() => {
-          fetchLocations(mapView.user.id, mapView.date);
-        }, 12000);
-      }
+if (!mapView.end_lat || !mapView.end_lng) {
+  locationIntervalRef.current = setInterval(() => {
+    fetchLocations(mapView.user.id);
+  }, 12000);
+}
+
+      
     }
 
     return () => {
@@ -127,26 +130,43 @@ export default function AttendanceList() {
 
 
 
-const fetchLocations = async (userId: number, date: string) => {
+const fetchLocations = async (userId: number) => {
   try {
-    const res = await API.get(`/locations/?user=${userId}&date=${date}`);
-
+    const res = await API.get(`/locations/${userId}`);
     let logs: LocationLog[] = [];
 
     if (Array.isArray(res.data)) {
       logs = res.data;
-    } else if (res.data.results && Array.isArray(res.data.results)) {
+    } else if (res.data?.results) {
       logs = res.data.results;
-    } else if (res.data.data && Array.isArray(res.data.data)) {
+    } else if (res.data?.data) {
       logs = res.data.data;
-    } else if (res.data && typeof res.data === "object") {
+    } else if (res.data) {
       logs = [res.data];
     }
 
-    console.log("Parsed location logs:", logs);
-    setLocations(logs);
+    // Optional: sort by timestamp
+    logs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+   setLocations((prevLogs) => {
+  const seen = new Set(prevLogs.map((log) => log.timestamp));
+  const combined = [...prevLogs];
+
+  logs.forEach((log) => {
+    if (!seen.has(log.timestamp)) {
+      combined.push(log);
+    }
+  });
+
+  combined.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  return combined;
+});
+
   } catch (err) {
-    console.error("Failed to fetch location logs", err);
+    console.error("Failed to fetch user location:", err);
   }
 };
 

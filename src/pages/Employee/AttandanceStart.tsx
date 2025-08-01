@@ -232,8 +232,8 @@ export default function AttendanceFormWithTracking() {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 text-black rounded shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
-      <h2 className="text-xl font-bold mb-4 text-center"> Start Attendance</h2>
+      <div className="rounded-2xl border p-8  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <h2 className="text-xl font-bold mb-4 text-center"> Check In</h2>
 
       <button
         onClick={fetchUserAndLocation}
@@ -245,7 +245,7 @@ export default function AttendanceFormWithTracking() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium">Description:</label>
+           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description:</label>
           <textarea
             required
             value={formData.description}
@@ -256,25 +256,26 @@ export default function AttendanceFormWithTracking() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Odometer Image:</label>
+         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Odometer Image:</label>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleFileChange(e, "odometer_image")}
             required
-            className="w-full border px-3 py-2 rounded"
+              className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
           {odometerPreview && <img src={odometerPreview} className="mt-2 w-32 h-32 object-cover rounded border" />}
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Selfie Image:</label>
+           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Selfie Image:</label>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleFileChange(e, "selfie_image")}
             required
-            className="w-full border px-3 py-2 rounded"
+            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  
           />
           {selfiePreview && <img src={selfiePreview} className="mt-2 w-32 h-32 object-cover rounded border" />}
         </div>
@@ -284,19 +285,19 @@ export default function AttendanceFormWithTracking() {
           disabled={loading}
           className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
         >
-          {loading ? "Submitting..." : "✅ Submit Attendance"}
+          {loading ? "Submitting..." : "✅ Submit Attendence"}
         </button>
 
         {message && <div className="text-sm text-red-600 mt-2">{message}</div>}
       </form>
 
-      {locationFetched && (
+      {/* {locationFetched && (
         <div className="mt-6 p-4 bg-white shadow rounded">
           <p><strong>Live Latitude:</strong> {liveLocation.lat}</p>
           <p><strong>Live Longitude:</strong> {liveLocation.lng}</p>
-          <p className="text-sm text-gray-500 mt-2">Location updates every 20 seconds. Works offline.</p>
+          <p className="text-sm text-gray-500 mt-2">Location updates every 10 seconds. Works offline.</p>
         </div>
-      )}
+      )} */}
     </div>
   );
 } 

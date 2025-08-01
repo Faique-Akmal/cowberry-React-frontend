@@ -191,6 +191,7 @@ export default function SignInForm() {
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
               <button
+              type="button"
                 onClick={openForgotModal}
                 className="text-sm text-brand-500 hover:underline"
               >

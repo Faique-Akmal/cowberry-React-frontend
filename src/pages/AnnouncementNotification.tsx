@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-
-
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
-
-
 import { TfiAnnouncement } from "react-icons/tfi";
 import API from "../api/axios";
 import { Dropdown } from "../components/ui/dropdown/Dropdown";
@@ -21,16 +17,70 @@ export default function AnnouncementNotification() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const socketRef = useRef<WebSocket | null>(null);
 
+
+    const accessToken = localStorage.getItem("accessToken");
+    const meUser = JSON.parse(localStorage.getItem("meUser")!);
+  const userId= meUser?.id;
+
+  // Fetch initial announcements on mount
   useEffect(() => {
     API.get("/hrms/announcements/")
       .then((res) => {
+          console.log("Fetched announcements:", res.data);
+        //  setAnnouncements(res.data.results || []);
         setAnnouncements(res.data.results || []);
       })
       .catch((err) => {
         console.error("Failed to fetch announcements:", err);
       });
   }, []);
+
+  // WebSocket connection
+  useEffect(() => {
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL; // should already include ws:// or wss://
+    const socketUrl = `${SOCKET_URL}/ws/announcements/${userId}/?token=${accessToken}`;
+   
+    const socket = new WebSocket(socketUrl);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("WebSocket connected ");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("New WebSocket message:", data);
+
+      if (data.type === "announcement") {
+        const newAnnouncement: Announcement = {
+          id: data.id,
+          title: data.title,
+          content: data.content,
+          timestamp: data.timestamp,
+          created_by: data.created_by,
+        };
+
+        setAnnouncements((prev) => [newAnnouncement, ...prev]);
+        setNotifying(true); // Show notification dot
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected ❌");
+    };
+
+    socket.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    return () => {
+      socket.close(); // Cleanup on unmount
+    };
+  }, []);
+
+
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -47,7 +97,7 @@ export default function AnnouncementNotification() {
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleString(); // Format: "7/31/2025, 10:44:30 AM"
+    return date.toLocaleString();
   };
 
   return (

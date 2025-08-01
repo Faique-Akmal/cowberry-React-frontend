@@ -3,11 +3,14 @@ import { create } from 'zustand';
 import { useMessageStore } from './messageStore';
 import toast from 'react-hot-toast';
 import { ActiveChatInfo } from '../types/chat';
-// import { ChatMessage } from '../types/chat';
 
 interface SocketState {
   socket: WebSocket | null
   isConnected: boolean
+
+  typingStatus: Record<string, boolean>
+  onlineGroupUsers: string[]
+  personalOnlineUsers: Record<string, boolean>
 
   connect: (chatInfo: ActiveChatInfo, token: string) => void
   disconnect: () => void
@@ -17,27 +20,42 @@ interface SocketState {
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
   isConnected: false,
+  typingStatus: {},
+  onlineGroupUsers: [],
+  personalOnlineUsers: {},
 
   connect: (chatInfo, token) => {
-    const { addMessage, loadMessages, editMessage, deleteMessage } = useMessageStore.getState()
+    const { addMessage, loadMessages, editMessage, deleteMessage } = useMessageStore.getState();
+
+    const meUser = JSON.parse(localStorage.getItem("meUser")!);
+    const meUserId = meUser?.id;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo?.chatId}/?token=${token}`
+    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo.chatType==="group" ? 
+                                                  chatInfo?.chatId : 
+                                                  (!!(chatInfo?.chatType === "personal") &&
+                                                   `personal/${chatInfo?.chatId}`) }/?token=${token}`
 
     const ws = new WebSocket(socketUrl)
 
     ws.onopen = () => {
-      console.log('✅ WebSocket connected')
-      set({ socket: ws, isConnected: true })
+      console.log('✅ WebSocket connected');
+      set({ socket: ws, isConnected: true });
+
       get().sendJson({ 
         type: 'message_history', 
         group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null, 
-        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null })
+        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null });
 
-      console.log('🔗 Requesting message history...', { 
-      type: 'message_history', 
-      group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null, 
-      receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null
+      get().sendJson({
+        type: "typing",
+        is_typing: false,
+      });
+
+      get().sendJson({
+        type: "get_online_status",
+        group_id: chatInfo.chatType === "group" ? chatInfo.chatId : null,
+        personal_ids: [meUserId]
       });
     }
 
@@ -58,23 +76,46 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         case 'delete_message':
           deleteMessage(data?.id);
           break
+        case "typing":
+          set((state) => ({
+            typingStatus: {
+              ...state.typingStatus,
+              [data.user]: data.is_typing,
+            },
+          }));
+          break;
+        case "read_receipt":
+          console.log(`📨 Message ${data.message_id} read by user ${data.user_id}`);
+          break;
+        case "online_status":
+          set({
+            onlineGroupUsers: data.group_online_users || [],
+            personalOnlineUsers: data.personal_online_users || {},
+          });
+          break;
         default:
           console.warn('🤷‍♂️ Unknown WebSocket type:', data)
       }
     }
 
     ws.onerror = (err) => {
-      console.error('❌ WebSocket error', err)
+      console.error('❌ WebSocket error', err);
     }
 
     ws.onclose = () => {
-      console.log('🔌 WebSocket disconnected')
-      set({ isConnected: false, socket: null })
+      console.log('🔌 WebSocket disconnected');
+      set({ isConnected: false, socket: null });
     }
   },
 
   disconnect: () => {
-    const { socket } = get()
+    const { socket } = get();
+
+    get().sendJson({
+        type: "typing",
+        is_typing: false,
+    });
+
     if (socket) {
       socket.close()
       set({ socket: null, isConnected: false })
@@ -83,10 +124,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
   sendJson: (data) => {
     const { socket } = get()
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(data))
+    if (socket?.readyState === WebSocket?.OPEN) {
+      socket?.send(JSON.stringify(data))
     } else {
-      toast.error('WebSocket is not connected')
+      console.error('❌ WebSocket is not connected');
     }
   },
-}))
+}));

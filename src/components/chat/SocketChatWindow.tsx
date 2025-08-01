@@ -7,6 +7,8 @@ import { useSocketStore } from '../../store/socketStore';
 import { RiCloseFill } from "react-icons/ri";
 import MemberDropdown from "./MemberDropdown";
 import {Members} from "../../store/chatStore"
+import TypingIndicator from "./TypingIndicator";
+import { useTypingEmitter } from "../../hooks/useTypingEmitter";
 
 interface Props {
   activeChatInfo: ActiveChatInfo;
@@ -15,16 +17,17 @@ interface Props {
 }
 
  const SocketChatWindow: React.FC<Props> = ({ activeChatInfo, groupMembers }) => {
-  const { sendJson, isConnected } = useSocketStore();
+  const { sendJson, isConnected, typingStatus, onlineGroupUsers, personalOnlineUsers } = useSocketStore();
   const messages = useMessageStore((state) => state.messages);
   
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const sendMsgInputRef = useRef<HTMLInputElement | null>(null);
-
-  const localMeData = localStorage.getItem("meUser")!;
-  const { id } = JSON.parse(localMeData!);
+  
+  const meUser = JSON.parse(localStorage.getItem("meUser")!);
+  const id = meUser?.id;
+  const meUsername = meUser?.username;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,6 +39,28 @@ interface Props {
     }
   }, [replyTo]);
 
+  useEffect(() => {
+    setInput("");
+    setReplyTo(null);
+  }, [activeChatInfo]);
+
+  // Emit typing message
+  const onTyping = useTypingEmitter((isTyping) => {
+   sendJson({
+        type: "typing",
+        is_typing: isTyping,
+    });
+    console.log("typing")
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!e.target.value.trim()) return;
+
+    setInput(e.target.value);
+    onTyping();
+  }
+  console.log(typingStatus, "typing status");
+  
   const sendMessage = () => {
     try {
       if (input?.trim()) {
@@ -63,19 +88,26 @@ interface Props {
   };
 
   // console.count("SocketChatWindow.tsx rendered");
-console.log(activeChatInfo)
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
       <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
-        <h2 className="text-lg font-bold text-yellow-800 truncate w-1/3"> 
-          {activeChatInfo?.chatName || "No User?"}
-        </h2>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-bold text-yellow-800 truncate"> 
+            {activeChatInfo?.chatName || "No User?"}
+          </h2>
+          <TypingIndicator typingUsers={typingStatus!} currentUser={meUsername}  />
+          {/* {typing?.map(([user, isTyping], index) => {
+          const isLast = (index === typing?.length - 1);
+          return(
+            isTyping && isLast ? <em key={user} className="text-[12px] flex-end text-gray-500">{user} is typing...</em> : null
+          )})} */}
+        </div>
         <div className="flex items-center gap-2"> 
           {(activeChatInfo?.chatType === "group") && <MemberDropdown members={groupMembers!} />}
-        <p className="text-lg font-bold text-yellow-800">
-          {isConnected ? '🟢' : '🔴'}
-        </p>
+          <p className="text-lg font-bold text-yellow-800">
+            {isConnected ? '🟢' : '🔴'}
+          </p>
         </div>
       </div>
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
@@ -108,13 +140,26 @@ console.log(activeChatInfo)
         </div>
       )}
 
+      {/* for online status, typing status and read receipts */}
+      <div>
+        {/* {Object.entries(typingStatus).map(([user, isTyping]) =>
+          isTyping ? <p key={user}>{user} is typing...</p> : null
+        )} */}
+
+        {/* <h4>Online in Group:</h4>
+        <pre>{JSON.stringify(onlineGroupUsers, null, 2)}</pre>
+
+        <h4>Personal Online Users:</h4>
+        <pre>{JSON.stringify(personalOnlineUsers, null, 2)}</pre> */}
+      </div>
+
       <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2">
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
           ref={sendMsgInputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleChange}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Type a message..."
         />

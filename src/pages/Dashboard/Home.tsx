@@ -23,15 +23,13 @@ export default function Home() {
         description=""
       />
       <div className="grid gap-12 md:gap-4">
-        <div className="col-span-9 xl:col-span-12">
+        <div className="col-span-12">
           <Metrics />        
         </div>
-        <div className="col-span-12 xl:col-span-12   w-full">
+        <div className="col-span-12 xl:col-span-12 w-full">
            <EmployeeChart/> 
         </div>
           
-       
-         
         <div className="col-span-12  xl:col-span-12">
            <MonthlySalesChart />
         </div>

@@ -86,7 +86,7 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
             key={item?.id}
             ref={isLast ? lastItemObserver : null}
             onClick={() => onSelectChat({chatId:item?.id, chatType:"personal", chatName:item?.username})}
-            className={`flex lg:max-w-76 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal")&&(activeChatInfo?.chatId === item?.id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
+            className={`flex lg:max-w-79 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal")&&(activeChatInfo?.chatId === item?.id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
             >
             <span className="mr-3">
               <Avatar src="/images/user/user-01.jpg" size="large" />

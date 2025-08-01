@@ -1,124 +1,143 @@
-import { useEffect, useRef, useState } from "react"
-import { AxiosAllGroup, AxiosGetGroupMsg, axiosPostSendMsg } from "../../store/chatStore"
+// Optimized SocketChatWindow.tsx
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import MsgCard from "./MsgCard";
+import { ActiveChatInfo, ChatMessage } from "../../types/chat";
+import { useMessageStore } from "../../store/messageStore";
+import { useSocketStore } from '../../store/socketStore';
+import { RiCloseFill } from "react-icons/ri";
 import MemberDropdown from "./MemberDropdown";
-import MsgCard, { WSMessage } from "./MsgCard";
-import Alert from "../ui/alert/Alert";
-import toast from 'react-hot-toast';
- 
+import { Members } from "../../store/chatStore";
+import TypingIndicator from "./TypingIndicator";
+import { useTypingEmitter } from "../../hooks/useTypingEmitter";
+
 interface Props {
-  group: AxiosAllGroup; 
-  allMsg: AxiosGetGroupMsg[];
-  dispatch?: (values: AxiosGetGroupMsg[]) => void;
-  // dispatch: React.Dispatch<React.SetStateAction<never[]>>;
+  activeChatInfo: ActiveChatInfo;
+  chatName?: string;
+  groupMembers: Members[] | null;
 }
 
-const ChatWindow: React.FC<Props> = ({ group, allMsg }) => {
-  const [newMsg, setNewMsg] = useState<string>("");
-  const [meUserId, setMeUserId] = useState<number>();
-  const [messages, setMessages] = useState<WSMessage[]>([]);
-  
+const SocketChatWindow: React.FC<Props> = ({ activeChatInfo, groupMembers }) => {
+  const { sendJson, isConnected, typingStatus } = useSocketStore();
+  const messages = useMessageStore(state => state.messages);
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [input, setInput] = useState("");
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const sendMsgInputRef = useRef<HTMLInputElement>(null);
 
-  const send = () => {
-    if (!newMsg.trim()) return
-        
-    if(meUserId && allMsg[0]?.group){
-      
-      const createMsg = {
-        sender: meUserId,
-        group: allMsg[0]?.group,
-        content: newMsg
-      };
-
-      try {
-        axiosPostSendMsg(createMsg);
-        toast.success("Message sent!");
-      } catch (error) {
-        console.error("Get message request error:", error);
-        toast.error("Failed to send message");        
-      }
-    }
-
-    //  ;(async () => {
-    //     if(group?.group_id){
-          
-    //       try {
-    //         const groupMsg = await axiosGetGroupMsg(group?.group_id);
-    //         if(groupMsg.length > 0){
-    //           dispatch(groupMsg);
-    //         } else dispatch([]);
-    //       } catch (error) {
-    //         console.error("Get message request error:", error);
-    //       }
-    //     }
-    //   })();
-    
-    setNewMsg("")
-  }
-
-  const mappedMsg = allMsg?.map((msg)=>({
-    message: msg?.content,
-    senderId: msg?.sender,
-    groupId: msg?.group,
-    messageId: msg?.id,
-    senderUsername:msg?.sender_username,
-    timestemp:msg?.sent_at
-  }));
-
- useEffect(()=>{
-    setMessages(mappedMsg);    
-  }, [allMsg]);
+  const meUser = useMemo(() => JSON.parse(localStorage.getItem("meUser")!), []);
+  const meId = meUser?.id;
+  const meUsername = meUser?.username;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allMsg]); // Triggers scroll on new messages
+  }, [messages]);
 
-  useEffect(()=>{
-      const localMeData = localStorage.getItem("meUser")!
-      const localUserID = JSON.parse(localMeData).id!
-      setMeUserId(localUserID);
-  },[]);
+  useEffect(() => {
+    sendMsgInputRef.current?.focus();
+  }, [replyTo]);
 
-    console.count("ChatWindow rendered");
+  useEffect(() => {
+    setInput("");
+    setReplyTo(null);
+  }, [activeChatInfo?.chatId]);
 
+  const onTyping = useTypingEmitter(
+    useCallback((isTyping: boolean) => {
+      sendJson({
+        type: "typing",
+        is_typing: isTyping,
+      });
+    }, [sendJson])
+  );
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    if (val.trim()) onTyping();
+  }, [onTyping]);
+
+  const sendMessage = useCallback(() => {
+    if (!input.trim()) return;
+    const sendData = {
+      type: "send_message",
+      content: input.trim(),
+      group_id: activeChatInfo?.chatType === "group" ? activeChatInfo?.chatId : null,
+      receiver_id: activeChatInfo?.chatType === "personal" ? activeChatInfo?.chatId : null,
+      parent_id: replyTo?.id || null,
+    };
+    sendJson(sendData);
+    setInput("");
+    setReplyTo(null);
+  }, [input, activeChatInfo, replyTo, sendJson]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e?.key === 'Enter') sendMessage();
+  };
+
+  const renderMessages = useMemo(() => (
+    messages.map(msg => (
+      <MsgCard
+        key={msg?.id}
+        activeChatInfo={activeChatInfo}
+        meUserId={meId}
+        msgId={msg?.id}
+        replyMsg={setReplyTo}
+      />
+    ))
+  ), [messages, activeChatInfo, meId]);
 
   return (
     <div className="flex flex-col h-[80vh] w-full">
-      <div className="pl-12 p-4 lg:p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
-        <h2 className="text-lg font-bold text-yellow-800">{group?.group_name || "No User?"}</h2>
-        <div> 
-          <MemberDropdown members={group?.members || null} />
+      <div className="pl-12 p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-bold text-yellow-800 truncate">{activeChatInfo?.chatName || "No User?"}</h2>
+          <TypingIndicator typingUsers={typingStatus} currentUser={meUsername} />
+        </div>
+        <div className="flex items-center gap-2">
+          {activeChatInfo?.chatType === "group" && <MemberDropdown members={groupMembers!} />}
+          <p className="text-lg font-bold text-yellow-800">{isConnected ? '🟢' : '🔴'}</p>
         </div>
       </div>
+
       <div className="custom-scrollbar flex-1 p-4 overflow-y-auto space-y-2">
-        {messages.length > 0 ? messages.map((msg) => (  
-         !!meUserId && <MsgCard key={msg?.messageId} meUserId={meUserId} msg={msg}/>
-        )): (
-          <Alert
-          variant="warning"
-          title="Chat Not Found!"
-          message="Try again later!"
-          showLink={false}
-          />
-        )}
+        {renderMessages}
         <div ref={bottomRef} className="pt-10" />
       </div>
-      <div className="p-4 bg-cowberry-cream-500 flex gap-2">
+
+      {replyTo && (
+        <div className="relative p-1 bg-cowberry-cream-500 rounded-tl-xl rounded-tr-xl">
+          <div className="w-full bg-brand-500 p-2 rounded-lg border-l-5 border-brand-400 text-gray-200">
+            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
+              {replyTo?.sender === meId ? `${replyTo?.sender_username} (You)` : replyTo?.sender_username}
+            </h4>
+            <p>{replyTo?.content}</p>
+            <button
+              type="button"
+              className="absolute top-2 right-2 text-xl text-gray-200"
+              onClick={() => setReplyTo(null)}>
+              <RiCloseFill />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2">
         <input
+          className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
-          className="flex-1 border text-yellow-800 outline-none border-none rounded px-3 py-2"
-          value={newMsg}
-          onChange={(e) => setNewMsg(e.target.value)}
-          placeholder="Type a message"
-          onKeyDown={(e) => e.key === "Enter" && send()}
+          ref={sendMsgInputRef}
+          value={input}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
         />
-        <button onClick={send} className="bg-brand-500 text-white px-4 py-2 rounded">
+        <button onClick={sendMessage} className="bg-brand-500 text-white px-4 py-2 rounded">
           Send
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ChatWindow;
+export default React.memo(SocketChatWindow);

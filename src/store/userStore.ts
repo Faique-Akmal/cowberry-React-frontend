@@ -76,7 +76,7 @@ export const axiosGetUsers = async (
           return res.data?.results;
         }
       } catch (error) {
-        if (axios.isCancel(error) || error.name === "CanceledError") {
+        if (axios.isCancel(error) || error?.name === "CanceledError") {
               // request was canceled intentionally (safe to ignore)
               console.log("✅ Axios request cancelled");
             } else {

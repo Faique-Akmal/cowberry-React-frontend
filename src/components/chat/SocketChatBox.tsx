@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from "react"
-import ChatList from "./ChatList"
-import SocketChatWindow from "./SocketChatWindow"
-import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore"
+import { useCallback, useEffect, useState } from "react";
+import ChatList from "./ChatList";
+import ChatWindow from "./ChatWindow";
+// import SocketChatWindow from "./SocketChatWindow";
+import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocketStore } from "../../store/socketStore";
 import { ActiveChatInfo } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
-// import toast from "react-hot-toast";
 
 
 const SocketChatBox: React.FC = () => {
@@ -65,7 +65,7 @@ const SocketChatBox: React.FC = () => {
         <div className="lg:hidden absolute h-17 p-2 flex justify-between items-center shadow-sm z-10">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-xs text-gray-700"
+            className="text-xs text-dashboard-brown-200"
           >
             {isSidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </button>
@@ -86,7 +86,8 @@ const SocketChatBox: React.FC = () => {
 
         {/* Main Chat Area */}
         <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-          <SocketChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} />
+          <ChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} />
+          {/* <SocketChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} /> */}
         </div>
       </div>
     </div>

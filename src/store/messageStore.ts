@@ -21,10 +21,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
   loadMessages: (newMessages) => set({ messages: newMessages }),
 
-  // addMessage: (msg) => set((state) => ({
-  //   messages: [...state.messages, msg],
-  // })),
-
   addMessage: (msg) => set((state) => {
     if (!msg || typeof msg !== 'object' || !msg.id) {
       console.warn("⚠️ Invalid message ignored:", msg);
@@ -67,7 +63,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   clearMessages: () => set({ messages: [] }),
 
   getMessageById: (id) => {
-    const { messages } = get()
+    const { messages } = get();
     return messages.find((msg) => msg.id === id)
   },
 }))

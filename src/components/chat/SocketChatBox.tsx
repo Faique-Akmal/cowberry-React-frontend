@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 // import SocketChatWindow from "./SocketChatWindow";
-import {axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore";
+import { axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocketStore } from "../../store/socketStore";
 import { ActiveChatInfo } from "../../types/chat";
@@ -20,21 +20,21 @@ const SocketChatBox: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-   // Fetch groups once
-   useEffect(() => {
-     const fetchGroups = async () => {
-       try {
-         const allGroups = await axiosGetAllGroup();
-         if (allGroups?.length > 0) {
-           setGroups(allGroups);
-           setActiveChatInfo({chatId:allGroups[0]?.group_id, chatType: "group", chatName: allGroups[0]?.group_name});
-         }
-       } catch (err) {
-         console.error("Failed to fetch groups:", err);
-       }
-     };
-     fetchGroups();
-   }, []);
+  // Fetch groups once
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const allGroups = await axiosGetAllGroup();
+        if (allGroups?.length > 0) {
+          setGroups(allGroups);
+          setActiveChatInfo({ chatId: allGroups[0]?.group_id, chatType: "group", chatName: allGroups[0]?.group_name });
+        }
+      } catch (err) {
+        console.error("Failed to fetch groups:", err);
+      }
+    };
+    fetchGroups();
+  }, []);
 
   useEffect(() => {
     if (!accessToken || activeChatInfo === null) return;
@@ -50,12 +50,12 @@ const SocketChatBox: React.FC = () => {
     };
   }, [activeChatInfo]);
 
-    const handleSelectChat = useCallback((chatInfo:ActiveChatInfo) => {
-      setActiveChatInfo(chatInfo);
-      setIsSidebarOpen(false);
-    }, []);
+  const handleSelectChat = useCallback((chatInfo: ActiveChatInfo) => {
+    setActiveChatInfo(chatInfo);
+    setIsSidebarOpen(false);
+  }, []);
 
-  const activeChat = groups.find((group) => group.group_id === activeChatInfo?.chatId)!  
+  const activeChat = groups.find((group) => group.group_id === activeChatInfo?.chatId)!
 
   return (
     <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
@@ -77,11 +77,11 @@ const SocketChatBox: React.FC = () => {
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:flex lg:flex-col`}
         >
-            <ChatList
-              groups={groups}
-              activeChatInfo={activeChatInfo!}
-              onSelectChat={handleSelectChat}
-            />
+          <ChatList
+            groups={groups}
+            activeChatInfo={activeChatInfo!}
+            onSelectChat={handleSelectChat}
+          />
         </div>
 
         {/* Main Chat Area */}

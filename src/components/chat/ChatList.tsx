@@ -4,7 +4,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
+import { axiosPostCreateGroup, AxiosAllGroup } from "../../store/chatStore"
 // import MultiSelect from "../form/MultiSelect";
 // import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 import LastChatMsg from "./LastChatMsg";
@@ -17,7 +17,7 @@ import { ActiveChatInfo } from "../../types/chat";
 interface Props {
   groups: AxiosAllGroup[];
   activeChatInfo: ActiveChatInfo;
-  onSelectChat: (activeInfo:ActiveChatInfo) => void;
+  onSelectChat: (activeInfo: ActiveChatInfo) => void;
 }
 
 
@@ -44,12 +44,12 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
     }
   };
 
-  
+
   return (
     <>
-    <div className="w-full bg-dashboard-brown-200 h-[80vh]">
-      <div className="flex justify-end items-center text-end h-17 p-2">
-        <button
+      <div className="w-full bg-dashboard-brown-200 h-[80vh]">
+        <div className="flex justify-end items-center text-end h-17 p-2">
+          <button
             onClick={openModal}
             className="flex w-fit items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
@@ -70,54 +70,55 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
             </svg>
             Create Group
           </button>
-      </div>
+        </div>
 
-      <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
-        {
-          groups?.length <= 0 ?
-          <div className="flex items-center justify-center">
-             <Alert
-                variant="warning"
-                title="Chat Group Not Found!"
-                message="Try again later!"
-                showLink={false}
-              />
-          </div>
-          : <div>
-          
-          {/* groups chat lists */}
-          {groups?.map((group) => (
-            <div
-            key={group?.group_id}
-            onClick={() => onSelectChat({
-              chatId: group?.group_id, 
-              chatType: "group",
-              chatName: group?.group_name})}
-            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType ==="group")&&(activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
-            >
-              <span className="mr-3">
-                <Avatar src="/images/user/user-01.jpg" size="large" />
-              </span>
-              <div>
-                <h3 className="font-semibold">{group?.group_name}</h3>
-                <div className="text-sm text-dashboard-brown-200">
-                  <LastChatMsg groupId={group?.group_id} />
-                </div>
+        <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
+          {
+            groups?.length <= 0 ?
+              <div className="flex items-center justify-center">
+                <Alert
+                  variant="warning"
+                  title="Chat Group Not Found!"
+                  message="Try again later!"
+                  showLink={false}
+                />
               </div>
-            </div>
-          ))}
+              : <div>
 
-          {/* user chat lists */}
-          <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
+                {/* groups chat lists */}
+                {groups?.map((group) => (
+                  <div
+                    key={group?.group_id}
+                    onClick={() => onSelectChat({
+                      chatId: group?.group_id,
+                      chatType: "group",
+                      chatName: group?.group_name
+                    })}
+                    className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "group") && (activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
+                  >
+                    <span className="mr-3">
+                      <Avatar src="/images/user/user-01.jpg" size="large" />
+                    </span>
+                    <div>
+                      <h3 className="font-semibold">{group?.group_name}</h3>
+                      <div className="text-sm text-dashboard-brown-200">
+                        <LastChatMsg groupId={group?.group_id} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* user chat lists */}
+                <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
+
+              </div>
+          }
 
         </div>
-        }
 
-      </div> 
-      
-      
-    </div>
-    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
+
+      </div>
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
         <div className="relative no-scrollbar w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
           <div className="px-2 pr-14">
             <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -135,17 +136,17 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
                       name="group_name"
                       placeholder="Enter new group name"
                       value={groupName}
-                      onChange={(e)=> setGroupName(e.target.value)}
+                      onChange={(e) => setGroupName(e.target.value)}
                     />
                   </div>
 
                   <div>
-                    <InfiniteScrollList 
+                    <InfiniteScrollList
                       onChange={(values) => setSelectedValues(values)}
                       selectedValues={selectedValues}
                     />
-                    
-                  </div>  
+
+                  </div>
                 </div>
               </div>
             </div>
@@ -159,7 +160,7 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
             </div>
           </form>
         </div>
-    </Modal>
+      </Modal>
     </>
   )
 }

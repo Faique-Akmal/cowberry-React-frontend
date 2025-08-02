@@ -37,31 +37,8 @@ export default function AttendanceStart() {
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [liveLocation, setLiveLocation] = useState<{ lat: string; lng: string }>({ lat: "", lng: "" });
   const [trackingActive, setTrackingActive] = useState(false);
-  const [useDummyData, setUseDummyData] = useState(false); // Toggle for dummy data
-  const [dummyCounter, setDummyCounter] = useState(0); // Counter for dummy location variations
 
   const navigate = useNavigate();
-
-  // Dummy location data for testing - simulates movement around a base location
-  const generateDummyLocation = useCallback(() => {
-    // Base location (you can change these coordinates to your preferred test location)
-    const baseLat = 21.1702; // Surat, Gujarat base latitude
-    const baseLng = 72.8311; // Surat, Gujarat base longitude
-    
-    // Add small random variations to simulate movement (within ~100 meters)
-    const latVariation = (Math.random() - 0.5) * 0.001; // ~50m variation
-    const lngVariation = (Math.random() - 0.5) * 0.001; // ~50m variation
-    
-    // Add a slight progressive movement based on counter
-    const progressiveLat = baseLat + (dummyCounter * 0.0001); // Gradual movement north
-    const progressiveLng = baseLng + (dummyCounter * 0.0001); // Gradual movement east
-    
-   return {
-  lat: (progressiveLat + latVariation).toFixed(6),
-  lng: (progressiveLng + lngVariation).toFixed(6)
-};
-
-  }, [dummyCounter]);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -113,50 +90,48 @@ export default function AttendanceStart() {
       timestamp: new Date().toISOString(),
     };
 
-    console.log(`📍 Sending location update: ${useDummyData ? 'DUMMY' : 'REAL'} - Lat: ${lat}, Lng: ${lng}`);
-
     if (navigator.onLine) {
       API.post("/locations/", payload)
         .then(() => {
-          console.log("✅ Location update sent successfully");
+          console.log("Location update sent successfully");
         })
         .catch((err) => {
-          console.error("❌ Online post failed, storing offline:", err);
+          console.error("Online post failed, storing offline:", err);
           cacheOfflineLocation(payload);
         });
     } else {
-      console.log("📴 Offline - caching location update");
+      console.log("Offline - caching location update");
       cacheOfflineLocation(payload);
     }
-  }, [cacheOfflineLocation, useDummyData]);
+  }, [cacheOfflineLocation]);
 
   const syncOfflineData = useCallback(() => {
     try {
       const cachedUpdates = JSON.parse(localStorage.getItem("pendingLocationUpdates") || "[]");
 
       if (cachedUpdates.length > 0) {
-        console.log(`🔄 Syncing ${cachedUpdates.length} cached location updates`);
+        console.log(`Syncing ${cachedUpdates.length} cached location updates`);
         
         Promise.all(
           cachedUpdates.map((loc: LocationPayload) =>
             API.post("/locations/", loc)
-              .then(() => console.log("✅ Synced location:", loc))
+              .then(() => console.log("Synced location:", loc))
               .catch((err) => {
-                console.error("❌ Sync failed for location:", loc, err);
+                console.error("Sync failed for location:", loc, err);
                 throw err;
               })
           )
         )
         .then(() => {
           localStorage.removeItem("pendingLocationUpdates");
-          console.log("✅ All cached locations synced successfully");
+          console.log("All cached locations synced successfully");
         })
         .catch(() => {
-          console.log("⚠️ Some locations failed to sync, keeping in cache");
+          console.log("Some locations failed to sync, keeping in cache");
         });
       }
     } catch (error) {
-      console.error("❌ Error syncing offline data:", error);
+      console.error("Error syncing offline data:", error);
     }
   }, []);
 
@@ -168,46 +143,29 @@ export default function AttendanceStart() {
       const userRes = await API.get("/me/");
       const user = userRes.data;
 
-      if (useDummyData) {
-        // Use dummy location data
-        const dummyLoc = generateDummyLocation();
-        setFormData((prev) => ({
-          ...prev,
-          user: String(user.id || user.user_id || user.pk),
-          username: user.name || user.username || "",
-          start_lat: dummyLoc.lat,
-          start_lng: dummyLoc.lng,
-        }));
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toString();
+          const lng = position.coords.longitude.toString();
 
-        setLiveLocation(dummyLoc);
-        setLocationFetched(true);
-        setMessage("✅ Dummy location set! Ready for testing.");
-      } else {
-        // Use real GPS location
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude.toString();
-            const lng = position.coords.longitude.toString();
+          setFormData((prev) => ({
+            ...prev,
+            user: String(user.id || user.user_id || user.pk),
+            username: user.name || user.username || "",
+            start_lat: lat,
+            start_lng: lng,
+          }));
 
-            setFormData((prev) => ({
-              ...prev,
-              user: String(user.id || user.user_id || user.pk),
-              username: user.name || user.username || "",
-              start_lat: lat,
-              start_lng: lng,
-            }));
-
-            setLiveLocation({ lat, lng });
-            setLocationFetched(true);
-            setMessage("✅ Real location fetched successfully! You can now fill the form.");
-          },
-          (err) => {
-            console.error("Geolocation error:", err);
-            setMessage("❌ Failed to fetch location. Please allow GPS access and try again.");
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-        );
-      }
+          setLiveLocation({ lat, lng });
+          setLocationFetched(true);
+          setMessage("✅ Location fetched successfully! You can now fill the form.");
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          setMessage("❌ Failed to fetch location. Please allow GPS access and try again.");
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      );
     } catch (error) {
       console.error("User fetch error:", error);
       setMessage("❌ Failed to fetch user info. Please check your connection.");
@@ -226,54 +184,33 @@ export default function AttendanceStart() {
     const startTracking = () => {
       setTrackingActive(true);
       
-      if (useDummyData) {
-        // Use dummy data tracking
-        intervalId = setInterval(() => {
-          const newDummyLoc = generateDummyLocation();
-          setLiveLocation(newDummyLoc);
-          setDummyCounter(prev => prev + 1);
-          
-          if (formData.user) {
-            sendLocationUpdate(newDummyLoc.lat, newDummyLoc.lng, formData.user);
-          }
-        }, 10000); // Update every 10 seconds
-
-        // Send initial dummy location update
-        const initialDummyLoc = generateDummyLocation();
-        setLiveLocation(initialDummyLoc);
-        if (formData.user) {
-          sendLocationUpdate(initialDummyLoc.lat, initialDummyLoc.lng, formData.user);
+      // Watch position for real-time updates
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude.toString();
+          const lng = position.coords.longitude.toString();
+          setLiveLocation({ lat, lng });
+        },
+        (error) => {
+          console.error("Error watching location:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000,
         }
-      } else {
-        // Use real GPS tracking
-        watchId = navigator.geolocation.watchPosition(
-          (position) => {
-         const lat = position.coords.latitude.toFixed(6);
-const lng = position.coords.longitude.toFixed(6);
+      );
 
-            setLiveLocation({ lat, lng });
-          },
-          (error) => {
-            console.error("Error watching location:", error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 30000,
-          }
-        );
-
-        // Send real location updates every 10 seconds
-        intervalId = setInterval(() => {
-          if (liveLocation.lat && liveLocation.lng && formData.user) {
-            sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
-          }
-        }, 10000);
-
-        // Send initial real location update
-        if (liveLocation.lat && liveLocation.lng) {
+      // Send location updates every 10 seconds
+      intervalId = setInterval(() => {
+        if (liveLocation.lat && liveLocation.lng && formData.user) {
           sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
         }
+      }, 10000);
+
+      // Send initial location update
+      if (liveLocation.lat && liveLocation.lng) {
+        sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
       }
     };
 
@@ -292,14 +229,14 @@ const lng = position.coords.longitude.toFixed(6);
       window.removeEventListener("online", syncOfflineData);
       setTrackingActive(false);
     };
-  }, [locationFetched, formData.user, sendLocationUpdate, syncOfflineData, useDummyData, generateDummyLocation]);
+  }, [locationFetched, formData.user, sendLocationUpdate, syncOfflineData]);
 
-  // Separate effect for updating location when liveLocation changes (real GPS only)
+  // Separate effect for updating location when liveLocation changes
   useEffect(() => {
-    if (!useDummyData && trackingActive && liveLocation.lat && liveLocation.lng && formData.user) {
+    if (trackingActive && liveLocation.lat && liveLocation.lng && formData.user) {
       sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
     }
-  }, [liveLocation.lat, liveLocation.lng, trackingActive, formData.user, sendLocationUpdate, useDummyData]);
+  }, [liveLocation.lat, liveLocation.lng, trackingActive, formData.user, sendLocationUpdate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,9 +252,8 @@ const lng = position.coords.longitude.toFixed(6);
     try {
       const data = new FormData();
       data.append("user", formData.user);
-    data.append("start_lat", parseFloat(formData.start_lat).toFixed(6));
-data.append("start_lng", parseFloat(formData.start_lng).toFixed(6));
-
+      data.append("start_lat", formData.start_lat);
+      data.append("start_lng", formData.start_lng);
       data.append("description", formData.description);
 
       if (formData.odometer_image) {
@@ -335,7 +271,7 @@ data.append("start_lng", parseFloat(formData.start_lng).toFixed(6));
       });
 
       if (res.status === 200 || res.status === 201) {
-        setMessage(`✅ Attendance submitted successfully! ${useDummyData ? 'Dummy' : 'Real'} location tracking will continue.`);
+        setMessage("✅ Attendance submitted successfully! Location tracking will continue.");
         const today = new Date().toISOString().split("T")[0];
         localStorage.setItem(`attendance_${formData.user}_${today}`, "submitted");
 
@@ -375,45 +311,24 @@ data.append("start_lng", parseFloat(formData.start_lng).toFixed(6));
     <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <h2 className="text-xl font-bold mb-4 text-center">📍 Check In</h2>
 
-      {/* Testing Mode Toggle */}
-      <div className="mb-4 p-3 border border-orange-200 bg-orange-50 rounded-lg">
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={useDummyData}
-            onChange={(e) => setUseDummyData(e.target.checked)}
-            className="rounded"
-          />
-          <span className="text-sm text-orange-700 font-medium">
-            🧪 Use Dummy Location Data (Testing Mode)
-          </span>
-        </label>
-        {useDummyData && (
-          <p className="text-xs text-orange-600 mt-1">
-            Will generate fake GPS coordinates around Surat, Gujarat for testing
-          </p>
-        )}
-      </div>
-
       <button
         onClick={fetchUserAndLocation}
         disabled={locationFetched || loading}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
-        {loading ? "🔄 Fetching Location..." : locationFetched ? "✅ Ready to Submit" : `📍 Click to Start Attendance ${useDummyData ? '(Dummy Mode)' : ''}`}
+        {loading ? "🔄 Fetching Location..." : locationFetched ? "✅ Ready to Submit" : "📍 Click to Start Attendance"}
       </button>
 
-      {locationFetched && (
-        <div className={`mb-4 p-3 border rounded-lg ${useDummyData ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
-          <p className={`text-sm ${useDummyData ? 'text-orange-700' : 'text-green-700'}`}>
-            📍 {useDummyData ? 'Dummy' : 'Real'} location tracking active • Updates every 10 seconds • Works offline
+      {/* {locationFetched && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-700">
+            📍 Location tracking active • Updates every 10 seconds • Works offline
           </p>
-          <p className={`text-xs mt-1 ${useDummyData ? 'text-orange-600' : 'text-green-600'}`}>
+          <p className="text-xs text-green-600 mt-1">
             Current: {liveLocation.lat.substring(0, 8)}, {liveLocation.lng.substring(0, 8)}
-            {useDummyData && ` (Update #${dummyCounter})`}
           </p>
         </div>
-      )}
+      )} */}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

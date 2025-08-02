@@ -31,7 +31,7 @@ import { Toaster } from "react-hot-toast";
 // import ChatBox from "./components/chat/ChatBox";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
 // import ChatBox from "./components/chat/ChatBox";
-import TaskShowPage from "./pages/Employee/TaskShowPage";
+import TaskShowPage from "./pages/Employee/EmployeeTask";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
@@ -53,6 +53,7 @@ import NotificationListener from "./NotificationListener";
 import AnnouncementForm from "./pages/Announcement";
 import AnimatedUserMap from "./pages/Employee/LocationFetcher";
 import LocationFetcher from "./pages/Employee/LocationFetcher";
+import AttendanceStart from "./pages/Employee/AttandanceStart";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -92,7 +93,7 @@ export default function App() {
         
             {/* Employee Pages */}
           
-            <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
+            <Route path="/attandanceStart-page" element={  <AttendanceStart />}/>
               {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
               <Route path="/attandanceEnd-page" element={<AttendanceGuard> <AttendanceEndForm /> </AttendanceGuard>}></Route>
               <Route path="/task-show-page" element={<AttendanceGuard> <TaskShowPage /> </AttendanceGuard>}></Route>

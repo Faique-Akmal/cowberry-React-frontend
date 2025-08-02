@@ -13,7 +13,7 @@ import "leaflet/dist/leaflet.css";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
-import { FaEye } from "react-icons/fa";
+import { FaEye, FaSync, FaMapMarkerAlt } from "react-icons/fa";
 
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
@@ -40,11 +40,11 @@ interface Attendance {
 }
 
 interface LocationLog {
-  latitude:  number;
-  longitude:  number;
+  id: number;
+  latitude: string | number;
+  longitude: string | number;
   timestamp: string;
   battery_level?: number | null;
-  id?: number;
   is_paused?: boolean;
   user?: number;
 }
@@ -55,8 +55,10 @@ export default function AttendanceList() {
   const [selectedDept, setSelectedDept] = useState<string>("");
   const [mapView, setMapView] = useState<Attendance | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
 
   useEffect(() => {
     fetchData();
@@ -64,15 +66,16 @@ export default function AttendanceList() {
 
   useEffect(() => {
     if (mapView) {
-      fetchLocations(mapView.user.id);
+      fetchLocations(mapView.user.id, mapView.date);
 
-if (!mapView.end_lat || !mapView.end_lng) {
-  locationIntervalRef.current = setInterval(() => {
-    fetchLocations(mapView.user.id);
-  }, 12000);
-}
-
-      
+      // Set up real-time updates for ongoing attendance
+      const isOngoing = !mapView.end_time || (!mapView.end_lat || !mapView.end_lng);
+      if (isOngoing && autoRefresh) {
+        console.log("🔄 Setting up auto-refresh for ongoing attendance");
+        locationIntervalRef.current = setInterval(() => {
+          fetchLocations(mapView.user.id, mapView.date);
+        }, 5000); // Faster refresh for testing dummy data
+      }
     }
 
     return () => {
@@ -81,7 +84,7 @@ if (!mapView.end_lat || !mapView.end_lng) {
         locationIntervalRef.current = null;
       }
     };
-  }, [mapView]);
+  }, [mapView, autoRefresh]);
 
   const fetchData = async () => {
     try {
@@ -93,24 +96,21 @@ if (!mapView.end_lat || !mapView.end_lng) {
       const startData = startRes.data.results || [];
       const endData = endRes.data.results || [];
 
-   const merged = startData.map((start: any) => {
-  const startUserId = typeof start.user === 'object' ? start.user.id : start.user;
+      const merged = startData.map((start: any) => {
+        const startUserId = typeof start.user === 'object' ? start.user.id : start.user;
 
-  const match = endData.find((end: any) => {
-    const endUserId = typeof end.user === 'object' ? end.user.id : end.user;
-    return endUserId === startUserId && end.date === start.date;
-  });
+        const match = endData.find((end: any) => {
+          const endUserId = typeof end.user === 'object' ? end.user.id : end.user;
+          return endUserId === startUserId && end.date === start.date;
+        });
 
-  return {
-    ...start,
-    end_time: match?.end_time || "",
-    end_lat: match?.end_lat || "",
-    end_lng: match?.end_lng || "",
-  };
-});
-
-
-
+        return {
+          ...start,
+          end_time: match?.end_time || "",
+          end_lat: match?.end_lat || "",
+          end_lng: match?.end_lng || "",
+        };
+      });
 
       setAttendances(merged);
       const uniqueDepts = Array.from(
@@ -122,81 +122,235 @@ if (!mapView.end_lat || !mapView.end_lng) {
     }
   };
 
-    const formatTime = (timeStr: string) => {
+  const formatTime = (timeStr: string) => {
     if (!timeStr) return "-";
     const [hours, minutes] = timeStr.split(":");
     return `${hours}:${minutes}`;
   };
 
+  const fetchLocations = async (userId: number, date: string) => {
+    setIsLoadingLocations(true);
+    try {
+      console.log(`🔍 Fetching locations for user ${userId} on ${date}`);
+      
+      // Try multiple API endpoint formats to ensure compatibility
+      const endpoints = [
+        `/locations/?user=${userId}&date=${date}`,
+        `/locations?user=${userId}&date=${date}`,
+        `/locations/${userId}/${date}/`,
+        `/locations/`
+      ];
+      
+      let res;
+      let logs: LocationLog[] = [];
+      
+      for (const endpoint of endpoints) {
+        try {
+          res = await API.get(endpoint);
+          console.log(`✅ Successfully fetched from ${endpoint}:`, res.data);
+          
+          // Handle different response structures
+          if (Array.isArray(res.data)) {
+            logs = res.data;
+          } else if (res.data.results && Array.isArray(res.data.results)) {
+            logs = res.data.results;
+          } else if (res.data.data && Array.isArray(res.data.data)) {
+            logs = res.data.data;
+          } else if (res.data && typeof res.data === "object") {
+            logs = [res.data];
+          }
+          
+          // If we got data, break out of the loop
+          if (logs.length > 0) {
+            break;
+          }
+        } catch (endpointError) {
+          console.log(`❌ Failed to fetch from ${endpoint}:`, endpointError);
+          continue;
+        }
+      }
+      
+      // If no specific endpoint worked, try to get all locations and filter
+      if (logs.length === 0) {
+        try {
+          res = await API.get('/locations/');
+          let allLogs = res.data.results || res.data || [];
+          
+          // Filter by user and date if we have all locations
+          logs = allLogs.filter((log: any) => {
+            const logUserId = typeof log.user === 'object' ? log.user.id : log.user;
+            const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+            return logUserId === userId && logDate === date;
+          });
+          
+          console.log(`📊 Filtered ${logs.length} locations from all data`);
+        } catch (allLogsError) {
+          console.error("❌ Failed to fetch all locations:", allLogsError);
+        }
+      }
 
+      // Enhanced filtering and sorting for dummy data
+      if (mapView && logs.length > 0) {
+        logs = filterAndSortLocations(logs, mapView);
+      }
 
-const fetchLocations = async (userId: number) => {
-  try {
-    const res = await API.get(`/locations/${userId}`);
-    let logs: LocationLog[] = [];
-
-    if (Array.isArray(res.data)) {
-      logs = res.data;
-    } else if (res.data?.results) {
-      logs = res.data.results;
-    } else if (res.data?.data) {
-      logs = res.data.data;
-    } else if (res.data) {
-      logs = [res.data];
+      console.log(`📍 Final location logs (${logs.length} points):`, logs);
+      setLocations(logs);
+      setLastUpdateTime(new Date());
+      
+    } catch (err) {
+      console.error("❌ Failed to fetch location logs", err);
+      setLocations([]);
+    } finally {
+      setIsLoadingLocations(false);
     }
+  };
 
-    // Optional: sort by timestamp
-    logs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  // Enhanced filtering specifically optimized for dummy data
+  const filterAndSortLocations = (logs: LocationLog[], attendance: Attendance): LocationLog[] => {
+    try {
+      console.log("🔧 Processing location logs for dummy data...");
+      
+      // First, validate and clean the data
+      const validLogs = logs.filter(log => {
+        const hasValidCoords = isValidCoordinate(log.latitude, log.longitude);
+        const hasValidTimestamp = log.timestamp && !isNaN(new Date(log.timestamp).getTime());
+        
+        if (!hasValidCoords) {
+          console.warn(`⚠️ Invalid coordinates in log ${log.id}:`, log.latitude, log.longitude);
+        }
+        if (!hasValidTimestamp) {
+          console.warn(`⚠️ Invalid timestamp in log ${log.id}:`, log.timestamp);
+        }
+        
+        return hasValidCoords && hasValidTimestamp;
+      });
+
+      console.log(`✅ Valid logs: ${validLogs.length}/${logs.length}`);
+
+      // For dummy data, we'll be more lenient with time filtering
+      // since dummy data might not perfectly align with attendance times
+      const attendanceDate = attendance.date;
+      
+      // Create a broader time window for dummy data
+      const startOfDay = new Date(`${attendanceDate}T00:00:00`);
+      const endOfDay = new Date(`${attendanceDate}T23:59:59`);
+      
+      // If it's an ongoing attendance, use current time as end
+      const endTime = attendance.end_time ? 
+        new Date(`${attendanceDate}T${attendance.end_time}`) : 
+        new Date();
+      
+      // Filter by date and reasonable time range
+      const dateFilteredLogs = validLogs.filter(log => {
+        const logTime = new Date(log.timestamp);
+        const logDate = logTime.toISOString().split('T')[0];
+        
+        // Must be on the correct date
+        const isCorrectDate = logDate === attendanceDate;
+        
+        // For ongoing attendance, include all logs from start time onwards
+        // For completed attendance, include logs within the time range
+        let isInTimeRange = true;
+        if (attendance.start_time) {
+          const startTime = new Date(`${attendanceDate}T${attendance.start_time}`);
+          const buffer = 10 * 60 * 1000; // 10 minute buffer
+          isInTimeRange = logTime >= new Date(startTime.getTime() - buffer) && 
+                         logTime <= new Date(endTime.getTime() + buffer);
+        }
+        
+        const shouldInclude = isCorrectDate && isInTimeRange;
+        
+        if (!shouldInclude) {
+          console.log(`⏭️ Excluding log ${log.id}: Date: ${isCorrectDate}, Time: ${isInTimeRange}`);
+        }
+        
+        return shouldInclude;
+      });
+
+      console.log(`📅 Date/time filtered logs: ${dateFilteredLogs.length}`);
+
+      // Sort by timestamp (chronological order)
+      const sortedLogs = dateFilteredLogs.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      // For demo purposes, if we have a lot of points, thin them out for better visualization
+      let finalLogs = sortedLogs;
+      if (sortedLogs.length > 100) {
+        // Keep every nth point to avoid overcrowding the map
+        const keepEvery = Math.ceil(sortedLogs.length / 50);
+        finalLogs = sortedLogs.filter((_, index) => index % keepEvery === 0);
+        console.log(`🎯 Thinned out logs: ${finalLogs.length} (keeping every ${keepEvery})`);
+      }
+
+      console.log(`🏁 Final processed logs: ${finalLogs.length}`);
+      return finalLogs;
+      
+    } catch (error) {
+      console.error("❌ Error processing location logs:", error);
+      // Return all valid logs if processing fails
+      return logs.filter(log => isValidCoordinate(log.latitude, log.longitude))
+                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }
+  };
+
+  // Helper function to safely parse coordinates
+  const parseCoordinate = (coord: string | number): number => {
+    if (typeof coord === 'number') return coord;
+    const parsed = parseFloat(coord);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper function to check if coordinates are valid
+  const isValidCoordinate = (lat: string | number, lng: string | number): boolean => {
+    const latNum = parseCoordinate(lat);
+    const lngNum = parseCoordinate(lng);
+    return latNum !== 0 && lngNum !== 0 && 
+           Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180 &&
+           !isNaN(latNum) && !isNaN(lngNum);
+  };
+
+  // Improved pause detection optimized for dummy data
+  const detectPauses = (): LocationLog[] => {
+    if (locations.length < 2) return [];
     
-
-   setLocations((prevLogs) => {
-  const seen = new Set(prevLogs.map((log) => log.timestamp));
-  const combined = [...prevLogs];
-
-  logs.forEach((log) => {
-    if (!seen.has(log.timestamp)) {
-      combined.push(log);
-    }
-  });
-
-  combined.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-
-  return combined;
-});
-
-  } catch (err) {
-    console.error("Failed to fetch user location:", err);
-  }
-};
-
-
-
-  
-
-  const pauseMarkers = () => {
-    const pauses = [];
+    const pauses: LocationLog[] = [];
+    const PAUSE_THRESHOLD_MINUTES = 2; // Shorter threshold for dummy data
+    
     for (let i = 1; i < locations.length; i++) {
-      const prev = new Date(locations[i - 1].timestamp).getTime();
-      const curr = new Date(locations[i].timestamp).getTime();
-      const diff = (curr - prev) / 60000;
-      if (diff > 2) pauses.push(locations[i]);
+      const prev = new Date(locations[i - 1].timestamp);
+      const curr = new Date(locations[i].timestamp);
+      const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
+      
+      // Mark as pause if gap is significant or explicitly marked as paused
+      if (diffMinutes > PAUSE_THRESHOLD_MINUTES || locations[i].is_paused) {
+        pauses.push(locations[i]);
+      }
     }
     return pauses;
   };
 
   const openMap = (record: Attendance) => {
+    console.log("🗺️ Opening map for:", record);
     setMapView(record);
     setLocations([]);
+    setLastUpdateTime(null);
   };
 
   const closeMap = () => {
     setMapView(null);
     setLocations([]);
+    setLastUpdateTime(null);
     if (locationIntervalRef.current) {
       clearInterval(locationIntervalRef.current);
       locationIntervalRef.current = null;
+    }
+  };
+
+  const manualRefresh = () => {
+    if (mapView) {
+      fetchLocations(mapView.user.id, mapView.date);
     }
   };
 
@@ -207,9 +361,128 @@ const fetchLocations = async (userId: number) => {
       )
     : attendances;
 
+  // Enhanced polyline path building optimized for dummy data
+  const buildPolylinePath = (): [number, number][] => {
+    const path: [number, number][] = [];
+
+    if (!mapView) return path;
+
+    console.log("🛤️ Building polyline path...");
+
+    // Start with the start coordinate if valid
+    if (mapView.start_lat && mapView.start_lng && 
+        isValidCoordinate(mapView.start_lat, mapView.start_lng)) {
+      const startLat = parseCoordinate(mapView.start_lat);
+      const startLng = parseCoordinate(mapView.start_lng);
+      path.push([startLat, startLng]);
+      console.log("📍 Added start point:", [startLat, startLng]);
+    }
+
+    // Add all valid location logs in chronological order
+    locations.forEach((log, index) => {
+      if (isValidCoordinate(log.latitude, log.longitude)) {
+        const lat = parseCoordinate(log.latitude);
+        const lng = parseCoordinate(log.longitude);
+        path.push([lat, lng]);
+        
+        if (index < 5 || index % 10 === 0) { // Log first few and every 10th for debugging
+          console.log(`📍 Added location log ${index + 1}/${locations.length}:`, [lat, lng]);
+        }
+      }
+    });
+
+    // Add end coordinate if attendance is completed and coordinates are valid
+    if (mapView.end_time && mapView.end_lat && mapView.end_lng && 
+        isValidCoordinate(mapView.end_lat, mapView.end_lng)) {
+      const endLat = parseCoordinate(mapView.end_lat);
+      const endLng = parseCoordinate(mapView.end_lng);
+      
+      // Only add end point if it's different from the last location log
+      const lastPoint = path[path.length - 1];
+      if (!lastPoint || 
+          Math.abs(lastPoint[0] - endLat) > 0.0001 || 
+          Math.abs(lastPoint[1] - endLng) > 0.0001) {
+        path.push([endLat, endLng]);
+        console.log("🏁 Added end point:", [endLat, endLng]);
+      }
+    }
+
+    console.log(`🛤️ Complete polyline path: ${path.length} points`);
+    return path;
+  };
+
+  // Calculate map center based on available coordinates
+  const getMapCenter = (): [number, number] => {
+    if (!mapView) return [21.1702, 72.8311]; // Default to Surat
+
+    const allCoords: [number, number][] = [];
+
+    // Add start coordinate
+    if (isValidCoordinate(mapView.start_lat, mapView.start_lng)) {
+      allCoords.push([parseCoordinate(mapView.start_lat), parseCoordinate(mapView.start_lng)]);
+    }
+
+    // Add location logs (sample a few for center calculation)
+    const sampleSize = Math.min(locations.length, 20); // Don't use all points for center calculation
+    const step = Math.max(1, Math.floor(locations.length / sampleSize));
+    
+    for (let i = 0; i < locations.length; i += step) {
+      const log = locations[i];
+      if (isValidCoordinate(log.latitude, log.longitude)) {
+        allCoords.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+      }
+    }
+
+    // Add end coordinate
+    if (mapView.end_lat && mapView.end_lng && isValidCoordinate(mapView.end_lat, mapView.end_lng)) {
+      allCoords.push([parseCoordinate(mapView.end_lat), parseCoordinate(mapView.end_lng)]);
+    }
+
+    if (allCoords.length === 0) {
+      // Fallback to start coordinates or default
+      return [
+        parseCoordinate(mapView.start_lat) || 21.1702, 
+        parseCoordinate(mapView.start_lng) || 72.8311
+      ];
+    }
+
+    // Calculate center point
+    const avgLat = allCoords.reduce((sum, coord) => sum + coord[0], 0) / allCoords.length;
+    const avgLng = allCoords.reduce((sum, coord) => sum + coord[1], 0) / allCoords.length;
+
+    console.log(`🎯 Map center calculated from ${allCoords.length} points:`, [avgLat, avgLng]);
+    return [avgLat, avgLng];
+  };
+
+  // Calculate appropriate zoom level based on data spread
+  const getMapZoom = (): number => {
+    if (!mapView || locations.length < 2) return 15;
+
+    const coords = locations
+      .filter(log => isValidCoordinate(log.latitude, log.longitude))
+      .map(log => [parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+
+    if (coords.length < 2) return 15;
+
+    // Calculate bounds
+    const lats = coords.map(coord => coord[0]);
+    const lngs = coords.map(coord => coord[1]);
+    
+    const latRange = Math.max(...lats) - Math.min(...lats);
+    const lngRange = Math.max(...lngs) - Math.min(...lngs);
+    const maxRange = Math.max(latRange, lngRange);
+
+    // Determine zoom based on coordinate spread
+    if (maxRange > 0.1) return 10;      // Very spread out
+    if (maxRange > 0.05) return 12;     // Spread out
+    if (maxRange > 0.01) return 14;     // Moderate spread
+    if (maxRange > 0.005) return 15;    // Close together
+    return 16;                          // Very close together
+  };
+
   return (
     <div className="p-4 bg-white rounded-xl shadow-md">
-      <h2 className="text-xl font-bold mb-4">Employee Attendance Records</h2>
+      <h2 className="text-xl font-bold mb-4">📊 Employee Attendance Records</h2>
 
       <div className="mb-4">
         <label className="block mb-1 font-medium text-gray-700">
@@ -233,7 +506,7 @@ const fetchLocations = async (userId: number) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
@@ -241,13 +514,12 @@ const fetchLocations = async (userId: number) => {
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">End Time</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Address</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>
-
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredData.map((item, idx) => (
-              <tr key={item.user.id + "-" + item.date}>
+              <tr key={item.user.id + "-" + item.date} className="hover:bg-gray-50">
                 <td className="px-4 py-2">{idx + 1}</td>
                 <td className="px-4 py-2">
                   {item.user.first_name} {item.user.last_name}
@@ -256,14 +528,21 @@ const fetchLocations = async (userId: number) => {
                 <td className="px-4 py-2">{item.date}</td>
                 <td className="px-4 py-2">{item.department}</td>
                 <td className="px-4 py-2">{formatTime(item.start_time)}</td>
-                <td className="px-4 py-2">{formatTime(item.end_time) || "-"}</td>
-                 <td className="px-4 py-2 text-xs ">{item.address}</td>
+                <td className="px-4 py-2">
+                  {formatTime(item.end_time) || (
+                    <span className="text-green-600 font-medium">● Active</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-xs max-w-32 truncate" title={item.address}>
+                  {item.address}
+                </td>
                 <td className="px-4 py-2">
                   <button
-                    className="text-blue-600"
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
                     onClick={() => openMap(item)}
+                    title="View location tracking"
                   >
-                    <FaEye />
+                    <FaMapMarkerAlt size={16} />
                   </button>
                 </td>
               </tr>
@@ -277,176 +556,268 @@ const fetchLocations = async (userId: number) => {
           <div className="bg-transparent w-full h-full relative">
             <button
               onClick={closeMap}
-              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded z-[999]"
+              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-[999] shadow-lg"
             >
-              Close Map
+              ✕ Close Map
             </button>
 
+            {/* Enhanced map info panel with controls */}
+            <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-lg z-[999] max-w-sm">
+              <h3 className="font-bold text-sm mb-2">
+                📍 {mapView.user.first_name} {mapView.user.last_name}
+              </h3>
+              <div className="text-xs text-gray-600 space-y-1">
+                <p>📅 Date: {mapView.date}</p>
+                <p>🕐 Start: {formatTime(mapView.start_time)}</p>
+                {mapView.end_time && <p>🕐 End: {formatTime(mapView.end_time)}</p>}
+                <p>📍 Location logs: <span className="font-semibold">{locations.length}</span> points</p>
+                {lastUpdateTime && (
+                  <p>🔄 Last update: {lastUpdateTime.toLocaleTimeString()}</p>
+                )}
+              </div>
+              
+              {/* Status indicators */}
+              <div className="flex items-center gap-2 mt-2 text-xs">
+                {!mapView.end_time && (
+                  <span className="text-green-600 font-medium">● Live tracking</span>
+                )}
+                {isLoadingLocations && (
+                  <span className="text-blue-600">🔄 Updating...</span>
+                )}
+                {detectPauses().length > 0 && (
+                  <span className="text-orange-600">⏸️ {detectPauses().length} pause(s)</span>
+                )}
+              </div>
+
+              {/* Control buttons */}
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={manualRefresh}
+                  disabled={isLoadingLocations}
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50"
+                >
+                  <FaSync className={isLoadingLocations ? "animate-spin" : ""} />
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  className={`px-2 py-1 text-xs rounded ${
+                    autoRefresh 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  }`}
+                >
+                  Auto: {autoRefresh ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+
             <MapContainer
-              center={[
-                parseFloat(mapView.start_lat),
-                parseFloat(mapView.start_lng),
-              ]}
-              zoom={13}
+              center={getMapCenter()}
+              zoom={getMapZoom()}
               scrollWheelZoom
               style={{ height: "100%", width: "100%" }}
-              key={`map-${mapView.user.id}-${mapView.date}`}
+              key={`map-${mapView.user.id}-${mapView.date}-${locations.length}`}
             >
-               <TileLayer
-                          attribution="Google Maps"
-                          url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+              <TileLayer
+                attribution="Google Maps"
+                url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+              />
+
+              {/* Enhanced Polyline with better styling for dummy data */}
+              {(() => {
+                const path = buildPolylinePath();
+                if (path.length >= 2) {
+                  return (
+                    <Polyline
+                      positions={path}
+                      pathOptions={{ 
+                        color: mapView.end_time ? "#3B82F6" : "#10B981", // Blue for completed, green for ongoing
+                        weight: 3, 
+                        opacity: 0.8,
+                        lineCap: "round",
+                        lineJoin: "round",
+                        dashArray: mapView.end_time ? undefined : "10, 5" // Dashed line for ongoing
+                      }}
                     />
+                  );
+                }
+                return null;
+              })()}
 
-              {/* Start */}
-              <Marker
-                position={[
-                  parseFloat(mapView.start_lat),
-                  parseFloat(mapView.start_lng),
-                ]}
-                icon={L.icon({
-                  iconUrl:
-                    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-                  shadowUrl,
-                  iconSize: [25, 41],
-                })}
-              >
-                <Popup>
-                  <div>
-                    <strong>Start Location</strong><br />
-                    Employee: {mapView.user.first_name} {mapView.user.last_name}<br />
-                    Time: {formatTime(mapView.start_time)}<br />
-                    Address: {mapView.address}
-                  </div>
-                </Popup>
-              </Marker>
-
-              {/* End */}
-              {mapView.end_lat && mapView.end_lng && (
+              {/* Start Marker */}
+              {isValidCoordinate(mapView.start_lat, mapView.start_lng) && (
                 <Marker
                   position={[
-                    parseFloat(mapView.end_lat),
-                    parseFloat(mapView.end_lng),
+                    parseCoordinate(mapView.start_lat),
+                    parseCoordinate(mapView.start_lng),
                   ]}
                   icon={L.icon({
-                    iconUrl:
-                      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+                    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
                     shadowUrl,
                     iconSize: [25, 41],
                   })}
                 >
                   <Popup>
-
-                      
-
-                  <div>
-                      <strong>End Location</strong><br />
-                      Employee: {mapView.user.first_name} {mapView.user.last_name}<br />
-                      Time: {formatTime(mapView.end_time)}<br/>
-                      location:{mapView.end_lat} {mapView.end_lng}<br/>
+                    <div className="text-sm">
+                      <strong>🟢 Start Location</strong><br />
+                      <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
+                      <strong>Time:</strong> {formatTime(mapView.start_time)}<br />
+                      <strong>Coordinates:</strong> {parseCoordinate(mapView.start_lat).toFixed(5)}, {parseCoordinate(mapView.start_lng).toFixed(5)}
                     </div>
-
-
                   </Popup>
                 </Marker>
               )}
 
-              {/* Polyline from start to latest location */}
-             {/* Dynamic Polyline logic */}
-{/* Full route Polyline including start, logs, and end */}
-                  {(() => {
-                    const path: [number, number][] = [];
+              {/* Location Log Markers - Optimized for dummy data visualization */}
+              {locations.length > 0 && locations.length <= 100 && // Show individual markers for reasonable number of points
+                locations.map((log, i) => {
+                  if (!isValidCoordinate(log.latitude, log.longitude)) return null;
 
-                    // Start
-                    if (mapView?.start_lat && mapView?.start_lng) {
-                      path.push([
-                        parseFloat(mapView.start_lat),
-                        parseFloat(mapView.start_lng),
-                      ]);
-                    }
+                  const lat = parseCoordinate(log.latitude);
+                  const lng = parseCoordinate(log.longitude);
+                  const isPaused = log.is_paused || false;
 
-                    // Location logs
-                    locations.forEach((log) => {
-                      const lat = typeof log.latitude === "string" ? parseFloat(log.latitude) : log.latitude;
-                      const lng = typeof log.longitude === "string" ? parseFloat(log.longitude) : log.longitude;
+                  // Show every 3rd location log for dummy data (more frequent than real data)
+                  if (i % 3 !== 0 && !isPaused) return null;
 
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        path.push([lat, lng]);
-                      }
-                    });
+                  return (
+                    <Marker
+                      key={`log-${log.id || i}`}
+                      position={[lat, lng]}
+                      icon={L.icon({
+                        iconUrl: isPaused 
+                          ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png"
+                          : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+                        shadowUrl,
+                        iconSize: [15, 24], // Slightly larger for better visibility
+                      })}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <strong>{isPaused ? '⏸️ Paused Location' : '🔵 Location Log'}</strong><br />
+                          <strong>Time:</strong> {new Date(log.timestamp).toLocaleTimeString()}<br />
+                          <strong>Date:</strong> {new Date(log.timestamp).toLocaleDateString()}<br />
+                          <strong>Coordinates:</strong> {lat.toFixed(5)}, {lng.toFixed(5)}<br />
+                          <strong>Log ID:</strong> {log.id}<br />
+                          {log.battery_level && <><strong>Battery:</strong> {log.battery_level}%<br /></>}
+                          {isPaused && <span style={{color: 'orange'}}><strong>Status:</strong> Paused</span>}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
 
-                    // End
-                    if (mapView?.end_lat && mapView?.end_lng) {
-                      path.push([
-                        parseFloat(mapView.end_lat),
-                        parseFloat(mapView.end_lng),
-                      ]);
-                    }
+              {/* Current Location Marker for ongoing attendance */}
+              {!mapView.end_time && locations.length > 0 && (() => {
+                const lastLocation = locations[locations.length - 1];
+                if (isValidCoordinate(lastLocation.latitude, lastLocation.longitude)) {
+                  const lat = parseCoordinate(lastLocation.latitude);
+                  const lng = parseCoordinate(lastLocation.longitude);
+                  
+                  return (
+                    <Marker
+                      position={[lat, lng]}
+                      icon={L.icon({
+                        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png",
+                        shadowUrl,
+                        iconSize: [30, 48], // Larger for current position
+                      })}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <strong>📍 Current Position</strong><br />
+                          <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
+                          <strong>Last Update:</strong> {new Date(lastLocation.timestamp).toLocaleTimeString()}<br />
+                          <strong>Coordinates:</strong> {lat.toFixed(5)}, {lng.toFixed(5)}<br />
+                          <strong>Status:</strong> <span className="text-green-600">● Active</span>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                }
+                return null;
+              })()}
 
-                    // Only draw if path has 2 or more points
-                    if (path.length >= 2) {
-                      return (
-                        <Polyline
-                          positions={path}
-                          pathOptions={{ color: "blue", weight: 4 }}
-                        />
-                      );
-                    }
+              {/* Pause Markers - Enhanced for dummy data */}
+              {detectPauses().map((log, i) => {
+                if (!isValidCoordinate(log.latitude, log.longitude)) return null;
+                
+                const lat = parseCoordinate(log.latitude);
+                const lng = parseCoordinate(log.longitude);
 
-                    return null;
-                  })()}
+                return (
+                  <Marker
+                    key={`pause-${log.id || i}`}
+                    position={[lat, lng]}
+                    icon={L.icon({
+                      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+                      shadowUrl,
+                      iconSize: [20, 32],
+                    })}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <strong>⏱️ Extended Pause</strong><br />
+                        <strong>Paused at:</strong> {new Date(log.timestamp).toLocaleTimeString()}<br />
+                        <strong>Date:</strong> {new Date(log.timestamp).toLocaleDateString()}<br />
+                        <strong>Coordinates:</strong> {lat.toFixed(5)}, {lng.toFixed(5)}<br />
+                        <strong>Reason:</strong> Gap in location tracking
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+             
+              <div>
 
-              {/* Location logs */}
-             {locations.map((log, i) => {
-  // coerce to number (in case it's still a string)
-  const lat =
-    typeof log.latitude === "string"
-      ? parseFloat(log.latitude)
-      : log.latitude;
-  const lng =
-    typeof log.longitude === "string"
-      ? parseFloat(log.longitude)
-      : log.longitude;
-
-  // if for whatever reason parsing failed, skip rendering this point
-  if (isNaN(lat) || isNaN(lng)) return null;
-
-  return (
-    <Marker
-      key={i}
-      position={[lat, lng]}
-      icon={L.icon({
-        iconUrl:
-          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-        shadowUrl,
-        iconSize: [12, 20],
-      })}
-    >
-      <Popup>
-        {new Date(log.timestamp).toLocaleTimeString()}
-        <br />
-        Lat: {lat.toFixed(5)}, Lng: {lng.toFixed(5)}
-      </Popup>
-    </Marker>
-  );
-})}
-
-
-              {/* Pause markers */}
-              {pauseMarkers().map((log, i) => (
+              {isValidCoordinate(mapView.end_lat, mapView.end_lng) && (
                 <Marker
-                  key={`pause-${i}`}
-                  position={[log.latitude, log.longitude]}
+                  position={[
+                    parseCoordinate(mapView.end_lat),
+                    parseCoordinate(mapView.end_lng),
+                  ]}
                   icon={L.icon({
-                    iconUrl:
-                      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+                    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
                     shadowUrl,
-                    iconSize: [20, 32],
+                    iconSize: [25, 41],
                   })}
                 >
-                  <Popup>Paused at {new Date(log.timestamp).toLocaleTimeString()}</Popup>
+                  <Popup>
+                    <div className="text-sm">
+                      <strong>end Location</strong><br />
+                      <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
+                      <strong>Time:</strong> {formatTime(mapView.end_time)}<br />
+                      <strong>Coordinates:</strong> {parseCoordinate(mapView.end_lat).toFixed(5)}, {parseCoordinate(mapView.end_lng).toFixed(5)}
+                    </div>
+                  </Popup>
                 </Marker>
-              ))}
+              )}
+            </div>
+              {/* Summary overlay for dense data */}
+              {locations.length > 100 && (
+                <div className="absolute bottom-4 left-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded-lg text-sm z-[999]">
+                  ⚠️ High density data ({locations.length} points) - Individual markers hidden for performance
+                </div>
+              )}
             </MapContainer>
+
+            {/* Debug panel for development (remove in production) */}
+            {process.env.NODE_ENV === 'development' && mapView && (
+              <div className="absolute bottom-4 right-4 bg-gray-800 text-white p-3 rounded-lg text-xs z-[999] max-w-xs">
+                <h4 className="font-bold mb-1">🔧 Debug Info</h4>
+                <p>Total Locations: {locations.length}</p>
+                <p>Map Center: {getMapCenter().map(c => c.toFixed(4)).join(', ')}</p>
+                <p>Zoom Level: {getMapZoom()}</p>
+                <p>Polyline Points: {buildPolylinePath().length}</p>
+                <p>Auto Refresh: {autoRefresh ? 'ON' : 'OFF'}</p>
+                {lastUpdateTime && (
+                  <p>Last Update: {lastUpdateTime.toLocaleTimeString()}</p>
+                )}
+              </div>
+            )}
+
+           
           </div>
         </div>
       )}

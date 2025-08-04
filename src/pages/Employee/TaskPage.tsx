@@ -70,7 +70,7 @@ const TaskPage = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-transparent shadow-lg rounded-lg bg-[url('/old-paper-texture.jpg')] bg-cover">
+    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <h2 className="text-2xl font-bold mb-4 text-center">Assign New Task</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -189,7 +189,7 @@ const TaskPage = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-blue-700"
         >
           Create Task
         </button>

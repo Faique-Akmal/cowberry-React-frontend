@@ -102,7 +102,7 @@ export default function RegisterUserForm() {
 
   return (
     <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-      <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
+      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
        <div className="grid grid-cols-2 space-y-2 gap-5 ">
@@ -227,7 +227,7 @@ export default function RegisterUserForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Registering..." : "Register"}
         </button>

@@ -59,6 +59,8 @@ export default function AttendanceList() {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
 
   useEffect(() => {
     fetchData();
@@ -353,13 +355,18 @@ export default function AttendanceList() {
       fetchLocations(mapView.user.id, mapView.date);
     }
   };
+const filteredData = attendances.filter((att) => {
+  const matchDept = selectedDept
+    ? att.department?.trim().toLowerCase() === selectedDept.toLowerCase()
+    : true;
 
-  const filteredData = selectedDept
-    ? attendances.filter(
-        (att) =>
-          att.department?.trim().toLowerCase() === selectedDept.toLowerCase()
-      )
-    : attendances;
+  const matchDate = selectedDate
+    ? att.date === selectedDate
+    : true;
+
+  return matchDept && matchDate;
+});
+
 
   // Enhanced polyline path building optimized for dummy data
   const buildPolylinePath = (): [number, number][] => {
@@ -483,6 +490,20 @@ export default function AttendanceList() {
   return (
     <div className="p-4 bg-white rounded-xl shadow-md">
       <h2 className="text-xl font-bold mb-4">📊 Employee Attendance Records</h2>
+      <div className="grid grid-cols-2 space-y-2 gap-5">
+                    <div className="mb-4">
+            <label className="block mb-1 font-medium text-gray-700">
+              Filter by Date:
+            </label>
+            <input
+              type="date"
+              className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+            />
+          </div>
+
 
       <div className="mb-4">
         <label className="block mb-1 font-medium text-gray-700">
@@ -500,6 +521,7 @@ export default function AttendanceList() {
             </option>
           ))}
         </select>
+      </div>
       </div>
 
       <div className="overflow-auto max-h-[500px] border border-gray-300 rounded-md shadow-inner">

@@ -489,7 +489,7 @@ const filteredData = attendances.filter((att) => {
 
   return (
     <div className="p-4 bg-white rounded-xl shadow-md">
-      <h2 className="text-xl font-bold mb-4">📊 Employee Attendance Records</h2>
+      <h2 className="text-2xl flex justify-center text-center font-bold mb-4 lg:border-b">📊 Employee Attendance Records</h2>
       <div className="grid grid-cols-2 space-y-2 gap-5">
                     <div className="mb-4">
             <label className="block mb-1 font-medium text-gray-700">

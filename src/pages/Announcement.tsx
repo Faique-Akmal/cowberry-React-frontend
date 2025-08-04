@@ -80,11 +80,11 @@ const AnnouncementForm = () => {
   };
 
   return (
-    <div className="w-full mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl">
-      <h2 className="text-xl font-semibold mb-4">Create Announcement</h2>
+    <div className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl ">
+      <h2 className="flex justify-center text-center text-2xl font-semibold mb-4">Create Announcement</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Title</label>
+          <label className="block text-gray-500  text-sm font-medium mb-1">Title</label>
           <input
             type="text"
             value={title}
@@ -96,7 +96,7 @@ const AnnouncementForm = () => {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Content</label>
+          <label className="block text-gray-500 text-sm font-medium mb-1">Content</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -108,13 +108,16 @@ const AnnouncementForm = () => {
 
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
-        <button
+      <div className="">
+          <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600  text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           {loading ? "Posting..." : "Post Announcement"}
         </button>
+      </div>
+      
       </form>
     </div>
   );

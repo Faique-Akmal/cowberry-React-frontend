@@ -38,7 +38,7 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
     return roleObj ? roleObj.name : "Unknown";
   };
 
-const EmployeeStatus = () => {
+const  EmployeeStatus = () => {
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);

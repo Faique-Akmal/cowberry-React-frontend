@@ -83,14 +83,7 @@ export default function App() {
 
             <Route  path="/home" element={   <Home />  }  />
 
-            {/* User Registration Page */}
-            {/* <Route path="/user-register" element={ <RegistrationPage />} /> */}
-
-
-           
-            
-          
-        
+       
             {/* Employee Pages */}
           
             <Route path="/attandanceStart-page" element={  <AttendanceStart />}/>
@@ -101,21 +94,6 @@ export default function App() {
               <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
               <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route>
 
-            {/* <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} /> */}
-
-      
-           {/* <Route path="/task-show-page" element={
-          <TaskShowPage />} />
-           <Route path="/task-calendar" element={  <TaskCalendar />} /> */}
-           {/* <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}></ProtectedRoute>} /> */}
-           {/* <Route path="/employee-dashboard" element={<EmployeeDashboard/> } /> */}
-
-
-
-
-
-            
-      
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/chat" element={<SocketChatBox />} />
@@ -133,7 +111,7 @@ export default function App() {
             <Route path="/announcement" element={ <AnnouncementForm />} />
             <Route path="/live-tracking" element={ <LocationFetcher />} />
             
-            {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
+          
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />
@@ -148,7 +126,7 @@ export default function App() {
             <Route path="/bar-chart" element={<BarChart />} />
 
             {/* Test Route */}
-            <Route path="/test" element={<CompTestHistorySocket />} />
+            {/* <Route path="/test" element={<CompTestHistorySocket />} /> */}
             {/* <Route path="/test" element={<CompTest />} /> */}
             {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>

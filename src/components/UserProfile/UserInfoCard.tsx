@@ -75,9 +75,9 @@ const handleSave = async (e: React.FormEvent) => {
     const formData = new FormData();
     formData.append("address", address.trim());
 
-    const response = await API.patch("/me/", formData); // ✅ DO NOT manually set headers
+    const response = await API.patch("/me/", formData); 
 
-    // ✅ Update UI or state without full reload
+    
     localStorage.setItem("meUser", JSON.stringify(response.data));
     closeModal(); // if applicable
     setUser(response.data); // optionally update UI

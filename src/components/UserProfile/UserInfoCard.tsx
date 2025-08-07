@@ -107,6 +107,9 @@ const handleSave = async (e: React.FormEvent) => {
     // Reset address to original value when closing without saving
     if (user) {
       setAddress(user.address || "");
+      setAddress(user.first_name || "");
+      setAddress(user.last_name || "");
+      setAddress(user.mobile_no || "");
     }
     setError("");
     closeModal();

@@ -247,6 +247,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
+        <label>D.O.B.</label>
         <input
           type="date"
           name="birth_date"

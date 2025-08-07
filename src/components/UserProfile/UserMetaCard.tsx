@@ -33,12 +33,13 @@ const [profileImage, setProfileImage] = useState<File | null>(null);
       const roleObj = role.find((r) => r.id === roleId);
       return roleObj ? roleObj.name : "Unknown";
     };
-
-  const handleSave = async () => {
+const handleSave = async () => {
   try {
     const formData = new FormData();
     formData.append("username", username);
-    if (profileImage) {
+
+    // Append profile image only if it's a valid File
+    if (profileImage instanceof File) {
       formData.append("profile_image", profileImage);
     }
 
@@ -53,11 +54,12 @@ const [profileImage, setProfileImage] = useState<File | null>(null);
 
     console.log("Profile updated:", response.data);
     closeModal();
-    window.location.reload(); // Or update UI without reload
+    window.location.reload(); // Consider replacing with a UI update
   } catch (error) {
     console.error("Failed to update profile:", error);
   }
 };
+
 
 
 

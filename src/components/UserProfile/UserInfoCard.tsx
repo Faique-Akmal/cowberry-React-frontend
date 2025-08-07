@@ -25,6 +25,9 @@ export default function UserInfoCard() {
   const [userRole, setUserRole] = useState<string>("");
   const [userDepartment, setUserDepartment] = useState<string>("");
   const [address, setAddress] = useState<string>("");
+  const [first_name, setFirst_name] = useState<string>("");
+  const [last_name, setLast_name] = useState<string>("");
+  const [mobile_no, setMobile_no] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const { isOpen, openModal, closeModal } = useModal();
@@ -74,8 +77,15 @@ const handleSave = async (e: React.FormEvent) => {
 
     const formData = new FormData();
     formData.append("address", address.trim());
+    formData.append("mobile_no", mobile_no.trim());
+    formData.append("first_name", first_name.trim());
+    formData.append("last_name", last_name.trim());
 
-    const response = await API.patch("/me/", formData); 
+    const response = await API.patch("/me/", formData ,{
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },}
+    ); 
 
     
     localStorage.setItem("meUser", JSON.stringify(response.data));
@@ -164,7 +174,7 @@ const handleSave = async (e: React.FormEvent) => {
               </div>
               <div>
                 <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                  Phone
+                  mobile_no
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   {user.mobile_no || "N/A"}
@@ -202,7 +212,7 @@ const handleSave = async (e: React.FormEvent) => {
             disabled={isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
-            ✏️ Edit
+            Edit
           </button>
         </div>
       </div>
@@ -224,7 +234,27 @@ const handleSave = async (e: React.FormEvent) => {
           )}
 
           <form onSubmit={handleSave} className="flex flex-col">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">first_name</Label>
+            <Input
+              id="first_name"
+              type="text"
+              value={first_name}
+              onChange={(e) => setFirst_name(e.target.value)}
+              placeholder="Enter your address"
+              disabled={isLoading}
+            
+            />
+             <Label htmlFor="address">last_name</Label>
+            <Input
+              id="last_name"
+              type="text"
+              value={last_name}
+              onChange={(e) => setLast_name (e.target.value)}
+              placeholder="Enter your address"
+              disabled={isLoading}
+            
+            />
+             <Label htmlFor="address">Address</Label>
             <Input
               id="address"
               type="text"
@@ -232,7 +262,17 @@ const handleSave = async (e: React.FormEvent) => {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter your address"
               disabled={isLoading}
-              required
+            
+            />
+             <Label htmlFor="address">Mob.No.</Label>
+            <Input
+              id="tel"
+              type="tel"
+              value={mobile_no}
+              onChange={(e) => setMobile_no(e.target.value)}
+              placeholder="Enter your mobile number"
+              disabled={isLoading}
+            
             />
 
             <div className="flex items-center gap-3 mt-6 justify-end">

@@ -17,18 +17,18 @@ export default function AnnouncementNotification() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
+  // const socketRef = useRef<WebSocket | null>(null);
 
 
-    const accessToken = localStorage.getItem("accessToken");
-    const meUser = JSON.parse(localStorage.getItem("meUser")!);
-  const userId= meUser?.id;
+  //   const accessToken = localStorage.getItem("accessToken");
+  //   const meUser = JSON.parse(localStorage.getItem("meUser")!);
+  // const userId= meUser?.id;
 
   // Fetch initial announcements on mount
   useEffect(() => {
     API.get("/hrms/announcements/")
       .then((res) => {
-          console.log("Fetched announcements:", res.data);
+          // console.log("Fetched announcements:", res.data);
         //  setAnnouncements(res.data.results || []);
         setAnnouncements(res.data.results || []);
       })
@@ -38,47 +38,47 @@ export default function AnnouncementNotification() {
   }, []);
 
   // WebSocket connection
-  useEffect(() => {
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL; // should already include ws:// or wss://
-    const socketUrl = `${SOCKET_URL}/ws/announcements/${userId}/?token=${accessToken}`;
+  // useEffect(() => {
+  //     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL; // should already include ws:// or wss://
+  //   const socketUrl = `${SOCKET_URL}/ws/announcements/${userId}/?token=${accessToken}`;
    
-    const socket = new WebSocket(socketUrl);
-    socketRef.current = socket;
+  //   const socket = new WebSocket(socketUrl);
+  //   socketRef.current = socket;
 
-    socket.onopen = () => {
-      console.log("WebSocket connected ");
-    };
+  //   socket.onopen = () => {
+  //     console.log("WebSocket connected ");
+  //   };
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("New WebSocket message:", data);
+  //   socket.onmessage = (event) => {
+  //     const data = JSON.parse(event.data);
+  //     console.log("New WebSocket message:", data);
 
-      if (data.type === "announcement") {
-        const newAnnouncement: Announcement = {
-          id: data.id,
-          title: data.title,
-          content: data.content,
-          timestamp: data.timestamp,
-          created_by: data.created_by,
-        };
+  //     if (data.type === "announcement") {
+  //       const newAnnouncement: Announcement = {
+  //         id: data.id,
+  //         title: data.title,
+  //         content: data.content,
+  //         timestamp: data.timestamp,
+  //         created_by: data.created_by,
+  //       };
 
-        setAnnouncements((prev) => [newAnnouncement, ...prev]);
-        setNotifying(true); // Show notification dot
-      }
-    };
+  //       setAnnouncements((prev) => [newAnnouncement, ...prev]);
+  //       setNotifying(true); // Show notification dot
+  //     }
+  //   };
 
-    socket.onclose = () => {
-      console.log("WebSocket disconnected ❌");
-    };
+  //   socket.onclose = () => {
+  //     console.log("WebSocket disconnected ❌");
+  //   };
 
-    socket.onerror = (err) => {
-      console.error("WebSocket error:", err);
-    };
+  //   socket.onerror = (err) => {
+  //     console.error("WebSocket error:", err);
+  //   };
 
-    return () => {
-      socket.close(); // Cleanup on unmount
-    };
-  }, []);
+  //   return () => {
+  //     socket.close(); // Cleanup on unmount
+  //   };
+  // }, []);
 
 
 

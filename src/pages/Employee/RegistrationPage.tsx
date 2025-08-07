@@ -19,6 +19,44 @@ export default function RegisterUserForm() {
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const currentUser = JSON.parse(localStorage.getItem("meUser") || "{}");
+const userRole = currentUser?.role;
+const userDepartment = currentUser?.department;
+
+const isAdmin = userRole === 1;
+const isDeptHead = userRole === 3;
+const isManager = userRole === 4;
+
+// Department options (only allow user's own department if not admin)
+const departmentOptions = [
+  { id: 1, name: "Support" },
+  { id: 2, name: "Procurement" },
+  { id: 3, name: "Electric" },
+  { id: 4, name: "Order" },
+  { id: 5, name: "Marketing" },
+  { id: 6, name: "Accountant" },
+  { id: 7, name: "IT" },
+  { id: 8, name: "HR" },
+];
+
+const filteredDepartments = isAdmin
+  ? departmentOptions
+  : departmentOptions.filter((d) => d.id === userDepartment);
+
+// Optional: restrict assignable roles based on current user's role
+const roleOptions = [
+  { id: 1, name: "Admin" },
+  { id: 2, name: "HR" },
+  { id: 3, name: "Department Head" },
+  { id: 4, name: "Manager" },
+  { id: 5, name: "Executive" },
+  { id: 6, name: "Employee" },
+  { id: 7, name: "Employee Office" },
+];
+
+// You can filter roleOptions here if needed
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -32,6 +70,15 @@ export default function RegisterUserForm() {
     setMessage("");
     setIsError(false);
     setIsLoading(true);
+
+    // Ensure department match for non-admins
+if (!isAdmin && parseInt(formData.department) !== userDepartment) {
+  setMessage("You can only assign users to your own department.");
+  setIsError(true);
+  setIsLoading(false);
+  return;
+}
+
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
       setMessage(" All fields are required.");
@@ -172,6 +219,7 @@ export default function RegisterUserForm() {
           <option value="4">Manager</option>
           <option value="5">Executive</option>
           <option value="6">Employee</option>
+          <option value="6">Employee_office</option>
         </select>
         <select
           name="department"

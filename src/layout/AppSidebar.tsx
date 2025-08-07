@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
-    name: "User Profile",
+    name: "Profile",
     path: "/profile",
     role: ["admin" ,"employee", "department_head" ,"manager" , "hr"],
   },
@@ -76,7 +76,7 @@ const navItems: NavItem[] = [
     role: ["admin", "employee" , "department_head" ,"manager" , "hr"],
   },
   {
-    name: "Employee Attandance",
+    name: "Attandance",
     icon: <ListIcon />,
     subItems: [
       // { name: "My Tasks", path: "/task-show-page", role: ["employee"] },

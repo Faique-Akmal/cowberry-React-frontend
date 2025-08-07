@@ -112,7 +112,7 @@ useEffect(() => {
   try {
     const response = await API.patch(
       `/tasks/${selectedTask.id}/`,
-      { status },
+      { is_completed: status === "completed"  },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -122,8 +122,8 @@ useEffect(() => {
 
     if (response.status === 200 || response.status === 204) {
       console.log("Task updated successfully:", response.data);
-      fetchTasks(); // ✅ Refresh list
-      closeModal(); // ✅ Close modal after update
+      fetchTasks();
+      closeModal(); 
     } else {
       console.warn("Unexpected response:", response);
     }

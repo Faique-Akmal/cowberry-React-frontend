@@ -1,14 +1,18 @@
 // src/stores/socketStore.ts
 import { create } from 'zustand';
 import { useMessageStore } from './messageStore';
-import toast from 'react-hot-toast';
-// import { ChatMessage } from '../types/chat';
+// import toast from 'react-hot-toast';
+import { ActiveChatInfo } from '../types/chat';
 
 interface SocketState {
   socket: WebSocket | null
   isConnected: boolean
 
-  connect: (groupId: string, token: string) => void
+  typingStatus: Record<string, boolean>
+  onlineGroupUsers: string[]
+  personalOnlineUsers: Record<string, boolean>
+
+  connect: (chatInfo: ActiveChatInfo, token: string) => void
   disconnect: () => void
   sendJson: (data: any) => void
 }
@@ -16,19 +20,44 @@ interface SocketState {
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
   isConnected: false,
+  typingStatus: {},
+  onlineGroupUsers: [],
+  personalOnlineUsers: {},
 
-  connect: (groupId, token) => {
-    const { addMessage, loadMessages, editMessage, deleteMessage } = useMessageStore.getState()
+  connect: (chatInfo, token) => {
+    const { addMessage, loadMessages, editMessage, deleteMessage } = useMessageStore.getState();
+
+    const meUser = JSON.parse(localStorage.getItem("meUser")!);
+    const meUserId = meUser?.id;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${groupId}/?token=${token}`
+    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo.chatType === "group" ?
+      chatInfo?.chatId :
+      (!!(chatInfo?.chatType === "personal") &&
+        `personal/${chatInfo?.chatId}`)}/?token=${token}`
 
     const ws = new WebSocket(socketUrl)
 
     ws.onopen = () => {
-      console.log('✅ WebSocket connected')
-      set({ socket: ws, isConnected: true })
-      get().sendJson({ type: 'message_history', group_id: parseInt(groupId) })
+      console.log('✅ WebSocket connected');
+      set({ socket: ws, isConnected: true });
+
+      get().sendJson({
+        type: 'message_history',
+        group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null,
+        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null
+      });
+
+      get().sendJson({
+        type: "typing",
+        is_typing: false,
+      });
+
+      get().sendJson({
+        type: "get_online_status",
+        group_id: chatInfo.chatType === "group" ? chatInfo.chatId : null,
+        personal_ids: [meUserId]
+      });
     }
 
     ws.onmessage = (event) => {
@@ -40,51 +69,54 @@ export const useSocketStore = create<SocketState>((set, get) => ({
           loadMessages(data?.messages);
           break
         case 'chat_message':
-          console.log('👺 chat_message:', data);
-        
-          // const newMsgData = {
-          //   id: data?.id,
-          //   sender: data?.sender,
-          //   sender_username: data?.sender_username,
-          //   recipient: data?.recipient ?? null,
-          //   group: data?.group ?? null,
-          //   group_name: data?.group_name ?? null,
-          //   content: `by chat_message ${data?.content}`,
-          //   parent: data?.parent ?? null,
-          //   replies: data?.replies ?? [],
-          //   sent_at: data?.sent_at,
-          //   is_read: data?.is_read ?? false,
-          //   read_at: data?.read_at ?? null,
-          //   is_deleted: data?.is_deleted ?? false
-          // };
-
           addMessage(data);
           break
         case 'edit_message':
-          console.log("edit_message data : ", data)
           editMessage(data?.id, { content: data?.content })
-          // toast.success('Message edited (live)')
           break
         case 'delete_message':
           deleteMessage(data?.id);
           break
+        case "typing":
+          set((state) => ({
+            typingStatus: {
+              ...state.typingStatus,
+              [data.user]: data.is_typing,
+            },
+          }));
+          break;
+        case "read_receipt":
+          console.log(`📨 Message ${data.message_id} read by user ${data.user_id}`);
+          break;
+        case "online_status":
+          set({
+            onlineGroupUsers: data.group_online_users || [],
+            personalOnlineUsers: data.personal_online_users || {},
+          });
+          break;
         default:
           console.warn('🤷‍♂️ Unknown WebSocket type:', data)
       }
     }
 
     ws.onerror = (err) => {
-      console.error('❌ WebSocket error', err)
+      console.error('❌ WebSocket error', err);
     }
 
     ws.onclose = () => {
-      console.log('🔌 WebSocket disconnected')
-      set({ isConnected: false, socket: null })
+      console.log('🔌 WebSocket disconnected');
+      set({ isConnected: false, socket: null });
     }
   },
 
   disconnect: () => {
-    const { socket } = get()
+    const { socket } = get();
+
+    get().sendJson({
+      type: "typing",
+      is_typing: false,
+    });
+
     if (socket) {
       socket.close()
       set({ socket: null, isConnected: false })
@@ -93,10 +125,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
   sendJson: (data) => {
     const { socket } = get()
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(data))
+    if (socket?.readyState === WebSocket?.OPEN) {
+      socket?.send(JSON.stringify(data))
     } else {
-      toast.error('WebSocket is not connected')
+      console.error('❌ WebSocket is not connected');
     }
   },
-}))
+}));

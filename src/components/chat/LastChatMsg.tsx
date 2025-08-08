@@ -2,17 +2,17 @@ import { useState, useEffect } from "react"
 import { axiosGetGroupMsg } from "../../store/chatStore";
 
 interface Props {
-  groupId:number;
+  groupId: number;
 }
 
-function  LastChatMsg({groupId}:Props) {
+function LastChatMsg({ groupId }: Props) {
   const [lastMsg, setLastMsg] = useState<string>("");
 
-  const getAllLastMsg = async (groupId:number) => {
+  const getAllLastMsg = async (groupId: number) => {
     const groupMsg = await axiosGetGroupMsg(groupId);
-      if(groupMsg.length > 0){
-      setLastMsg(groupMsg[groupMsg?.length-1]?.content);
-        }
+    if (groupMsg?.length > 0) {
+      setLastMsg(groupMsg[groupMsg?.length - 1]?.content);
+    }
   }
 
   useEffect(() => {

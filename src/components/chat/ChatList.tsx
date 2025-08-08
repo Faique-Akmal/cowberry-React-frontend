@@ -1,98 +1,57 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { axiosPostCreateGroup, AxiosAllGroup } from "../../store/chatStore"
 // import MultiSelect from "../form/MultiSelect";
-import { axiosPostCreateGroup, AxiosAllGroup} from "../../store/chatStore"
 // import { axiosGetUsers, AxiosGetUsers } from "../../store/userStore";
 import LastChatMsg from "./LastChatMsg";
 import Alert from "../ui/alert/Alert";
 import Avatar from "../ui/avatar/Avatar";
 import InfiniteScrollList from "../common/InfiniteScrollList";
+import ChatUserList from "./ChatUserList";
+import { ActiveChatInfo } from "../../types/chat";
 
 interface Props {
   groups: AxiosAllGroup[];
-  activeChatId: number;
-  onSelectChat: (id: number) => void;
+  activeChatInfo: ActiveChatInfo;
+  onSelectChat: (activeInfo: ActiveChatInfo) => void;
 }
 
-// interface Option {
-//   value: number;
-//   name: string;
-// }
 
-// interface Users{
-//   id:number;
-//   username:string;
-//   first_name:string;
-//   email:string;
-//   profile_images:string;
-//   role:number;
-//   department: number;
-// }
-
-const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
+const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => {
   const { isOpen, openModal, closeModal } = useModal();
   const [groupName, setGroupName] = useState('');
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  // const [users, setUsers] = useState<AxiosGetUsers[]>([]);
- 
-  // const [userOptions, setUserOptions] = useState<Option[]>([]);
 
-  const handleSave = (e:FormEvent) => {
-     e.preventDefault();
-    // Handle save logic here
 
-    axiosPostCreateGroup({
-            name: groupName.trim(),
-            members: [...selectedValues] 
-          });
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    console.log("Saving changes...");
-    setGroupName("");
-    setSelectedValues([]);
-    closeModal();
+    try {
+      await axiosPostCreateGroup({
+        name: groupName.trim(),
+        members: selectedValues,
+      });
+
+      setGroupName('');
+      setSelectedValues([]);
+      closeModal();
+    } catch (err) {
+      console.error("Group creation failed:", err);
+    }
   };
 
-//   useEffect(() => {
-//     if (users.length > 0) {
-//       const transformed = users.map<Option>(user => ({
-//         value: user?.id,
-//         name: user?.username,
-//       }));
-//       setUserOptions(transformed);
-//     }
 
-//   }, [users]);
-
-//   useEffect(() => {
-//     ;(async ()=>{
-//       try {
-//         const allUsers = await axiosGetUsers(1,25);
-  
-//         if(allUsers?.length > 0){
-//           setUsers(allUsers);
-//         }
-        
-//       } catch (err) {
-//       console.error("/User get request error:", err);
-//       }
-//     }
-//   )();
-  
-// }, []);
-
-// console.log(users)
-  
   return (
     <>
-    <div className="w-full bg-dashboard-brown-200 h-[80vh]">
-      <div className="flex justify-end items-center text-end h-17 p-2">
-        <button
+      <div className="w-full bg-dashboard-brown-200 h-[80vh]">
+        <div className="flex justify-end items-center text-end h-17 p-2">
+          <button
             onClick={openModal}
-            className="flex w-fit items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
+            className="flex w-fit items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
             <svg
               className="fill-current"
@@ -111,53 +70,63 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
             </svg>
             Create Group
           </button>
-      </div>
+        </div>
 
-      <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
-        {
-          groups?.length <= 0 ?
-          <div className="flex items-center justify-center">
-             <Alert
-                variant="warning"
-                title="Chat Group Not Found!"
-                message="Try again later!"
-                showLink={false}
-              />
-          </div>
-          : <div className="">
-          {groups?.map((group) => (
-            <div
-            key={group?.group_id}
-            onClick={() => onSelectChat(group?.group_id)}
-            className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${activeChatId === group?.group_id ? "bg-brand-500": "bg-cowberry-cream-500"}`}
-            >
-            <span className="mr-3">
-              <Avatar src="/images/user/user-01.jpg" size="large" />
-            </span>
-            <div>
-              <h3 className="font-semibold">{group?.group_name}</h3>
-              <div className="text-sm text-dashboard-brown-200">
-                <LastChatMsg groupId={group?.group_id} />
+        <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
+          {
+            groups?.length <= 0 ?
+              <div className="flex items-center justify-center">
+                <Alert
+                  variant="warning"
+                  title="Chat Group Not Found!"
+                  message="Try again later!"
+                  showLink={false}
+                />
               </div>
-            </div>
-          </div>
-          ))}
-          </div>
-        }
+              : <div>
 
-      </div> 
-      
-      
-    </div>
-    <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
-        <div className="no-scrollbar relative w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
+                {/* groups chat lists */}
+                {groups?.map((group) => (
+                  <div
+                    key={group?.group_id}
+                    onClick={() => onSelectChat({
+                      chatId: group?.group_id,
+                      chatType: "group",
+                      chatName: group?.group_name
+                    })}
+                    className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "group") && (activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
+                  >
+                    <span className="mr-3">
+                      <Avatar src="/images/user/user-01.jpg" size="large" />
+                    </span>
+                    <div>
+                      <h3 className="font-semibold">{group?.group_name}</h3>
+                      <div className="text-sm text-dashboard-brown-200">
+                        <LastChatMsg groupId={group?.group_id} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* user chat lists */}
+                <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
+
+              </div>
+          }
+
+        </div>
+
+
+      </div>
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[500px] m-4 -translate-y-12 lg:translate-y-0">
+        <div className="relative no-scrollbar w-full overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-4">
           <div className="px-2 pr-14">
             <h4 className="mt-4 mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
               Create Chat Group
             </h4>
           </div>
           <form className="flex flex-col">
-            <div className="lg:h-[50vh] px-2 pb-3">
+            <div className="lg:h-[35vh] px-2 pb-3">
               <div>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5">
                   <div>
@@ -167,26 +136,26 @@ const ChatList: React.FC<Props> = ({ groups, activeChatId, onSelectChat }) => {
                       name="group_name"
                       placeholder="Enter new group name"
                       value={groupName}
-                      onChange={(e)=> setGroupName(e.target.value)}
+                      onChange={(e) => setGroupName(e.target.value)}
                     />
                   </div>
 
                   <div>
-                    <InfiniteScrollList 
+                    <InfiniteScrollList
                       onChange={(values) => setSelectedValues(values)}
                       selectedValues={selectedValues}
                     />
-                    
-                  </div>  
+
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
               <Button size="sm" onClick={handleSave}>
-                Save Changes
+                Create
               </Button>
             </div>
           </form>

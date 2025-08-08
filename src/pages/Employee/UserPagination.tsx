@@ -157,7 +157,7 @@ const UserList: React.FC = () => {
   };
 
   return (
-    <div className="rounded-2xl border p-6  max-w-6xl mx-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-lg">
+    <div className="rounded-2xl border p-6  max-w-6xl mx-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
       <div className="mb-6">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">
           Users Directory

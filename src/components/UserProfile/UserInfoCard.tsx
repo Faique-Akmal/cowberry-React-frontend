@@ -7,6 +7,7 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 interface UserProfile {
   username: string;
@@ -70,14 +71,29 @@ export default function UserInfoCard() {
 const handleSave = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  if (!first_name.trim() || !last_name.trim()) {
+    // setError("First name and last name cannot be empty");
+    toast.error("First name and last name cannot be empty");
+    return;
+  }
+
+  if (!mobile_no.trim()) {
+    // setError("Mobile number cannot be empty");
+    toast.error("Mobile number cannot be empty");
+    return;
+  }
+
+
   if (!address.trim()) {
-    setError("Address cannot be empty");
+    // setError("Address cannot be empty");
+    toast.error("Address cannot be empty");
     return;
   }
 
   try {
     setIsLoading(true);
     setError("");
+    toast.success("Saving changes...");
 
     const formData = new FormData();
     formData.append("address", address.trim());
@@ -93,8 +109,8 @@ const handleSave = async (e: React.FormEvent) => {
 
     
     localStorage.setItem("meUser", JSON.stringify(response.data));
-    closeModal(); // if applicable
-    setUser(response.data); // optionally update UI
+    closeModal(); 
+    setUser(response.data); 
   } catch (error: any) {
     if (error.response) {
       setError(error.response.data.detail || "Update failed");
@@ -146,7 +162,7 @@ const handleSave = async (e: React.FormEvent) => {
   }
 
   return (
-    <div className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+    <div className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 dark:text-white dark:bg-black">
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>

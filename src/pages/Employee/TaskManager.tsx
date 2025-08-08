@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 
 interface Task {
   id: number;
@@ -98,7 +99,8 @@ useEffect(() => {
 
  const updateTaskStatus = async (status: string) => {
   if (!selectedTask || !selectedTask.id) {
-    console.warn("No task selected for updating.");
+    toast.error("No task selected for updating.");
+    // console.warn("No task selected for updating.");
     return;
   }
 
@@ -113,6 +115,7 @@ useEffect(() => {
     const response = await API.patch(
       `/tasks/${selectedTask.id}/`,
       { is_completed: status === "completed"  },
+      
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -121,7 +124,8 @@ useEffect(() => {
     );
 
     if (response.status === 200 || response.status === 204) {
-      console.log("Task updated successfully:", response.data);
+      // console.log("Task updated successfully:", response.data);
+      toast.success("Task updated successfully.");
       fetchTasks();
       closeModal(); 
     } else {
@@ -139,7 +143,8 @@ useEffect(() => {
 
   const deleteTask = async () => {
     if (!selectedTask || !selectedTask.id) {
-      console.error("Invalid task selected for deletion.");
+      toast.success("Invalid task selected for deletion.");
+      // console.error("Invalid task selected for deletion.");
       return;
     }
 
@@ -149,7 +154,8 @@ useEffect(() => {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
-      console.log(`Task ${selectedTask.id} deleted successfully.`);
+      // console.log(`Task ${selectedTask.id} deleted successfully.`);
+      toast.success(`Task ${selectedTask.id} deleted successfully.`);
       fetchTasks();
       closeModal();
     } catch (err) {
@@ -158,7 +164,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6 bg-transparent shadow rounded-lg">
+    <div className="p-6 bg-transparent shadow rounded-lg dark:text-white dark:bg-black ">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">Admin Task Management</h2>
         <select
@@ -166,9 +172,9 @@ useEffect(() => {
           className="border px-3 py-1 rounded"
           value={selectedUser}
         >
-          <option value="all">All Users</option>
+          <option value="all" className="dark:text-white dark:bg-black">All Users</option>
           {users.map((user) => (
-            <option key={user.id} value={user.id}>
+            <option key={user.id} value={user.id} className="capitalize dark:text-white dark:bg-black ">
               {user.username}
             </option>
           ))}
@@ -179,7 +185,7 @@ useEffect(() => {
         {filteredTasks.map((task) => (
           <div
             key={task.id}
-            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-green-500 cursor-pointer"
             onClick={() => openTaskModal(task)}
           >
             <div>

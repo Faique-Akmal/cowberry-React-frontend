@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
@@ -104,7 +105,8 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
       const response = await API.post("/register/", payload);
 
       if (response.status === 201 || response.status === 200) {
-        setMessage(" User registered successfully!");
+        // setMessage(" User registered successfully!");
+        toast.success("User registered successfully!");
         setIsError(false);
         setFormData({
           first_name: "",
@@ -119,7 +121,8 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           address: "",
         });
       } else {
-        setMessage(" Registration failed. Try again.");
+        // setMessage(" Registration failed. Try again.");
+        toast.error("Registration failed. Try again.");
         setIsError(true);
       }
     } catch (error: any) {
@@ -148,8 +151,8 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
   };
 
   return (
-    <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800">User Registration</h2>
+    <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
+      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-white">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
        <div className="grid grid-cols-2 space-y-2 gap-5 ">

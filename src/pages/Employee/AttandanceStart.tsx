@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 interface FormDataState {
   user: string;
@@ -271,7 +272,8 @@ export default function AttendanceStart() {
       });
 
       if (res.status === 200 || res.status === 201) {
-        setMessage("✅ Attendance submitted successfully! Location tracking will continue.");
+        // setMessage("✅ Attendance submitted successfully! Location tracking will continue.");
+        toast.success("Attendance submitted successfully!");
         const today = new Date().toISOString().split("T")[0];
         localStorage.setItem(`attendance_${formData.user}_${today}`, "submitted");
 
@@ -294,7 +296,8 @@ export default function AttendanceStart() {
           navigate("/employee-dashboard");
         }, 2000);
       } else {
-        setMessage("❌ Something went wrong, please try again.");
+        // setMessage("❌ Something went wrong, please try again.");
+        toast.error(" Something went wrong, please try again.");
       }
     } catch (err: any) {
       console.error("Submit error:", err);
@@ -308,7 +311,7 @@ export default function AttendanceStart() {
   };
 
   return (
-    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white">
       <h2 className="text-xl font-bold mb-4 text-center">📍 Check In</h2>
 
       <button
@@ -393,13 +396,13 @@ export default function AttendanceStart() {
           {loading ? "⏳ Submitting..." : "✅ Submit Attendance"}
         </button>
 
-        {message && (
+        {/* {message && (
           <div className={`text-sm mt-2 p-2 rounded ${
             message.includes('✅') ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'
           }`}>
             {message}
           </div>
-        )}
+        )} */}
       </form>
     </div>
   );

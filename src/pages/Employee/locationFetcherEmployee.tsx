@@ -488,7 +488,7 @@ const filteredData = attendances.filter((att) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-md">
+    <div className="p-4 bg-white rounded-xl shadow-md dark:bg-black dark:text-white">
       <h2 className="text-2xl flex justify-center text-center font-bold mb-4 lg:border-b">📊 Employee Attendance Records</h2>
       <div className="grid grid-cols-2 space-y-2 gap-5">
                     <div className="mb-4">
@@ -497,7 +497,7 @@ const filteredData = attendances.filter((att) => {
             </label>
             <input
               type="date"
-              className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
+              className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-gray-800 dark:text-black"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               max={new Date().toISOString().split("T")[0]}
@@ -541,7 +541,7 @@ const filteredData = attendances.filter((att) => {
           </thead>
           <tbody>
             {filteredData.map((item, idx) => (
-              <tr key={item.user.id + "-" + item.date} className="hover:bg-gray-50">
+              <tr key={item.user.id + "-" + item.date} className="hover:bg-green-500 transition-colors ">
                 <td className="px-4 py-2">{idx + 1}</td>
                 <td className="px-4 py-2">
                   {item.user.first_name} {item.user.last_name}

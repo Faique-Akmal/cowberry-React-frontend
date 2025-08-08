@@ -9,6 +9,7 @@ import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import Home from "../../pages/Dashboard/Home";
+import toast, { Toaster } from "react-hot-toast";
 // import EmployeeDashboard from "../../pages/Dashboard/EmployeeDashboard";
 // import Home from "../../pages/Dashboard/Home";
 
@@ -88,7 +89,7 @@ export default function SignInForm() {
   if (userRole === "employee") {
     if (isVerified) {
       // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
-
+       toast.success("Logged in successfully"); 
       navigate("/attandanceStart-page", { replace: true });  
     } else {
       navigate("/LoginWithOtp", { replace: true });    
@@ -97,6 +98,7 @@ export default function SignInForm() {
     if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
       if (isVerified) {
       navigate( "/home");  
+        toast.success("Logged in successfully"); 
     } else {
       navigate("/LoginWithOtp", { replace: true });    
     }   
@@ -141,8 +143,8 @@ export default function SignInForm() {
   };
 
   return (
-    <div className="flex flex-col flex-1">
- 
+             <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
+              {/* <Toaster position="top-right" reverseOrder={false} /> */}
       <div className=" w-20 h-20 mx-auto mb-6 mt-6">
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>

@@ -5,6 +5,7 @@ import { Modal } from "../ui/modal";
 import { role } from "../../store/store";
 import Alert from "../ui/alert/Alert";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 // import API from "../../api/axios";
 
 interface UserProfile {
@@ -37,10 +38,12 @@ const handleSave = async () => {
   try {
     const formData = new FormData();
     formData.append("username", username);
+    toast.success("Username updated successfully");
 
     // Append profile image only if it's a valid File
     if (profileImage instanceof File) {
       formData.append("profile_image", profileImage);
+      toast.success("Profile image updated successfully");
     }
 
     const response = await API.patch("/me/", formData, {
@@ -77,7 +80,7 @@ const handleSave = async () => {
 
   return (
     <>
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 bg-white ">
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 dark:text-white dark:bg-black  lg:p-6 bg-white ">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-22 h-22 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
@@ -88,7 +91,7 @@ const handleSave = async () => {
               />
             </div>
             <div className="order-3 xl:order-2">
-              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left capitalize">
+              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800xl:text-left capitalize">
                 {meUserData?.username}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">

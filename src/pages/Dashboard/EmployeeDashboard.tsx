@@ -60,7 +60,7 @@ function EmployeeDashboard() {
   return (
     <>
       <PageMeta title="Employee Dashboard" description="Employee dashboard" />
-      <div className="grid gap-12 md:gap-4 bg-white  rounded-2xl p-6">
+      <div className="grid gap-12 md:gap-4 bg-white  dark:bg-black rounded-2xl p-6">
         <div className="col-span-3 space-x-4 xl:col-span-12 container border rounded-2xl p-5 ">
           <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif text-black dark:text-white">
             {getGreeting()}
@@ -90,7 +90,7 @@ function EmployeeDashboard() {
 
         <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
           <Link to="/task-show-page" className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-            <b className="animate-pulse font-extrabold text-white">
+            <b className="animate-pulse font-extrabold text-black dark:text-white">
               Go to Task Page
             </b>
           </Link>

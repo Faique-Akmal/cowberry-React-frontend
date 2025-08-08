@@ -153,7 +153,7 @@ export default function AttendanceForm() {
   };
 
   return (
-     <div className="rounded-2xl border p-8  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+     <div className="rounded-2xl border p-8  border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white">
       <h2 className="text-xl font-bold mb-4 text-center"> Check Out</h2>
 
       {message && <div className="mb-4 p-2 text-center text-sm bg-gray-100 border">{message}</div>}

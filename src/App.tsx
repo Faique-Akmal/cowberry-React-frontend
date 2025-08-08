@@ -62,7 +62,8 @@ import AttendanceStart from "./pages/Employee/AttandanceStart";
 export default function App() {
   return (
     <>
-      
+            <Toaster position="bottom-right" reverseOrder={false} />
+
         <ScrollToTop />
         {/* <NotificationListener/> */}
         <Routes>

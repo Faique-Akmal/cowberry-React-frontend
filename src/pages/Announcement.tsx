@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import API from "../api/axios"; // Axios instance
+import toast from "react-hot-toast";
 
 const AnnouncementForm = () => {
   const [title, setTitle] = useState("");
@@ -70,21 +71,23 @@ const AnnouncementForm = () => {
       setTitle("");
       setContent("");
       setError("");
-      alert("Announcement created successfully!");
+     toast.success("Announcement posted successfully!");
+      
     } catch (err) {
       console.error("Error posting announcement:", err);
-      setError("Failed to create announcement.");
+      // setError("Failed to create announcement.");
+      toast.error("Failed to create announcement.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl ">
+    <div className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl dark:bg-black dark:text-white ">
       <h2 className="flex justify-center text-center text-2xl font-semibold mb-4">Create Announcement</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-500  text-sm font-medium mb-1">Title</label>
+          <label className="block text-gray-500  text-sm font-medium mb-1 dark:text-white">Title</label>
           <input
             type="text"
             value={title}
@@ -96,7 +99,7 @@ const AnnouncementForm = () => {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-500 text-sm font-medium mb-1">Content</label>
+          <label className="block text-gray-500 text-sm font-medium mb-1 dark:text-white">Content</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}

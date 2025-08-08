@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 const TaskPage = () => {
   const [formData, setFormData] = useState({
@@ -28,6 +29,7 @@ const TaskPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
 
     if (
       !formData.title.trim() ||
@@ -48,8 +50,8 @@ const TaskPage = () => {
         created_by: parseInt(formData.created_by),
       });
 
-      setMessage("✅ Task created successfully!");
-
+      // setMessage("✅ Task created successfully!");
+            toast.success("✅ Task created successfully!"); 
       setFormData({
         title: "",
         description: "",
@@ -65,12 +67,13 @@ const TaskPage = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      setMessage("❌ Error creating task. Please try again.");
+      // setMessage("❌ Error creating task. Please try again.");
+      toast.error("❌ Error creating task. Please try again.");
     }
   };
 
   return (
-    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
       <h2 className="text-2xl font-bold mb-4 text-center">Assign New Task</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

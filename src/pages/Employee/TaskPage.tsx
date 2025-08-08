@@ -93,7 +93,7 @@ const TaskPage = () => {
           onChange={handleChange}
           className="w-full border p-2 rounded"
         />
-
+       <label>Start Date</label>
         <input
           type="date"
           name="start_date"
@@ -104,6 +104,8 @@ const TaskPage = () => {
           className="w-full border p-2 rounded"
         />
 
+
+        <label>Destination</label>
         <input
           type="text"
           name="address"
@@ -114,6 +116,7 @@ const TaskPage = () => {
           className="w-full border p-2 rounded"
         />
 
+     <label>Due Date</label>
         <input
           type="date"
           name="date"

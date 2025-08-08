@@ -7,9 +7,9 @@ const TaskPage = () => {
     description: "",
     start_date: "",
     address: "",
-    date: "",
-    is_completed: false,
-    completed_at: "",
+    // date: "",
+    // is_completed: false,
+    // completed_at: "",
     completion_description: "",
     assigned_to: "",
     assigned_by: "",
@@ -32,7 +32,7 @@ const TaskPage = () => {
     if (
       !formData.title.trim() ||
       !formData.description.trim() ||
-      !formData.date ||
+      // !formData.date ||
       !formData.assigned_to ||
       !formData.assigned_by
     ) {
@@ -55,9 +55,9 @@ const TaskPage = () => {
         description: "",
         start_date: "",
         address: "",
-        date: "",
-        is_completed: false,
-        completed_at: "",
+        // date: "",
+        // is_completed: false,
+        // completed_at: "",
         completion_description: "",
         assigned_to: "",
         assigned_by: "",
@@ -115,7 +115,7 @@ const TaskPage = () => {
           required
           className="w-full border p-2 rounded"
         />
-
+{/* 
      <label>Due Date</label>
         <input
           type="date"
@@ -125,8 +125,8 @@ const TaskPage = () => {
           value={formData.date}
           onChange={handleChange}
           className="w-full border p-2 rounded"
-        />
-
+        /> */}
+{/* 
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -143,7 +143,7 @@ const TaskPage = () => {
           value={formData.completed_at}
           onChange={handleChange}
           className="w-full border p-2 rounded"
-        />
+        /> */}
 
         <input
           type="text"

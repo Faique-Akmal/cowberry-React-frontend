@@ -90,7 +90,7 @@ function EmployeeDashboard() {
 
         <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
           <Link to="/task-show-page" className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-            <b className="animate-pulse font-extrabold text-dashboard-royalblue-200">
+            <b className="animate-pulse font-extrabold text-white">
               Go to Task Page
             </b>
           </Link>

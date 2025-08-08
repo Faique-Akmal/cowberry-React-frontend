@@ -40,7 +40,11 @@ export default function UserInfoCard() {
         setError("");
         const response = await API.get("/me/");
         setUser(response.data);
-        setAddress(response.data.address || ""); // Ensure address is never null/undefined
+        setAddress(response.data.address || ""); 
+        setFirst_name(response.data.first_name || "");
+        setLast_name(response.data.last_name || "");
+        setMobile_no(response.data.mobile_no || "");
+        setUser(response.data);
         localStorage.setItem("meUser", JSON.stringify(response.data));
       } catch (error) {
         console.error("Failed to fetch user data:", error);

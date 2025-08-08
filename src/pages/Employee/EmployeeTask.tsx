@@ -5,7 +5,7 @@ type Task = {
   id: number;
   title: string;
   description: string;
-  date: string;
+  start_date: string;
   is_completed: boolean;
   completed_at: string;
   completion_description: string;
@@ -149,7 +149,7 @@ export default function TaskShowPage() {
               >
                 {task.is_completed ? "Completed" : "Pending"}
               </span>
-              <span className="text-black">Due: {formatDate(task.date)}</span>
+              <span className="text-black">Due: {formatDate(task.start_date)}</span>
             </div>
           </div>
         ))}

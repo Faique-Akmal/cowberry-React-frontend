@@ -33,6 +33,18 @@ const UserList: React.FC = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [roleFilter, setRoleFilter] = useState<number | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">("");
+  const [selectedUser, setSelectedUser] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
+
+const handleRowClick = (user) => {
+  setSelectedUser(user);
+  setIsModalOpen(true);
+};
+
+const closeModal = () => {
+  setIsModalOpen(false);
+  setSelectedUser(null);
+};
 
   const observer = useRef<IntersectionObserver>();
   const lastUserElementRef = useCallback((node: HTMLTableRowElement) => {
@@ -292,9 +304,10 @@ const UserList: React.FC = () => {
                     {filteredUsers.length > 0 ? (
                       filteredUsers.map((user, index) => (
                         <tr 
+                          onClick={() => handleRowClick(user)}
                           key={user.id}
                           ref={index === filteredUsers.length - 1 ? lastUserElementRef : null}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             {index+1}
@@ -376,6 +389,58 @@ const UserList: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* User Details Modal */}
+      {isModalOpen && selectedUser && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-md p-6 relative">
+      <button
+        onClick={closeModal}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+      >
+        ✕
+      </button>
+
+      <div className="flex items-center space-x-4">
+        {selectedUser.profile_image ? (
+          <img
+            src={selectedUser.profile_image}
+            alt={selectedUser.username}
+            className="w-16 h-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+            {selectedUser.username.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {selectedUser.first_name} {selectedUser.last_name}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            @{selectedUser.username}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm text-gray-800 dark:text-gray-200">
+        <p><strong>Email:</strong> {selectedUser.email}</p>
+        <p><strong>Mobile:</strong> {selectedUser.mobile_no || "N/A"}</p>
+        <p><strong>Employee Code:</strong> {selectedUser.employee_code}</p>
+        <p><strong>Role:</strong> {getRoleName(selectedUser.role)}</p>
+        <p><strong>Department:</strong> {selectedUser.department || "N/A"}</p>
+        <p><strong>Branch:</strong> {selectedUser.branch || "N/A"}</p>
+        <p><strong>Birth Date:</strong> {selectedUser.birth_date || "N/A"}</p>
+        <p><strong>Address:</strong> {selectedUser.address || "N/A"}</p>
+        <p>
+          <strong>Status:</strong>{" "}
+          {selectedUser.is_online ? "Online" : "Offline"}
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Custom Scrollbar Styles */}
       <style jsx>{`

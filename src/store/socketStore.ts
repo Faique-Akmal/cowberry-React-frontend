@@ -1,7 +1,6 @@
 // src/stores/socketStore.ts
 import { create } from 'zustand';
 import { useMessageStore } from './messageStore';
-// import toast from 'react-hot-toast';
 import { ActiveChatInfo } from '../types/chat';
 
 interface SocketState {
@@ -9,7 +8,7 @@ interface SocketState {
   isConnected: boolean
 
   typingStatus: Record<string, boolean>
-  onlineGroupUsers: string[]
+  onlineGroupUsers: number[]
   personalOnlineUsers: Record<string, boolean>
 
   connect: (chatInfo: ActiveChatInfo, token: string) => void

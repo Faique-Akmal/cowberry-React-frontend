@@ -8,9 +8,9 @@ import { ActiveChatInfo } from "../../types/chat";
 const LIMIT = 10;
 
 
-interface Props{
+interface Props {
   activeChatInfo: ActiveChatInfo;
-  onSelectChat: (chatInfo:ActiveChatInfo) => void;
+  onSelectChat: (chatInfo: ActiveChatInfo) => void;
 }
 
 const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
@@ -38,7 +38,7 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
 
     try {
       const data = await axiosGetUsers(page, LIMIT, controller.signal);
-      if(data){
+      if (data) {
         setUsers((prev) => [...prev, ...data]);
         setHasMore(data?.length === LIMIT);
         setPage((prev) => prev + 1);
@@ -85,9 +85,9 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
           <div
             key={item?.id}
             ref={isLast ? lastItemObserver : null}
-            onClick={() => onSelectChat({chatId:item?.id, chatType:"personal", chatName:item?.username})}
-            className={`flex lg:max-w-79 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal")&&(activeChatInfo?.chatId === item?.id) ? "bg-brand-500": "bg-cowberry-cream-500"}`}
-            >
+            onClick={() => onSelectChat({ chatId: item?.id, chatType: "personal", chatName: item?.username })}
+            className={`flex lg:max-w-79 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal") && (activeChatInfo?.chatId === item?.id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
+          >
             <span className="mr-3">
               <Avatar src="/images/user/user-01.jpg" size="large" />
             </span>
@@ -101,7 +101,7 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
         );
       })}
 
-      
+
 
       {loading &&
         Array.from({ length: 3 }).map((_, i) => (

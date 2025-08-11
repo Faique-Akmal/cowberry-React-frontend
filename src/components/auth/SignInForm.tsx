@@ -110,7 +110,7 @@ export default function SignInForm() {
       } else {
         setMessage(response.data.message || "Login failed.");
       }
-    } catch (error: any) {
+    } catch (error:any) {
       console.error("Login error:", error);
       
       if (error.response) {

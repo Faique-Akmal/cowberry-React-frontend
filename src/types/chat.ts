@@ -14,3 +14,9 @@ export interface ChatMessage {
   read_at?: null;
   is_deleted?: boolean;
 }
+
+export interface ActiveChatInfo {
+  chatId: number | null;
+  chatType: "group" | "personal" | null;
+  chatName?: string;
+}

@@ -1,50 +1,83 @@
-// [11:50, 19/07/2025] Devendra Pandey: let ws = new WebSocket("ws://127.0.0.1:8000/ws/chat/user/5/");
-// ws.onmessage = (e) => console.log("RECEIVED", e.data);
-// ws.send(JSON.stringify({type: "chat.message", message: "Hello from browser!"}));
-// [11:52, 19/07/2025] Devendra Pandey: import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback } from "react";
+import ChatList from "./ChatList";
+import SocketChatWindow from "./SocketChatWindow";
+import { axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { useSocketStore } from "../../store/socketStore";
 
-const ChatComponent = ({ userId, token }) => {
-  const [messages, setMessages] = useState([]);
-  const ws = useRef(null);
+const ChatComponent: React.FC = () => {
+  const { connect, disconnect } = useSocketStore();
 
+  const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const [groups, setGroups] = useState<AxiosAllGroup[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const accessToken = localStorage.getItem("accessToken");
+
+  // Fetch groups once
   useEffect(() => {
-    ws.current = new WebSocket(ws://127.0.0.1:8000/ws/chat/user/${userId}/);
-
-    ws.current.onopen = () => {
-      console.log("WebSocket connection opened");
+    const fetchGroups = async () => {
+      try {
+        const allGroups = await axiosGetAllGroup();
+        if (allGroups.length > 0) {
+          setGroups(allGroups);
+          setActiveChatId(allGroups[0].group_id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch groups:", err);
+      }
     };
+    fetchGroups();
+  }, []);
 
-    ws.current.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      console.log("New message:", data);
-      setMessages((prev) => [...prev, data]);
-    };
+  // Connect socket when activeChatId changes
+  useEffect(() => {
+    if (!accessToken || activeChatId === null) return;
 
-    ws.current.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
+    connect(`${activeChatId}`, accessToken);
 
     return () => {
-      ws.current.close();
+      disconnect();
     };
-  }, [userId]);
+  }, [activeChatId, accessToken, connect, disconnect]);
 
-  const sendMessage = (content) => {
-    ws.current.send(JSON.stringify({
-      type: "chat.message",
-      message: content,
-      token: token,
-    }));
-  };
+  const handleSelectChat = useCallback((id: number) => {
+    setActiveChatId(id);
+    setIsSidebarOpen(false);
+  }, []);
+
+  const activeChat = groups.find((g) => g.group_id === activeChatId);
+
+  if (!activeChatId || !activeChat) return null;
 
   return (
-    <div>
-      <div>
-        {messages.map((msg, index) => (
-          <div key={index}>{msg.sender}: {msg.message}</div>
-        ))}
+    <div className="relative bg-white dark:border-gray-800 dark:bg-white/[0.03] rounded-xl sm:p-4">
+      <div className="w-full overflow-clip rounded-xl bg-white h-[80vh] dark:bg-white/[0.03] flex flex-col lg:flex-row relative">
+        {/* Mobile Top Bar */}
+        <div className="lg:hidden absolute h-17 p-2 flex justify-between items-center shadow-sm z-10">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-700">
+            {isSidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+          </button>
+        </div>
+
+        {/* Sidebar */}
+        <div
+          className={`absolute lg:relative top-17 lg:top-0 left-0 z-20 w-full lg:w-1/3 h-full transition-transform duration-300 transform ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0`}
+        >
+          <ChatList
+            groups={groups}
+            activeChatId={activeChatId}
+            onSelectChat={handleSelectChat}
+          />
+        </div>
+
+        {/* Main Chat Area */}
+        <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-[length:25%] bg-repeat">
+          <SocketChatWindow groupId={`${activeChatId}`} chatName={activeChat?.group_name} />
+        </div>
       </div>
-      <button onClick={() => sendMessage("Hello!")}>Send Hello</button>
     </div>
   );
 };

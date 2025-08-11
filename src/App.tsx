@@ -24,7 +24,7 @@ import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import Logout from "./pages/AuthPages/Logout";
-import CompTestHistorySocket from "./pages/CompTestHistorySocket";
+// import CompTestHistorySocket from "./pages/CompTestHistorySocket";
 import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 // import CompTest from "./pages/CompTest";

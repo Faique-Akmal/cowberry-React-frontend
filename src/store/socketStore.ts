@@ -1,7 +1,6 @@
 // src/stores/socketStore.ts
 import { create } from 'zustand';
 import { useMessageStore } from './messageStore';
-import toast from 'react-hot-toast';
 import { ActiveChatInfo } from '../types/chat';
 
 interface SocketState {
@@ -9,7 +8,7 @@ interface SocketState {
   isConnected: boolean
 
   typingStatus: Record<string, boolean>
-  onlineGroupUsers: string[]
+  onlineGroupUsers: number[]
   personalOnlineUsers: Record<string, boolean>
 
   connect: (chatInfo: ActiveChatInfo, token: string) => void
@@ -31,10 +30,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const meUserId = meUser?.id;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo.chatType==="group" ? 
-                                                  chatInfo?.chatId : 
-                                                  (!!(chatInfo?.chatType === "personal") &&
-                                                   `personal/${chatInfo?.chatId}`) }/?token=${token}`
+    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo.chatType === "group" ?
+      chatInfo?.chatId :
+      (!!(chatInfo?.chatType === "personal") &&
+        `personal/${chatInfo?.chatId}`)}/?token=${token}`
 
     const ws = new WebSocket(socketUrl)
 
@@ -42,10 +41,11 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       console.log('✅ WebSocket connected');
       set({ socket: ws, isConnected: true });
 
-      get().sendJson({ 
-        type: 'message_history', 
-        group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null, 
-        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null });
+      get().sendJson({
+        type: 'message_history',
+        group_id: chatInfo.chatType === "group" ? chatInfo?.chatId : null,
+        receiver_id: chatInfo.chatType === "personal" ? chatInfo?.chatId : null
+      });
 
       get().sendJson({
         type: "typing",
@@ -112,8 +112,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const { socket } = get();
 
     get().sendJson({
-        type: "typing",
-        is_typing: false,
+      type: "typing",
+      is_typing: false,
     });
 
     if (socket) {

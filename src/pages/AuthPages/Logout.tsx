@@ -4,11 +4,11 @@ import { useAuth } from "../../context/AuthContext";
 
 const Logout: React.FC = () => {
   const navigate = useNavigate();
-  const {axiosLogout} = useAuth();
-  
+  const { axiosLogout } = useAuth();
+
   useEffect(() => {
     // ✅ Clear tokens from storage
-    axiosLogout()
+    axiosLogout();
     // ✅ Redirect to; login (or home)
     navigate('/signin', { replace: true });
   }, [navigate]);

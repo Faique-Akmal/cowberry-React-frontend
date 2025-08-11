@@ -7,7 +7,7 @@ import { Link } from "react-router";
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const {username , email} = JSON.parse(localStorage.getItem("meUser") || "{}"); // Retrieve username from localStorage
+  const {username , email ,profile_image} = JSON.parse(localStorage.getItem("meUser") || "{}"); 
 
 
   function toggleDropdown() {
@@ -21,11 +21,11 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-gray-400"
+        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
       >
         <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
         
-          <img src= "/cowberry_logo_with_bg.jpg" alt="User" className="bg-cover" />
+          <img src= {profile_image} alt="User" className="bg-cover" />
       
         </div>
 

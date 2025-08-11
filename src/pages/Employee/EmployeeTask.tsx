@@ -5,7 +5,7 @@ type Task = {
   id: number;
   title: string;
   description: string;
-  date: string;
+  start_date: string;
   is_completed: boolean;
   completed_at: string;
   completion_description: string;
@@ -110,8 +110,8 @@ export default function TaskShowPage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl  mx-auto">
-      <h1 className="text-3xl font-bold mb-2  p-3 rounded-2xl border text-center text-neutral-500">My Tasks</h1>
+    <div className="p-6 max-w-5xl  mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
+      <h1 className="text-3xl font-bold mb-2  p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">My Tasks</h1>
 
       {loading && (
         <div className="text-center py-8">
@@ -133,14 +133,14 @@ export default function TaskShowPage() {
         <div className="text-center text-gray-500 py-6">No tasks assigned yet.</div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 m-4">
         {tasks.map((task) => (
-          <div key={task.id} className="p-4 rounded shadow bg-white">
-            <h2 className="text-lg font-semibold">{task.title}</h2>
-            <p className="text-sm text-gray-600 mb-2">
+          <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4 ">
+            <h2 className="text-lg font-semibold dark:text-black">{task.title}</h2>
+            <p className="text-sm text-black mb-2">
               {task.description || "No description"}
             </p>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-black dark:text-white mb-2">
               <b>{task.completion_description || "No description"}</b>
             </p>
             <div className="flex justify-between items-center text-sm">
@@ -149,7 +149,7 @@ export default function TaskShowPage() {
               >
                 {task.is_completed ? "Completed" : "Pending"}
               </span>
-              <span className="text-gray-500">Due: {formatDate(task.date)}</span>
+              <span className="text-black">Start Date: {formatDate(task.start_date)}</span>
             </div>
           </div>
         ))}

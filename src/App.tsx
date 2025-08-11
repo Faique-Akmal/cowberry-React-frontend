@@ -31,7 +31,7 @@ import { Toaster } from "react-hot-toast";
 // import ChatBox from "./components/chat/ChatBox";
 // import { SocketChatWindow } from "./components/chat/SocketChatWindow";
 // import ChatBox from "./components/chat/ChatBox";
-import TaskShowPage from "./pages/Employee/TaskShowPage";
+import TaskShowPage from "./pages/Employee/EmployeeTask";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
@@ -48,8 +48,13 @@ import AdminTaskManager from "./pages/Employee/TaskManager";
 import ChangePasswordModal from "./components/auth/ChangePasswordModal";
 // import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
 import AttendanceGuard from "./guards/AttandanceGuard";
-import AttendanceList from "./pages/Employee/AdminAttandance";
-import ChatComponent from "./components/chat/ChatComponent";
+import AttendanceList from "./pages/Employee/locationFetcherEmployee";
+import NotificationListener from "./NotificationListener";
+import AnnouncementForm from "./pages/Announcement";
+import AnimatedUserMap from "./pages/Employee/LocationFetcher";
+import LocationFetcher from "./pages/Employee/LocationFetcher";
+import AttendanceStart from "./pages/Employee/AttandanceStart";
+import AllUsers from "./pages/Tables/BasicTables";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -58,8 +63,10 @@ import ChatComponent from "./components/chat/ChatComponent";
 export default function App() {
   return (
     <>
-      
+            <Toaster position="bottom-right" reverseOrder={false} />
+
         <ScrollToTop />
+        {/* <NotificationListener/> */}
         <Routes>
        
       
@@ -78,17 +85,10 @@ export default function App() {
 
             <Route  path="/home" element={   <Home />  }  />
 
-            {/* User Registration Page */}
-            {/* <Route path="/user-register" element={ <RegistrationPage />} /> */}
-
-
-           
-            
-          
-        
+       
             {/* Employee Pages */}
           
-            <Route path="/attandanceStart-page" element={    <AttendanceForm />}/>
+            <Route path="/attandanceStart-page" element={  <AttendanceStart />}/>
               {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
               <Route path="/attandanceEnd-page" element={<AttendanceGuard> <AttendanceEndForm /> </AttendanceGuard>}></Route>
               <Route path="/task-show-page" element={<AttendanceGuard> <TaskShowPage /> </AttendanceGuard>}></Route>
@@ -96,21 +96,6 @@ export default function App() {
               <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
               <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route>
 
-            {/* <Route path="/attandanceEnd-page" element={<AttendanceEndForm />} /> */}
-
-      
-           {/* <Route path="/task-show-page" element={
-          <TaskShowPage />} />
-           <Route path="/task-calendar" element={  <TaskCalendar />} /> */}
-           {/* <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}></ProtectedRoute>} /> */}
-           {/* <Route path="/employee-dashboard" element={<EmployeeDashboard/> } /> */}
-
-
-
-
-
-            
-      
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/chat" element={<SocketChatBox />} />
@@ -121,12 +106,14 @@ export default function App() {
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables /> } />
+            <Route path="/all-users" element={<AllUsers /> } />
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AttendanceList />} />
+            <Route path="/announcement" element={ <AnnouncementForm />} />
+            <Route path="/live-tracking" element={ <LocationFetcher />} />
             
-            {/* <Route path="/task-show-page" element={<TaskShowPage />} /> */}
+          
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />
@@ -141,7 +128,7 @@ export default function App() {
             <Route path="/bar-chart" element={<BarChart />} />
 
             {/* Test Route */}
-            <Route path="/test" element={<ChatComponent />} />
+            {/* <Route path="/test" element={<CompTestHistorySocket />} /> */}
             {/* <Route path="/test" element={<CompTest />} /> */}
             {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>

@@ -38,7 +38,7 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
     return roleObj ? roleObj.name : "Unknown";
   };
 
-const EmployeeStatus = () => {
+const  EmployeeStatus = () => {
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -94,13 +94,13 @@ const EmployeeStatus = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6 h-full">
+    <div className="bg-white shadow-md rounded-xl p-6 h-full dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Online Employees</h2>
         <button className="border px-3 py-1 text-sm rounded-md">Online Only</button>
       </div>
 
-      <div className="grid grid-cols-4 text-sm font-semibold text-gray-700 border-b pb-2">
+      <div className="grid grid-cols-4 text-sm font-semibold text-gray-700 border-b pb-2 dark:text-white">
         <span>EMPLOYEE NAME</span>
         <span>EMAIL ADDRESS</span>
         <span>HOME OFFICE</span>
@@ -126,9 +126,9 @@ const EmployeeStatus = () => {
                   <p className="text-xs text-gray-500 capitalize">{getRoleName(user.role)}</p>
                 </div>
               </div>
-              <div className="text-sm text-gray-800">{user.email}</div>
-              <div><HomeOfficePill active={user.is_online} /></div>
-              <div><StatusPill status="Online" /></div>
+              <div className="text-sm text-gray-800 dark:text-white">{user.email}</div>
+              <div className=''><HomeOfficePill active={user.is_online} /></div>
+              <div ><StatusPill status="Online"  /></div>
             </div>
           </Link>
         ))}

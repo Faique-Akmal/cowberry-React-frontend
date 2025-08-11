@@ -150,8 +150,7 @@ const TaskCalendar = () => {
 
       {/* Task Modal */}
       {isModalOpen && selectedTask && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar"
           onClick={closeModal}
         >
           <div 

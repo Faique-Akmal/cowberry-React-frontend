@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { GroupIcon } from "../../icons";
-import { GrResources } from "react-icons/gr";
 import API from "../../api/axios";
+import { CiUser } from "react-icons/ci";
+import { FcDepartment } from "react-icons/fc";
+import { GrUserManager } from "react-icons/gr";
 
 export default function Metrics() {
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function Metrics() {
     {
       title: "Total Users",
       value: loading ? "..." : totalUsers.toLocaleString(),
-      icon: <GroupIcon className="h-6 w-6 text-indigo-600" />,
+      icon: <CiUser className="h-6 w-6 text-indigo-600" />,
       iconBg: "bg-indigo-100",
     },
     {
@@ -69,26 +71,26 @@ export default function Metrics() {
     {
       title: "Total Department Heads",
       value: loading ? "..." : roleStats.department_head.toLocaleString(),
-      icon: <GroupIcon className="h-6 w-6 text-yellow-500" />,
+      icon: <FcDepartment className="h-6 w-6 text-yellow-500" />,
       iconBg: "bg-yellow-100",
     },
     {
       title: "Total Managers",
       value: loading ? "..." : roleStats.manager.toLocaleString(),
-      icon: <GroupIcon className="h-6 w-6 text-green-600" />,
+      icon: <GrUserManager className="h-6 w-6 text-green-600" />,
       iconBg: "bg-green-100",
     },
     {
       title: "Total HR",
       value: loading ? "..." : roleStats.hr.toLocaleString(),
-      icon: <GrResources className="h-6 w-6 text-orange-500" />,
+      icon: <GrUserManager className="h-6 w-6 text-orange-500" />,
       iconBg: "bg-orange-100",
     },
      {
       title: "Total Admin",
       value: loading ? "..." : roleStats.admin.toLocaleString(),
-      icon: <GrResources className="h-6 w-6 text-orange-500" />,
-      iconBg: "bg-orange-100",
+      icon: <GrUserManager className="h-6 w-6 text-blue-500" />,
+      iconBg: "bg-blue-100",
     },
   ];
 
@@ -101,10 +103,10 @@ export default function Metrics() {
     >
       <div className="flex justify-between items-center">
         <div>
-          <h4 className="text-sm text-gray-500 dark:text-gray-300 font-medium">
+          <h4 className="text-sm text-black dark:text-gray-300 font-medium">
             {card.title}
           </h4>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+          <p className="text-3xl font-bold text-gray-500 dark:text-white mt-2">
             {card.value}
           </p>
         </div>

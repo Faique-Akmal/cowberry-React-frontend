@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 const TaskPage = () => {
   const [formData, setFormData] = useState({
@@ -7,9 +8,9 @@ const TaskPage = () => {
     description: "",
     start_date: "",
     address: "",
-    date: "",
-    is_completed: false,
-    completed_at: "",
+    // date: "",
+    // is_completed: false,
+    // completed_at: "",
     completion_description: "",
     assigned_to: "",
     assigned_by: "",
@@ -28,11 +29,12 @@ const TaskPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
 
     if (
       !formData.title.trim() ||
       !formData.description.trim() ||
-      !formData.date ||
+      // !formData.date ||
       !formData.assigned_to ||
       !formData.assigned_by
     ) {
@@ -48,16 +50,16 @@ const TaskPage = () => {
         created_by: parseInt(formData.created_by),
       });
 
-      setMessage("✅ Task created successfully!");
-
+      // setMessage("✅ Task created successfully!");
+            toast.success("✅ Task created successfully!"); 
       setFormData({
         title: "",
         description: "",
         start_date: "",
         address: "",
-        date: "",
-        is_completed: false,
-        completed_at: "",
+        // date: "",
+        // is_completed: false,
+        // completed_at: "",
         completion_description: "",
         assigned_to: "",
         assigned_by: "",
@@ -65,12 +67,13 @@ const TaskPage = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      setMessage("❌ Error creating task. Please try again.");
+      // setMessage("❌ Error creating task. Please try again.");
+      toast.error("❌ Error creating task. Please try again.");
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-transparent shadow-lg rounded-lg bg-[url('/old-paper-texture.jpg')] bg-cover">
+    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
       <h2 className="text-2xl font-bold mb-4 text-center">Assign New Task</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,7 +96,7 @@ const TaskPage = () => {
           onChange={handleChange}
           className="w-full border p-2 rounded"
         />
-
+       <label>Start Date</label>
         <input
           type="date"
           name="start_date"
@@ -104,6 +107,8 @@ const TaskPage = () => {
           className="w-full border p-2 rounded"
         />
 
+
+        <label>Destination</label>
         <input
           type="text"
           name="address"
@@ -113,7 +118,8 @@ const TaskPage = () => {
           required
           className="w-full border p-2 rounded"
         />
-
+{/* 
+     <label>Due Date</label>
         <input
           type="date"
           name="date"
@@ -122,8 +128,8 @@ const TaskPage = () => {
           value={formData.date}
           onChange={handleChange}
           className="w-full border p-2 rounded"
-        />
-
+        /> */}
+{/* 
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -140,7 +146,7 @@ const TaskPage = () => {
           value={formData.completed_at}
           onChange={handleChange}
           className="w-full border p-2 rounded"
-        />
+        /> */}
 
         <input
           type="text"
@@ -189,7 +195,7 @@ const TaskPage = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-blue-700"
         >
           Create Task
         </button>

@@ -78,8 +78,8 @@ export default function EmployeeChart() {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-2 max-w-full ">
-      <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6">
+    <div className="bg-white rounded-xl shadow-lg p-2 max-w-full dark:bg-black dark:text-white ">
+      <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6 dark:text-white">
         Users by Department
       </h2>
 
@@ -118,7 +118,7 @@ export default function EmployeeChart() {
             return (
               <div
                 key={index}
-                className={`bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col justify-between ${
+                className={`bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col justify-between  dark:text-white  ${
                   alignRight ? "sm:ml-auto" : "sm:mr-auto"
                 } w-full sm:w-[90%]`}
               >

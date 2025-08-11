@@ -1,19 +1,33 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 
 const Logout: React.FC = () => {
   const navigate = useNavigate();
   const { axiosLogout } = useAuth();
 
   useEffect(() => {
-    // ✅ Clear tokens from storage
-    axiosLogout();
-    // ✅ Redirect to; login (or home)
-    navigate('/signin', { replace: true });
-  }, [navigate]);
+    const handleLogout = async () => {
+      try {
+        await axiosLogout(); 
+          localStorage.removeItem("accessToken");
+           localStorage.removeItem("refreshToken");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("authToken");
+        toast.success("Logged out"); 
+      } catch (error) {
+        console.error("Logout failed:", error);
+        toast.error("Failed to logout"); 
+      } finally {
+        navigate("/signin", { replace: true }); 
+      }
+    };
 
-  return null; // no UI needed
+    handleLogout();
+  }, [navigate, axiosLogout]);
+
+  return null;
 };
 
 export default Logout;

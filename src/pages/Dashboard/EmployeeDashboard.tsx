@@ -3,8 +3,8 @@ import PageMeta from "../../components/common/PageMeta";
 import DashboardStats from "../../components/employees/UserStats";
 import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios";
-import { Link } from "react-router-dom"; // ✅ Correct import
-import Confetti from "react-confetti";
+import { Link } from "react-router-dom";
+// import Confetti from "react-confetti";
 
 interface User {
   id: number;
@@ -16,10 +16,10 @@ interface User {
 
 function EmployeeDashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const [windowSize, setWindowSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  // const [windowSize, setWindowSize] = useState({
+  //   width: window.innerWidth,
+  //   height: window.innerHeight,
+  // });
 
   // ✅ Fetch user
   useEffect(() => {
@@ -35,18 +35,18 @@ function EmployeeDashboard() {
     fetchUser();
   }, []);
 
-  // ✅ Handle confetti window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
+  // // ✅ Handle confetti window resize
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     setWindowSize({
+  //       width: window.innerWidth,
+  //       height: window.innerHeight,
+  //     });
+  //   };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  //   window.addEventListener("resize", handleResize);
+  //   return () => window.removeEventListener("resize", handleResize);
+  // }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -60,9 +60,9 @@ function EmployeeDashboard() {
   return (
     <>
       <PageMeta title="Employee Dashboard" description="Employee dashboard" />
-      <div className="grid gap-12 md:gap-4 bg-white  rounded-2xl p-6">
+      <div className="grid gap-12 md:gap-4 bg-white  dark:bg-black rounded-2xl p-6">
         <div className="col-span-3 space-x-4 xl:col-span-12 container border rounded-2xl p-5 ">
-          <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif text-cowberry-green-600 ">
+          <h1 className="text-3xl mb-4 font-extrabold animate-pulse font-serif text-black dark:text-white">
             {getGreeting()}
             <span className="mx-3 capitalize">
             {user?.full_name || user?.username || ""}
@@ -88,13 +88,13 @@ function EmployeeDashboard() {
           <DashboardStats />
         </div>
 
-        {/* <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
-          <Link to="/attandanceStart-page">
-            <b className="animate-pulse font-extrabold text-dashboard-royalblue-200">
-              Go to Attendance Page
+        <div className="col-span-3 mt-10 space-x-4 xl:col-span-6">
+          <Link to="/task-show-page" className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <b className="animate-pulse font-extrabold text-black dark:text-white">
+              Go to Task Page
             </b>
           </Link>
-        </div> */}
+        </div>
       </div>
     </>
   );

@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
-    name: "User Profile",
+    name: "Profile",
     path: "/profile",
     role: ["admin" ,"employee", "department_head" ,"manager" , "hr"],
   },
@@ -76,7 +76,7 @@ const navItems: NavItem[] = [
     role: ["admin", "employee" , "department_head" ,"manager" , "hr"],
   },
   {
-    name: "Employee Attandance",
+    name: "Attandance",
     icon: <ListIcon />,
     subItems: [
       // { name: "My Tasks", path: "/task-show-page", role: ["employee"] },
@@ -119,7 +119,7 @@ const navItems: NavItem[] = [
    {
     icon: <FaHouseChimneyUser />,
     name: "All Users",
-    path: "/basic-tables",
+    path: "/all-users",
   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
   },
   {
@@ -134,11 +134,18 @@ const navItems: NavItem[] = [
     path: "/task-show-page",
     role: ["employee"],
   },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: "Employee Tracker",
+  //   path: "/live-tracking",
+  //    role: ["admin" , "department_head" ,"manager" , "hr"] 
+   
+  // },
   {
     icon: <CalenderIcon />,
-    name: "Employee Tracker",
-    path: "/live-tracking",
-     role: ["admin" , "department_head" ,"manager" , "hr"] 
+    name: "Announcement",
+    path: "/announcement",
+     role: ["admin" ,  "hr"] 
    
   },
    
@@ -322,9 +329,9 @@ const AppSidebar: React.FC = () => {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>
-        <Link to="/">
+        {/* <Link to="/"> */}
           <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={0} />
-        </Link>
+        {/* </Link> */}
       </div>
 
       {/* Scrollable Area */}

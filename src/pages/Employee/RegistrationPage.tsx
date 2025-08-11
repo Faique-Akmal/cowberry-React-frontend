@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
@@ -19,6 +20,44 @@ export default function RegisterUserForm() {
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const currentUser = JSON.parse(localStorage.getItem("meUser") || "{}");
+const userRole = currentUser?.role;
+const userDepartment = currentUser?.department;
+
+const isAdmin = userRole === 1;
+const isDeptHead = userRole === 3;
+const isManager = userRole === 4;
+
+// Department options (only allow user's own department if not admin)
+const departmentOptions = [
+  { id: 1, name: "Support" },
+  { id: 2, name: "Procurement" },
+  { id: 3, name: "Electric" },
+  { id: 4, name: "Order" },
+  { id: 5, name: "Marketing" },
+  { id: 6, name: "Accountant" },
+  { id: 7, name: "IT" },
+  { id: 8, name: "HR" },
+];
+
+const filteredDepartments = isAdmin
+  ? departmentOptions
+  : departmentOptions.filter((d) => d.id === userDepartment);
+
+// Optional: restrict assignable roles based on current user's role
+const roleOptions = [
+  { id: 1, name: "Admin" },
+  { id: 2, name: "HR" },
+  { id: 3, name: "Department Head" },
+  { id: 4, name: "Manager" },
+  { id: 5, name: "Executive" },
+  { id: 6, name: "Employee" },
+  { id: 7, name: "Employee Office" },
+];
+
+// You can filter roleOptions here if needed
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -32,6 +71,15 @@ export default function RegisterUserForm() {
     setMessage("");
     setIsError(false);
     setIsLoading(true);
+
+    // Ensure department match for non-admins
+if (!isAdmin && parseInt(formData.department) !== userDepartment) {
+  setMessage("You can only assign users to your own department.");
+  setIsError(true);
+  setIsLoading(false);
+  return;
+}
+
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
       setMessage(" All fields are required.");
@@ -57,7 +105,8 @@ export default function RegisterUserForm() {
       const response = await API.post("/register/", payload);
 
       if (response.status === 201 || response.status === 200) {
-        setMessage(" User registered successfully!");
+        // setMessage(" User registered successfully!");
+        toast.success("User registered successfully!");
         setIsError(false);
         setFormData({
           first_name: "",
@@ -72,7 +121,8 @@ export default function RegisterUserForm() {
           address: "",
         });
       } else {
-        setMessage(" Registration failed. Try again.");
+        // setMessage(" Registration failed. Try again.");
+        toast.error("Registration failed. Try again.");
         setIsError(true);
       }
     } catch (error: any) {
@@ -101,11 +151,14 @@ export default function RegisterUserForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-6 rounded-xl shadow-md bg-[url('/old-paper-texture.jpg')] bg-cover">
-      <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">User Registration</h2>
+    <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
+      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-white">User Registration</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
+       <div className="grid grid-cols-2 space-y-2 gap-5 ">
+
+         <div>
+           <input
           type="text"
           name="first_name"
           placeholder="First Name"
@@ -114,7 +167,9 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-        <input
+         </div>
+       <div>
+         <input
           type="text"
           name="last_name"
           placeholder="Last Name"
@@ -123,6 +178,8 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
+       </div>
+       </div>
         <input
           type="text"
           name="username"
@@ -165,6 +222,7 @@ export default function RegisterUserForm() {
           <option value="4">Manager</option>
           <option value="5">Executive</option>
           <option value="6">Employee</option>
+          <option value="6">Employee_office</option>
         </select>
         <select
           name="department"
@@ -192,6 +250,7 @@ export default function RegisterUserForm() {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
+        <label>D.O.B.</label>
         <input
           type="date"
           name="birth_date"
@@ -220,7 +279,7 @@ export default function RegisterUserForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Registering..." : "Register"}
         </button>

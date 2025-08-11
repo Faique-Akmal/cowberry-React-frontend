@@ -329,9 +329,9 @@ const AppSidebar: React.FC = () => {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>
-        <Link to="/">
+        {/* <Link to="/"> */}
           <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={0} />
-        </Link>
+        {/* </Link> */}
       </div>
 
       {/* Scrollable Area */}

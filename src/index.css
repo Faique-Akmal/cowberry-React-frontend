@@ -203,7 +203,7 @@ layer(base);
     cursor: pointer;
   }
  body {
-  @apply relative font-normal font-outfit z-1 bg-repeat ;
+  @apply relative font-normal font-outfit z-1 bg-repeat dark:bg-black text-gray-800 dark:text-black;
 
   /* Apply fake opacity via semi-transparent gradient layer */
   background-image: 

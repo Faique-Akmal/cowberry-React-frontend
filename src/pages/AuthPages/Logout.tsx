@@ -11,6 +11,10 @@ const Logout: React.FC = () => {
     const handleLogout = async () => {
       try {
         await axiosLogout(); 
+          localStorage.removeItem("accessToken");
+           localStorage.removeItem("refreshToken");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("authToken");
         toast.success("Logged out"); 
       } catch (error) {
         console.error("Logout failed:", error);

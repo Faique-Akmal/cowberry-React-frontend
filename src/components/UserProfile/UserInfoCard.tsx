@@ -162,8 +162,8 @@ const handleSave = async (e: React.FormEvent) => {
   }
 
   return (
-    <div className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 dark:text-white dark:bg-black">
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+    <div className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-cowberry-green-500 lg:p-6 dark:text-white dark:bg-black">
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-cowberry-green-500 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">

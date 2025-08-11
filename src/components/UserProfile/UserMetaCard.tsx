@@ -80,7 +80,7 @@ const handleSave = async () => {
 
   return (
     <>
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 dark:text-white dark:bg-black  lg:p-6 bg-white ">
+      <div className="p-5 border border-gray-200 rounded-2xl  dark:text-white dark:bg-black  lg:p-6 bg-white dark:border-cowberry-green-500 ">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-22 h-22 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">

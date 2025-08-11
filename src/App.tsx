@@ -54,6 +54,7 @@ import AnnouncementForm from "./pages/Announcement";
 import AnimatedUserMap from "./pages/Employee/LocationFetcher";
 import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
+import AllUsers from "./pages/Tables/BasicTables";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -105,7 +106,7 @@ export default function App() {
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables /> } />
+            <Route path="/all-users" element={<AllUsers /> } />
             <Route path="/assign-task-page" element={ <TaskPage />} />
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AttendanceList />} />

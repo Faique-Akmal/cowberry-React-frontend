@@ -119,7 +119,7 @@ const navItems: NavItem[] = [
    {
     icon: <FaHouseChimneyUser />,
     name: "All Users",
-    path: "/basic-tables",
+    path: "/all-users",
   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
   },
   {
@@ -134,13 +134,13 @@ const navItems: NavItem[] = [
     path: "/task-show-page",
     role: ["employee"],
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Employee Tracker",
-    path: "/live-tracking",
-     role: ["admin" , "department_head" ,"manager" , "hr"] 
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: "Employee Tracker",
+  //   path: "/live-tracking",
+  //    role: ["admin" , "department_head" ,"manager" , "hr"] 
    
-  },
+  // },
   {
     icon: <CalenderIcon />,
     name: "Announcement",

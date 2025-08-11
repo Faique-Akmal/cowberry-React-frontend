@@ -4,7 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 // import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import UserPagination from "../Employee/UserPagination";
 
-export default function BasicTables() {
+export default function AllUsers() {
   return (
     <>
     

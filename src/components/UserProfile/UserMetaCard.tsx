@@ -85,11 +85,11 @@ const handleSave = async () => {
     {/* Profile Section */}
     <div className="flex flex-col items-center w-full gap-4 sm:gap-6 lg:flex-row">
       {/* Profile Image */}
-      <div className="w-24 h-24 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 flex-shrink-0">
+      <div className="w-24 h-24 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
         <img
           src={meUserData?.profile_image}
           alt="user"
-          className="object-cover w-full h-full"
+          className=" w-full h-full"
         />
       </div>
 

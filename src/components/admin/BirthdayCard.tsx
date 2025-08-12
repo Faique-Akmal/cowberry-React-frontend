@@ -76,7 +76,7 @@ const BirthdayCardList: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white max-w-lg rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
+    <div className="p-6 bg-white  rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
       {birthdayUsers.length > 0 && (
         <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={600}
          recycle={false} 

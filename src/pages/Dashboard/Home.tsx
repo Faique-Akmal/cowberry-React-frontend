@@ -1,5 +1,5 @@
 
-import MonthlySalesChart from "../../components/admin/MonthlySalesChart";
+import MonthlySalesChart from "../../components/admin/AttendanceChart";
 
 import EmployeeStatus from "../../components/admin/EmployeeStatus";
 // import DemographicCard from "../../components/ecommerce/DemographicCard";
@@ -30,9 +30,9 @@ export default function Home() {
            <EmployeeChart/> 
         </div>
           
-        <div className="col-span-12  xl:col-span-12">
+        {/* <div className="col-span-12  xl:col-span-12">
            <MonthlySalesChart />
-        </div>
+        </div> */}
 
 
         <div className="grid col-span-12 xl:col-span-4">

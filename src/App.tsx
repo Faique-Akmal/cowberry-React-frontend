@@ -15,7 +15,7 @@ import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
+// import BasicTables from "./pages/Tables/BasicTables";
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
@@ -71,7 +71,7 @@ export default function App() {
        
       
           {/* OTP VERIFIFCATION MODAL ROUTE */}
-            <Route path="/change-password" element={ <ChangePasswordModal isOpen={true}  onClose={() => {}} />} />
+            {/* <Route path="/change-password" element={ <ChangePasswordModal  />} /> */}
            
             <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
             

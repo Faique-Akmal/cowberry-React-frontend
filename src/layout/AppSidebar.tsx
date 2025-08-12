@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { TbTableShare } from "react-icons/tb";
+import { RiUserSharedFill } from "react-icons/ri";
+import { PiUsersThreeBold } from "react-icons/pi";
 // import  LogoutIcon from '@mui/icons-material/Logout';
 
 // Assume these icons are imported from an icon library
@@ -20,7 +23,7 @@ import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 import { MdAppRegistration } from "react-icons/md";
 import { FaTasks } from "react-icons/fa";
-import { FaHouseChimneyUser } from "react-icons/fa6";
+// import { FaHouseChimneyUser } from "react-icons/fa6";
 import { MdListAlt } from "react-icons/md";
 
 
@@ -88,7 +91,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Forms",
-    icon: <TableIcon />,
+    icon: <TbTableShare  />,
     subItems: [
       // { name: "Users List", path: "/basic-tables", role: ["admin", "department_head" ,"manager" , "hr"] },
       // { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
@@ -97,12 +100,13 @@ const navItems: NavItem[] = [
       // { name: "Attandance Start list ", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr"] },
     ],
   },
+
    {
     icon: <MdListAlt />,
     name: "Attandance list",
     path: "/attandance-start-admin",
     role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
- },
+    },
     
   {
     icon: <MdAppRegistration />,
@@ -110,14 +114,28 @@ const navItems: NavItem[] = [
     path: "/user-register",
      role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
   },
+
   {
+    icon: <RiUserSharedFill  />,
+    name: "Prefrence",
+     subItems: [
+      { name: "Farmers", path: "/blank", role: ["admin", "department_head" ,"manager" , "hr","employee" , "executive"] },
+      { name: "Procurement", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
+      { name: "Inventory", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
+      { name: "Accounts", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
+      { name: "Sales", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
+     ],
+  },
+
+{
+  
     icon: <FaTasks />,
     name: "Task Manager",
     path: "/admin-task-manager",
   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
   },
    {
-    icon: <FaHouseChimneyUser />,
+    icon: <PiUsersThreeBold  />,
     name: "All Users",
     path: "/all-users",
   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,

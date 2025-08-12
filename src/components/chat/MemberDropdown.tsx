@@ -23,12 +23,12 @@ const MemberDropdown: React.FC<Props> = ({ members }) => {
     }));
   }, [members, onlineGroupUsers]);
 
-  const onlineMembers = useMemo(
-    () => allMembers.filter((member) => member.is_online),
-    [allMembers]
-  );
+  // const onlineMembers = useMemo(
+  //   () => allMembers.filter((member) => member.is_online),
+  //   [allMembers]
+  // );
 
-  console.log(onlineMembers, "onlineMembers");
+  // console.log(onlineMembers, "onlineMembers");
 
   const toggleDropdown = useCallback(() => {
     setIsOpen((prev) => !prev);

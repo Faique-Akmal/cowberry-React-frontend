@@ -120,7 +120,7 @@ export default function AnnouncementNotification() {
         isOpen={isOpen}
         onClose={closeDropdown}
       className="fixed top-38 left-1/2 transform -translate-x-1/2 
-                    flex flex-col gap-3 w-[90%] sm:w-auto max-w-sm z-50">
+                    flex flex-col gap-3 w-[90%] sm:w-auto max-w-sm z-50 p-6">
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Announcements

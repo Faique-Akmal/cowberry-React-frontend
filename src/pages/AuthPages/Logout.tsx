@@ -10,17 +10,29 @@ const Logout: React.FC = () => {
   useEffect(() => {
     const handleLogout = async () => {
       try {
-        await axiosLogout(); 
-          localStorage.removeItem("accessToken");
-           localStorage.removeItem("refreshToken");
-          localStorage.removeItem("userId");
-          localStorage.removeItem("authToken");
-        toast.success("Logged out"); 
+      
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.log("Logging out...");
+      
+        await axiosLogout?.();
+
+        // Clear ALL stored data
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Optional: Force browser to drop cached pages
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", () => {
+          navigate("/signin", { replace: true });
+        });
+
+        toast.success("Logged out");
       } catch (error) {
         console.error("Logout failed:", error);
-        toast.error("Failed to logout"); 
+        toast.error("Failed to logout");
       } finally {
-        navigate("/signin", { replace: true }); 
+        // Redirect and replace history so back button can't re-enter
+        navigate("/signin", { replace: true });
       }
     };
 

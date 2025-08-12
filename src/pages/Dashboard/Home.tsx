@@ -17,50 +17,49 @@ import Metrics from "../../components/admin/Metrics";
 
 export default function Home() {
   return (
-    <>
-      <PageMeta
-        title="DASHBOARD"
-        description=""
-      />
-      <div className="grid gap-12 md:gap-4">
-        <div className="col-span-12">
-          <Metrics />        
-        </div>
-        <div className="col-span-12 xl:col-span-12 w-full">
-           <EmployeeChart/> 
-        </div>
-          
-        {/* <div className="col-span-12  xl:col-span-12">
-           <MonthlySalesChart />
-        </div> */}
+  <>
+  <PageMeta title="DASHBOARD" description="" />
 
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-12">
+    
+    {/* Metrics */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-12">
+      <Metrics />
+    </div>
 
-        <div className="grid col-span-12 xl:col-span-4">
-            <Customers/>
-        </div>
+    {/* Chart */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-12">
+      <EmployeeChart />
+    </div>
 
-        <div className="col-span-12 xl:col-span-4">
-          <BirthdaysToday/>
-        </div>
-          <div className="col-span-12 flex flex-col gap-4 xl:col-span-4">
-          <div className="col-span-12 h-full xl:col-span-4">
-            <JobApplicationCard/>
-          </div>
-          <div className="col-span-12 h-full xl:col-span-4">
-              <JobRejectionCard />
-          </div>
-        </div>
+    {/* Customers */}
+    <div className="col-span-1 md:col-span-1 xl:col-span-4">
+      <Customers />
+    </div>
 
-        <div className="col-span-12 xl:col-span-12">
-          <EmployeeStatus />
-        </div>
-           
-      
-        <div className="col-span-12">
-          <MapComponent />
-        </div>
-        
-      </div>
-    </>
+    {/* Birthdays */}
+    <div className="col-span-1 md:col-span-1 xl:col-span-4">
+      <BirthdaysToday />
+    </div>
+
+    {/* Job Applications + Rejections */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
+      <JobApplicationCard />
+      <JobRejectionCard />
+    </div>
+
+    {/* Employee Status */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-12">
+      <EmployeeStatus />
+    </div>
+
+    {/* Map */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-12">
+      <MapComponent />
+    </div>
+
+  </div>
+</>
+
   );
 }

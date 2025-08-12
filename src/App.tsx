@@ -55,6 +55,7 @@ import AnimatedUserMap from "./pages/Employee/LocationFetcher";
 import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
+import ProtectedRoute from "./components/ProtectedRoutes";
 
 
 // import SignInForm from "./components/auth/SignInForm";
@@ -78,12 +79,19 @@ export default function App() {
               <Route  path="/" element={<SignIn />} />
               
           {/* Dashboard Layout */}
-          <Route  element={<AppLayout />}>
+          <Route  element={
+            <AppLayout />
+            
+            }>
                 
                   
            {/* Home Page */}
 
-            <Route  path="/home" element={   <Home />  }  />
+            <Route  path="/home" element={ 
+               <ProtectedRoute>
+       <Home />
+    </ProtectedRoute>
+     }  />
 
        
             {/* Employee Pages */}

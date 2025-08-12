@@ -355,6 +355,7 @@ export default function AttendanceStart() {
           <input
             type="file"
             accept="image/*"
+              capture="environment" 
             onChange={(e) => handleFileChange(e, "odometer_image")}
             required
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
@@ -375,6 +376,7 @@ export default function AttendanceStart() {
           <input
             type="file"
             accept="image/*"
+            capture="user"
             onChange={(e) => handleFileChange(e, "selfie_image")}
             required
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"

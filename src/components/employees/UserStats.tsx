@@ -54,34 +54,41 @@ const DashboardStats: React.FC = () => {
 
   return (
     <>
-       <div className="relative flex justify-center"  >
-         <b>  <h1 className="text-2xl text-gray-600 ">TASK UPDATES</h1></b>
-        </div>
-    <div className="flex flex-wrap gap-4 p-4  justify-center">
-     
-      <div className={cardClass}  >
-        <p className="text-sm ">Total Tasks</p>
-        <p className="text-xl font-semibold">{totalTasks}</p>
-      </div>
-      <div className={cardClass} >
-        <p className="text-sm ">Progress</p>
-        <p className="text-xl font-semibold">{progress}%</p>
-      </div>
-      <div className={cardClass} >
-        <p className="text-sm ">Completed Tasks</p>
-        <p className="text-xl font-semibold">{completedTasks}</p>
-      </div>
-      <div className={cardClass} >
-        <p className="text-sm  ">Active Tasks</p>
-        <p className="text-xl font-semibold">{activeTasks}</p>
-      </div>
+    
+  {/* Title */}
+  <div className="relative flex justify-center mb-4">
+    <h1 className="text-2xl font-bold text-gray-600">TASK UPDATES</h1>
+  </div>
 
-       <div className={cardClass} >
-        <p className="text-sm ">Due Tasks</p>
-        <p className="text-xl font-semibold">{dueTasks}</p>
-      </div>
+  {/* Cards Grid */}
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 justify-items-center">
+    <div className={cardClass}>
+      <p className="text-sm">Total Tasks</p>
+      <p className="text-xl font-semibold">{totalTasks}</p>
     </div>
-    </>
+
+    <div className={cardClass}>
+      <p className="text-sm">Progress</p>
+      <p className="text-xl font-semibold">{progress}%</p>
+    </div>
+
+    <div className={cardClass}>
+      <p className="text-sm">Completed Tasks</p>
+      <p className="text-xl font-semibold">{completedTasks}</p>
+    </div>
+
+    <div className={cardClass}>
+      <p className="text-sm">Active Tasks</p>
+      <p className="text-xl font-semibold">{activeTasks}</p>
+    </div>
+
+    <div className={cardClass}>
+      <p className="text-sm">Due Tasks</p>
+      <p className="text-xl font-semibold">{dueTasks}</p>
+    </div>
+  </div>
+</>
+
   );
 };
 

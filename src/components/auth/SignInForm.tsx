@@ -10,8 +10,6 @@ import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import Home from "../../pages/Dashboard/Home";
 import toast, { Toaster } from "react-hot-toast";
-// import EmployeeDashboard from "../../pages/Dashboard/EmployeeDashboard";
-// import Home from "../../pages/Dashboard/Home";
 
 export default function SignInForm() {
   const { login } = useAuth();
@@ -22,7 +20,7 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
 
   // forgotPasswordModal 
@@ -33,84 +31,73 @@ export default function SignInForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
     
+    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     
     // Basic validation
     if (!employeeCode.trim() || !password.trim()) {
       setMessage("Please enter both employee code and password.");
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    setMessage("");
-
     try {
-
       const response = await API.post(
         "/login/",
         {
           employee_code: employeeCode.trim(),
           password: password.trim(),
+          deviceType: isMobileDevice ? "mobile" : "desktop"
         }
       );
 
-         
       if (response.data?.message === "Login successful") {
-        setMessage("Login successful!");
-      
+        const userRole = response.data.role?.toLowerCase();
         
-         localStorage.setItem("userRole", response.data.role); // e.g., "admin" or "employee"
-         localStorage.setItem("userId", response.data.userid); 
-         localStorage.setItem("profile-img", response.data.profile_image); 
+        // Check if employee is trying to login from desktop/laptop
+        if (userRole === "employee" && !isMobileDevice) {
+          setMessage("YOU CAN LOGIN IN MOBILE DEVICE ONLY");
+          setIsLoading(false);
+          return;
+        }
 
+        setMessage("Login successful!");
+        
+        localStorage.setItem("userRole", response.data.role);
+        localStorage.setItem("userId", response.data.userid); 
+        localStorage.setItem("profile-img", response.data.profile_image); 
 
-
-       
         // Save token if provided
-
         login(response.data?.refresh, response.data?.access);
 
-        
-
-
-        const userRole = response.data.role?.toLowerCase() || response.data.role?.toLowerCase();
-         
         const isVerified = response.data?.is_employee_code_verified || false;
         
         // Navigate based on user role
-     setTimeout(() => {
-  // const allowedRoles = ["admin", "hr", "department_head", "manager", "employee"];
-
-  // if (!allowedRoles.includes(userRole)) {
-  //   setMessage("Access denied. Invalid user role.");
-  //   setIsLoading(false);
-  //   return;
-  // }
-
-  if (userRole === "employee") {
-    if (isVerified) {
-      // {userRole === "admin" ? <Home /> : <EmployeeDashboard />}
-       toast.success("Logged in successfully"); 
-      navigate("/attandanceStart-page", { replace: true });  
-    } else {
-      navigate("/LoginWithOtp", { replace: true });    
-    }
-  } else {
-    if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
-      if (isVerified) {
-      navigate( "/home");  
-        toast.success("Logged in successfully"); 
-    } else {
-      navigate("/LoginWithOtp", { replace: true });    
-    }   
-    } 
-  }
-}, 1000);
- // Small delay to show success message
+        setTimeout(() => {
+          if (userRole === "employee") {
+            if (isVerified) {
+              toast.success("Logged in successfully"); 
+              navigate("/attandanceStart-page", { replace: true });  
+            } else {
+              navigate("/LoginWithOtp", { replace: true });    
+            }
+          } else {
+            if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
+              if (isVerified) {
+                navigate("/home");  
+                toast.success("Logged in successfully"); 
+              } else {
+                navigate("/LoginWithOtp", { replace: true });    
+              }   
+            } 
+          }
+        }, 1000);
       } else {
         setMessage(response.data.message || "Login failed.");
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Login error:", error);
       
       if (error.response) {
@@ -144,14 +131,13 @@ export default function SignInForm() {
   };
 
   return (
-             <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
-              {/* <Toaster position="top-right" reverseOrder={false} /> */}
-      <div className=" w-20 h-20 mx-auto mb-6 mt-6">
+    <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
+      <div className="w-20 h-20 mx-auto mb-6 mt-6">
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>
-         <div className="flex items-center justify-center w-full h-20 ">
-          <h1>WELCOME TO COWBERRY</h1>
-         </div>
+      <div className="flex items-center justify-center w-full h-20">
+        <h1>WELCOME TO COWBERRY</h1>
+      </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>
           <div className="space-y-6">
@@ -194,7 +180,7 @@ export default function SignInForm() {
                 <span className="text-sm text-gray-700">Keep me logged in</span>
               </div>
               <button
-              type="button"
+                type="button"
                 onClick={openForgotModal}
                 className="text-sm text-brand-500 hover:underline"
               >
@@ -212,10 +198,16 @@ export default function SignInForm() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
+            
             <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={closeForgotModal} />
+            
             {message && (
-              <p className={`text-sm text-center ${
-                message.includes("successful") ? "text-green-500" : "text-red-500"
+              <p className={`text-sm text-center font-medium ${
+                message.includes("successful") 
+                  ? "text-green-500" 
+                  : message === "YOU CAN LOGIN IN MOBILE DEVICE ONLY"
+                    ? "text-red-600 bg-red-50 p-3 rounded-md border border-red-200"
+                    : "text-red-500"
               }`}>
                 {message}
               </p>

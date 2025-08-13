@@ -25,11 +25,20 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
       >
-        <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
-        
-          <img src= {profile_image} alt="User" className="bg-cover" />
-      
-        </div>
+       <div className="mr-3 overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
+  {profile_image ? (
+    <img
+      src={profile_image}
+      alt="User"
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-medium">
+      {username?.charAt(0).toUpperCase()}
+    </div>
+  )}
+</div>
+
 
         <span className="block mr-1 font-medium text-theme-sm">{username}</span>
         <svg

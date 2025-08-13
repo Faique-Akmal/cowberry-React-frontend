@@ -209,93 +209,56 @@ export default function AttendanceList() {
   };
 
   // Enhanced filtering specifically optimized for dummy data
-  const filterAndSortLocations = (logs: LocationLog[], attendance: Attendance): LocationLog[] => {
-    try {
-      console.log("🔧 Processing location logs for dummy data...");
-      
-      // First, validate and clean the data
-      const validLogs = logs.filter(log => {
-        const hasValidCoords = isValidCoordinate(log.latitude, log.longitude);
-        const hasValidTimestamp = log.timestamp && !isNaN(new Date(log.timestamp).getTime());
-        
-        if (!hasValidCoords) {
-          console.warn(`⚠️ Invalid coordinates in log ${log.id}:`, log.latitude, log.longitude);
-        }
-        if (!hasValidTimestamp) {
-          console.warn(`⚠️ Invalid timestamp in log ${log.id}:`, log.timestamp);
-        }
-        
-        return hasValidCoords && hasValidTimestamp;
-      });
+  // Filter and sort location logs for an employee (less strict date filter)
+const filterAndSortLocations = (
+  locations: EmployeeLocationLog[] | undefined,
+  attendance: EmployeeAttendance
+): EmployeeLocationLog[] => {
+  if (!locations || locations.length === 0) {
+    console.warn("No locations provided for filtering.");
+    return [];
+  }
 
-      console.log(`✅ Valid logs: ${validLogs.length}/${logs.length}`);
+  // 1️⃣ Keep only points with valid lat/lng
+  const validLogs = locations.filter(log =>
+    isValidCoordinate(parseFloat(log.latitude), parseFloat(log.longitude))
+  );
 
-      // For dummy data, we'll be more lenient with time filtering
-      // since dummy data might not perfectly align with attendance times
-      const attendanceDate = attendance.date;
-      
-      // Create a broader time window for dummy data
-      const startOfDay = new Date(`${attendanceDate}T00:00:00`);
-      const endOfDay = new Date(`${attendanceDate}T23:59:59`);
-      
-      // If it's an ongoing attendance, use current time as end
-      const endTime = attendance.end_time ? 
-        new Date(`${attendanceDate}T${attendance.end_time}`) : 
-        new Date();
-      
-      // Filter by date and reasonable time range
-      const dateFilteredLogs = validLogs.filter(log => {
-        const logTime = new Date(log.timestamp);
-        const logDate = logTime.toISOString().split('T')[0];
-        
-        // Must be on the correct date
-        const isCorrectDate = logDate === attendanceDate;
-        
-        // For ongoing attendance, include all logs from start time onwards
-        // For completed attendance, include logs within the time range
-        let isInTimeRange = true;
-        if (attendance.start_time) {
-          const startTime = new Date(`${attendanceDate}T${attendance.start_time}`);
-          const buffer = 10 * 60 * 1000; // 10 minute buffer
-          isInTimeRange = logTime >= new Date(startTime.getTime() - buffer) && 
-                         logTime <= new Date(endTime.getTime() + buffer);
-        }
-        
-        const shouldInclude = isCorrectDate && isInTimeRange;
-        
-        if (!shouldInclude) {
-          console.log(`⏭️ Excluding log ${log.id}: Date: ${isCorrectDate}, Time: ${isInTimeRange}`);
-        }
-        
-        return shouldInclude;
-      });
+  // 2️⃣ Normalize attendance date to YYYY-MM-DD
+  const attendanceDate = new Date(attendance.date).toLocaleDateString("en-CA");
 
-      console.log(`📅 Date/time filtered logs: ${dateFilteredLogs.length}`);
+  // 3️⃣ Looser date/time filter:
+  //    Instead of requiring exact date match, allow +/- 1 day for timezone shifts
+  const dateFilteredLogs = validLogs.filter(log => {
+    const logDate = new Date(log.timestamp).toLocaleDateString("en-CA");
 
-      // Sort by timestamp (chronological order)
-      const sortedLogs = dateFilteredLogs.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+    // Allow same date OR 1 day difference
+    const dateDiff = Math.abs(
+      (new Date(logDate).getTime() - new Date(attendanceDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-      // For demo purposes, if we have a lot of points, thin them out for better visualization
-      let finalLogs = sortedLogs;
-      if (sortedLogs.length > 100) {
-        // Keep every nth point to avoid overcrowding the map
-        const keepEvery = Math.ceil(sortedLogs.length / 50);
-        finalLogs = sortedLogs.filter((_, index) => index % keepEvery === 0);
-        console.log(`🎯 Thinned out logs: ${finalLogs.length} (keeping every ${keepEvery})`);
-      }
+    if (dateDiff > 1) return false; // skip if more than 1 day apart
 
-      console.log(`🏁 Final processed logs: ${finalLogs.length}`);
-      return finalLogs;
-      
-    } catch (error) {
-      console.error("❌ Error processing location logs:", error);
-      // Return all valid logs if processing fails
-      return logs.filter(log => isValidCoordinate(log.latitude, log.longitude))
-                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    // Time filter with wider buffer (+/- 2 hours instead of 10 minutes for testing)
+    if (attendance.startTime && attendance.endTime) {
+      const logTime = new Date(log.timestamp).getTime();
+      const start = new Date(`${attendance.date}T${attendance.startTime}`).getTime() - 2 * 60 * 60 * 1000;
+      const end = new Date(`${attendance.date}T${attendance.endTime}`).getTime() + 2 * 60 * 60 * 1000;
+      return logTime >= start && logTime <= end;
     }
-  };
+
+    return true; // if no times given, keep the point
+  });
+
+  // 4️⃣ Sort chronologically
+  dateFilteredLogs.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  console.log(`Filtered ${validLogs.length} → ${dateFilteredLogs.length} logs`);
+  return dateFilteredLogs;
+};
+ 
 
   // Helper function to safely parse coordinates
   const parseCoordinate = (coord: string | number): number => {

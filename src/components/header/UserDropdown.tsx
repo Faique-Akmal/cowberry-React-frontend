@@ -2,12 +2,13 @@ import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
+import Avatar from "../ui/avatar/Avatar";
 // import { useTranslation } from 'react-i18next';
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const {username , email ,profile_image} = JSON.parse(localStorage.getItem("meUser") || "{}"); 
+  const { username, email, profile_image } = JSON.parse(localStorage.getItem("meUser") || "{}");
 
 
   function toggleDropdown() {
@@ -23,17 +24,17 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
       >
-        <div  className="mr-3 overflow-hidden rounded-full w-12 h-12" >
-        
-          <img src= {profile_image} alt="User" className="bg-cover" />
-      
+        <div className="mr-3 flex items-center overflow-hidden rounded-full w-12 h-12" >
+
+          <Avatar src={profile_image ? profile_image : "/images/user/user-01.jpg"} size="large" />
+          {/* <img src= {profile_image} alt="User" className="bg-cover" /> */}
+
         </div>
 
         <span className="block mr-1 font-medium text-theme-sm">{username}</span>
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
           width="18"
           height="20"
           viewBox="0 0 18 20"
@@ -162,7 +163,7 @@ export default function UserDropdown() {
           </svg>
           Sign out
         </Link>
-       
+
 
       </Dropdown>
     </div>

@@ -5,6 +5,7 @@ import { Members } from "../../store/chatStore";
 import Avatar from "../ui/avatar/Avatar";
 import Alert from "../ui/alert/Alert";
 import { useSocketStore } from "../../store/socketStore";
+import { IoIosInformationCircleOutline } from "react-icons/io";
 
 interface Props {
   members: Members[];
@@ -44,9 +45,10 @@ const MemberDropdown: React.FC<Props> = ({ members }) => {
         onClick={toggleDropdown}
         className="flex items-center bg-white p-2 px-4 rounded-full text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="block mr-2 font-medium text-theme-sm capitalize">
-          (<strong className="text-brand-500">{allMembers.length}</strong>) members
-        </span>
+        <div className="flex gap-1 items-center mr-2 font-medium text-nowrap text-theme-sm capitalize">
+          <IoIosInformationCircleOutline className="text-xl" /> Group info
+          {/* (<strong className="text-brand-500">{allMembers.length}</strong>)  */}
+        </div>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
             }`}
@@ -71,6 +73,9 @@ const MemberDropdown: React.FC<Props> = ({ members }) => {
         onClose={closeDropdown}
         className="-translate-x-4 absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
+        <h3 className="ml-4 text-gray-500">
+          {allMembers.length} members
+        </h3>
         <ul className="custom-scrollbar overflow-y-auto overflow-hidden h-58 flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
           {allMembers.length === 0 ? (
             <li>

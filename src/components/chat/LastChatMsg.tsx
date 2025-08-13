@@ -3,24 +3,37 @@ import { axiosGetGroupMsg } from "../../store/chatStore";
 
 interface Props {
   groupId: number;
+  chatType?: "group" | "personal";
 }
 
-function LastChatMsg({ groupId }: Props) {
-  const [lastMsg, setLastMsg] = useState<string>("");
+interface LastMsg {
+  msg: string;
+  username?: string;
+}
+
+
+function LastChatMsg({ groupId, chatType = "group" }: Props) {
+  const [lastMsg, setLastMsg] = useState<LastMsg | null>(null);
 
   const getAllLastMsg = async (groupId: number) => {
     const groupMsg = await axiosGetGroupMsg(groupId);
     if (groupMsg?.length > 0) {
-      setLastMsg(groupMsg[groupMsg?.length - 1]?.content);
+      setLastMsg({ msg: groupMsg[groupMsg?.length - 1]?.content, username: groupMsg[groupMsg?.length - 1]?.sender_username });
     }
   }
 
   useEffect(() => {
-    getAllLastMsg(groupId);
+    if (chatType === "personal") {
+      setLastMsg({ msg: "No last message found." });
+      return;
+    } else {
+      getAllLastMsg(groupId);
+      return;
+    }
   }, [groupId]);
 
   return (
-    <p className="font-semibold">{lastMsg ? lastMsg : "No last message found."}</p>
+    <p className="w-full font-semibold truncate">{lastMsg?.msg ? chatType === "personal" ? lastMsg?.msg : `${lastMsg?.username}: ${lastMsg?.msg}` : "No last message found."}</p>
   )
 }
 

@@ -39,28 +39,19 @@ import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import ProtectedRoute from "./components/ProtectedRoutes";
 import TaskCalendar from "./pages/Employee/TaskCalendar";
 import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
-// import LiveUserLocation from "./pages/Employee/LiveUserLocation";
-// import LiveTracking from "./pages/Employee/LiveTracking";
+
 import AdminTaskManager from "./pages/Employee/TaskManager";
-// import LocationMap from "./pages/Employee/LiveTracking";
-// import LiveLocationMap from "./components/Maps/LiveLocationMap";
-// import LogoutButton from "./pages/AuthPages/Logout";
-import ChangePasswordModal from "./components/auth/ChangePasswordModal";
-// import AllAttendanceByDepartment from "./pages/Employee/AdminAttandance";
+
+
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
-import NotificationListener from "./NotificationListener";
+// import NotificationListener from "./NotificationListener";
 import AnnouncementForm from "./pages/Announcement";
-import AnimatedUserMap from "./pages/Employee/LocationFetcher";
+
 import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
-
-
-// import SignInForm from "./components/auth/SignInForm";
-// import LoginWithOtp from "./pages/AuthPages/LoginWithOtp";
-
 export default function App() {
   return (
     <>
@@ -69,11 +60,7 @@ export default function App() {
         <ScrollToTop />
         {/* <NotificationListener/> */}
         <Routes>
-       
-      
-          {/* OTP VERIFIFCATION MODAL ROUTE */}
-            {/* <Route path="/change-password" element={ <ChangePasswordModal  />} /> */}
-           
+     
             <Route path="/loginwithotp" element={<OtpModal isOpen={true} onClose={() => {}} onVerificationSuccess={()=>{}} />} />
             
               <Route  path="/" element={<SignIn />} />
@@ -134,11 +121,6 @@ export default function App() {
             {/* Charts */}
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
-
-            {/* Test Route */}
-            {/* <Route path="/test" element={<CompTestHistorySocket />} /> */}
-            {/* <Route path="/test" element={<CompTest />} /> */}
-            {/* <Route path="/socket-test" element={<SocketChatWindow />} /> */}
           </Route>
 
           {/* Auth Layout */}

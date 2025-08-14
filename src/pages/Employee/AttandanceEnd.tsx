@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import API from '../../api/axios';
+import toast from 'react-hot-toast';
 
 interface FormDataState {
   user: string;
@@ -39,12 +40,14 @@ export default function AttendanceForm() {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
-      setMessage(` Unsupported file format for ${field}.`);
+      // setMessage(` Unsupported file format for ${field}.`);
+      toast.error(` Unsupported file format for ${field}.`);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage(` ${field} exceeds 5MB.`);
+      // setMessage(` ${field} exceeds 5MB.`);
+      toast.error(` ${field} exceeds 5MB.`);
       return;
     }
 
@@ -73,18 +76,21 @@ export default function AttendanceForm() {
             end_lat: position.coords.latitude.toString(),
             end_lng: position.coords.longitude.toString(),
           }));
-          setMessage(' User and location fetched successfully.');
+          // setMessage(' User and location fetched successfully.');
+          toast.success(' User and location fetched successfully.');
           setLocationFetched(true);
         },
         (err) => {
           console.error(err);
-          setMessage('Failed to fetch location. Please allow GPS access.');
+          // setMessage('Failed to fetch location. Please allow GPS access.');
+          toast.error('Failed to fetch location. Please allow GPS access.');
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } catch (error) {
       console.error(error);
-      setMessage('Failed to fetch user info.');
+      // setMessage('Failed to fetch user info.');
+      toast.error('Failed to fetch user info.');
     }
   };
 
@@ -116,7 +122,8 @@ export default function AttendanceForm() {
       });
 
       if (res.status === 200 || res.status === 201) {
-        setMessage('Attendance submitted successfully.');
+        // setMessage('Attendance submitted successfully.');
+        toast.success('Attendance submitted successfully.');
 
         // Set local attendance flag
         const today = new Date().toISOString().split('T')[0];
@@ -138,14 +145,16 @@ export default function AttendanceForm() {
 
         navigate('/employee-dashboard');
       } else {
-        setMessage(' Something went wrong, try again.');
+        // setMessage(' Something went wrong, try again.');
+        toast.error(' Something went wrong, try again.');
       }
     } catch (err: any) {
       console.error('Error:', err);
       if (err.response?.data) {
         setMessage(` ${JSON.stringify(err.response.data)}`);
       } else {
-        setMessage(' Network or server error.');
+        // setMessage(' Network or server error.');
+        toast.error(' Network or server error.');
       }
     } finally {
       setLoading(false);

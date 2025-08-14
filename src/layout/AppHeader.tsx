@@ -55,6 +55,10 @@ const AppHeader: React.FC = () => {
     { label: "my-task", path: "/task-show-page" },
     { label: "Farmers", path: "/farmers" },
     { label: "Purchases", path: "/purchase" },
+    { label: "User Profile", path: "/profile" },
+    { label: "chat", path: "/chat" },
+    { label: "All Users", path: "/all-users" },
+    { label: "LogOut", path: "/logout" },
   ];
 
   const filteredResults = searchableItems.filter((item) =>

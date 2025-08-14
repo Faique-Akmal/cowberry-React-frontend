@@ -383,7 +383,7 @@ const filteredData = attendances.filter((att) => {
 
   // Calculate map center based on available coordinates
   const getMapCenter = (): [number, number] => {
-    if (!mapView) return [21.1702, 72.8311]; // Default to Surat
+    if (!mapView) return [21.1702, 72.8311]; 
 
     const allCoords: [number, number][] = [];
 
@@ -640,6 +640,7 @@ const filteredData = attendances.filter((att) => {
                   icon={L.icon({
                     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
                     shadowUrl,
+                    iconAnchor: [12, 41], 
                     iconSize: [25, 41],
                   })}
                 >
@@ -675,6 +676,7 @@ const filteredData = attendances.filter((att) => {
                           ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png"
                           : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
                         shadowUrl,
+                        iconAnchor: [12, 41], 
                         iconSize: [15, 24], // Slightly larger for better visibility
                       })}
                     >
@@ -706,6 +708,7 @@ const filteredData = attendances.filter((att) => {
                       icon={L.icon({
                         iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png",
                         shadowUrl,
+                        iconAnchor: [12, 41], 
                         iconSize: [30, 48], // Larger for current position
                       })}
                     >
@@ -738,6 +741,7 @@ const filteredData = attendances.filter((att) => {
                     icon={L.icon({
                       iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
                       shadowUrl,
+                      iconAnchor: [12, 41], 
                       iconSize: [20, 32],
                     })}
                   >
@@ -765,6 +769,7 @@ const filteredData = attendances.filter((att) => {
                   icon={L.icon({
                     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
                     shadowUrl,
+                    iconAnchor: [12, 41], 
                     iconSize: [25, 41],
                   })}
                 >

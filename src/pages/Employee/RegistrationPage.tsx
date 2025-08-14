@@ -74,7 +74,8 @@ const roleOptions = [
 
     // Ensure department match for non-admins
 if (!isAdmin && parseInt(formData.department) !== userDepartment) {
-  setMessage("You can only assign users to your own department.");
+  // setMessage("You can only assign users to your own department.");
+  toast.error("You can only assign users to your own department.");
   setIsError(true);
   setIsLoading(false);
   return;
@@ -82,14 +83,16 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
 
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-      setMessage(" All fields are required.");
+      // setMessage(" All fields are required.");
+      toast.error("All fields are required.");
       setIsError(true);
       setIsLoading(false);
       return;
     }
 
     if (!formData.role || !formData.department) {
-      setMessage(" Please select both Role and Department.");
+      // setMessage(" Please select both Role and Department.");
+      toast.error("Please select both Role and Department.");
       setIsError(true);
       setIsLoading(false);
       return;

@@ -68,7 +68,7 @@ const TaskPage = () => {
     } catch (error: any) {
       console.error("Error:", error);
       // setMessage("❌ Error creating task. Please try again.");
-      toast.error("❌ Error creating task. Please try again.");
+      toast.error("Error creating task. Please try again.");
     }
   };
 

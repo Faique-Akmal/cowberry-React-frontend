@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
 
 type Task = {
   id: number;
@@ -36,10 +37,7 @@ export default function TaskShowPage() {
           // },
           timeout: 10000,
         });
-
-        // console.log("API response:", response.data); // log this to check structure
-
-        let responseTasks: Task[] = [];
+  let responseTasks: Task[] = [];
         if (Array.isArray(response.data)) {
           responseTasks = response.data;
         } else if (typeof response.data === "object") {
@@ -61,18 +59,23 @@ export default function TaskShowPage() {
           switch (err.response.status) {
             case 401:
               message = "Authentication failed.";
+              toast.error("Authentication failed. Please log in again.");
               break;
             case 403:
               message = "Access denied.";
+              toast.error("Access denied. You do not have permission to view these tasks.");
               break;
             case 404:
               message = "Endpoint not found.";
+              toast.error("Endpoint not found. Please try again later.");
               break;
             case 500:
               message = "Server error.";
+              toast.error("Server error. Please try again later.");
               break;
             default:
               message = err.response.data?.detail || "Unexpected error.";
+              toast.error(message);
           }
         } else if (err.request) {
           message = "No response from server.";

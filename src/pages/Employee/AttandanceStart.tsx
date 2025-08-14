@@ -50,12 +50,14 @@ export default function AttendanceStart() {
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     if (!allowedTypes.includes(file.type)) {
-      setMessage(`❌ Unsupported file format for ${field}.`);
+      // setMessage(`❌ Unsupported file format for ${field}.`);
+      toast.error(` Unsupported file format for ${field}.`);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage(`❌ ${field} exceeds 5MB.`);
+      // setMessage(`❌ ${field} exceeds 5MB.`);
+      toast.error(` ${field} exceeds 5MB.`);
       return;
     }
 
@@ -159,17 +161,20 @@ export default function AttendanceStart() {
 
           setLiveLocation({ lat, lng });
           setLocationFetched(true);
-          setMessage("✅ Location fetched successfully! You can now fill the form.");
+          // setMessage("✅ Location fetched successfully! You can now fill the form.");
+          toast.success("✅ Location fetched successfully! You can now fill the form.");
         },
         (err) => {
           console.error("Geolocation error:", err);
-          setMessage("❌ Failed to fetch location. Please allow GPS access and try again.");
+          // setMessage("❌ Failed to fetch location. Please allow GPS access and try again.");
+          toast.error(" Failed to fetch location. Please allow GPS access and try again.");
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     } catch (error) {
       console.error("User fetch error:", error);
-      setMessage("❌ Failed to fetch user info. Please check your connection.");
+      // setMessage("❌ Failed to fetch user info. Please check your connection.");
+      toast.error(" Failed to fetch user info. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -245,7 +250,8 @@ export default function AttendanceStart() {
     setLoading(true);
 
     if (!formData.start_lat || !formData.start_lng) {
-      setMessage("❌ Please fetch your location first before submitting.");
+      // setMessage("❌ Please fetch your location first before submitting.");
+      toast.error(" Please fetch your location first before submitting.");
       setLoading(false);
       return;
     }

@@ -57,11 +57,11 @@ export default function SignInForm() {
         const userRole = response.data.role?.toLowerCase();
         
         // Check if employee is trying to login from desktop/laptop
-        if (userRole === "employee" && !isMobileDevice) {
-          setMessage("YOU CAN LOGIN IN MOBILE DEVICE ONLY");
-          setIsLoading(false);
-          return;
-        }
+        // if (userRole === "employee" && !isMobileDevice) {
+        //   setMessage("YOU CAN LOGIN IN MOBILE DEVICE ONLY");
+        //   setIsLoading(false);
+        //   return;
+        // }
 
         setMessage("Login successful!");
         

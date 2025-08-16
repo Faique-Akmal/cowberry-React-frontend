@@ -27,10 +27,7 @@ import Logout from "./pages/AuthPages/Logout";
 // import CompTestHistorySocket from "./pages/CompTestHistorySocket";
 import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
-// import CompTest from "./pages/CompTest";
-// import ChatBox from "./components/chat/ChatBox";
-// import { SocketChatWindow } from "./components/chat/SocketChatWindow";
-// import ChatBox from "./components/chat/ChatBox";
+
 import TaskShowPage from "./pages/Employee/EmployeeTask";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 import AttendanceForm from "./pages/Employee/AttandanceStart";

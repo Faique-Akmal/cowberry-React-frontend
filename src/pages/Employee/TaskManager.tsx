@@ -164,7 +164,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6 bg-transparent shadow rounded-lg dark:text-white dark:bg-black ">
+    <div className="p-6 bg-white  border-2 dark:border-green-500 shadow rounded-lg dark:text-white dark:bg-black ">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">Admin Task Management</h2>
         <select

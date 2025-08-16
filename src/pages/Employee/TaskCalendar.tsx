@@ -12,6 +12,9 @@ interface Task {
   id: number;
   title: string;
   date: string;
+  dest_lat?: number;
+  dest_lng?: number;
+  address: string;
   description: string;
   status: string;
   assigned_by: string;
@@ -23,7 +26,10 @@ interface CalendarEvent {
   start: string;
   extendedProps: {
     description: string;
-    status: string;
+    dest_lat?: number;
+    dest_lng?: number;
+      address: string;
+       status: string;
     assigned_by: string;
   };
 }
@@ -61,6 +67,9 @@ const TaskCalendar = () => {
         title: task.title || "Untitled Task",
         start: dayjs(task.date).format("YYYY-MM-DD"),
         extendedProps: {
+          dest_lat: task.dest_lat || 0,
+          dest_lng: task.dest_lng || 0,
+          address: task.address || "No address provided",
           description: task.description || "",
           status: task.status || "pending",
           assigned_by: task.assigned_by || "Unknown",
@@ -93,7 +102,7 @@ const TaskCalendar = () => {
 
   const handleGoToAttendance = () => {
     closeModal();
-    navigate("/attendance-start-page"); 
+  window.open(`https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`, "_blank")
   };
 
   if (loading) {
@@ -107,7 +116,7 @@ const TaskCalendar = () => {
   if (error) {
     return (
       <div className="p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-white border-red-400 text-red-700 px-4 py-3 rounded">
           <strong>Error:</strong> {error}
           <button
             onClick={fetchTasks}
@@ -150,7 +159,7 @@ const TaskCalendar = () => {
 
       {/* Task Modal */}
       {isModalOpen && selectedTask && (
-        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar"
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center"
           onClick={closeModal}
         >
           <div 
@@ -204,6 +213,10 @@ const TaskCalendar = () => {
                   {/* {selectedTask.extendedProps?.assigned_by || 'Unknown'} */}
                 </span>
               </div>
+              <div>
+                <span className="font-medium text-gray-700">Destination:</span>
+                <span className="ml-2 text-gray-900"> {selectedTask.extendedProps?.address || 'Unknown'}</span>
+              </div>
             </div>
             
             <div className="mt-6 flex justify-end space-x-2">
@@ -214,10 +227,13 @@ const TaskCalendar = () => {
                 Close
               </button>
               <button
-                onClick={handleGoToAttendance}
+                onClick={() =>
+    window.open(`https://www.google.com/maps?q=${selectedTask.extendedProps?.dest_lat},${selectedTask.extendedProps?.dest_lng}`, "_blank")
+  }
+
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
               >
-                Go to Attendance
+               Start Task
               </button>
             </div>
           </div>

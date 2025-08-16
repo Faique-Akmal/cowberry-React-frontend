@@ -41,7 +41,7 @@ export default function AttendanceForm() {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       // setMessage(` Unsupported file format for ${field}.`);
-      toast.error(` Unsupported file format for ${field}.`);
+      toast.error(`Unsupported file format for ${field}.`);
       return;
     }
 

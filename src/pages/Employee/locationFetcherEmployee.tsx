@@ -167,7 +167,7 @@ export default function AttendanceList() {
             break;
           }
         } catch (endpointError) {
-          console.log(`❌ Failed to fetch from ${endpoint}:`, endpointError);
+          console.log(` Failed to fetch from ${endpoint}:`, endpointError);
           continue;
         }
       }

@@ -85,12 +85,20 @@ const handleSave = async () => {
     {/* Profile Section */}
     <div className="flex flex-col items-center w-full gap-4 sm:gap-6 lg:flex-row">
       {/* Profile Image */}
-      <div className="w-24 h-24 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
-        <img
-          src={meUserData?.profile_image}
-          alt="user"
-          className=" w-full h-full"
-        />
+      <div>
+        <div className="mr-3 overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
+  {meUserData.profile_image ? (
+    <img
+      src={meUserData.profile_image}
+      alt="User"
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-medium">
+      {username?.charAt(0).toUpperCase()}
+    </div>
+  )}
+</div>
       </div>
 
       {/* Username & Details */}

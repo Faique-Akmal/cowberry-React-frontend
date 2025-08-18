@@ -487,7 +487,7 @@ const filteredData = attendances.filter((att) => {
       </div>
       </div>
 
-      <div className="overflow-auto max-h-[500px] border border-gray-300 rounded-md shadow-inner">
+      <div className="overflow-auto  border border-gray-300 rounded-md shadow-inner">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>

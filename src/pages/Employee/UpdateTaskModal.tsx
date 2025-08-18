@@ -1,53 +1,78 @@
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import API from "../../api/axios";
 
-const Upcompleted_atTaskModal = ({ task, isOpen, onClose, onUpcompleted_at }) => {
+const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
-    // title: task?.title || "",
-    status: task?.status || "",
-    description: task?.description || "",
-    completed_at: task?.completed_at || "",
-    is_completed: task?.is_completed || "",
+    status: "",
+    description: "",
+    completed_at: "",
+    is_completed: false,
   });
 
-  // Upcompleted_at local state on input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Update form when task changes
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        status: task.status || "",
+        description: task.description || "",
+        completed_at: task.completed_at
+          ? task.completed_at.slice(0, 16) // format for datetime-local input
+          : "",
+        is_completed: task.is_completed ?? false,
+      });
+    }
+  }, [task]);
+
+  // Handle input changes
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "is_completed") {
+      setFormData((prev) => ({ ...prev, [name]: value === "true" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  // PUT API call
-  const handleUpcompleted_at = async () => {
+  // PATCH API call
+  const handleUpdate = async () => {
     try {
-      const res = await axios.put(
-        `http://192.168.0.144:8000/api/tasks/${task.id}/`,
-        formData
-      );
-      onUpcompleted_at(res.data); // refresh parent UI
+      // prepare payload: only include fields that are not empty
+      const payload: any = {};
+      Object.keys(formData).forEach((key) => {
+        if (formData[key] !== "" && formData[key] !== null) {
+          payload[key] = formData[key];
+        }
+      });
+
+      const res = await API.patch(`/tasks/${task.id}/`, payload);
+      onUpdate(res.data); // refresh parent UI
       onClose();
     } catch (error) {
-      console.error("Upcompleted_at failed", error);
+      console.error("Task update failed", error.response?.data || error.message);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-   <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
       <div className="bg-white dark:bg-black dark:text-white rounded-xl p-6 w-[400px]">
         <h2 className="text-xl font-bold mb-4">Update Task</h2>
 
-       <select
-  name="status"
-  value={formData.status}
-   onChange={handleChange}
-  className="w-full p-2 mb-3 border rounded"
->
-  <option value="">-- Select Status --</option>
-  <option value="pending">Pending</option>
-  <option value="completed">Completed</option>
-</select>
+        {/* Status */}
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          className="w-full p-2 mb-3 border rounded"
+        >
+          <option value="">-- Select Status --</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+        </select>
 
+        {/* Description */}
         <textarea
           name="description"
           value={formData.description}
@@ -56,37 +81,29 @@ const Upcompleted_atTaskModal = ({ task, isOpen, onClose, onUpcompleted_at }) =>
           className="w-full p-2 mb-3 border rounded"
         />
 
+        {/* Completed At */}
         <input
-  type="datetime-local"
-  name="completed_at"
-  value={formData.completed_at}
-  onChange={handleChange}
-  className="w-full p-2 mb-3 border rounded"
-/>
-
-
-
-                <select
-            name="is_completed"
-            value={formData.is_completed}
-                    onChange={handleChange}
-            className="w-full p-2 mb-3 border rounded"
-                            >
-                <option value="">-- Select Status --</option>
-                <option value="true">True</option>
-                <option value="false">False</option>
-                </select>
-
-
-        {/* <input
-          type="text"
-          name="is_completed"
-          value={formData.is_completed}
+          type="datetime-local"
+          name="completed_at"
+          value={formData.completed_at}
           onChange={handleChange}
-          placeholder="Task is_completed"
           className="w-full p-2 mb-3 border rounded"
-        /> */}
+        />
 
+        {/* Is Completed */}
+        <h2>Is Completed</h2>
+        <select
+          name="is_completed"
+          value={formData.is_completed ? "true" : "false"}
+          onChange={handleChange}
+          className="w-full p-2 mb-3 border rounded"
+        >
+          <option value="">-- Select --</option>
+          <option value="true">True</option>
+          <option value="false">False</option>
+        </select>
+
+        {/* Buttons */}
         <div className="flex justify-end gap-2 mt-4">
           <button
             className="px-4 py-2 bg-gray-400 text-white rounded"
@@ -96,9 +113,9 @@ const Upcompleted_atTaskModal = ({ task, isOpen, onClose, onUpcompleted_at }) =>
           </button>
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={handleUpcompleted_at}
+            onClick={handleUpdate}
           >
-            Upcompleted_at
+            Update
           </button>
         </div>
       </div>
@@ -106,4 +123,4 @@ const Upcompleted_atTaskModal = ({ task, isOpen, onClose, onUpcompleted_at }) =>
   );
 };
 
-export default Upcompleted_atTaskModal;
+export default UpdateTaskModal;

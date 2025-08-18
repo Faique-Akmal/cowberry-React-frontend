@@ -130,7 +130,7 @@ const TaskCalendar = () => {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-white rounded-lg shadow-md dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">My Task Calendar</h2>
         <button

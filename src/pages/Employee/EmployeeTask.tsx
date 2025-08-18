@@ -24,17 +24,18 @@ export default function TaskShowPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-    const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // ✅ New filter state
 
-  const handleUpdateClick = (task) => {
+  const handleUpdateClick = (task: Task) => {
     setSelectedTask(task);
     setModalOpen(true);
   };
 
-  const handleUpdate = (updatedTask) => {
+  const handleUpdate = (updatedTask: Task) => {
     console.log("Updated Task:", updatedTask);
-    // replace the updated task in your list (or refetch from API)
+    // you could replace task in state or refetch tasks here
   };
 
   useEffect(() => {
@@ -92,35 +93,32 @@ export default function TaskShowPage() {
     }
   };
 
-  // ✅ Update Task API call
-  const updateTask = async (task: Task) => {
-    try {
-      const response = await API.put(`/tasks/${task.id}/`, {
-        title: task.title,
-        description: task.description,
-        start_date: task.start_date,
-        address: task.address,
-        is_completed: task.is_completed,
-        completed_at: task.completed_at,
-        completion_description: task.completion_description,
-        assigned_to: task.assigned_to,
-        assigned_by: task.assigned_by,
-        created_by: task.created_by,
-      });
-
-      toast.success("Task updated successfully!");
-      console.log("✅ Task updated:", response.data);
-    } catch (error) {
-      console.error("❌ Error updating task:", error);
-      toast.error("Failed to update task.");
-    }
-  };
+  // ✅ Filter tasks before rendering
+  const filteredTasks = tasks.filter((task) => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "completed") return task.is_completed;
+    if (filterStatus === "pending") return !task.is_completed;
+    return true;
+  });
 
   return (
     <div className="p-6 max-w-5xl mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
       <h1 className="text-3xl font-bold mb-2 p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">
         My Tasks
       </h1>
+
+      {/* ✅ Dropdown for filtering */}
+      <div className="mb-4 flex justify-end">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white"
+        >
+          <option value="all">All Tasks</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
 
       {loading && (
         <div className="text-center py-8">
@@ -141,12 +139,12 @@ export default function TaskShowPage() {
         </div>
       )}
 
-      {!loading && !error && tasks.length === 0 && (
-        <div className="text-center text-gray-500 py-6">No tasks assigned yet.</div>
+      {!loading && !error && filteredTasks.length === 0 && (
+        <div className="text-center text-gray-500 py-6">No tasks found for this filter.</div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 m-4">
-        {tasks.map((task) => (
+        {filteredTasks.map((task) => (
           <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4">
             <h2 className="text-lg font-semibold dark:text-black">
               <span>Title:</span> {task.title}
@@ -174,22 +172,8 @@ export default function TaskShowPage() {
             </div>
             <hr />
             <div>
-              {/* Start Task Button */}
-              {/* <button
-                onClick={() =>
-                  window.open(
-                    `https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`,
-                    "_blank"
-                  )
-                }
-                className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-blue-800"
-              >
-                Start Task
-              </button> */}
-
-              {/* ✅ Update Task Button */}
               <button
-              onClick={() => handleUpdateClick(task)}
+                onClick={() => handleUpdateClick(task)}
                 className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
               >
                 Update Task
@@ -197,12 +181,13 @@ export default function TaskShowPage() {
             </div>
           </div>
         ))}
-           <UpdateTaskModal
-        task={selectedTask}
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        onUpdate={handleUpdate}
-      />
+
+        <UpdateTaskModal
+          task={selectedTask}
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+          onUpdate={handleUpdate}
+        />
       </div>
     </div>
   );

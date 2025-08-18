@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { axiosPostChangePassword } from "../../store/userStore";
 import toast from "react-hot-toast";
+import {  EyeCloseIcon, EyeIcon } from "../../icons";
 
 interface ChangePasswordModalProps {
   onClose: () => void;
@@ -12,6 +13,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
+   const [showPassword, setShowPassword] = useState(false);
 
   // Moved handleClose above handleChangePassword so it exists when called
   
@@ -98,37 +100,60 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Password
-            </label>
-            <input
-              type="password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              placeholder="Enter your current password"
-            />
-          </div>
+       <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Current Password
+  </label>
+  <div className="relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      value={oldPassword}
+      onChange={(e) => setOldPassword(e.target.value)}
+      onKeyPress={handleKeyPress}
+      disabled={loading}
+      placeholder="Enter your current password"
+    />
+    <span
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+    >
+      {showPassword ? (
+        <EyeIcon className="size-5 fill-gray-500" />
+      ) : (
+        <EyeCloseIcon className="size-5 fill-gray-500" />
+      )}
+    </span>
+  </div>
+</div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              New Password
-            </label>
-            <input
-              type="password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              placeholder="Enter new password (min 8 characters)"
-            />
-          </div>
-        </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    New Password
+  </label>
+  <div className="relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      value={newPassword}
+      onChange={(e) => setNewPassword(e.target.value)}
+      onKeyPress={handleKeyPress}
+      disabled={loading}
+      placeholder="Enter new password (min 8 characters)"
+    />
+    <span
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+    >
+      {showPassword ? (
+        <EyeIcon className="size-5 fill-gray-500" />
+      ) : (
+        <EyeCloseIcon className="size-5 fill-gray-500" />
+      )}
+    </span>
+  </div>
+</div>
+
 
         {/* {message && (
           <div

@@ -4,7 +4,7 @@ import API from "../../api/axios";
 const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     status: "",
-    description: "",
+    completion_description: "",
     completed_at: "",
     is_completed: false,
   });
@@ -14,7 +14,7 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
     if (task) {
       setFormData({
         status: task.status || "",
-        description: task.description || "",
+        completion_description: task.completion_description || "",
         completed_at: task.completed_at
           ? task.completed_at.slice(0, 16) // format for datetime-local input
           : "",
@@ -72,12 +72,13 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
           <option value="completed">Completed</option>
         </select>
 
-        {/* Description */}
+        {/* completion_description */}
+        <label>completion_description</label>
         <textarea
-          name="description"
-          value={formData.description}
+          name="completion_description"
+          value={formData.completion_description}
           onChange={handleChange}
-          placeholder="Task Description"
+          placeholder="Task completion_description"
           className="w-full p-2 mb-3 border rounded"
         />
 

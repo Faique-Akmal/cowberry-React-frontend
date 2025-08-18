@@ -175,7 +175,7 @@ export default function TaskShowPage() {
             <hr />
             <div>
               {/* Start Task Button */}
-              <button
+              {/* <button
                 onClick={() =>
                   window.open(
                     `https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`,
@@ -185,7 +185,7 @@ export default function TaskShowPage() {
                 className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-blue-800"
               >
                 Start Task
-              </button>
+              </button> */}
 
               {/* ✅ Update Task Button */}
               <button

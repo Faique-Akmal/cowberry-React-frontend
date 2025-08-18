@@ -99,11 +99,14 @@ const TaskCalendar = () => {
     setModalOpen(false);
     setSelectedTask(null);
   };
-
-  const handleGoToAttendance = () => {
-    closeModal();
-  window.open(`https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`, "_blank")
-  };
+  const handleGoToTask = () => {
+    closeModal(); 
+    navigate("/task-show-page");
+  } 
+  // const handleGoToAttendance = () => {
+  //   closeModal();
+  // window.open(`https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`, "_blank")
+  // };
 
   if (loading) {
     return (
@@ -153,7 +156,7 @@ const TaskCalendar = () => {
           right: "dayGridMonth,dayGridWeek"
         }}
         eventDisplay="block"
-        dayMaxEvents={3}
+        dayMaxEvents={4}
         moreLinkClick="popover"
       />
 
@@ -227,13 +230,14 @@ const TaskCalendar = () => {
                 Close
               </button>
               <button
-                onClick={() =>
-    window.open(`https://www.google.com/maps?q=${selectedTask.extendedProps?.dest_lat},${selectedTask.extendedProps?.dest_lng}`, "_blank")
-  }
+  //               onClick={() =>
+  //   window.open(`https://www.google.com/maps?q=${selectedTask.extendedProps?.dest_lat},${selectedTask.extendedProps?.dest_lng}`, "_blank")
+  // }
+                onClick={handleGoToTask}
 
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
               >
-               Start Task
+               Show Tasks
               </button>
             </div>
           </div>

@@ -171,7 +171,16 @@ export default function TaskShowPage() {
               <span className="text-black">Start Date: {formatDate(task.start_date)}</span>
             </div>
             <hr />
-            <div>
+                <div>
+                  <button
+                        onClick={() =>
+            window.open(`https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`, "_blank")
+          }
+
+              className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
+                  >
+                  Start Task
+                  </button>
               <button
                 onClick={() => handleUpdateClick(task)}
                 className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"

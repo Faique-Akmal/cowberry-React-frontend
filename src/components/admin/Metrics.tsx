@@ -4,8 +4,10 @@ import API from "../../api/axios";
 import { CiUser } from "react-icons/ci";
 import { FcDepartment } from "react-icons/fc";
 import { GrUserManager } from "react-icons/gr";
+import { useTranslation } from "react-i18next";
 
 export default function Metrics() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [roleStats, setRoleStats] = useState({
     employee: 0,
@@ -57,37 +59,37 @@ export default function Metrics() {
 
   const cards = [
     {
-      title: "Total Users",
+      title: t("home.Total Users"),
       value: loading ? "..." : totalUsers.toLocaleString(),
       icon: <CiUser className="h-6 w-6 text-indigo-600" />,
       iconBg: "bg-indigo-100",
     },
     {
-      title: "Total Employees",
+      title: t("home.Total Employees"),
       value: loading ? "..." : roleStats.employee.toLocaleString(),
       icon: <GroupIcon className="h-6 w-6 text-indigo-600" />,
       iconBg: "bg-indigo-100",
     },
     {
-      title: "Total Department Heads",
+      title: t("home.Total Department Heads"),
       value: loading ? "..." : roleStats.department_head.toLocaleString(),
       icon: <FcDepartment className="h-6 w-6 text-yellow-500" />,
       iconBg: "bg-yellow-100",
     },
     {
-      title: "Total Managers",
+      title: t("home.Total Managers"),
       value: loading ? "..." : roleStats.manager.toLocaleString(),
       icon: <GrUserManager className="h-6 w-6 text-green-600" />,
       iconBg: "bg-green-100",
     },
     {
-      title: "Total HR",
+      title: t("home.Total HR"),
       value: loading ? "..." : roleStats.hr.toLocaleString(),
       icon: <GrUserManager className="h-6 w-6 text-orange-500" />,
       iconBg: "bg-orange-100",
     },
      {
-      title: "Total Admin",
+      title: t("home.Total Admin"),
       value: loading ? "..." : roleStats.admin.toLocaleString(),
       icon: <GrUserManager className="h-6 w-6 text-blue-500" />,
       iconBg: "bg-blue-100",

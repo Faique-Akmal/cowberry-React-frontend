@@ -4,6 +4,7 @@ import DashboardStats from "../../components/employees/UserStats";
 import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 // import Confetti from "react-confetti";
 
 interface User {
@@ -15,13 +16,9 @@ interface User {
 }
 
 function EmployeeDashboard() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
-  // const [windowSize, setWindowSize] = useState({
-  //   width: window.innerWidth,
-  //   height: window.innerHeight,
-  // });
-
-  // ✅ Fetch user
+  
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -35,26 +32,12 @@ function EmployeeDashboard() {
     fetchUser();
   }, []);
 
-  // // ✅ Handle confetti window resize
-  // useEffect(() => {
-  //   const handleResize = () => {
-  //     setWindowSize({
-  //       width: window.innerWidth,
-  //       height: window.innerHeight,
-  //     });
-  //   };
-
-  //   window.addEventListener("resize", handleResize);
-  //   return () => window.removeEventListener("resize", handleResize);
-  // }, []);
-
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "GOOD MORNING";
-    else if (hour < 17) return "GOOD AFTERNOON";
-    else return "GOOD EVENING";
+    if (hour < 12) return t("greetings.morning");
+    else if (hour < 17) return t("greetings.afternoon");
+    else return t("greetings.evening");
   };
-
  
 
   return (
@@ -66,13 +49,12 @@ function EmployeeDashboard() {
     {/* Greeting Section */}
     <div className="col-span-12 border rounded-2xl p-4 sm:p-5">
       <h1 className="text-2xl sm:text-3xl mb-4 font-extrabold animate-pulse font-serif text-black dark:text-white">
-        {getGreeting()}
-        <span className="mx-2 capitalize">
-          {user?.full_name || user?.username || ""}
-        </span>
-      </h1>
+      {t("greetings.withName", {
+        greet: getGreeting(),
+        name: user?.full_name || user?.username || ""
+      })}</h1>
       <p className="text-gray-600 mb-4 sm:mb-6 font-serif text-sm sm:text-base">
-        Welcome to your dashboard! Let's make progress on your goals today!
+      {t("home.Welcome to your dashboard! Let's make progress on your goals today!")}
       </p>
     </div>
 
@@ -93,7 +75,7 @@ function EmployeeDashboard() {
         className="flex items-center justify-center p-3 sm:p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors w-full"
       >
         <b className="animate-pulse font-extrabold text-black dark:text-white text-sm sm:text-base">
-          Go to Task Page
+          {t("home.Go to Task Page")}
         </b>
       </Link>
     </div>

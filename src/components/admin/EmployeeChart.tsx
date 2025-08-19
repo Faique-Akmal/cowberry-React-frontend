@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useTranslation } from "react-i18next";
 
 interface DepartmentStats {
   id: number;
@@ -24,6 +25,7 @@ export default function EmployeeChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalEmployees, setTotalEmployees] = useState(0);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchDepartmentStats();
@@ -80,7 +82,7 @@ export default function EmployeeChart() {
   return (
     <div className="bg-white rounded-xl shadow-lg p-2  dark:bg-black dark:text-white ">
       <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6 dark:text-white">
-        Users by Department
+       {t("home.UsersbyDepartment")}
       </h2>
 
       <div className="flex flex-col lg:flex-row gap-10 items-center lg:items-start">
@@ -105,7 +107,7 @@ export default function EmployeeChart() {
             </PieChart>
           </ResponsiveContainer>
           <p className="text-center mt-4 text-sm text-gray-600">
-            Total Users: <span className="font-bold text-blue-600">{totalEmployees}</span>
+            {t("home.TotalUsers")} <span className="font-bold text-blue-600">{totalEmployees}</span>
           </p>
         </div>
 
@@ -127,8 +129,8 @@ export default function EmployeeChart() {
                   <h4 className="font-semibold text-gray-800">{item.name}</h4>
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
-                  <p>Users: <span className="font-bold">{item.value}</span></p>
-                  <p>Share: {percentage}%</p>
+                  <p>{t("home.Users")} <span className="font-bold">{item.value}</span></p>
+                  <p>{t("home.Share")} {percentage}%</p>
                 </div>
               </div>
             );

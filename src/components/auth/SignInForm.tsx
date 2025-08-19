@@ -10,8 +10,12 @@ import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 // import Home from "../../pages/Dashboard/Home";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+
 
 export default function SignInForm() {
+
+  const { t } = useTranslation();
   const { login } = useAuth();
 
   const [employeeCode, setEmployeeCode] = useState("");

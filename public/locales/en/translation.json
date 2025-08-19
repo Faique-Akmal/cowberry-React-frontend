@@ -1,0 +1,108 @@
+{
+  "welcome": "Welcome to our Web App",
+  "login": "Login",
+  "logout": "Logout",
+   "menu": {
+    "dashboard": "Dashboard",
+    "employeeDashboard": "Employee Dashboard",
+    "calendar": "Calendar",
+    "profile": "Profile",
+    "chat": "Chat",
+    "attendance": "Attendance",
+    "attendanceStart": "Attendance Start",
+    "attendanceEnd": "Attendance End",
+    "forms": "Forms",
+    "assignTaskForm": "Assign Task Form",
+    "attendanceList": "Attendance List",
+    "registerUserForm": "Register User Form",
+    "preference": "Preference",
+    "farmers": "Farmers",
+    "procurement": "Procurement",
+    "inventory": "Inventory",
+    "accounts": "Accounts",
+    "sales": "Sales",
+    "taskManager": "Task Manager",
+    "allUsers": "All Users",
+    "taskCalendar": "Task Calendar",
+    "myTasks": "My Tasks",
+    "announcement": "Announcement",
+    "authentication": "Authentication",
+    "signIn": "Sign In",
+    "Authentication": "Authentication"
+   },
+
+    "home": {
+      "Total Users": "Total Users",
+      "Total Employees": "Total Employees",
+      "Total Department Heads": "Total Department Heads",
+      "Total Managers": "Total Managers",
+      "Total HR": "Total HR",
+      "Total Admin": "Total Admin",
+      "UsersbyDepartment": "Users by Department",
+        "TotalUsers": "Total Users:",
+        "Users": "Users:",
+        "Share": "Share",
+        "Today’s Birthdays": "Today's Birthdays",
+        "Loading birthdays...": "Loading birthdays...",
+        "No birthdays today.": "No birthdays today.",
+        "Welcome to your dashboard! Let's make progress on your goals today!": "Welcome to your dashboard! Let's make progress on your goals today!",
+        "Go to Task Page": "Go to Task Page",
+        "TASK UPDATES": "TASK UPDATES",
+        "Total Tasks": "Total Tasks",
+        "Progress": "Progress",
+        "Completed Tasks": "Completed Tasks",
+        "Active Tasks": "Active Tasks",
+        "Due Tasks": "Due Tasks"
+
+
+    },
+     "roles": {
+    "admin": "Admin",
+    "employee": "Employee",
+    "department_head": "Department Head",
+    "manager": "Manager",
+    "hr": "HR",
+    "executive": "Executive"
+  },
+  
+  "greetings": {
+    "morning": "Good Morning",
+    "afternoon": "Good Afternoon",
+    "evening": "Good Evening",
+    "withName": "{{greet}}, {{name}}"
+  },
+    "attendence": {
+        "📍 Check In": "📍 Check In",
+        "📍 Check Out": "📍 Check Out",
+        "Description": "Description",
+        "Odometer Image": "Odometer Image:",
+        "Check In Time": "Check In Time",
+        "Check Out Time": "Check Out Time", 
+        "Selfie Image": "Selfie Image", 
+        "Attendance List": "Attendance List",
+        "Start Time": "Start Time",
+        "End Time": "End Time",
+        "Status": "Status",
+        "Actions": "Actions",
+        "Check In": "Check In",
+        "Check Out": "Check Out",
+        "Attendance marked successfully!": "Attendance marked successfully!",
+        "Error marking attendance. Please try again.": "Error marking attendance. Please try again.",
+        "Are you sure you want to check out?": "Are you sure you want to check out?",
+        "Attendance checked out successfully!": "Attendance checked out successfully!",
+        "Error checking out. Please try again.": "Error checking out. Please try again.",
+          "submitting": "⏳ Submitting...",
+    "submit": "✅ Submit Attendance",
+        "Attendance Start": "Attendance Start",
+        "Attendance End": "Attendance End",
+        "Location": "Location",
+        "No attendance records found.": "No attendance records found.",
+        "You have already submitted attendance for today.": "You have already submitted attendance for today."
+    }
+}
+
+
+
+
+
+

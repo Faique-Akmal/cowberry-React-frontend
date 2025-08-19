@@ -3,9 +3,10 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 import ChangePasswordModal from "../auth/ChangePasswordModal";
-// import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 export default function UserDropdown() {
+  const { t } = useTranslation(); 
   const [isOpen, setIsOpen] = useState(false);
 
   const {username , email ,profile_image} = JSON.parse(localStorage.getItem("meUser") || "{}"); 
@@ -68,10 +69,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400 capitalize">
-            {username || "N/A"}
+            {t(username || "N/A")}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {email || "N/A"}
+            {t(email || "N/A")}
           </span>
         </div>
 

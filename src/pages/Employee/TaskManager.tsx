@@ -294,7 +294,7 @@ useEffect(() => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-600">Destination</h4>
+              <h4 className="text-sm font-medium text-gray-600">{t("task.Destination")}</h4>
               <p className="text-gray-900 text-sm break-words">
                 {selectedTask.address || "No address provided"}
               </p>
@@ -311,7 +311,7 @@ useEffect(() => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-600">Date</h4>
+              <h4 className="text-sm font-medium text-gray-600">{t("task.Date")}</h4>
               <p className="text-gray-900 text-sm font-medium">
                 {dayjs(selectedTask.date).format("DD MMM YYYY")}
               </p>
@@ -329,7 +329,7 @@ useEffect(() => {
             </svg>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-gray-600">Current Status</h4>
+            <h4 className="text-sm font-medium text-gray-600">{t("task.Current Status")}</h4>
           </div>
         </div>
         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium capitalize ${

@@ -129,7 +129,8 @@
         "Assigned to": "असाइन किया गया",
         "Date": "तारीख़",
         "Task Details": "कार्य विवरण",
-        "Completion Notes": "पूर्ण नोट्स"
+        "Completion Notes": "पूर्ण नोट्स",
+        "Current Status": "वर्तमान स्थिति"
     },
     "announcement": {
         "Create Announcement": "घोषणा बनाएँ",

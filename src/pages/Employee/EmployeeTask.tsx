@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 import UpdateTaskModal from "./UpdateTaskModal";
+import { useTranslation } from "react-i18next";
 
 type Task = {
   id: number;
@@ -21,6 +22,7 @@ type Task = {
 };
 
 export default function TaskShowPage() {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -104,7 +106,7 @@ export default function TaskShowPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
       <h1 className="text-3xl font-bold mb-2 p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">
-        My Tasks
+      {t("task.My Tasks")}
       </h1>
 
       {/* ✅ Dropdown for filtering */}
@@ -114,9 +116,9 @@ export default function TaskShowPage() {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white"
         >
-          <option value="all">All Tasks</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
+          <option value="all">{t("task.All Tasks")}</option>
+          <option value="pending">{t("task.Pending")}</option>
+          <option value="completed">{t("task.Completed")}</option>
         </select>
       </div>
 
@@ -134,29 +136,29 @@ export default function TaskShowPage() {
             onClick={() => window.location.reload()}
             className="mt-2 bg-red-600 text-white px-4 py-2 rounded"
           >
-            Retry
+          {t("task.Retry")}
           </button>
         </div>
       )}
 
       {!loading && !error && filteredTasks.length === 0 && (
-        <div className="text-center text-gray-500 py-6">No tasks found for this filter.</div>
+        <div className="text-center text-gray-500 py-6">{t("task.No tasks found for this filter.")}</div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 m-4">
         {filteredTasks.map((task) => (
           <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4">
             <h2 className="text-lg font-semibold dark:text-black">
-              <span>Title:</span> {task.title}
+              <span>{t("task.Title")}:</span> {task.title}
             </h2>
             <p className="text-sm text-black mb-2">
-              <b>Description</b>: {task.description || "No description"}
+              <b>{t("task.Description")}</b>: {task.description || "No description"}
             </p>
             <p className="text-sm text-black mb-2">
-              <b>Destination</b>: {task.address || "No address provided"}
+              <b>{t("task.Destination")}</b>: {task.address || "No address provided"}
             </p>
             <p className="text-sm text-gray-700 dark:text-white mb-2">
-              <span className="text-black">Complete Description:</span>
+              <span className="text-black">{t("task.Complete Description")}:</span>
               <br />
               <b>{task.completion_description || "No description"}</b>
             </p>
@@ -168,7 +170,7 @@ export default function TaskShowPage() {
               >
                 {task.is_completed ? "Completed" : "Pending"}
               </span>
-              <span className="text-black">Start Date: {formatDate(task.start_date)}</span>
+              <span className="text-black">{t("task.Start Date")}: {formatDate(task.start_date)}</span>
             </div>
             <hr />
                 <div>
@@ -179,13 +181,13 @@ export default function TaskShowPage() {
 
               className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
                   >
-                  Start Task
+                {t("task.Start Task")}
                   </button>
               <button
                 onClick={() => handleUpdateClick(task)}
                 className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
               >
-                Update Task
+               {t("task.Update Task")}
               </button>
             </div>
           </div>

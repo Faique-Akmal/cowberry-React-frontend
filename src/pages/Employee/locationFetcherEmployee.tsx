@@ -14,6 +14,7 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import { FaEye, FaSync, FaMapMarkerAlt } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
@@ -50,6 +51,7 @@ interface LocationLog {
 }
 
 export default function AttendanceList() {
+  const { t } = useTranslation();
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
@@ -452,11 +454,11 @@ const filteredData = attendances.filter((att) => {
 
   return (
     <div className="p-4 bg-white rounded-xl shadow-md dark:bg-black dark:text-white">
-      <h2 className="text-2xl flex justify-center text-center font-bold mb-4 lg:border-b">📊 Employee Attendance Records</h2>
+      <h2 className="text-2xl flex justify-center text-center font-bold mb-4 p-3 lg:border-b">{t("location.📊 Employee Attendance Records")}</h2>
       <div className="grid grid-cols-2 space-y-2 gap-5">
                     <div className="mb-4">
-            <label className="block mb-1 font-medium text-gray-700">
-              Filter by Date:
+            <label className="block mb-1 font-medium text-gray-700 dark:text-white">
+             {t("location.Filter by Date")}:
             </label>
             <input
               type="date"
@@ -470,14 +472,14 @@ const filteredData = attendances.filter((att) => {
 
       <div className="mb-4">
         <label className="block mb-1 font-medium text-gray-700">
-          Filter by Department:
+         {t("location.Filter by Department:")}
         </label>
         <select
           className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
           onChange={(e) => setSelectedDept(e.target.value)}
           value={selectedDept}
         >
-          <option value="">All Departments</option>
+          <option value="">{t("location.Filter by Department")}:</option>
           {departments.map((dept) => (
             <option key={dept} value={dept}>
               {dept}
@@ -491,15 +493,15 @@ const filteredData = attendances.filter((att) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Department</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">End Time</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Address</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Sr.no")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Name")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Employee Code")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Date")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Department")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Start Time")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.End Time")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Address")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Actions")}</th>
             </tr>
           </thead>
           <tbody>

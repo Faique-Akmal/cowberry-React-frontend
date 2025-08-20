@@ -6,7 +6,7 @@ const LangToggleButton: React.FC = () => {
   const [language, setLanguage] = useState<string>(i18n.language || 'en');
 
   const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'hi' : 'en';
+    const newLang = language === 'en'? 'hi' : 'en';
     i18n.changeLanguage(newLang);
     setLanguage(newLang);
   };

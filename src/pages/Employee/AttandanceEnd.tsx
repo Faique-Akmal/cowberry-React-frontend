@@ -93,8 +93,8 @@ export default function AttendanceForm() {
             ...prev,
             user: String(user.id || user.user_id || user.pk),
             username: user.name || user.username || '',
-            end_lat: position.coords.latitude.toString(),
-            end_lng: position.coords.longitude.toString(),
+            end_lat: position.coords.latitude.toFixed(6),
+            end_lng: position.coords.longitude.toFixed(6),
           }));
           toast.success('User and location fetched successfully.');
           setLocationFetched(true);
@@ -196,7 +196,7 @@ export default function AttendanceForm() {
         disabled={locationFetched || alreadySubmitted}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ? 'Ready to go' : 'Click here'}
+        {locationFetched ?  t("attendence.✅ Ready to Submit") : t("attendence.📍Click to End Attendance")}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,6 +208,7 @@ export default function AttendanceForm() {
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
+            placeholder={t("attendence.Describe your work for today...")}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
@@ -251,7 +252,7 @@ export default function AttendanceForm() {
           disabled={loading || alreadySubmitted}
           className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
         >
-          {alreadySubmitted ? 'Already Submitted' : loading ? 'Submitting...' : '✅ Submit Attendance'}
+          {alreadySubmitted ? t('attendence.Already Submitted') : loading ? t('attendence.Submitting...') : t('attendence.✅ Submit Attendance')}
         </button>
       </form>
     </div>

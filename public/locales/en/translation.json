@@ -93,12 +93,162 @@
         "Error checking out. Please try again.": "Error checking out. Please try again.",
           "submitting": "⏳ Submitting...",
     "submit": "✅ Submit Attendance",
+      "📍Click to Start Attendance": "📍 Click to Start Attendance",
+      "✅ Ready to Submit": "✅ Ready to Submit",
+        "📍Click to End Attendance": "📍 Click to End Attendance",
+        "Already Submitted": "Already Submitted",
+        "Submitting...": "Submitting...",
+        "✅ Submit Attendance": "✅ Submit Attendance",
+        
         "Attendance Start": "Attendance Start",
         "Attendance End": "Attendance End",
         "Location": "Location",
         "No attendance records found.": "No attendance records found.",
-        "You have already submitted attendance for today.": "You have already submitted attendance for today."
+        "You have already submitted attendance for today.": "You have already submitted attendance for today.",
+        "Describe your work for today...":"Describe your work for today..."
+    },
+  "task": {
+    "Task": "Task",
+    "All Tasks": "All Tasks",
+    "Pending": "Pending",
+    "Completed": "Completed",
+    "My Tasks": "My Tasks",
+    "Retry": "Retry",
+    "Title": "Title",
+    "Description": "Description",
+    "Destination": "Destination",
+    "Complete Description": "Complete Description",
+    "Start Date": "Start Date",
+    "Start Task": "Start Task",
+    "Update Task": "Update Task",
+    "Assigned To (User ID)": "Assigned To (User ID)",
+    "Assigned By (Your ID)": "Assigned By (Your ID)",
+    "Create Task": "Create Task",
+    "Assign New Task": "Assign New Task",
+    "Completion Description": "Completion Description",
+    "Task created successfully!": "Task created successfully!",
+    "Enter address here": "Enter address here",
+    "Created By (Your ID)": "Created By (Your ID)",
+    "Task Manager": "Task Manager",
+    "All Users": "All Users",
+    "Assigned to": "Assigned to",
+    "Date": "Date",
+    "Task Details": "Task Details",
+    "Completion Notes": "Completion Notes"
+  },
+    "announcement": {
+        "Create Announcement": "Create Announcement",
+        "Title": "Title",
+        "Content": "Content",
+        "Submit": "Submit",
+        "post_success": "Announcement posted successfully!",
+        "Announcement List": "Announcement List",
+        "No announcements found.": "No announcements found.",
+        "Announcement created successfully!": "Announcement created successfully!",
+        "Error creating announcement. Please try again.": "Error creating announcement. Please try again.",
+        "Announcement deleted successfully!": "Announcement deleted successfully!",
+        "Posting..."  : "Posting...",
+        "Post Announcement": "Post Announcement"
+    },
+    "profile": {
+        "Profile": "Profile",
+        "Username": "Username",
+        "Edit Profile": "Edit Profile",
+        "Username updated successfully": "Username updated successfully",
+        "Update your profile information below.": "Update your profile information below.",
+        "Profile Image": "Profile Image",
+        "Save Changes": "Save Changes",
+        "Edit": "Edit",
+        "first_name":"first_name",
+        "Update your address below.": "Update your address below.",
+        "Edit Address": "Edit Address",
+        "Address": "Address",
+        "Role": "Role",
+        "Department": "Department",
+        "mobile_no": "Mobile No",
+        "Personal Information":"Personal Information",
+        "Last Name": "Last Name",
+        "Email": "Email"
+
+
+        
+    },
+    "button":{
+      "cancel":"Cancel",
+      "Saving...":"Saving...",
+      "Save Changes":"Save Changes"
+    },
+    "location": {
+        "📊 Employee Attendance Records": "📊 Employee Attendance Records",
+        "Employee Name": "Employee Name",
+        "Department": "Department",
+        "Filter by Date": "Filter by Date",
+        "Filter by Department": "Filter by Department:",
+        "Attendance Records": "Attendance Records",
+        "Start Time": "Start Time",
+        "End Time": "End Time",
+        "Date": "Date",
+        "Sr.no": "Sr.no", 
+        "Name": "Name",
+        "Employee Code": "Employee Code",
+        "Address": "Address",
+        
+        "View Details": "View Details",
+        
+        "Check In Time": "Check In Time",
+        "Check Out Time": "Check Out Time",
+        "Status": "Status",
+        "Actions": "Actions",
+        "View Location": "View Location",
+        "No attendance records found.": "No attendance records found.",
+        "Retry": "Retry"
+    },
+    "register":{
+      "User Registration": "User Registration",
+      "First Name": "First Name",
+      "Username": "Username",
+      "Password": "Password",
+      "Select Role": "Select Role",
+      "Last Name": "Last Name",
+      "Email": "Email",
+      "Mobile No": "Mobile No",
+      "Department": "Department",
+      "Role": "Role",
+      "Confirm Password": "Confirm Password",
+      "Register": "Register",
+      "Admin": "Admin",
+    
+      "Department Head": "Department Head",
+      "Manager": "Manager",
+      "Executive": "Executive",
+      "Employee": "Employee",
+      "Employee_office": "Employee Office",
+      "Registration": "Registration",
+      "Please fill in all fields.": "Please fill in all fields.",
+      "Passwords do not match.": "Passwords do not match.",
+      "Select Department": "Select Department",
+      "support": "Support",
+      "Procurement": "Procurement",
+      "Electric": "Electric",
+      "Order": "Order",
+      "D.O.B.": "D.O.B.", 
+      "Marketing": "Marketing",
+      "Accountant": "Accountant",
+      "IT": "IT",
+      "HR": "HR",
+
+       "Enter address here": "Enter address here",
+       "Registering...": "Registering..."
+
+      
+    },
+    "toast": {
+        "Registration successful!": "Registration successful!",
+        "Error during registration. Please try again.": "Error during registration. Please try again.",
+        "Username already exists. Please choose a different one.": "Username already exists. Please choose a different one.",
+        "Failed to fetch location. Please allow GPS access.": "Failed to fetch location. Please allow GPS access."
     }
+
 }
 
 

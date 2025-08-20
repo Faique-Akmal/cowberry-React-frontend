@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface Task {
   id: number;
@@ -23,6 +24,7 @@ interface User {
 }
 
 const AdminTaskManager = () => {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<number | "all">("all");
@@ -168,13 +170,14 @@ useEffect(() => {
   return (
     <div className="p-6 bg-white  border-2 dark:border-green-500 shadow rounded-lg dark:text-white dark:bg-black ">
       <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold">Admin Task Management</h2>
+        <h2 className="text-xl font-semibold">{t("task.Task Manager")}</h2>
+        <hr/>
         <select
           onChange={handleUserChange}
           className="border px-3 py-1 rounded"
           value={selectedUser}
         >
-          <option value="all" className="dark:text-white dark:bg-black">All Users</option>
+          <option value="all" className="dark:text-white dark:bg-black">{t("task.All Users")}</option>
           {users.map((user) => (
             <option key={user.id} value={user.id} className="capitalize dark:text-white dark:bg-black ">
               {user.username}
@@ -193,10 +196,10 @@ useEffect(() => {
             <div>
               <h3 className="font-semibold">{task.title}</h3>
               <p className="text-sm text-gray-600">
-                Assigned to: {task.id}
+                {t("task.Assigned to")}: {task.id}
               </p>
               <p className="text-sm text-gray-500">
-                Date: {dayjs(task.date).format("DD MMM YYYY")}
+                {t("task.Date")}: {dayjs(task.date).format("DD MMM YYYY")}
               </p>
             </div>
             <div>
@@ -219,7 +222,7 @@ useEffect(() => {
   <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform animate-in zoom-in-95 duration-300 overflow-y-auto">
     {/* Header */}
     <div className="relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl p-6 pb-4 border-b border-gray-100">
-      <h3 className="text-2xl font-bold text-gray-800 pr-8">Task Details</h3>
+      <h3 className="text-2xl font-bold text-gray-800 pr-8">{t("task.Task Details")}</h3>
       <button 
         className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 transition-all duration-200 shadow-sm hover:shadow-md"
         onClick={closeModal}
@@ -241,7 +244,7 @@ useEffect(() => {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-gray-600 mb-1">Title</h4>
+            <h4 className="text-sm font-medium text-gray-600 mb-1">{t("task.Title")}</h4>
             <p className="text-lg font-semibold text-gray-900 break-words">{selectedTask.title}</p>
           </div>
         </div>
@@ -256,7 +259,7 @@ useEffect(() => {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-gray-600 mb-1">Description</h4>
+            <h4 className="text-sm font-medium text-gray-600 mb-1">{t("task.Description")}</h4>
             <p className="text-gray-900 break-words leading-relaxed">{selectedTask.description}</p>
           </div>
         </div>
@@ -272,8 +275,8 @@ useEffect(() => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-600 mb-1">Completion Notes</h4>
-              <p className="text-gray-900 break-words leading-relaxed">{selectedTask.completion_description}</p>
+              <h4 className="text-sm font-medium text-gray-600 mb-1">{t("task.Completion Notes")}</h4>
+              <span className="text-gray-900 break-words leading-relaxed">{selectedTask.completion_description}</span>
             </div>
           </div>
         </div>

@@ -164,8 +164,8 @@ export default function AttendanceStart() {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const lat = position.coords.latitude.toString();
-          const lng = position.coords.longitude.toString();
+         const lat = position.coords.latitude.toFixed(6); // ✅ round to 6 decimals
+    const lng = position.coords.longitude.toFixed(6);
 
           setFormData((prev) => ({
             ...prev,
@@ -180,7 +180,7 @@ export default function AttendanceStart() {
           toast.success("✅ Location fetched successfully! You can now fill the form.");
         },
         () => {
-          toast.error("Failed to fetch location. Please allow GPS access.");
+          toast.error(t("toast.Failed to fetch location. Please allow GPS access."));
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
@@ -276,7 +276,7 @@ export default function AttendanceStart() {
         disabled={locationFetched || loading || alreadySubmitted}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
-        {loading ? "🔄 Fetching Location..." : alreadySubmitted ? "✅ Already Submitted" : locationFetched ? "✅ Ready to Submit" : "📍 Click to Start Attendance"}
+        {loading ? "🔄 Fetching Location..." : alreadySubmitted ? "✅ Already Submitted" : locationFetched ? t("attendence.✅ Ready to Submit") : t("attendence.📍Click to Start Attendance")}
       </button>
 
       {alreadySubmitted && (
@@ -297,7 +297,7 @@ export default function AttendanceStart() {
             rows={3}
             disabled={alreadySubmitted}
             className="w-full border px-3 py-2 rounded border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-            placeholder="Describe your work for today..."
+            placeholder={t("attendence.Describe your work for today...")}
           />
         </div>
 

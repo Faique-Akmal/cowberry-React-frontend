@@ -7,6 +7,7 @@ import Alert from "../ui/alert/Alert";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 // import API from "../../api/axios";
+import { useTranslation } from "react-i18next";
 
 interface UserProfile {
   username: string;
@@ -16,7 +17,7 @@ interface UserProfile {
 }
 
 export default function UserMetaCard() {
-
+  const { t } = useTranslation();
   const localMeData = localStorage.getItem("meUser");
 const meUserData = localMeData ? JSON.parse(localMeData) : null;
 
@@ -38,7 +39,7 @@ const handleSave = async () => {
   try {
     const formData = new FormData();
     formData.append("username", username);
-    toast.success("Username updated successfully");
+    toast.success(t("profile.Username updated successfully"));
 
     // Append profile image only if it's a valid File
     if (profileImage instanceof File) {
@@ -108,7 +109,7 @@ const handleSave = async () => {
         </h4>
         <div className="flex flex-col items-center gap-1 text-center lg:flex-row lg:gap-3 lg:text-left">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {getRoleName(meUserData?.role)}
+            {meUserData?.role}
           </p>
           <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 lg:block"></div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -126,9 +127,9 @@ const handleSave = async () => {
     {/* Edit Button */}
     <button
       onClick={openModal}
-      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+       className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
     >
-      Edit
+      {t("profile.Edit")}
     </button>
   </div>
 </div>
@@ -137,16 +138,16 @@ const handleSave = async () => {
 <Modal isOpen={isOpen} onClose={closeModal} className="max-w-lg w-full m-4">
   <div className="p-4 text-center sm:text-left">
     <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
-      Edit Profile
+     {t("profile.Edit Profile")}
     </h3>
     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-      Update your profile information below.
+     {t("profile.Update your profile information below.")}
     </p>
     <form className="space-y-4">
       {/* Username */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Username
+        {t("profile.Username")}
         </label>
         <input
           value={username}
@@ -158,7 +159,7 @@ const handleSave = async () => {
       {/* Profile Image */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Profile Image
+         {t("profile.Profile Image")}
         </label>
         <input
           type="file"
@@ -174,7 +175,7 @@ const handleSave = async () => {
         onClick={handleSave}
         className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
       >
-        Save Changes
+        {t("profile.Save Changes")}
       </button>
     </form>
   </div>

@@ -24,7 +24,7 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="flex items-center  bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
       >
        <div className="mr-3 overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
   {profile_image ? (
@@ -41,7 +41,7 @@ export default function UserDropdown() {
 </div>
 
 
-        <span className="block mr-1 font-medium text-theme-sm">{username}</span>
+        {/* <span className="block mr-1 font-medium text-theme-sm">{username}</span> */}
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -99,7 +99,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Edit profile
+              {t("header.Edit profile")}
             </DropdownItem>
           </li>
           <li>
@@ -124,7 +124,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Account settings
+              {t("header.Account settings")}
             </DropdownItem>
           </li>
           <li>
@@ -149,7 +149,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Support
+              {t("header.Support")}
             </DropdownItem>
           </li>
           <li
@@ -170,7 +170,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-           <button onClick={() => setShowModal(true)}>Change Password</button>
+           <button onClick={() => setShowModal(true)}>{t("header.Change Password")}</button>
 
       {showModal && (
         <ChangePasswordModal onClose={() => setShowModal(false)}  />
@@ -198,7 +198,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
+          {t("header.Sign out")}
         </Link>
        
        

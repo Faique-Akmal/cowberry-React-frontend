@@ -1,24 +1,57 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const LangToggleButton: React.FC = () => {
   const { i18n } = useTranslation();
-  const [language, setLanguage] = useState<string>(i18n.language || 'en');
+  const [language, setLanguage] = useState<string>(i18n.language || "en");
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en'? 'hi' : 'en';
-    i18n.changeLanguage(newLang);
-    setLanguage(newLang);
+  // List of Indian languages with their i18n codes
+  const languages: { code: string; label: string }[] = [
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "bn", label: "বাংলা" }, // Bengali
+    { code: "gu", label: "ગુજરાતી" }, // Gujarati
+    { code: "kn", label: "ಕನ್ನಡ" }, // Kannada
+    { code: "ml", label: "മലയാളം" }, // Malayalam
+    { code: "mr", label: "मराठी" }, // Marathi
+    { code: "pa", label: "ਪੰਜਾਬੀ" }, // Punjabi
+    { code: "ta", label: "தமிழ்" }, // Tamil
+    { code: "te", label: "తెలుగు" }, // Telugu
+    { code: "ur", label: "اردو" }, // Urdu
+    { code: "or", label: "ଓଡ଼ିଆ" }, // Odia
+    { code: "as", label: "অসমীয়া" }, // Assamese
+    { code: "ks", label: "کٲشُر" }, // Kashmiri
+    { code: "ne", label: "नेपाली" }, // Nepali
+    { code: "si", label: "සිංහල" }, // Sinhala
+    { code: "bh", label: "भोजपुरी" }, // Bhojpuri
+    { code: "mag", label: "मगही" }, // Magahi
+    { code: "mai", label: "मैथिली" }, // Maithili
+    { code: "san", label: "संस्कृतम्" }, // Sanskrit
+    { code: "dogri", label: "डोगरी" }, // Dogri
+  ];
+
+  const changeLanguage = (code: string) => {
+    i18n.changeLanguage(code);
+    setLanguage(code);
   };
 
   return (
-    <button  
-      onClick={toggleLanguage}
-      className="relative flex capitalize items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-dark-900 h-11 w-11 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-    >
-      {language}
-    </button>
+    <select
+  value={language}
+  onChange={(e) => changeLanguage(e.target.value)}
+  className="p-1 border rounded-md w-12 bg-white dark:bg-gray-900 dark:text-white text-gray-700"
+>
+  {languages.map((lang) => (
+    <option key={lang.code} value={lang.code}>
+      {lang.label}
+    </option>
+  ))}
+</select>
+
   );
-}
+};
+
+
+
 
 export default LangToggleButton;

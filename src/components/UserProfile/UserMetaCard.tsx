@@ -31,10 +31,10 @@ const [profileImage, setProfileImage] = useState<File | null>(null);
   
 
   
-  const getRoleName = (roleId: number): string => {
-      const roleObj = role.find((r) => r.id === roleId);
-      return roleObj ? roleObj.name : "Unknown";
-    };
+  // const getRoleName = (roleId: number): string => {
+  //     const roleObj = role.find((r) => r.id === roleId);
+  //     return roleObj ? roleObj.name : "Unknown";
+  //   };
 const handleSave = async () => {
   try {
     const formData = new FormData();

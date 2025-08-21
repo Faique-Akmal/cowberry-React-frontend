@@ -7,7 +7,10 @@ import UserDropdown from "../components/header/UserDropdown";
 import LangToggleButton from "../components/common/LangToggleButton";
 import AnnouncementNotification from "../pages/AnnouncementNotification";
 
+import { useTranslation } from "react-i18next";
+
 const AppHeader: React.FC = () => {
+  const { t } = useTranslation();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
@@ -132,7 +135,7 @@ const AppHeader: React.FC = () => {
                       </Link>
                     ))
                   ) : (
-                    <div className="px-4 py-2 text-gray-500">No results found.</div>
+                    <div className="px-4 py-2 text-gray-500">{t("header.No results found.")}</div>
                   )}
                 </div>
               )}

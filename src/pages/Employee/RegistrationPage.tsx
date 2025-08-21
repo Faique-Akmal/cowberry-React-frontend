@@ -226,7 +226,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           <option value="3">{t("register.Department Head")}</option>
           <option value="4">{t("register.Manager")}</option>
           <option value="5">{t("register.Executive")}</option>
-          <option value="6">{t("register.Employee")}</option>
+          <option value="6">{"Employee"}</option>
           <option value="6">{t("register.Employee_office")}</option>
         </select>
         <select
@@ -243,7 +243,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           <option value="4">{t("register.Order")}</option>
           <option value="5">{t("register.Marketing")}</option>
           <option value="6">{t("register.Accountant")}</option>
-          <option value="7">{t("register.IT")}</option>
+          <option value="7">{"IT"}</option>
           <option value="8">{t("register.HR")}</option>
         </select>
         <input

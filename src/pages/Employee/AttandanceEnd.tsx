@@ -35,23 +35,36 @@ export default function AttendanceForm() {
   const navigate = useNavigate();
 
   // ✅ Check if today's attendance already submitted
-  useEffect(() => {
-    const checkSubmitted = async () => {
-      try {
-        const userRes = await API.get('/me/');
-        const user = userRes.data;
-        const today = new Date().toISOString().split('T')[0];
-        const key = `attendance_${user.id || user.user_id || user.pk}_${today}`;
-        if (localStorage.getItem(key) === 'submitted') {
-          setAlreadySubmitted(true);
-          setMessage('✅ Attendance already submitted for today.');
-        }
-      } catch (error) {
-        console.error('User fetch failed:', error);
+useEffect(() => {
+  const checkSubmitted = async () => {
+    try {
+      const userRes = await API.get('/me/');
+      const user = userRes.data;
+      const today = new Date().toISOString().split('T')[0];
+
+      // ✅ Ask backend if end attendance exists for today
+      const res = await API.get(`/attendance-end/?user=${user.id}&date=${today}`);
+      
+      if (res.data && res.data.length > 0) {
+        // if backend says attendance end exists
+        setAlreadySubmitted(true);
+        setMessage('✅ Attendance already submitted for today.');
+        
+        // also update localStorage (optional)
+        localStorage.setItem(`attendance_${user.id}_${today}`, 'submitted');
+      } else {
+        // no record → allow submission
+        setAlreadySubmitted(false);
+        localStorage.removeItem(`attendance_${user.id}_${today}`);
       }
-    };
-    checkSubmitted();
-  }, []);
+    } catch (error) {
+      console.error('Check attendance failed:', error);
+    }
+  };
+
+  checkSubmitted();
+}, []);
+
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,

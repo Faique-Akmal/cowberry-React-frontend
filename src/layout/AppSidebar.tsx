@@ -297,7 +297,7 @@ const othersItems: NavItem[] = [
     subItems: [
       { name: t("menu.signIn"), path: "/signin",  },
       // { name: "Sign Up", path: "/signup",  },
-      { name: t("menu.logout"), path: "/logout",  },
+      { name: t("logout"), path: "/logout",  },
     ],
   },
 ];

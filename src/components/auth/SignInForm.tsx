@@ -57,8 +57,8 @@ export default function SignInForm() {
         }
       );
 
-      if (response.data?.message === "Login successful") {
-        const userRole = response.data.role?.toLowerCase();
+    if (response.data?.message?.toLowerCase().includes("login successful")) {
+  const userRole = response.data.role?.toLowerCase();
         
         // Check if employee is trying to login from desktop/laptop
         // if (userRole === "employee" && !isMobileDevice) {
@@ -66,39 +66,33 @@ export default function SignInForm() {
         //   setIsLoading(false);
         //   return;
         // }
-
-        setMessage("Login successful!");
         
-        localStorage.setItem("userRole", response.data.role);
-        localStorage.setItem("userId", response.data.userid); 
-        localStorage.setItem("profile-img", response.data.profile_image); 
+localStorage.setItem("userRole", response.data.role);
+  localStorage.setItem("userId", response.data.userid); 
+  localStorage.setItem("profile-img", response.data.profile_image); 
 
-        // Save token if provided
-        login(response.data?.refresh, response.data?.access);
+  login(response.data?.refresh, response.data?.access);
 
-        const isVerified = response.data?.is_employee_code_verified || false;
-        
-        // Navigate based on user role
-        setTimeout(() => {
-          if (userRole === "employee") {
-            if (isVerified) {
-              toast.success("Logged in successfully"); 
-              navigate("/attandanceStart-page", { replace: true });  
-            } else {
-              navigate("/LoginWithOtp", { replace: true });    
-            }
-          } else {
-            if (userRole === "admin" || userRole === "hr" || userRole === "department_head" || userRole === "manager" || userRole === "executive") {
-              if (isVerified) {
-                navigate("/home");  
-                toast.success("Logged in successfully"); 
-              } else {
-                navigate("/LoginWithOtp", { replace: true });    
-              }   
-            } 
-          }
-        }, 1000);
+  const isVerified = response.data?.is_employee_code_verified || false;
+
+  setTimeout(() => {
+    if (userRole === "employee") {
+      if (isVerified) {
+        toast.success("Logged in successfully"); 
+        navigate("/attandanceStart-page", { replace: true });  // ✅ CHECK SPELLING
       } else {
+        navigate("/LoginWithOtp", { replace: true });
+      }
+    } else if (["admin","hr","department_head","manager","executive"].includes(userRole)) {
+      if (isVerified) {
+        navigate("/home", { replace: true });  
+        toast.success("Logged in successfully"); 
+      } else {
+        navigate("/LoginWithOtp", { replace: true });
+      }
+    }
+  }, 1000);
+} else {
         setMessage(response.data.message || "Login failed.");
       }
     } catch (error: any) {
@@ -140,13 +134,13 @@ export default function SignInForm() {
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>
       <div className="flex items-center justify-center w-full h-20">
-        <h1>WELCOME TO COWBERRY</h1>
+        <h1>{t("WELCOME TO COWBERRY")}</h1>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>
           <div className="space-y-6">
             <div className="capitalize">
-              <Label>Employee code <span className="text-red-500">*</span></Label>
+              <Label>{t("register.Employee Code")} <span className="text-red-500">*</span></Label>
               <Input
                 placeholder="Enter your Employee code"
                 value={employeeCode}
@@ -156,7 +150,7 @@ export default function SignInForm() {
             </div>
 
             <div className="capitalize">
-              <Label>Password <span className="text-red-500">*</span></Label>
+              <Label>{t("register.Password")} <span className="text-red-500">*</span></Label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -181,14 +175,14 @@ export default function SignInForm() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
-                <span className="text-sm text-gray-700">Keep me logged in</span>
+                <span className="text-sm text-gray-700">{t("Keep me logged in")}</span>
               </div>
               <button
                 type="button"
                 onClick={openForgotModal}
                 className="text-sm text-brand-500 hover:underline"
               >
-                Forgot Password?
+                {t("Forgot Password?")}
               </button>
             </div>
 
@@ -199,7 +193,7 @@ export default function SignInForm() {
                 size="sm"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading ? t("Signing in...") : t("Sign in")}
               </Button>
             </div>
             
@@ -209,7 +203,7 @@ export default function SignInForm() {
               <p className={`text-sm text-center font-medium ${
                 message.includes("successful") 
                   ? "text-green-500" 
-                  : message === "YOU CAN LOGIN IN MOBILE DEVICE ONLY"
+                  : message === t("YOU CAN LOGIN IN MOBILE DEVICE ONLY")
                     ? "text-red-600 bg-red-50 p-3 rounded-md border border-red-200"
                     : "text-red-500"
               }`}>

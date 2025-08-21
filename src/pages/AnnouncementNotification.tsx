@@ -4,6 +4,7 @@ import { TfiAnnouncement } from "react-icons/tfi";
 import API from "../api/axios";
 import { Dropdown } from "../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../components/ui/dropdown/DropdownItem";
+import { useTranslation } from "react-i18next";
 
 interface Announcement {
   id: number;
@@ -14,6 +15,7 @@ interface Announcement {
 }
 
 export default function AnnouncementNotification() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -130,7 +132,7 @@ export default function AnnouncementNotification() {
 
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Announcements
+            {t("announcement.Announcements")}
           </h5>
           <button
             onClick={toggleDropdown}
@@ -143,7 +145,7 @@ export default function AnnouncementNotification() {
         <ul className="flex flex-col h-auto overflow-y-auto custom-scrollbar">
           {announcements.length === 0 && (
             <li className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-              No announcements available
+             {t("announcement.No announcements available")}
             </li>
           )}
           {announcements.map((item) => (

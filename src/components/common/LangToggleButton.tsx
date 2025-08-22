@@ -39,7 +39,7 @@ const LangToggleButton: React.FC = () => {
     <select
   value={language}
   onChange={(e) => changeLanguage(e.target.value)}
-  className="p-1 border rounded-md w-12 bg-white dark:bg-gray-900 dark:text-white text-gray-700"
+  className="p-1 border rounded-full w-12 bg-white dark:bg-gray-900 dark:text-white text-gray-700"
 >
   {languages.map((lang) => (
     <option key={lang.code} value={lang.code}>

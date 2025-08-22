@@ -79,7 +79,7 @@ localStorage.setItem("userRole", response.data.role);
     if (userRole === "employee") {
       if (isVerified) {
         toast.success("Logged in successfully"); 
-        navigate("/attandanceStart-page", { replace: true });  // ✅ CHECK SPELLING
+        navigate("/attandanceStart-page", { replace: true });  
       } else {
         navigate("/LoginWithOtp", { replace: true });
       }

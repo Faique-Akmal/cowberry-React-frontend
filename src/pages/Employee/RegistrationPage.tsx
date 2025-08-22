@@ -44,7 +44,7 @@ const departmentOptions = [
 
 const filteredDepartments = isAdmin
   ? departmentOptions
-  : departmentOptions.filter((d) => d.id === userDepartment);
+  : departmentOptions.filter((d) => d.name === currentUser.department);
 
 // Optional: restrict assignable roles based on current user's role
 const roleOptions = [
@@ -74,14 +74,14 @@ const roleOptions = [
     setIsError(false);
     setIsLoading(true);
 
-    // Ensure department match for non-admins
-if (!isAdmin && parseInt(formData.department) !== userDepartment) {
-  // setMessage("You can only assign users to your own department.");
-  toast.error("You can only assign users to your own department.");
-  setIsError(true);
-  setIsLoading(false);
-  return;
-}
+//     // Ensure department match for non-admins
+// if (!isAdmin && parseInt(formData.department) !== userDepartment) {
+//   // setMessage("You can only assign users to your own department.");
+//   toast.error("You can only assign users to your own department.");
+//   setIsError(true);
+//   setIsLoading(false);
+//   return;
+// }
 
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
@@ -101,11 +101,13 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
     }
 
     try {
-      const payload = {
-        ...formData,
-        role: parseInt(formData.role),
-        department: parseInt(formData.department),
-      };
+   const payload = {
+  ...formData,
+  role: Number(formData.role),
+  department: Number(formData.department), // send ID
+};
+
+
 
       const response = await API.post("/register/", payload);
 
@@ -226,26 +228,25 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           <option value="3">{t("register.Department Head")}</option>
           <option value="4">{t("register.Manager")}</option>
           <option value="5">{t("register.Executive")}</option>
-          <option value="6">{"Employee"}</option>
+          <option value="6">{t("register.Employee")}</option>
           <option value="6">{t("register.Employee_office")}</option>
         </select>
-        <select
-          name="department"
-          value={formData.department}
-          onChange={handleChange}
-          required
-          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value="">{t("register.Select Department")}</option>
-          <option value="1">{t("register.support")}</option>
-          <option value="2">{t("register.Procurement")}</option>
-          <option value="3">{t("register.Electric")}</option>
-          <option value="4">{t("register.Order")}</option>
-          <option value="5">{t("register.Marketing")}</option>
-          <option value="6">{t("register.Accountant")}</option>
-          <option value="7">{"IT"}</option>
-          <option value="8">{t("register.HR")}</option>
-        </select>
+       <select
+  name="department"
+  value={formData.department}
+  onChange={handleChange}
+  required
+  className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+>
+  <option value="">{t("register.Select Department")}</option>
+  {filteredDepartments.map((dept) => (
+    <option key={dept.id} value={dept.id}>
+      {t(`register.${dept.name}`)}
+    </option>
+  ))}
+</select>
+
+
         <input
           type="tel"
           name="mobile_no"

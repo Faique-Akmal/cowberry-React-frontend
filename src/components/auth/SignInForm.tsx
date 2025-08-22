@@ -142,7 +142,7 @@ localStorage.setItem("userRole", response.data.role);
             <div className="capitalize">
               <Label>{t("register.Employee Code")} <span className="text-red-500">*</span></Label>
               <Input
-                placeholder="Enter your Employee code"
+                placeholder={t("register.Enter your Employee code")}
                 value={employeeCode}
                 onChange={(e) => setEmployeeCode(e.target.value)}
                 disabled={isLoading}
@@ -154,7 +154,7 @@ localStorage.setItem("userRole", response.data.role);
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("register.Enter your password")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}

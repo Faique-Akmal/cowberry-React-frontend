@@ -88,7 +88,7 @@ const LiveTracker: React.FC = () => {
   >Loading dummy data...</p>;
 
   return (
-    <MapContainer center={position} zoom={14} style={{ height: '80vh', width: '100%' ,borderRadius:"12px"}}>
+    <MapContainer center={position} zoom={14} style={{ height: '60vh', width: '100%' ,borderRadius:"12px"}}>
       <TileLayer
             attribution="Google Maps"
             url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"

@@ -22,7 +22,7 @@ const MemberDropdown: React.FC<Props> = ({ members }) => {
 
   function closeDropdown() {
     setIsOpen(false);
-  }, []);
+  }
 
   return (
     <div>

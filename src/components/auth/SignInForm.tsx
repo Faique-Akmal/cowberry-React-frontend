@@ -135,7 +135,7 @@ localStorage.setItem("userRole", response.data.role);
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>
       <div className="flex items-center justify-center w-full h-20">
-        <h1>{t("WELCOME TO COWBERRY")}</h1>
+        <h1>{t("WELCOME TO COWBERRY v1")}</h1>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>

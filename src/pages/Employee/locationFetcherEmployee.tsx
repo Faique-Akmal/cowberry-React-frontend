@@ -14,6 +14,7 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import { FaEye, FaSync, FaMapMarkerAlt } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
@@ -50,6 +51,7 @@ interface LocationLog {
 }
 
 export default function AttendanceList() {
+  const { t } = useTranslation();
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
@@ -167,7 +169,7 @@ export default function AttendanceList() {
             break;
           }
         } catch (endpointError) {
-          console.log(`❌ Failed to fetch from ${endpoint}:`, endpointError);
+          console.log(` Failed to fetch from ${endpoint}:`, endpointError);
           continue;
         }
       }
@@ -209,93 +211,56 @@ export default function AttendanceList() {
   };
 
   // Enhanced filtering specifically optimized for dummy data
-  const filterAndSortLocations = (logs: LocationLog[], attendance: Attendance): LocationLog[] => {
-    try {
-      console.log("🔧 Processing location logs for dummy data...");
-      
-      // First, validate and clean the data
-      const validLogs = logs.filter(log => {
-        const hasValidCoords = isValidCoordinate(log.latitude, log.longitude);
-        const hasValidTimestamp = log.timestamp && !isNaN(new Date(log.timestamp).getTime());
-        
-        if (!hasValidCoords) {
-          console.warn(`⚠️ Invalid coordinates in log ${log.id}:`, log.latitude, log.longitude);
-        }
-        if (!hasValidTimestamp) {
-          console.warn(`⚠️ Invalid timestamp in log ${log.id}:`, log.timestamp);
-        }
-        
-        return hasValidCoords && hasValidTimestamp;
-      });
+  // Filter and sort location logs for an employee (less strict date filter)
+const filterAndSortLocations = (
+  locations: EmployeeLocationLog[] | undefined,
+  attendance: EmployeeAttendance
+): EmployeeLocationLog[] => {
+  if (!locations || locations.length === 0) {
+    console.warn("No locations provided for filtering.");
+    return [];
+  }
 
-      console.log(`✅ Valid logs: ${validLogs.length}/${logs.length}`);
+  // 1️⃣ Keep only points with valid lat/lng
+  const validLogs = locations.filter(log =>
+    isValidCoordinate(parseFloat(log.latitude), parseFloat(log.longitude))
+  );
 
-      // For dummy data, we'll be more lenient with time filtering
-      // since dummy data might not perfectly align with attendance times
-      const attendanceDate = attendance.date;
-      
-      // Create a broader time window for dummy data
-      const startOfDay = new Date(`${attendanceDate}T00:00:00`);
-      const endOfDay = new Date(`${attendanceDate}T23:59:59`);
-      
-      // If it's an ongoing attendance, use current time as end
-      const endTime = attendance.end_time ? 
-        new Date(`${attendanceDate}T${attendance.end_time}`) : 
-        new Date();
-      
-      // Filter by date and reasonable time range
-      const dateFilteredLogs = validLogs.filter(log => {
-        const logTime = new Date(log.timestamp);
-        const logDate = logTime.toISOString().split('T')[0];
-        
-        // Must be on the correct date
-        const isCorrectDate = logDate === attendanceDate;
-        
-        // For ongoing attendance, include all logs from start time onwards
-        // For completed attendance, include logs within the time range
-        let isInTimeRange = true;
-        if (attendance.start_time) {
-          const startTime = new Date(`${attendanceDate}T${attendance.start_time}`);
-          const buffer = 10 * 60 * 1000; // 10 minute buffer
-          isInTimeRange = logTime >= new Date(startTime.getTime() - buffer) && 
-                         logTime <= new Date(endTime.getTime() + buffer);
-        }
-        
-        const shouldInclude = isCorrectDate && isInTimeRange;
-        
-        if (!shouldInclude) {
-          console.log(`⏭️ Excluding log ${log.id}: Date: ${isCorrectDate}, Time: ${isInTimeRange}`);
-        }
-        
-        return shouldInclude;
-      });
+  // 2️⃣ Normalize attendance date to YYYY-MM-DD
+  const attendanceDate = new Date(attendance.date).toLocaleDateString("en-CA");
 
-      console.log(`📅 Date/time filtered logs: ${dateFilteredLogs.length}`);
+  // 3️⃣ Looser date/time filter:
+  //    Instead of requiring exact date match, allow +/- 1 day for timezone shifts
+  const dateFilteredLogs = validLogs.filter(log => {
+    const logDate = new Date(log.timestamp).toLocaleDateString("en-CA");
 
-      // Sort by timestamp (chronological order)
-      const sortedLogs = dateFilteredLogs.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+    // Allow same date OR 1 day difference
+    const dateDiff = Math.abs(
+      (new Date(logDate).getTime() - new Date(attendanceDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-      // For demo purposes, if we have a lot of points, thin them out for better visualization
-      let finalLogs = sortedLogs;
-      if (sortedLogs.length > 100) {
-        // Keep every nth point to avoid overcrowding the map
-        const keepEvery = Math.ceil(sortedLogs.length / 50);
-        finalLogs = sortedLogs.filter((_, index) => index % keepEvery === 0);
-        console.log(`🎯 Thinned out logs: ${finalLogs.length} (keeping every ${keepEvery})`);
-      }
+    if (dateDiff > 1) return false; // skip if more than 1 day apart
 
-      console.log(`🏁 Final processed logs: ${finalLogs.length}`);
-      return finalLogs;
-      
-    } catch (error) {
-      console.error("❌ Error processing location logs:", error);
-      // Return all valid logs if processing fails
-      return logs.filter(log => isValidCoordinate(log.latitude, log.longitude))
-                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    // Time filter with wider buffer (+/- 2 hours instead of 10 minutes for testing)
+    if (attendance.startTime && attendance.endTime) {
+      const logTime = new Date(log.timestamp).getTime();
+      const start = new Date(`${attendance.date}T${attendance.startTime}`).getTime() - 2 * 60 * 60 * 1000;
+      const end = new Date(`${attendance.date}T${attendance.endTime}`).getTime() + 2 * 60 * 60 * 1000;
+      return logTime >= start && logTime <= end;
     }
-  };
+
+    return true; // if no times given, keep the point
+  });
+
+  // 4️⃣ Sort chronologically
+  dateFilteredLogs.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  console.log(`Filtered ${validLogs.length} → ${dateFilteredLogs.length} logs`);
+  return dateFilteredLogs;
+};
+ 
 
   // Helper function to safely parse coordinates
   const parseCoordinate = (coord: string | number): number => {
@@ -420,7 +385,7 @@ const filteredData = attendances.filter((att) => {
 
   // Calculate map center based on available coordinates
   const getMapCenter = (): [number, number] => {
-    if (!mapView) return [21.1702, 72.8311]; // Default to Surat
+    if (!mapView) return [21.1702, 72.8311]; 
 
     const allCoords: [number, number][] = [];
 
@@ -489,11 +454,11 @@ const filteredData = attendances.filter((att) => {
 
   return (
     <div className="p-4 bg-white rounded-xl shadow-md dark:bg-black dark:text-white">
-      <h2 className="text-2xl flex justify-center text-center font-bold mb-4 lg:border-b">📊 Employee Attendance Records</h2>
+      <h2 className="text-2xl flex justify-center text-center font-bold mb-4 p-3 lg:border-b">{t("location.📊 Employee Attendance Records")}</h2>
       <div className="grid grid-cols-2 space-y-2 gap-5">
                     <div className="mb-4">
-            <label className="block mb-1 font-medium text-gray-700">
-              Filter by Date:
+            <label className="block mb-1 font-medium text-gray-700 dark:text-white">
+             {t("location.Filter by Date")}:
             </label>
             <input
               type="date"
@@ -507,14 +472,14 @@ const filteredData = attendances.filter((att) => {
 
       <div className="mb-4">
         <label className="block mb-1 font-medium text-gray-700">
-          Filter by Department:
+         {t("location.Filter by Department:")}
         </label>
         <select
           className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
           onChange={(e) => setSelectedDept(e.target.value)}
           value={selectedDept}
         >
-          <option value="">All Departments</option>
+          <option value="">{t("location.Filter by Department")}:</option>
           {departments.map((dept) => (
             <option key={dept} value={dept}>
               {dept}
@@ -524,19 +489,19 @@ const filteredData = attendances.filter((att) => {
       </div>
       </div>
 
-      <div className="overflow-auto max-h-[500px] border border-gray-300 rounded-md shadow-inner">
+      <div className="overflow-auto  border border-gray-300 rounded-md shadow-inner">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Sr.no</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Employee Code</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Department</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Start Time</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">End Time</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Address</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Sr.no")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Name")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Employee Code")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Date")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Department")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Start Time")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.End Time")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Address")}</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{t("location.Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -677,6 +642,7 @@ const filteredData = attendances.filter((att) => {
                   icon={L.icon({
                     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
                     shadowUrl,
+                    iconAnchor: [12, 41], 
                     iconSize: [25, 41],
                   })}
                 >
@@ -712,6 +678,7 @@ const filteredData = attendances.filter((att) => {
                           ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png"
                           : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
                         shadowUrl,
+                        iconAnchor: [12, 41], 
                         iconSize: [15, 24], // Slightly larger for better visibility
                       })}
                     >
@@ -743,6 +710,7 @@ const filteredData = attendances.filter((att) => {
                       icon={L.icon({
                         iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png",
                         shadowUrl,
+                        iconAnchor: [12, 41], 
                         iconSize: [30, 48], // Larger for current position
                       })}
                     >
@@ -775,6 +743,7 @@ const filteredData = attendances.filter((att) => {
                     icon={L.icon({
                       iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
                       shadowUrl,
+                      iconAnchor: [12, 41], 
                       iconSize: [20, 32],
                     })}
                   >
@@ -802,6 +771,7 @@ const filteredData = attendances.filter((att) => {
                   icon={L.icon({
                     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
                     shadowUrl,
+                    iconAnchor: [12, 41], 
                     iconSize: [25, 41],
                   })}
                 >

@@ -29,7 +29,7 @@ export default function UserAddressCard() {
       try {
         const token = localStorage.getItem("access_token");
 
-        const response = await axios.get("http://192.168.0.144:8000/api/me/", {
+        const response = await axios.get("http://192.168.0.128:8000/api/me/", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

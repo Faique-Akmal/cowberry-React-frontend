@@ -4,7 +4,7 @@ export default function useWebSocket() {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://192.168.0.144:8000/ws/chat/1/");
+    const ws = new WebSocket("ws://192.168.0.128:8000/ws/chat/1/");
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected");

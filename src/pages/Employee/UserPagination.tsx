@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { role } from "../../store/store";
 import API from "../../api/axios";
+import { useTranslation } from "react-i18next";
 
 type User = {
   id: number;
@@ -22,6 +23,7 @@ type PaginationResponse = {
 };
 
 const UserList: React.FC = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -172,7 +174,7 @@ const closeModal = () => {
     <div className="rounded-2xl border p-6  max-w-6xl mx-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
       <div className="mb-6">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">
-          Users Directory
+          {t("user.Users Directory")}
         </h2>
 
         {/* Enhanced Filter Section */}
@@ -181,12 +183,12 @@ const closeModal = () => {
             {/* Search Input */}
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search Users
+                {t("user.Search Users")}
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search by username or email..."
+                  placeholder={t("user.Search by username or email...")}
                   value={searchTerm}
                   onChange={handleSearchChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
@@ -203,7 +205,7 @@ const closeModal = () => {
             {/* Role Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Filter by Role
+                {t("user.Filter by Role")}
               </label>
               <select
                 value={roleFilter}
@@ -212,7 +214,7 @@ const closeModal = () => {
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Roles</option>
+                <option value="">{t("user.All Roles")}</option>
                 {role.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -224,7 +226,7 @@ const closeModal = () => {
             {/* Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Filter by Status
+                {t("user.Filter by Status")}
               </label>
               <select
                 value={statusFilter}
@@ -233,9 +235,9 @@ const closeModal = () => {
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Status</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
+                <option value="">{t("user.All Status")}</option>
+                <option value="online">{t("user.Online")}</option>
+                <option value="offline">{t("user.Offline")}</option>
               </select>
             </div>
           </div>
@@ -243,7 +245,7 @@ const closeModal = () => {
           {/* Filter Actions */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredUsers.length} of {users.length} users
+                 {t("user.showingUsers", { count: filteredUsers.length, total: users.length })}
             </div>
             <button
               onClick={clearFilters}
@@ -251,7 +253,7 @@ const closeModal = () => {
                        bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 
                        rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              Clear Filters
+              {t("user.Clear Filters")}
             </button>
           </div>
         </div>
@@ -270,33 +272,33 @@ const closeModal = () => {
                   <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                       Sr.no
+                      {t("location.Sr.no")}
                       </th>
                       <th 
                         className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={toggleSortOrder}
                       >
                         <div className="flex items-center space-x-1">
-                          <span>Username</span>
+                          <span>{t("register.Username")}</span>
                           <span className="text-blue-600 dark:text-blue-400">
                             {sortOrder === "asc" ? "↑" : "↓"}
                           </span>
                         </div>
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Email
+                        {t("register.Email")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Mobile
+                        {t("register.Mobile No")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Employee Code
+                        {t("user.Employee Code")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Role
+                        {t("register.Role")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Status
+                        {t("user.Status")}
                       </th>
                     </tr>
                   </thead>
@@ -361,8 +363,8 @@ const closeModal = () => {
                             <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            <p className="text-lg font-medium">No users found</p>
-                            <p className="text-sm">Try adjusting your search or filter criteria</p>
+                            <p className="text-lg font-medium">{t("user.No users found")}</p>
+                            <p className="text-sm">{t("user.Try adjusting your search or filter criteria")}</p>
                           </div>
                         </td>
                       </tr>

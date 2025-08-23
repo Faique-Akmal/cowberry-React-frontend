@@ -1,23 +1,44 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
+import toast from "react-hot-toast";
+import UpdateTaskModal from "./UpdateTaskModal";
+import { useTranslation } from "react-i18next";
 
 type Task = {
   id: number;
   title: string;
   description: string;
   start_date: string;
+  address: string;
+  dest_lat: number;
+  dest_lng: number;
   is_completed: boolean;
   completed_at: string;
   completion_description: string;
   created_at: string;
-  assigned_to: string;
-  assigned_by: string;
+  assigned_to: number;
+  assigned_by: number;
+  created_by: number;
 };
 
 export default function TaskShowPage() {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // ✅ New filter state
+
+  const handleUpdateClick = (task: Task) => {
+    setSelectedTask(task);
+    setModalOpen(true);
+  };
+
+  const handleUpdate = (updatedTask: Task) => {
+    console.log("Updated Task:", updatedTask);
+    // you could replace task in state or refetch tasks here
+  };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -26,19 +47,9 @@ export default function TaskShowPage() {
 
       try {
         const token = localStorage.getItem("accessToken");
-
         if (!token) throw new Error("User not authenticated. Please log in again.");
 
-        const response = await API.get("/my-assigned-tasks/", {
-          // headers: {
-          //   Authorization: `Bearer ${token}`,
-          //   "Content-Type": "application/json",
-          // },
-          timeout: 10000,
-        });
-
-        // console.log("API response:", response.data); // log this to check structure
-
+        const response = await API.get("/my-assigned-tasks/", { timeout: 10000 });
         let responseTasks: Task[] = [];
         if (Array.isArray(response.data)) {
           responseTasks = response.data;
@@ -56,31 +67,8 @@ export default function TaskShowPage() {
         setTasks(responseTasks);
       } catch (err: any) {
         console.error("Error fetching tasks:", err);
-        let message = "Failed to load tasks.";
-        if (err.response) {
-          switch (err.response.status) {
-            case 401:
-              message = "Authentication failed.";
-              break;
-            case 403:
-              message = "Access denied.";
-              break;
-            case 404:
-              message = "Endpoint not found.";
-              break;
-            case 500:
-              message = "Server error.";
-              break;
-            default:
-              message = err.response.data?.detail || "Unexpected error.";
-          }
-        } else if (err.request) {
-          message = "No response from server.";
-        } else {
-          message = err.message;
-        }
-
-        setError(message);
+        toast.error("Failed to load tasks.");
+        setError(err.message || "Unexpected error.");
       } finally {
         setLoading(false);
       }
@@ -91,11 +79,9 @@ export default function TaskShowPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return isNaN(date.getTime())
+      ? "Invalid date"
+      : date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   };
 
   const getStatusColor = (status: string) => {
@@ -109,9 +95,32 @@ export default function TaskShowPage() {
     }
   };
 
+  // ✅ Filter tasks before rendering
+  const filteredTasks = tasks.filter((task) => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "completed") return task.is_completed;
+    if (filterStatus === "pending") return !task.is_completed;
+    return true;
+  });
+
   return (
-    <div className="p-6 max-w-5xl  mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
-      <h1 className="text-3xl font-bold mb-2  p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">My Tasks</h1>
+    <div className="p-6 max-w-5xl mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
+      <h1 className="text-3xl font-bold mb-2 p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">
+      {t("task.My Tasks")}
+      </h1>
+
+      {/* ✅ Dropdown for filtering */}
+      <div className="mb-4 flex justify-end">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white"
+        >
+          <option value="all">{t("task.All Tasks")}</option>
+          <option value="pending">{t("task.Pending")}</option>
+          <option value="completed">{t("task.Completed")}</option>
+        </select>
+      </div>
 
       {loading && (
         <div className="text-center py-8">
@@ -123,38 +132,74 @@ export default function TaskShowPage() {
       {error && (
         <div className="bg-red-100 text-red-700 border border-red-300 p-4 rounded text-center">
           <p>{error}</p>
-          <button onClick={() => window.location.reload()} className="mt-2 bg-red-600 text-white px-4 py-2 rounded">
-            Retry
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 bg-red-600 text-white px-4 py-2 rounded"
+          >
+          {t("task.Retry")}
           </button>
         </div>
       )}
 
-      {!loading && !error && tasks.length === 0 && (
-        <div className="text-center text-gray-500 py-6">No tasks assigned yet.</div>
+      {!loading && !error && filteredTasks.length === 0 && (
+        <div className="text-center text-gray-500 py-6">{t("task.No tasks found for this filter.")}</div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 m-4">
-        {tasks.map((task) => (
-          <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4 ">
-            <h2 className="text-lg font-semibold dark:text-black">{task.title}</h2>
+        {filteredTasks.map((task) => (
+          <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4">
+            <h2 className="text-lg font-semibold dark:text-black">
+              <span>{t("task.Title")}:</span> {task.title}
+            </h2>
             <p className="text-sm text-black mb-2">
-              {task.description || "No description"}
+              <b>{t("task.Description")}</b>: {task.description || "No description"}
             </p>
-              <p className="text-sm text-black dark:text-white mb-2">
+            <p className="text-sm text-black mb-2">
+              <b>{t("task.Destination")}</b>: {task.address || "No address provided"}
+            </p>
+            <p className="text-sm text-gray-700 dark:text-white mb-2">
+              <span className="text-black">{t("task.Complete Description")}:</span>
+              <br />
               <b>{task.completion_description || "No description"}</b>
             </p>
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-sm m-2">
               <span
-                className={`px-2 py-1 rounded-full ${getStatusColor(task.is_completed ? "completed" : "pending")}`}
+                className={`px-2 py-1 rounded-full ${getStatusColor(
+                  task.is_completed ? "completed" : "pending"
+                )}`}
               >
                 {task.is_completed ? "Completed" : "Pending"}
               </span>
-              <span className="text-black">Start Date: {formatDate(task.start_date)}</span>
+              <span className="text-black">{t("task.Start Date")}: {formatDate(task.start_date)}</span>
+            </div>
+            <hr />
+                <div>
+                  <button
+                        onClick={() =>
+            window.open(`https://www.google.com/maps?q=${task.dest_lat},${task.dest_lng}`, "_blank")
+          }
+
+              className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
+                  >
+                {t("task.Start Task")}
+                  </button>
+              <button
+                onClick={() => handleUpdateClick(task)}
+                className="text-sm p-1 mt-2 text-white mb-2 cursor-pointer w-full rounded-full bg-green-700"
+              >
+               {t("task.Update Task")}
+              </button>
             </div>
           </div>
         ))}
+
+        <UpdateTaskModal
+          task={selectedTask}
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+          onUpdate={handleUpdate}
+        />
       </div>
     </div>
   );
 }
- 

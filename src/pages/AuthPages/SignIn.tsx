@@ -6,7 +6,7 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title=" Welcome to Cowberry SignIn"
+        title=" Welcome to Cowberry SignIn "
         description="Sign in to your Cowberry account"
       />
       <AuthLayout>

@@ -4,6 +4,7 @@ import { TfiAnnouncement } from "react-icons/tfi";
 import API from "../api/axios";
 import { Dropdown } from "../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../components/ui/dropdown/DropdownItem";
+import { useTranslation } from "react-i18next";
 
 interface Announcement {
   id: number;
@@ -14,6 +15,7 @@ interface Announcement {
 }
 
 export default function AnnouncementNotification() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -107,7 +109,7 @@ export default function AnnouncementNotification() {
         onClick={handleClick}
       >
         <span
-          className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${
+          className={`absolute left-7 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${
             !notifying ? "hidden" : "flex"
           }`}
         >
@@ -119,11 +121,18 @@ export default function AnnouncementNotification() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute -right-[240px] mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0"
-      >
+            className="
+          fixed 
+          left-1/2 transform -translate-x-1/2   /* Center for mobile/tablet */
+          lg:left-auto lg:right-8 lg:translate-x-0  /* Move to right on large screens */
+          flex flex-col gap-3 
+          w-[90%] sm:w-auto max-w-sm 
+          z-50 p-6
+        ">
+
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Announcements
+            {t("announcement.Announcements")}
           </h5>
           <button
             onClick={toggleDropdown}
@@ -136,7 +145,7 @@ export default function AnnouncementNotification() {
         <ul className="flex flex-col h-auto overflow-y-auto custom-scrollbar">
           {announcements.length === 0 && (
             <li className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-              No announcements available
+             {t("announcement.No announcements available")}
             </li>
           )}
           {announcements.map((item) => (

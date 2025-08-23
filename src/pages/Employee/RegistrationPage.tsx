@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 export default function RegisterUserForm() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -42,7 +44,7 @@ const departmentOptions = [
 
 const filteredDepartments = isAdmin
   ? departmentOptions
-  : departmentOptions.filter((d) => d.id === userDepartment);
+  : departmentOptions.filter((d) => d.name === currentUser.department);
 
 // Optional: restrict assignable roles based on current user's role
 const roleOptions = [
@@ -72,41 +74,46 @@ const roleOptions = [
     setIsError(false);
     setIsLoading(true);
 
-    // Ensure department match for non-admins
-if (!isAdmin && parseInt(formData.department) !== userDepartment) {
-  setMessage("You can only assign users to your own department.");
-  setIsError(true);
-  setIsLoading(false);
-  return;
-}
+//     // Ensure department match for non-admins
+// if (!isAdmin && parseInt(formData.department) !== userDepartment) {
+//   // setMessage("You can only assign users to your own department.");
+//   toast.error("You can only assign users to your own department.");
+//   setIsError(true);
+//   setIsLoading(false);
+//   return;
+// }
 
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-      setMessage(" All fields are required.");
+      // setMessage(" All fields are required.");
+      toast.error("All fields are required.");
       setIsError(true);
       setIsLoading(false);
       return;
     }
 
     if (!formData.role || !formData.department) {
-      setMessage(" Please select both Role and Department.");
+      // setMessage(" Please select both Role and Department.");
+      toast.error("Please select both Role and Department.");
       setIsError(true);
       setIsLoading(false);
       return;
     }
 
     try {
-      const payload = {
-        ...formData,
-        role: parseInt(formData.role),
-        department: parseInt(formData.department),
-      };
+   const payload = {
+  ...formData,
+  role: Number(formData.role),
+  department: Number(formData.department), // send ID
+};
+
+
 
       const response = await API.post("/register/", payload);
 
       if (response.status === 201 || response.status === 200) {
         // setMessage(" User registered successfully!");
-        toast.success("User registered successfully!");
+        toast.success("Registration successful!");
         setIsError(false);
         setFormData({
           first_name: "",
@@ -122,7 +129,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
         });
       } else {
         // setMessage(" Registration failed. Try again.");
-        toast.error("Registration failed. Try again.");
+        toast.error(t("toast.Registration failed. Try again."));
         setIsError(true);
       }
     } catch (error: any) {
@@ -152,7 +159,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
 
   return (
     <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
-      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-white">User Registration</h2>
+      <h2 className="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-white">{t("register.User Registration")}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
        <div className="grid grid-cols-2 space-y-2 gap-5 ">
@@ -161,7 +168,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
            <input
           type="text"
           name="first_name"
-          placeholder="First Name"
+          placeholder={t("register.First Name")}
           value={formData.first_name}
           onChange={handleChange}
           required
@@ -172,7 +179,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
          <input
           type="text"
           name="last_name"
-          placeholder="Last Name"
+          placeholder={t("register.Last Name")}
           value={formData.last_name}
           onChange={handleChange}
           required
@@ -183,7 +190,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
         <input
           type="text"
           name="username"
-          placeholder="Username"
+          placeholder={t("register.Username")}
           value={formData.username}
           onChange={handleChange}
           required
@@ -192,7 +199,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
         <input
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder={t("register.Email")}
           value={formData.email}
           onChange={handleChange}
           required
@@ -201,7 +208,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
         <input
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder={t("register.Password")}
           value={formData.password}
           onChange={handleChange}
           required
@@ -215,42 +222,41 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="">Select Role</option>
-          <option value="1">Admin</option>
-          <option value="2">HR</option>
-          <option value="3">Department Head</option>
-          <option value="4">Manager</option>
-          <option value="5">Executive</option>
-          <option value="6">Employee</option>
-          <option value="6">Employee_office</option>
+          <option value="">{t("register.Select Role")}</option>
+          <option value="1">{t("register.Admin")}</option>
+          <option value="2">{t("register.HR")}</option>
+          <option value="3">{t("register.Department Head")}</option>
+          <option value="4">{t("register.Manager")}</option>
+          <option value="5">{t("register.Executive")}</option>
+          <option value="6">{t("register.Employee")}</option>
+          <option value="6">{t("register.Employee_office")}</option>
         </select>
-        <select
-          name="department"
-          value={formData.department}
-          onChange={handleChange}
-          required
-          className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value="">Select Department</option>
-          <option value="1">support</option>
-          <option value="2">Procurement</option>
-          <option value="3">Electric</option>
-          <option value="4">Order</option>
-          <option value="5">Marketing</option>
-          <option value="6">Accountant</option>
-          <option value="7">IT</option>
-          <option value="8">HR</option>
-        </select>
+       <select
+  name="department"
+  value={formData.department}
+  onChange={handleChange}
+  required
+  className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+>
+  <option value="">{t("register.Select Department")}</option>
+  {filteredDepartments.map((dept) => (
+    <option key={dept.id} value={dept.id}>
+      {t(`register.${dept.name}`)}
+    </option>
+  ))}
+</select>
+
+
         <input
           type="tel"
           name="mobile_no"
-          placeholder="Mobile No."
+          placeholder={t("profile.mobile_no")}
           value={formData.mobile_no}
           onChange={handleChange}
           required
           className="w-full border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-        <label>D.O.B.</label>
+        <label>{t("register.D.O.B.")}</label>
         <input
           type="date"
           name="birth_date"
@@ -263,7 +269,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
         <input
           type="text"
           name="address"
-          placeholder="Enter address here"
+          placeholder={t("register.Enter address here")}
           value={formData.address}
           onChange={handleChange}
           required
@@ -281,7 +287,7 @@ if (!isAdmin && parseInt(formData.department) !== userDepartment) {
           disabled={isLoading}
           className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Registering..." : "Register"}
+          {isLoading ? t("register.Registering...") : t("register.Register")}
         </button>
       </form>
     </div>

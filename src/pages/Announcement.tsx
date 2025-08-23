@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import API from "../api/axios"; // Axios instance
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const AnnouncementForm = () => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
@@ -71,7 +73,7 @@ const AnnouncementForm = () => {
       setTitle("");
       setContent("");
       setError("");
-     toast.success("Announcement posted successfully!");
+      toast.success(t("announcement.post_success"));
       
     } catch (err) {
       console.error("Error posting announcement:", err);
@@ -84,10 +86,10 @@ const AnnouncementForm = () => {
 
   return (
     <div className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl dark:bg-black dark:text-white ">
-      <h2 className="flex justify-center text-center text-2xl font-semibold mb-4">Create Announcement</h2>
+      <h2 className="flex justify-center text-center text-2xl font-semibold mb-4">{t("announcement.Create Announcement")}</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-500  text-sm font-medium mb-1 dark:text-white">Title</label>
+          <label className="block text-gray-500  text-sm font-medium mb-1 dark:text-white">{t("announcement.Title")}</label>
           <input
             type="text"
             value={title}
@@ -99,7 +101,7 @@ const AnnouncementForm = () => {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-500 text-sm font-medium mb-1 dark:text-white">Content</label>
+          <label className="block text-gray-500 text-sm font-medium mb-1 dark:text-white">{t("announcement.Content")}</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -117,7 +119,7 @@ const AnnouncementForm = () => {
           disabled={loading}
           className="bg-blue-600  text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Posting..." : "Post Announcement"}
+          {loading ? t("announcement.Posting...") : t("announcement.Post Announcement")}
         </button>
       </div>
       

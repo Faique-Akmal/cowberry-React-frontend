@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Confetti from 'react-confetti';
 import API from '../../api/axios';
 import { role } from "../../store/store";
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: number;
@@ -12,6 +13,7 @@ interface User {
 }
 
 const BirthdayCardList: React.FC = () => {
+  const {t} = useTranslation();
   const [birthdayUsers, setBirthdayUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -76,19 +78,19 @@ const BirthdayCardList: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white max-w-lg rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
+    <div className="p-6 bg-white  rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
       {birthdayUsers.length > 0 && (
         <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={600}
          recycle={false} 
          />
       )}
 
-      <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">🎉 Today’s Birthdays</h2>
+      <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">🎉 {t("home.Today’s Birthdays")}</h2>
 
       {loading ? (
-        <p className="text-gray-500 text-center">Loading birthdays...</p>
+        <p className="text-gray-500 text-center">{t("home.Loading birthdays...")}</p>
       ) : birthdayUsers.length === 0 ? (
-        <p className="text-gray-500 text-center">No birthdays today.</p>
+        <p className="text-gray-500 text-center">{t("home.No birthdays today.")}</p>
       ) : (
         <div className="max-h-[400px] overflow-y-auto px-2 space-y-4 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-purple-100">
           {birthdayUsers.map((user) => (

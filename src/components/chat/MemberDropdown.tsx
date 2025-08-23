@@ -14,30 +14,15 @@ interface Props {
 const MemberDropdown: React.FC<Props> = ({ members }) => {
   const { onlineGroupUsers } = useSocketStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [allMembers, setAllMembers] = useState<Members[]>(members);
+   console.log("all members", members);
+  function toggleDropdown() {
+    setIsOpen(!isOpen);
+  }
 
-  // 🔹 Merge online status directly using useMemo — no need for useEffect
-  const allMembers = useMemo(() => {
-    if (!members?.length) return [];
-    return members.map((member) => ({
-      ...member,
-      is_online: onlineGroupUsers?.includes(member.id),
-    }));
-  }, [members, onlineGroupUsers]);
-
-  // const onlineMembers = useMemo(
-  //   () => allMembers.filter((member) => member.is_online),
-  //   [allMembers]
-  // );
-
-  // console.log(onlineMembers, "onlineMembers");
-
-  const toggleDropdown = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const closeDropdown = useCallback(() => {
+  function closeDropdown() {
     setIsOpen(false);
-  }, []);
+  }
 
   return (
     <div>

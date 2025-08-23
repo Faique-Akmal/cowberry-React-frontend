@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const TaskPage = () => {
   const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ const TaskPage = () => {
   });
 
   const [message, setMessage] = useState("");
-
+  const { t } = useTranslation();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -68,19 +69,19 @@ const TaskPage = () => {
     } catch (error: any) {
       console.error("Error:", error);
       // setMessage("❌ Error creating task. Please try again.");
-      toast.error("❌ Error creating task. Please try again.");
+      toast.error("Error creating task. Please try again.");
     }
   };
 
   return (
     <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
-      <h2 className="text-2xl font-bold mb-4 text-center">Assign New Task</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">{t("task.Assign New Task")}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           name="title"
-          placeholder="Title"
+          placeholder={t("task.Title")}
           maxLength={255}
           required
           value={formData.title}
@@ -90,13 +91,13 @@ const TaskPage = () => {
 
         <textarea
           name="description"
-          placeholder="Description"
+          placeholder={t("task.Description")}
           required
           value={formData.description}
           onChange={handleChange}
           className="w-full border p-2 rounded"
         />
-       <label>Start Date</label>
+       <label>{t("task.Start Date")}</label>
         <input
           type="date"
           name="start_date"
@@ -108,11 +109,11 @@ const TaskPage = () => {
         />
 
 
-        <label>Destination</label>
+        <label>{t("task.Destination")}</label>
         <input
           type="text"
           name="address"
-          placeholder="Enter address here"
+          placeholder={t("task.Enter address here")}
           value={formData.address}
           onChange={handleChange}
           required
@@ -151,7 +152,7 @@ const TaskPage = () => {
         <input
           type="text"
           name="completion_description"
-          placeholder="Completion Description"
+          placeholder={t("task.Completion Description")}
           value={formData.completion_description}
           onChange={handleChange}
           className="w-full border p-2 rounded"
@@ -160,7 +161,7 @@ const TaskPage = () => {
         <input
           type="number"
           name="assigned_to"
-          placeholder="Assigned To (User ID)"
+          placeholder={t("task.Assigned To (User ID)")}
           required
           value={formData.assigned_to}
           onChange={handleChange}
@@ -170,7 +171,7 @@ const TaskPage = () => {
         <input
           type="number"
           name="assigned_by"
-          placeholder="Assigned By (Your ID)"
+          placeholder={t("task.Assigned By (Your ID)")}
           required
           value={formData.assigned_by}
           onChange={handleChange}
@@ -180,7 +181,7 @@ const TaskPage = () => {
         <input
           type="number"
           name="created_by"
-          placeholder="Created By (Your ID)"
+          placeholder={t("task.Created By (Your ID)")}
           required
           value={formData.created_by}
           onChange={handleChange}
@@ -197,7 +198,7 @@ const TaskPage = () => {
           type="submit"
           className="w-full bg-cowberry-green-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          Create Task
+          {t("task.Create Task")}
         </button>
       </form>
     </div>

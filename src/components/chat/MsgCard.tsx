@@ -20,7 +20,7 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
     <div
       className={`max-w-xs flex flex-col gap-1 p-2 rounded-lg ${meUserId === msg?.sender
         ? "bg-brand-500 text-white self-end ml-auto rounded-br-none"
-        : "bg-brand-700 text-white self-start rounded-bl-none"
+        : "bg-green-800 text-white self-start rounded-bl-none"
         }`}
     >
       {!msg?.is_deleted && (
@@ -62,6 +62,7 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
         <small className="flex gap-2 text-xs justify-end text-gray-200">
           {/* {msg?.is_edited} */}
           {/* {msg?.sent_at} */}
+          {!msg?.is_deleted && !!msg?.is_edited && <span>Edited</span>}
           <TimeZone utcDateStr={msg?.sent_at} />
         </small>
       </div>

@@ -71,7 +71,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
           addMessage(data);
           break
         case 'edit_message':
-          editMessage(data?.id, { content: data?.content })
+          editMessage(data?.id, { content: data?.content, is_edited: data?.is_edited });
           break
         case 'delete_message':
           deleteMessage(data?.id);

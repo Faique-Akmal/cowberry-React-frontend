@@ -86,15 +86,15 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
             key={item?.id}
             ref={isLast ? lastItemObserver : null}
             onClick={() => onSelectChat({ chatId: item?.id, chatType: "personal", chatName: item?.username })}
-            className={`flex lg:max-w-79 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal") && (activeChatInfo?.chatId === item?.id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
+            className={`flex lg:max-w-80 gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "personal") && (activeChatInfo?.chatId === item?.id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
           >
             <span className="mr-3">
-              <Avatar src="/images/user/user-01.jpg" size="large" />
+              <Avatar src={item?.profile_image ? item?.profile_image : "/images/user/user-01.jpg"} size="large" newClassName="overflow-hidden" />
             </span>
             <div className="truncate">
-              <h3 className="font-semibold" title={item?.username}>{item?.username}</h3>
+              <h3 className="font-semibold truncate" title={item?.username}>{item?.username}</h3>
               <div className="text-sm text-dashboard-brown-200">
-                <LastChatMsg groupId={item?.id} />
+                <LastChatMsg groupId={item?.id} chatType="personal" />
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
       )}
 
       {!hasMore && !loading && (
-        <p className="text-center text-gray-400 mt-4">No more items to load.</p>
+        <p className="text-center text-gray-400 mt-4 opacity-5">No more items to load.</p>
       )}
     </div>
   );

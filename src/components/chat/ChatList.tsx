@@ -73,46 +73,47 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
         </div>
 
         <div className="h-full py-2 custom-scrollbar overflow-y-auto overflow-hidden">
-          {
-            groups?.length <= 0 ?
-              <div className="flex items-center justify-center">
-                <Alert
-                  variant="warning"
-                  title="Chat Group Not Found!"
-                  message="Try again later!"
-                  showLink={false}
-                />
-              </div>
-              : <div>
+          {/* {groups?.length <= 0 ?
+            <div className="flex items-center justify-center">
+              <Alert
+                variant="warning"
+                title="Chat Group Not Found!"
+                message="Try again later!"
+                showLink={false}
+              />
+            </div>
+            : */}
+          {groups?.length > 0 &&
+            <div>
 
-                {/* groups chat lists */}
-                {groups?.map((group) => (
-                  <div
-                    key={group?.group_id}
-                    onClick={() => onSelectChat({
-                      chatId: group?.group_id,
-                      chatType: "group",
-                      chatName: group?.group_name
-                    })}
-                    className={`flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "group") && (activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
-                  >
-                    <span className="mr-3">
-                      <Avatar src="/images/user/user-01.jpg" size="large" />
-                    </span>
-                    <div>
-                      <h3 className="font-semibold">{group?.group_name}</h3>
-                      <div className="text-sm text-dashboard-brown-200">
-                        <LastChatMsg groupId={group?.group_id} />
-                      </div>
+              {/* groups chat lists */}
+              {groups?.map((group) => (
+                <div
+                  key={group?.group_id}
+                  onClick={() => onSelectChat({
+                    chatId: group?.group_id,
+                    chatType: "group",
+                    chatName: group?.group_name
+                  })}
+                  className={`lg:max-w-80 flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "group") && (activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
+                >
+                  <span className="mr-3">
+                    <Avatar src="/images/user/user-01.jpg" size="large" newClassName="overflow-hidden" />
+                  </span>
+                  <div className="w-full truncate">
+                    <h3 className="font-semibold truncate">{group?.group_name}</h3>
+                    <div className="text-sm text-dashboard-brown-200">
+                      <LastChatMsg groupId={group?.group_id} />
                     </div>
                   </div>
-                ))}
-
-                {/* user chat lists */}
-                <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
-
-              </div>
+                </div>
+              ))}
+            </div>
           }
+          {/* user chat lists */}
+          <div>
+            <ChatUserList activeChatInfo={activeChatInfo} onSelectChat={onSelectChat} />
+          </div>
 
         </div>
 

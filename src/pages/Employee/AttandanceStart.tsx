@@ -157,7 +157,7 @@ export default function AttendanceStart() {
       const attendanceKey = `attendance_${user.id || user.user_id || user.pk}_${today}`;
       if (localStorage.getItem(attendanceKey)) {
         setAlreadySubmitted(true);
-        toast.error("You have already submitted attendance for today.");
+        toast.error(t("toast.You have already submitted attendance for today."));
         setLoading(false);
         return;
       }
@@ -185,7 +185,7 @@ export default function AttendanceStart() {
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     } catch {
-      toast.error("Failed to fetch user info. Please check your connection.");
+      toast.error(t("toast.Failed to fetch user info. Please check your connection."));
     } finally {
       setLoading(false);
     }

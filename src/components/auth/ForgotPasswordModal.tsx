@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
 import { Navigate, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -13,11 +15,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const navigate =  useNavigate();
   const handleSendResetLink = async () => {
     if (!email.trim()) {
-      setMessage("Please enter your email.");
+      setMessage(t("message.Please enter your email."));
       setIsError(true);
       return;
     }
@@ -30,11 +33,13 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
       if (response.status === 200) {
         setMessage("Reset link sent successfully.");
+        toast.success(t("toast.Reset link sent successfully!"));
         setIsError(false);
        onClose();
         navigate("/signin");
       } else {
-        setMessage("Something went wrong. Please try again.");
+        setMessage(t("message.Something went wrong. Please try again."));
+        toast.error(t("toast.Something went wrong. Please try again."));
         setIsError(true);
       }
     } catch (error: any) {
@@ -61,9 +66,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-center">Forgot Password</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">{t("Forgot Password")}</h2>
 
-        <label className="block text-sm mb-1">Email</label>
+        <label className="block text-sm mb-1">{t("profile.Email")}</label>
         <input
           type="email"
           value={email}
@@ -83,14 +88,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             onClick={handleCloseAll}
             className="text-gray-500 hover:underline"
           >
-            Cancel
+            {t("button.Cancel")}
           </button>
           <button
             onClick={handleSendResetLink}
             disabled={isLoading}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {isLoading ? "Sending..." : "Send Link"}
+            {isLoading ? t("message.Sending...") : t("message.Send Link")}
           </button>
         </div>
       </div>

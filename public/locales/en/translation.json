@@ -6,6 +6,10 @@
   "YOU CAN LOGIN IN MOBILE DEVICE ONLY": "YOU CAN LOGIN IN MOBILE DEVICE ONLY",
   "login": "Login",
   "logout": "Logout",
+  "Menu": "Menu",
+  "Others": "Others",
+  "2025 COWBERRY All rights reserved.": "2025 COWBERRY All rights reserved.",
+  "COWBERRY": "COWBERRY",
    "menu": {
     "dashboard": "Dashboard",
     "employeeDashboard": "Employee Dashboard",
@@ -265,7 +269,10 @@
         "Registration successful!": "Registration successful!",
         "Error during registration. Please try again.": "Error during registration. Please try again.",
         "Username already exists. Please choose a different one.": "Username already exists. Please choose a different one.",
-        "Failed to fetch location. Please allow GPS access.": "Failed to fetch location. Please allow GPS access."
+        "Failed to fetch location. Please allow GPS access.": "Failed to fetch location. Please allow GPS access.",
+        "Please enter both employee code and password.": "Please enter both employee code and password.",
+        "You have already submitted attendance for today.": "You have already submitted attendance for today.",
+        "Failed to fetch user info. Please check your connection.": "Failed to fetch user info. Please check your connection."
     },
     "user": {
       "Users Directory": "Users Directory",
@@ -313,6 +320,43 @@
         "Enter new password (min 8 characters)": "Enter new password (min 8 characters)",
         "Enter your current password": "Enter your current password",
         "Enter your new password": "Enter your new password"
+    },
+   "message": {
+       "New password must be at least 8 characters long.": "New password must be at least 8 characters long.",
+       "Current password is required.": "Current password is required.",
+       "Please enter your email.": "Please enter your email.",
+       "Both fields are required.": "Both fields are required.",
+       "Sending...": "Sending...",
+       "Send Link": "Send Link",
+       "Reset link sent successfully!": "Reset link sent successfully!",
+       "Please enter both employee code and password.": "Please enter both employee code and password.",
+       "Invalid employee code or password.": "Invalid employee code or password.",
+       "Invalid input data.": "Invalid input data.",
+       "Server error. Please try again later.": "Server error. Please try again later.",
+       "Cannot connect to server. Please check your connection.": "Cannot connect to server. Please check your connection.",
+       "An unexpected error occurred. Please try again.": "An unexpected error occurred. Please try again."
+       
+    },
+    "calendar": {
+      "Task Calendar": "Task Calendar",
+      "No tasks assigned.": "No tasks assigned.",
+      "You have no tasks scheduled.": "You have no tasks scheduled.",
+      "Select a task to view details.": "Select a task to view details.",
+      "Task Details": "Task Details",
+      "Close": "Close",
+      "Assigned By": "Assigned By",
+      "Assigned To": "Assigned To",
+      "Start Date": "Start Date",
+      "Due Date": "Due Date",
+      "Status": "Status",
+      "Show Tasks": "Show Tasks",
+      "Completion Description": "Completion Description",
+      "Mark as Completed": "Mark as Completed",
+      "Mark as Incomplete": "Mark as Incomplete",
+      "Completed": "Completed",
+      "Pending": "Pending",
+      "Retry"  : "Retry",
+      "Loading tasks...": "Loading tasks..."
     }
 
 }

@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import API from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { role } from "../../store/store";
+import { useTranslation } from "react-i18next";
 
 // Define proper TypeScript interfaces
 interface Task {
@@ -35,6 +36,7 @@ interface CalendarEvent {
 }
 
 const TaskCalendar = () => {
+  const {t} = useTranslation();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -111,7 +113,7 @@ const TaskCalendar = () => {
   if (loading) {
     return (
       <div className="p-4 flex justify-center items-center min-h-[400px]">
-        <div className="text-lg">Loading tasks...</div>
+        <div className="text-lg">{t("calendar.Loading tasks...")}</div>
       </div>
     );
   }
@@ -120,12 +122,12 @@ const TaskCalendar = () => {
     return (
       <div className="p-4">
         <div className="bg-white border-red-400 text-red-700 px-4 py-3 rounded">
-          <strong>Error:</strong> {error}
+          <strong>{t("calendar.Error")}:</strong> {error}
           <button
             onClick={fetchTasks}
             className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            Retry
+            {t("calendar.Retry")}
           </button>
         </div>
       </div>
@@ -135,12 +137,12 @@ const TaskCalendar = () => {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">My Task Calendar</h2>
+        <h2 className="text-xl font-semibold">{t("calendar.My Task Calendar")}</h2>
         <button
           onClick={fetchTasks}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
-          Refresh
+          {t("calendar.Refresh")}
         </button>
       </div>
       
@@ -170,7 +172,7 @@ const TaskCalendar = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Task Details</h2>
+              <h2 className="text-lg font-semibold text-gray-800">{t("caledar.Task Details")}</h2>
               <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"
@@ -182,17 +184,17 @@ const TaskCalendar = () => {
             
             <div className="space-y-3 text-sm">
               <div>
-                <span className="font-medium text-gray-700">Title:</span>
+                <span className="font-medium text-gray-700">{t("task.Title")}:</span>
                 <span className="ml-2 text-gray-900">{selectedTask.title}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Date:</span>
+                <span className="font-medium text-gray-700">{t("task.Date")}:</span>
                 <span className="ml-2 text-gray-900">
                   {dayjs(selectedTask.startStr).format("MMMM D, YYYY")}
                 </span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Status:</span>
+                <span className="font-medium text-gray-700">{t("attendence.Status")}:</span>
                 <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
                   selectedTask.extendedProps?.status === 'completed' 
                     ? 'bg-green-100 text-green-800'
@@ -204,20 +206,20 @@ const TaskCalendar = () => {
                 </span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Description:</span>
+                <span className="font-medium text-gray-700">{t("task.Description")}:</span>
                 <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded">
                   {selectedTask.extendedProps?.description || 'No description available'}
                 </p>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Assigned By:</span>
+                <span className="font-medium text-gray-700">{t("task.Assigned By")}:</span>
                 <span className="ml-2 text-gray-900">
                   {getRoleName(selectedTask.extendedProps?.assigned_by || 'Unknown')}
                   {/* {selectedTask.extendedProps?.assigned_by || 'Unknown'} */}
                 </span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Destination:</span>
+                <span className="font-medium text-gray-700">{t("task.Destination")}:</span>
                 <span className="ml-2 text-gray-900"> {selectedTask.extendedProps?.address || 'Unknown'}</span>
               </div>
             </div>
@@ -227,7 +229,7 @@ const TaskCalendar = () => {
                 onClick={closeModal}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
               >
-                Close
+                {t("calendar.Close")}
               </button>
               <button
   //               onClick={() =>
@@ -237,7 +239,7 @@ const TaskCalendar = () => {
 
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
               >
-               Show Tasks
+               {t("calendar.Show Tasks")}
               </button>
             </div>
           </div>

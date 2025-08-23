@@ -84,9 +84,9 @@ const AppHeader: React.FC = () => {
           </button>
 
           {/* Logo */}
-          <Link to="/" className="lg:hidden">
+          {/* <Link to="/" className="lg:hidden"> */}
             <img src="/images/logo/cowberry-logo.svg" alt="Logo" />
-          </Link>
+          {/* </Link> */}
 
          
 

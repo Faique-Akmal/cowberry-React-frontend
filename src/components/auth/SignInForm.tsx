@@ -42,7 +42,8 @@ export default function SignInForm() {
     
     // Basic validation
     if (!employeeCode.trim() || !password.trim()) {
-      setMessage("Please enter both employee code and password.");
+      setMessage(t("message.Please enter both employee code and password."));
+      toast.error(t("toast.Please enter both employee code and password."));
       setIsLoading(false);
       return;
     }
@@ -78,7 +79,7 @@ localStorage.setItem("userRole", response.data.role);
   setTimeout(() => {
     if (userRole === "employee") {
       if (isVerified) {
-        toast.success("Logged in successfully"); 
+        toast.success(t("toast.Logged in successfully")); 
         navigate("/attandanceStart-page", { replace: true });  
       } else {
         navigate("/LoginWithOtp", { replace: true });
@@ -86,7 +87,7 @@ localStorage.setItem("userRole", response.data.role);
     } else if (["admin","hr","department_head","manager","executive"].includes(userRole)) {
       if (isVerified) {
         navigate("/home", { replace: true });  
-        toast.success("Logged in successfully"); 
+        toast.success(t("toast.Logged in successfully")); 
       } else {
         navigate("/LoginWithOtp", { replace: true });
       }
@@ -106,22 +107,22 @@ localStorage.setItem("userRole", response.data.role);
         console.log("Error response:", data);
         
         if (status === 401) {
-          setMessage("Invalid employee code or password.");
+          setMessage(t("message.Invalid employee code or password."));
         } else if (status === 422) {
-          setMessage(data.message || "Invalid input data.");
+          setMessage(t(data.message || "message.Invalid input data."));
         } else if (status === 500) {
-          setMessage("Server error. Please try again later.");
+          setMessage(t("message.Server error. Please try again later."));
         } else {
           setMessage(data.message || `Error: ${status}`);
         }
       } else if (error.request) {
         // Request was made but no response received
         console.log("No response received:", error.request);
-        setMessage("Cannot connect to server. Please check your connection.");
+        setMessage(t("message.Cannot connect to server. Please check your connection."));
       } else {
         // Something else happened
         console.log("Request error:", error.message);
-        setMessage("An unexpected error occurred. Please try again.");
+        setMessage(t("message.An unexpected error occurred. Please try again."));
       }
     } finally {
       setIsLoading(false);
@@ -193,7 +194,7 @@ localStorage.setItem("userRole", response.data.role);
                 size="sm"
                 disabled={isLoading}
               >
-                {isLoading ? t("Signing in...") : t("Sign in")}
+                {isLoading ? t("button.Signing in...") : t("button.Sign in")}
               </Button>
             </div>
             

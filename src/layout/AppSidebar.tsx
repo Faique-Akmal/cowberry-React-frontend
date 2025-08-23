@@ -438,11 +438,11 @@ const othersItems: NavItem[] = [
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-xs text-gray-600 uppercase mb-4">Menu</h2>
+              <h2 className="text-xs text-gray-600 uppercase mb-4">{t("Menu")}</h2>
               {renderMenuItems(navItems, "main")}
             </div>
             <div>
-              <h2 className="text-xs text-gray-600 uppercase mb-4">Others</h2>
+              <h2 className="text-xs text-gray-600 uppercase mb-4">{t("Others")}</h2>
               {renderMenuItems(othersItems, "others")}
             </div>
           </div>

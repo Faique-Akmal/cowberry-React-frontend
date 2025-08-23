@@ -22,13 +22,13 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
   
   const handleChangePassword = async () => {
   if (!oldPassword || !newPassword) {
-    setMessage("Both fields are required.");
+    setMessage(t("message.Both fields are required."));
     setIsError(true);
     return;
   }
 
   if (newPassword.length < 8) {
-    setMessage("New password must be at least 8 characters long.");
+    setMessage(t("message.New password must be at least 8 characters long."));
     setIsError(true);
     return;
   }

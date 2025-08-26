@@ -79,14 +79,17 @@ localStorage.setItem("userRole", response.data.role);
   setTimeout(() => {
     if (userRole === "employee") {
       if (isVerified) {
+           setMessage(t("toast.Logged in successfully"));
         toast.success(t("toast.Logged in successfully")); 
         navigate("/attandanceStart-page", { replace: true });  
       } else {
+           setMessage(t("toast.Logged in successfully"));
         navigate("/LoginWithOtp", { replace: true });
       }
     } else if (["admin","hr","department_head","manager","executive"].includes(userRole)) {
       if (isVerified) {
         navigate("/home", { replace: true });  
+        setMessage(t("toast.Logged in successfully"));
         toast.success(t("toast.Logged in successfully")); 
       } else {
         navigate("/LoginWithOtp", { replace: true });

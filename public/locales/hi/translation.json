@@ -253,6 +253,7 @@
       
       },
      "toast": {
+      "Logged in successfully": "सफलतापूर्वक लॉगिन हुआ",
   "Something went wrong. Please try again.": "कुछ गलत हो गया। कृपया दोबारा प्रयास करें।",
   "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदल दिया गया!",
   "Error changing password. Please try again.": "पासवर्ड बदलते समय त्रुटि हुई। कृपया दोबारा प्रयास करें।",

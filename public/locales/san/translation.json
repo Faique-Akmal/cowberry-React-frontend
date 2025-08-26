@@ -243,6 +243,7 @@
     "Registering...": "पञ्जिकरणं क्रियते..."
   },
 "toast": {
+  "Logged in successfully": "सफलतापूर्वक लॉगिन हुआ",
   "Something went wrong. Please try again.": "किञ्चित् दोषः अभवत्। कृपया पुनः प्रयासं कुरुत।",
   "Password changed successfully!": "गुप्तशब्दः सफलतया परिवर्तितः!",
   "Error changing password. Please try again.": "गुप्तशब्दं परिवर्तयन् दोषः अभवत्। कृपया पुनः प्रयासं कुरुत।",

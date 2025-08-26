@@ -253,6 +253,7 @@
     "Registering...": "பதிவு செய்யப்படுகிறது..."
   },
 "toast": {
+  "Logged in successfully": "வெற்றிகரமாக உள்நுழைந்தது",
   "Something went wrong. Please try again.": "ஏதோ தவறு ஏற்பட்டுள்ளது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
   "Password changed successfully!": "கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது!",
   "Error changing password. Please try again.": "கடவுச்சொல்லை மாற்றும்போது பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",

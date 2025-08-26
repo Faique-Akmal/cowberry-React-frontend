@@ -254,6 +254,7 @@
        "Registering...": "ನೋಂದಣಿ ನಡೆಯುತ್ತಿದೆ..."
     },
    "toast": {
+    "Logged in successfully": "ಯಶಸ್ವಿಯಾಗಿ ಲಾಗಿನ್ ಆಗಿದೆ",
   "Something went wrong. Please try again.": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "Password changed successfully!": "ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ!",
   "Error changing password. Please try again.": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸುವಾಗ ದೋಷ ಉಂಟಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",

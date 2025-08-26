@@ -248,6 +248,7 @@
     "Registering...": "নিবন্ধন হচ্ছে..."
   },
 "toast": {
+  "Logged in successfully": "সফলতাপূর্বক লগইন হয়েছে",
   "Something went wrong. Please try again.": "কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
   "Password changed successfully!": "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!",
   "Error changing password. Please try again.": "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",

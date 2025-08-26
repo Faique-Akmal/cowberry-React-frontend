@@ -261,6 +261,7 @@
   },
 
   "toast": {
+    "Logged in successfully": "Yeta log-in zalo",
     "Something went wrong. Please try again.": "Kitteak truti zale. Fuddar kor.",
     "Password changed successfully!": "Gupit utor yeta zalo!",
     "Error changing password. Please try again.": "Gupit utor badolpak truti. Fuddar kor.",

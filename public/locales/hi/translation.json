@@ -317,11 +317,50 @@
   "Enter new password (min 8 characters)": "नया पासवर्ड दर्ज करें (कम से कम 8 अक्षर)",
   "Enter your current password": "अपना वर्तमान पासवर्ड दर्ज करें",
   "Enter your new password": "अपना नया पासवर्ड दर्ज करें"
+},
+
+  "message": {
+    "New password must be at least 8 characters long.": "नया पासवर्ड कम से कम ८ अक्षरों का होना चाहिए।",
+    "Current password is required.": "वर्तमान पासवर्ड आवश्यक है।",
+    "Please enter your email.": "कृपया अपना ईमेल दर्ज करें।",
+    "Both fields are required.": "दोनों फ़ील्ड भरना आवश्यक है।",
+    "Sending...": "भेजा जा रहा है...",
+    "Send Link": "लिंक भेजें",
+    "Reset link sent successfully!": "रीसेट लिंक सफलतापूर्वक भेजा गया!",
+    "Please enter both employee code and password.": "कृपया कर्मचारी कोड और पासवर्ड दोनों दर्ज करें।",
+    "Invalid employee code or password.": "अमान्य कर्मचारी कोड या पासवर्ड।",
+    "Invalid input data.": "अमान्य डेटा दर्ज किया गया।",
+    "Server error. Please try again later.": "सर्वर त्रुटि। कृपया बाद में पुनः प्रयास करें।",
+    "Cannot connect to server. Please check your connection.": "सर्वर से कनेक्ट नहीं हो सका। कृपया अपना कनेक्शन जाँचें।",
+    "An unexpected error occurred. Please try again.": "एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें।"
+  },
+  "calendar": {
+    "Task Calendar": "कार्य कैलेंडर",
+    "No tasks assigned.": "कोई कार्य सौंपा नहीं गया।",
+    "You have no tasks scheduled.": "आपके लिए कोई कार्य निर्धारित नहीं है।",
+    "Select a task to view details.": "विवरण देखने के लिए कार्य चुनें।",
+    "Task Details": "कार्य का विवरण",
+    "Close": "बंद करें",
+    "Assigned By": "किसके द्वारा सौंपा गया",
+    "Assigned To": "किसे सौंपा गया",
+    "Start Date": "प्रारंभ तिथि",
+    "Due Date": "समाप्ति तिथि",
+    "Status": "स्थिति",
+    "Show Tasks": "कार्य दिखाएँ",
+    "Completion Description": "समापन विवरण",
+    "Mark as Completed": "पूर्ण हुआ चिन्हित करें",
+    "Mark as Incomplete": "अपूर्ण चिन्हित करें",
+    "Completed": "पूर्ण हुआ",
+    "Pending": "लंबित",
+    "Retry": "पुनः प्रयास करें",
+    "Loading tasks...": "कार्य लोड हो रहे हैं..."
+  }
 }
 
 
 
-}
+
+
 
 
   

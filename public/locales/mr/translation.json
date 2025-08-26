@@ -302,5 +302,44 @@
     "Enter new password (min 8 characters)": "नवीन पासवर्ड टाका (किमान ८ अक्षरे)",
     "Enter your current password": "आपला सध्याचा पासवर्ड टाका",
     "Enter your new password": "आपला नवीन पासवर्ड टाका"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "नवीन पासवर्ड किमान ८ अक्षरांचा असावा.",
+    "Current password is required.": "सध्याचा पासवर्ड आवश्यक आहे.",
+    "Please enter your email.": "कृपया तुमचा ईमेल टाका.",
+    "Both fields are required.": "दोन्ही फील्ड भरावी लागतील.",
+    "Sending...": "पाठवले जात आहे...",
+    "Send Link": "लिंक पाठवा",
+    "Reset link sent successfully!": "रीसेट लिंक यशस्वीरित्या पाठवली गेली!",
+    "Please enter both employee code and password.": "कृपया कर्मचारी कोड आणि पासवर्ड दोन्ही टाका.",
+    "Invalid employee code or password.": "अवैध कर्मचारी कोड किंवा पासवर्ड.",
+    "Invalid input data.": "अवैध माहिती टाकली गेली आहे.",
+    "Server error. Please try again later.": "सर्व्हर त्रुटी. कृपया नंतर पुन्हा प्रयत्न करा.",
+    "Cannot connect to server. Please check your connection.": "सर्व्हरशी जोडता आले नाही. कृपया तुमचे कनेक्शन तपासा.",
+    "An unexpected error occurred. Please try again.": "अनपेक्षित त्रुटी झाली. कृपया पुन्हा प्रयत्न करा."
+  },
+  "calendar": {
+    "Task Calendar": "कार्य दिनदर्शिका",
+    "No tasks assigned.": "कोणतेही कार्य सोपवलेले नाही.",
+    "You have no tasks scheduled.": "तुमच्यासाठी कोणतेही कार्य ठरवलेले नाही.",
+    "Select a task to view details.": "तपशील पाहण्यासाठी कार्य निवडा.",
+    "Task Details": "कार्याचे तपशील",
+    "Close": "बंद करा",
+    "Assigned By": "ज्यांनी कार्य सोपवले",
+    "Assigned To": "ज्यांना कार्य सोपवले",
+    "Start Date": "सुरुवातीची तारीख",
+    "Due Date": "शेवटची तारीख",
+    "Status": "स्थिती",
+    "Show Tasks": "कार्य दाखवा",
+    "Completion Description": "पूर्णत्वाचे वर्णन",
+    "Mark as Completed": "पूर्ण झाले म्हणून चिन्हांकित करा",
+    "Mark as Incomplete": "अपूर्ण म्हणून चिन्हांकित करा",
+    "Completed": "पूर्ण झाले",
+    "Pending": "प्रलंबित",
+    "Retry": "पुन्हा प्रयत्न करा",
+    "Loading tasks...": "कार्य लोड होत आहे..."
   }
 }
+
+

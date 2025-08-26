@@ -312,6 +312,44 @@
     "Enter new password (min 8 characters)": "ନୂତନ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ (ନ୍ୟୂନତମ 8 ଅକ୍ଷର)",
     "Enter your current password": "ଆପଣଙ୍କ ବର୍ତ୍ତମାନ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ",
     "Enter your new password": "ଆପଣଙ୍କ ନୂତନ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "ନୂତନ ପାସୱାର୍ଡ କମ୍ ସେ କମ୍ ୮ଟି ଅକ୍ଷର ଲମ୍ବା ହେବା ଆବଶ୍ୟକ।",
+    "Current password is required.": "ବର୍ତ୍ତମାନ ପାସୱାର୍ଡ ଆବଶ୍ୟକ।",
+    "Please enter your email.": "ଦୟାକରି ଆପଣଙ୍କ ଇମେଲ୍ ଲେଖନ୍ତୁ।",
+    "Both fields are required.": "ଦୁଇଟି ଖେତ୍ର ଆବଶ୍ୟକ।",
+    "Sending...": "ପଠାଯାଉଛି...",
+    "Send Link": "ଲିଙ୍କ ପଠାନ୍ତୁ",
+    "Reset link sent successfully!": "ରିସେଟ୍ ଲିଙ୍କ ସଫଳତାର ସହିତ ପଠାଯାଇଛି!",
+    "Please enter both employee code and password.": "ଦୟାକରି କର୍ମଚାରୀ କୋଡ୍ ଏବଂ ପାସୱାର୍ଡ ଦୁଇଟି ଲେଖନ୍ତୁ।",
+    "Invalid employee code or password.": "ଭୁଲ କର୍ମଚାରୀ କୋଡ୍ କିମ୍ବା ପାସୱାର୍ଡ।",
+    "Invalid input data.": "ଭୁଲ ଡାଟା ଦିଆଯାଇଛି।",
+    "Server error. Please try again later.": "ସର୍ଭର ତ୍ରୁଟି। ଦୟାକରି ପରେ ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ।",
+    "Cannot connect to server. Please check your connection.": "ସର୍ଭର ସହିତ ସଂଯୋଗ ହୋଇନାହିଁ। ଦୟାକରି ଆପଣଙ୍କ ସଂଯୋଗ ଯାଞ୍ଚ କରନ୍ତୁ।",
+    "An unexpected error occurred. Please try again.": "ଅପ୍ରତ୍ୟାଶିତ ତ୍ରୁଟି ହୋଇଛି। ଦୟାକରି ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ।"
+  },
+  "calendar": {
+    "Task Calendar": "କାମର କ୍ୟାଲେଣ୍ଡର",
+    "No tasks assigned.": "କୌଣସି କାମ ଦିଆଯାଇନାହିଁ।",
+    "You have no tasks scheduled.": "ଆପଣଙ୍କ ପାଇଁ କୌଣସି କାମ ତାରିଖିତ ହୋଇନାହିଁ।",
+    "Select a task to view details.": "ବିବରଣୀ ଦେଖିବା ପାଇଁ କାମ ଚୟନ କରନ୍ତୁ।",
+    "Task Details": "କାମର ବିବରଣୀ",
+    "Close": "ବନ୍ଦ କରନ୍ତୁ",
+    "Assigned By": "ଦେଇଥିବା",
+    "Assigned To": "ଯାହାକୁ ଦିଆଯାଇଛି",
+    "Start Date": "ଆରମ୍ଭ ତାରିଖ",
+    "Due Date": "ସମାପ୍ତି ତାରିଖ",
+    "Status": "ସ୍ଥିତି",
+    "Show Tasks": "କାମଗୁଡିକ ଦେଖାନ୍ତୁ",
+    "Completion Description": "ସମାପ୍ତି ବିବରଣୀ",
+    "Mark as Completed": "ସମାପ୍ତ ଭାବରେ ଚିହ୍ନିତ କରନ୍ତୁ",
+    "Mark as Incomplete": "ଅସମ୍ପୂର୍ଣ୍ଣ ଭାବରେ ଚିହ୍ନିତ କରନ୍ତୁ",
+    "Completed": "ସମାପ୍ତ",
+    "Pending": "ବାକି ଅଛି",
+    "Retry": "ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ",
+    "Loading tasks...": "କାମଗୁଡିକ ଲୋଡ୍ ହେଉଛି..."
   }
 }
+
 

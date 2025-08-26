@@ -315,5 +315,44 @@
     "Enter new password (min 8 characters)": "नवा पासवर्ड भरो (घट्टो-घट 8 अक्षर)",
     "Enter your current password": "अपणा मौजूदा पासवर्ड भरो",
     "Enter your new password": "अपणा नवा पासवर्ड भरो"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "नवां पासवर्ड घट तो घट ८ अक्खर दा होणा चाहीदा ऐ।",
+    "Current password is required.": "मौजूदा पासवर्ड लाज़मी ऐ।",
+    "Please enter your email.": "मेहरबानी करके तुंदा ईमेल दर्ज करो।",
+    "Both fields are required.": "दोव्वे फील्ड भरना लाज़मी ऐ।",
+    "Sending...": "पेज्जा जा रिया ऐ...",
+    "Send Link": "लिंक भेजो",
+    "Reset link sent successfully!": "रीसेट लिंक कामयाबी नाल भेजी गई ऐ!",
+    "Please enter both employee code and password.": "मेहरबानी करके कर्मचारी कोड अते पासवर्ड दोव्वे दर्ज करो।",
+    "Invalid employee code or password.": "ग़लत कर्मचारी कोड या पासवर्ड।",
+    "Invalid input data.": "ग़लत डाटा दर्ज कीता गिया ऐ।",
+    "Server error. Please try again later.": "सर्वर च ग़लती ऐ। बाद च फेर कोशिश करो।",
+    "Cannot connect to server. Please check your connection.": "सर्वर नाल जुड़ नी सकदा। मेहरबानी करके तुंदा कनेक्शन चैक करो।",
+    "An unexpected error occurred. Please try again.": "अचानक ग़लती होई ऐ। मेहरबानी करके फेर कोशिश करो।"
+  },
+  "calendar": {
+    "Task Calendar": "काम दा कैलेंडर",
+    "No tasks assigned.": "कोई काम सौंपेआ नी गिया।",
+    "You have no tasks scheduled.": "तुंदे कोल कोई तय काम नी ऐ।",
+    "Select a task to view details.": "बिस्तार देखण लई काम चुनो।",
+    "Task Details": "काम दे बिस्तार",
+    "Close": "बंद करो",
+    "Assigned By": "जिन्नें काम सौंपेआ",
+    "Assigned To": "जिन्ने नूं काम सौंपेआ",
+    "Start Date": "शुरूआती तारीख",
+    "Due Date": "ख़त्म होण दी तारीख",
+    "Status": "हालत",
+    "Show Tasks": "काम दिखाओ",
+    "Completion Description": "पूरा होण दा बिस्तार",
+    "Mark as Completed": "पूरा होएआ चिन्हित करो",
+    "Mark as Incomplete": "अधूरा चिन्हित करो",
+    "Completed": "पूरा होएआ",
+    "Pending": "बाकी ऐ",
+    "Retry": "फेर कोशिश करो",
+    "Loading tasks...": "काम लोड हो रिया ऐ..."
   }
 }
+
+

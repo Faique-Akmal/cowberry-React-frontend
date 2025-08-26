@@ -297,7 +297,46 @@
     "Enter new password (min 8 characters)": "नूतन कूटशब्दं प्रविष्टयतु (अल्पतम् 8 वर्णाः)",
     "Enter your current password": "वर्तमान कूटशब्दं प्रविष्टयतु",
     "Enter your new password": "नूतन कूटशब्दं प्रविष्टयतु"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "नूतनं गुप्तशब्दं न्यूनतया अष्टाक्षरदीर्घं भवितुम् अर्हति।",
+    "Current password is required.": "वर्तमानं गुप्तशब्दं आवश्यकम्।",
+    "Please enter your email.": "कृपया स्वस्य ईमेल् प्रविश्यताम्।",
+    "Both fields are required.": "उभे क्षेत्रे आवश्यके स्तः।",
+    "Sending...": "प्रेषणं प्रवृत्तम्...",
+    "Send Link": "सङ्गतिः प्रेष्यताम्",
+    "Reset link sent successfully!": "पुनःस्थापनसङ्गतिः सफलतया प्रेषिता!",
+    "Please enter both employee code and password.": "कृपया कर्मचारीसंकेतं गुप्तशब्दं च प्रविश्यताम्।",
+    "Invalid employee code or password.": "अमान्यः कर्मचारीसंकेतः वा गुप्तशब्दः वा।",
+    "Invalid input data.": "अमान्यः प्रविष्टदत्तांशः।",
+    "Server error. Please try again later.": "सर्वरदोषः। कृपया पश्चात् पुनः प्रयतध्वम्।",
+    "Cannot connect to server. Please check your connection.": "सर्वरेण सह संयोगः न सम्भवति। कृपया स्वसंपर्कं परीक्ष्यताम्।",
+    "An unexpected error occurred. Please try again.": "अप्रत्याशितः दोषः अभवत्। कृपया पुनः प्रयतध्वम्।"
+  },
+  "calendar": {
+    "Task Calendar": "कार्यपञ्चाङ्गम्",
+    "No tasks assigned.": "न किमपि कार्यं निर्दिष्टम्।",
+    "You have no tasks scheduled.": "त्वत् कृते किमपि कार्यं नियोजितं नास्ति।",
+    "Select a task to view details.": "विवरणं द्रष्टुं कार्यं चिनुत।",
+    "Task Details": "कार्यविवरणम्",
+    "Close": "पिधेयम्",
+    "Assigned By": "येन निर्दिष्टम्",
+    "Assigned To": "यस्मै निर्दिष्टम्",
+    "Start Date": "आरम्भतिथिः",
+    "Due Date": "समाप्तितिथिः",
+    "Status": "स्थितिः",
+    "Show Tasks": "कार्यानि दर्शयतु",
+    "Completion Description": "समापनविवरणम्",
+    "Mark as Completed": "समाप्तं चिह्नयतु",
+    "Mark as Incomplete": "अपूर्णं चिह्नयतु",
+    "Completed": "समाप्तम्",
+    "Pending": "प्रतीक्षायाम् अस्ति",
+    "Retry": "पुनः प्रयतध्वम्",
+    "Loading tasks...": "कार्यानि आरोप्यन्ते..."
   }
 }
+
+
 
 

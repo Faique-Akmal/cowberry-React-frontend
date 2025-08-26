@@ -299,5 +299,44 @@
     "Sign out": "സൈൻ ഔട്ട്",
     "Current Password": "നിലവിലെ പാസ്‌വേഡ്",
     "New Password": "പുതിയ പാസ്‌വേഡ്"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "പുതിയ പാസ്‌വേഡ് കുറഞ്ഞത് 8 അക്ഷരങ്ങൾ നീളമുള്ളത് ആയിരിക്കണം.",
+    "Current password is required.": "നിലവിലെ പാസ്‌വേഡ് ആവശ്യമാണ്.",
+    "Please enter your email.": "ദയവായി നിങ്ങളുടെ ഇമെയിൽ നൽകുക.",
+    "Both fields are required.": "രണ്ടും നൽകേണ്ടതാണ്.",
+    "Sending...": "അയയ്ക്കുന്നു...",
+    "Send Link": "ലിങ്ക് അയയ്ക്കുക",
+    "Reset link sent successfully!": "റീസെറ്റ് ലിങ്ക് വിജയകരമായി അയച്ചു!",
+    "Please enter both employee code and password.": "ദയവായി ജീവനക്കാരന്റെ കോഡ്, പാസ്‌വേഡ് രണ്ടും നൽകുക.",
+    "Invalid employee code or password.": "തെറ്റായ ജീവനക്കാരൻ കോഡ് അല്ലെങ്കിൽ പാസ്‌വേഡ്.",
+    "Invalid input data.": "തെറ്റായ ഡാറ്റ നൽകിയിരിക്കുന്നു.",
+    "Server error. Please try again later.": "സെർവർ പിശക്. ദയവായി പിന്നീട് ശ്രമിക്കുക.",
+    "Cannot connect to server. Please check your connection.": "സെർവറുമായി ബന്ധപ്പെടാൻ കഴിഞ്ഞില്ല. ദയവായി നിങ്ങളുടെ കണക്ഷൻ പരിശോധിക്കുക.",
+    "An unexpected error occurred. Please try again.": "അപ്രതീക്ഷിത പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക."
+  },
+  "calendar": {
+    "Task Calendar": "ടാസ്ക് കലണ്ടർ",
+    "No tasks assigned.": "ഏതെങ്കിലും ജോലികൾ നൽകിയിട്ടില്ല.",
+    "You have no tasks scheduled.": "നിങ്ങൾക്ക് ഏതെങ്കിലും ജോലികൾ ഷെഡ്യൂൾ ചെയ്തിട്ടില്ല.",
+    "Select a task to view details.": "വിശദാംശങ്ങൾ കാണാൻ ഒരു ജോലി തിരഞ്ഞെടുക്കുക.",
+    "Task Details": "ജോലിയുടെ വിശദാംശങ്ങൾ",
+    "Close": "അടയ്ക്കുക",
+    "Assigned By": "നിയോഗിച്ചത്",
+    "Assigned To": "ആർക്കാണ് നിയോഗിച്ചത്",
+    "Start Date": "ആരംഭ തീയതി",
+    "Due Date": "അവസാന തീയതി",
+    "Status": "നില",
+    "Show Tasks": "ജോലികൾ കാണിക്കുക",
+    "Completion Description": "പൂർത്തീകരണ വിശദീകരണം",
+    "Mark as Completed": "പൂർത്തിയായി എന്ന് അടയാളപ്പെടുത്തുക",
+    "Mark as Incomplete": "അപൂർണ്ണം എന്ന് അടയാളപ്പെടുത്തുക",
+    "Completed": "പൂർത്തിയായി",
+    "Pending": "പെൻഡിംഗ്",
+    "Retry": "വീണ്ടും ശ്രമിക്കുക",
+    "Loading tasks...": "ജോലികൾ ലോഡ് ചെയ്യുന്നു..."
   }
 }
+
+

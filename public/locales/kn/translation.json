@@ -308,5 +308,41 @@
         "Enter new password (min 8 characters)": "ಹೊಸ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ (ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳು)",
         "Enter your current password": "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ",
         "Enter your new password": "ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ"
-    }
+    },
+    
+  "message": {
+    "New password must be at least 8 characters long.": "ಹೊಸ ಪಾಸ್ವರ್ಡ್ ಕನಿಷ್ಠ ೮ ಅಕ್ಷರಗಳಷ್ಟು ಉದ್ದವಾಗಿರಬೇಕು.",
+    "Current password is required.": "ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್ ಅಗತ್ಯವಿದೆ.",
+    "Please enter your email.": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಮೇಲ್ ನಮೂದಿಸಿ.",
+    "Both fields are required.": "ಎರಡೂ ಫೀಲ್ಡ್‌ಗಳು ಅಗತ್ಯವಿದೆ.",
+    "Sending...": "ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...",
+    "Send Link": "ಲಿಂಕ್ ಕಳುಹಿಸಿ",
+    "Reset link sent successfully!": "ರೀಸೆಟ್ ಲಿಂಕ್ ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ!",
+    "Please enter both employee code and password.": "ದಯವಿಟ್ಟು ನೌಕರರ ಕೋಡ್ ಮತ್ತು ಪಾಸ್ವರ್ಡ್ ಎರಡನ್ನೂ ನಮೂದಿಸಿ.",
+    "Invalid employee code or password.": "ಅಮಾನ್ಯ ನೌಕರರ ಕೋಡ್ ಅಥವಾ ಪಾಸ್ವರ್ಡ್.",
+    "Invalid input data.": "ಅಮಾನ್ಯವಾದ ಡೇಟಾವನ್ನು ನಮೂದಿಸಲಾಗಿದೆ.",
+    "Server error. Please try again later.": "ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "Cannot connect to server. Please check your connection.": "ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.",
+    "An unexpected error occurred. Please try again.": "ಅನಿರೀಕ್ಷಿತ ದೋಷ ಸಂಭವಿಸಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+  },
+  "calendar": {
+    "Task Calendar": "ಕಾರ್ಯ ಕ್ಯಾಲೆಂಡರ್",
+    "No tasks assigned.": "ಯಾವುದೇ ಕೆಲಸವನ್ನು ಹಂಚಲಾಗಿಲ್ಲ.",
+    "You have no tasks scheduled.": "ನಿಮ್ಮಿಗಾಗಿ ಯಾವುದೇ ಕೆಲಸವನ್ನು ನಿಗದಿಪಡಿಸಲಾಗಿಲ್ಲ.",
+    "Select a task to view details.": "ವಿವರಗಳನ್ನು ನೋಡಲು ಒಂದು ಕೆಲಸವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    "Task Details": "ಕಾರ್ಯದ ವಿವರಗಳು",
+    "Close": "ಮುಚ್ಚಿ",
+    "Assigned By": "ಹಂಚಿದವರು",
+    "Assigned To": "ಯಾರಿಗೆ ಹಂಚಲಾಗಿದೆ",
+    "Start Date": "ಆರಂಭ ದಿನಾಂಕ",
+    "Due Date": "ಕೊನೆಯ ದಿನಾಂಕ",
+    "Status": "ಸ್ಥಿತಿ",
+    "Show Tasks": "ಕೆಲಸಗಳನ್ನು ತೋರಿಸಿ",
+    "Completion Description": "ಪೂರ್ಣಗೊಳಿಸುವ ವಿವರಣೆ",
+    "Mark as Completed": "ಪೂರ್ಣಗೊಂಡಿದೆ ಎಂದು ಗುರುತಿಸಿ",
+    "Mark as Incomplete": "ಅಪೂರ್ಣವಾಗಿದೆ ಎಂದು ಗುರುತಿಸಿ",
+    "Completed": "ಪೂರ್ಣಗೊಂಡಿದೆ",
+    "Pending": "ಬಾಕಿ ಇದೆ"
+
+}
 }

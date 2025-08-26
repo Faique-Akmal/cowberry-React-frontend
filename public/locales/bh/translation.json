@@ -302,5 +302,42 @@
     "Enter new password (min 8 characters)": "नया पासवर्ड डालीं (कम से कम 8 अक्षर)",
     "Enter your current password": "आपन अभी के पासवर्ड डालीं",
     "Enter your new password": "आपन नया पासवर्ड डालीं"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "नयका पासवर्ड कम से कम 8 अक्षर के होखे के चाहीं।",
+    "Current password is required.": "मौजूदा पासवर्ड जरूरी बा।",
+    "Please enter your email.": "कृपया अपना ईमेल डालल जाय।",
+    "Both fields are required.": "दूनो फील्ड भरल जरूरी बा।",
+    "Sending...": "भेजल जात बा...",
+    "Send Link": "लिंक भेजी",
+    "Reset link sent successfully!": "रीसेट लिंक सफलतापूर्वक भेजल गइल!",
+    "Please enter both employee code and password.": "कृपया कर्मचारी कोड आ पासवर्ड दूनो डालल जाय।",
+    "Invalid employee code or password.": "ग़लत कर्मचारी कोड या पासवर्ड।",
+    "Invalid input data.": "ग़लत डाटा डालल गइल बा।",
+    "Server error. Please try again later.": "सर्वर में दिक्कत बा। बाद में फेर कोशिश करीं।",
+    "Cannot connect to server. Please check your connection.": "सर्वर से जुड़ ना पावल गइल। कृपया अपना कनेक्शन चेक करीं।",
+    "An unexpected error occurred. Please try again.": "अचानक कुछ गड़बड़ भइल। कृपया फेर से कोशिश करीं।"
+  },
+  "calendar": {
+    "Task Calendar": "काम के कैलेंडर",
+    "No tasks assigned.": "कवनो काम ना सौंपल गइल बा।",
+    "You have no tasks scheduled.": "रउरा लगे कवनो काम के समय ना बनावल गइल बा।",
+    "Select a task to view details.": "बिस्तार देखे खातिर काम चुनी।",
+    "Task Details": "काम के बिस्तार",
+    "Close": "बंद करीं",
+    "Assigned By": "जिनका से काम सौंपल गइल",
+    "Assigned To": "जिनका के काम सौंपल गइल",
+    "Start Date": "शुरुआत के तारीख",
+    "Due Date": "खतम करे के तारीख",
+    "Status": "हालत",
+    "Show Tasks": "काम देखाईं",
+    "Completion Description": "पूरा होखे के बिस्तार",
+    "Mark as Completed": "पूरा भइल बताईं",
+    "Mark as Incomplete": "अधूरा बताईं",
+    "Completed": "पूरा भइल",
+    "Pending": "बाकी बा",
+    "Retry": "फेर से कोशिश करीं",
+    "Loading tasks...": "काम लोड होत बा..."
   }
 }

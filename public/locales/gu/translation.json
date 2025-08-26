@@ -312,5 +312,44 @@
     "Enter new password (min 8 characters)": "નવો પાસવર્ડ દાખલ કરો (ઓછામાં ઓછા 8 અક્ષરો)",
     "Enter your current password": "તમારો હાલનો પાસવર્ડ દાખલ કરો",
     "Enter your new password": "તમારો નવો પાસવર્ડ દાખલ કરો"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "નવું પાસવર્ડ ઓછામાં ઓછું ૮ અક્ષરનું હોવું જોઈએ.",
+    "Current password is required.": "હાલનું પાસવર્ડ જરૂરી છે.",
+    "Please enter your email.": "કૃપા કરીને તમારું ઇમેઇલ દાખલ કરો.",
+    "Both fields are required.": "બન્ને ફીલ્ડ ભરવી જરૂરી છે.",
+    "Sending...": "મોકલાઈ રહ્યું છે...",
+    "Send Link": "લિંક મોકલો",
+    "Reset link sent successfully!": "રીસેટ લિંક સફળતાપૂર્વક મોકલાઈ ગઈ!",
+    "Please enter both employee code and password.": "કૃપા કરીને કર્મચારી કોડ અને પાસવર્ડ બન્ને દાખલ કરો.",
+    "Invalid employee code or password.": "અમાન્ય કર્મચારી કોડ અથવા પાસવર્ડ.",
+    "Invalid input data.": "અમાન્ય માહિતી દાખલ કરવામાં આવી છે.",
+    "Server error. Please try again later.": "સર્વર ભૂલ. કૃપા કરીને થોડા સમય પછી ફરી પ્રયાસ કરો.",
+    "Cannot connect to server. Please check your connection.": "સર્વર સાથે કનેક્ટ કરી શકાતું નથી. કૃપા કરીને તમારું કનેક્શન તપાસો.",
+    "An unexpected error occurred. Please try again.": "અચાનક ભૂલ થઈ. કૃપા કરીને ફરી પ્રયાસ કરો."
+  },
+  "calendar": {
+    "Task Calendar": "કાર્ય કેલેન્ડર",
+    "No tasks assigned.": "કોઈ કાર્ય સોંપવામાં આવ્યું નથી.",
+    "You have no tasks scheduled.": "તમારા માટે કોઈ કાર્ય નક્કી કરવામાં આવ્યું નથી.",
+    "Select a task to view details.": "વિગતો જોવા માટે કાર્ય પસંદ કરો.",
+    "Task Details": "કાર્યની વિગતો",
+    "Close": "બંધ કરો",
+    "Assigned By": "સોંપનાર",
+    "Assigned To": "જેનાને સોંપ્યું",
+    "Start Date": "શરૂઆતની તારીખ",
+    "Due Date": "અંતિમ તારીખ",
+    "Status": "સ્થિતિ",
+    "Show Tasks": "કાર્યો બતાવો",
+    "Completion Description": "પૂર્ણ થવાની વિગતો",
+    "Mark as Completed": "પૂર્ણ થયું તરીકે ચિહ્નિત કરો",
+    "Mark as Incomplete": "અપૂર્ણ તરીકે ચિહ્નિત કરો",
+    "Completed": "પૂર્ણ થયું",
+    "Pending": "બાકી છે",
+    "Retry": "ફરી પ્રયાસ કરો",
+    "Loading tasks...": "કાર્યો લોડ થઈ રહ્યા છે..."
   }
 }
+
+

@@ -303,5 +303,44 @@
     "Enter new password (min 8 characters)": "নতুন পাছৱৰ্ড দিয়ক (ন্যূনতম ৮ অক্ষৰ)",
     "Enter your current password": "আপোনাৰ বৰ্তমান পাছৱৰ্ড দিয়ক",
     "Enter your new password": "আপোনাৰ নতুন পাছৱৰ্ড দিয়ক"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "নতুন পাছৱৰ্ড কমেও ৮টা আখৰ হ'ব লাগিব।",
+    "Current password is required.": "বৰ্তমান পাছৱৰ্ড প্ৰয়োজন।",
+    "Please enter your email.": "অনুগ্ৰহ কৰি আপোনাৰ ইমেইল দিয়ক।",
+    "Both fields are required.": "দুয়োটা ক্ষেত্ৰ পূৰ্ণ কৰা আৱশ্যক।",
+    "Sending...": "পঠোৱা হৈছে...",
+    "Send Link": "লিংক পঠাওক",
+    "Reset link sent successfully!": "ৰিছেট লিংক সফলতাৰে পঠোৱা হৈছে!",
+    "Please enter both employee code and password.": "অনুগ্ৰহ কৰি কৰ্মচাৰী ক'ড আৰু পাছৱৰ্ড দুয়োটা দিয়ক।",
+    "Invalid employee code or password.": "অবৈধ কৰ্মচাৰী ক'ড বা পাছৱৰ্ড।",
+    "Invalid input data.": "অবৈধ তথ্য প্ৰৱিষ্ট কৰা হৈছে।",
+    "Server error. Please try again later.": "চাৰ্ভাৰ ত্ৰুটি। অনুগ্ৰহ কৰি পিছত পুনৰ চেষ্টা কৰক।",
+    "Cannot connect to server. Please check your connection.": "চাৰ্ভাৰৰ সৈতে সংযোগ কৰিব পৰা নগ'ল। অনুগ্ৰহ কৰি আপোনাৰ সংযোগ পৰীক্ষা কৰক।",
+    "An unexpected error occurred. Please try again.": "অপ্ৰত্যাশিত ত্ৰুটি ঘটিছে। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।"
+  },
+  "calendar": {
+    "Task Calendar": "কাৰ্যসূচী কেলেণ্ডাৰ",
+    "No tasks assigned.": "কোনো কাৰ্য নিযুক্ত কৰা হোৱা নাই।",
+    "You have no tasks scheduled.": "আপোনাৰ কোনো কাৰ্যসূচী নাই।",
+    "Select a task to view details.": "বিৱৰণ চাবলৈ এটা কাৰ্য বাছনি কৰক।",
+    "Task Details": "কাৰ্যৰ বিৱৰণ",
+    "Close": "বন্ধ কৰক",
+    "Assigned By": "নিযুক্ত কৰিছে",
+    "Assigned To": "যাক নিযুক্ত কৰা হৈছে",
+    "Start Date": "আৰম্ভণি তাৰিখ",
+    "Due Date": "অন্তিম তাৰিখ",
+    "Status": "অৱস্থা",
+    "Show Tasks": "কাৰ্য দেখুৱাওক",
+    "Completion Description": "সম্পূৰ্ণতাৰ বিৱৰণ",
+    "Mark as Completed": "সম্পূৰ্ণ বুলি চিহ্নিত কৰক",
+    "Mark as Incomplete": "অসম্পূৰ্ণ বুলি চিহ্নিত কৰক",
+    "Completed": "সম্পূৰ্ণ",
+    "Pending": "অপেক্ষাৰত",
+    "Retry": "পুনৰ চেষ্টা কৰক",
+    "Loading tasks...": "কাৰ্য লোড কৰা হৈছে..."
   }
 }
+
+

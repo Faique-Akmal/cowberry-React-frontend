@@ -302,5 +302,44 @@
     "Enter new password (min 8 characters)": "নতুন পাসওয়ার্ড লিখুন (কমপক্ষে 8 অক্ষর)",
     "Enter your current password": "আপনার বর্তমান পাসওয়ার্ড লিখুন",
     "Enter your new password": "আপনার নতুন পাসওয়ার্ড লিখুন"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "নতুন পাসওয়ার্ড ন্যূনতম ৮ অক্ষরের হতে হবে।",
+    "Current password is required.": "বর্তমান পাসওয়ার্ড প্রয়োজন।",
+    "Please enter your email.": "অনুগ্রহ করে আপনার ইমেইল লিখুন।",
+    "Both fields are required.": "দুটো ঘরই পূরণ করতে হবে।",
+    "Sending...": "পাঠানো হচ্ছে...",
+    "Send Link": "লিঙ্ক পাঠান",
+    "Reset link sent successfully!": "রিসেট লিঙ্ক সফলভাবে পাঠানো হয়েছে!",
+    "Please enter both employee code and password.": "অনুগ্রহ করে কর্মচারী কোড এবং পাসওয়ার্ড দুটোই লিখুন।",
+    "Invalid employee code or password.": "ভুল কর্মচারী কোড বা পাসওয়ার্ড।",
+    "Invalid input data.": "ভুল তথ্য প্রদান করা হয়েছে।",
+    "Server error. Please try again later.": "সার্ভার ত্রুটি। পরে আবার চেষ্টা করুন।",
+    "Cannot connect to server. Please check your connection.": "সার্ভারে সংযোগ করা যাচ্ছে না। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করুন।",
+    "An unexpected error occurred. Please try again.": "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে। আবার চেষ্টা করুন।"
+  },
+  "calendar": {
+    "Task Calendar": "কাজের ক্যালেন্ডার",
+    "No tasks assigned.": "কোনো কাজ দেওয়া হয়নি।",
+    "You have no tasks scheduled.": "আপনার কোনো নির্ধারিত কাজ নেই।",
+    "Select a task to view details.": "বিস্তারিত দেখতে একটি কাজ নির্বাচন করুন।",
+    "Task Details": "কাজের বিস্তারিত",
+    "Close": "বন্ধ করুন",
+    "Assigned By": "দেওয়া হয়েছে",
+    "Assigned To": "যাকে দেওয়া হয়েছে",
+    "Start Date": "শুরুর তারিখ",
+    "Due Date": "শেষ তারিখ",
+    "Status": "অবস্থা",
+    "Show Tasks": "কাজ দেখান",
+    "Completion Description": "সমাপ্তির বিবরণ",
+    "Mark as Completed": "সমাপ্ত হিসেবে চিহ্নিত করুন",
+    "Mark as Incomplete": "অসমাপ্ত হিসেবে চিহ্নিত করুন",
+    "Completed": "সমাপ্ত",
+    "Pending": "অপেক্ষমান",
+    "Retry": "পুনরায় চেষ্টা করুন",
+    "Loading tasks...": "কাজ লোড হচ্ছে..."
   }
 }
+
+

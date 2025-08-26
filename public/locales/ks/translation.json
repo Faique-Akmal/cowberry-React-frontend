@@ -298,5 +298,44 @@
     "Logout": "لاگ آوٹ",
     "Sign out": "ساين آوٹ",
     "Current Password": ""
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "نیا پاس ورڈ کم از کم ۸ حروف کا ہونا چاہیے۔",
+    "Current password is required.": "موجودہ پاس ورڈ ضروری ہے۔",
+    "Please enter your email.": "براہ کرم اپنا ای میل درج کریں۔",
+    "Both fields are required.": "دونوں خانے پر کرنا ضروری ہے۔",
+    "Sending...": "بھیجا جا رہا ہے...",
+    "Send Link": "لنک بھیجیں",
+    "Reset link sent successfully!": "ری سیٹ لنک کامیابی کے ساتھ بھیج دیا گیا!",
+    "Please enter both employee code and password.": "براہ کرم ملازم کا کوڈ اور پاس ورڈ دونوں درج کریں۔",
+    "Invalid employee code or password.": "غلط ملازم کوڈ یا پاس ورڈ۔",
+    "Invalid input data.": "غلط ڈیٹا درج کیا گیا ہے۔",
+    "Server error. Please try again later.": "سرور کی خرابی۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
+    "Cannot connect to server. Please check your connection.": "سرور سے رابطہ نہیں ہو سکا۔ براہ کرم اپنا کنکشن چیک کریں۔",
+    "An unexpected error occurred. Please try again.": "ایک غیر متوقع خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔"
+  },
+  "calendar": {
+    "Task Calendar": "کام کا کیلنڈر",
+    "No tasks assigned.": "کوئی کام تفویض نہیں کیا گیا۔",
+    "You have no tasks scheduled.": "آپ کے لئے کوئی کام مقرر نہیں ہے۔",
+    "Select a task to view details.": "تفصیل دیکھنے کے لئے کام منتخب کریں۔",
+    "Task Details": "کام کی تفصیلات",
+    "Close": "بند کریں",
+    "Assigned By": "تفویض کرنے والا",
+    "Assigned To": "جسے تفویض کیا گیا",
+    "Start Date": "شروع ہونے کی تاریخ",
+    "Due Date": "ختم ہونے کی تاریخ",
+    "Status": "حالت",
+    "Show Tasks": "کام دکھائیں",
+    "Completion Description": "تکمیل کی تفصیل",
+    "Mark as Completed": "مکمل کے طور پر نشان زد کریں",
+    "Mark as Incomplete": "نامکمل کے طور پر نشان زد کریں",
+    "Completed": "مکمل",
+    "Pending": "زیر التواء",
+    "Retry": "دوبارہ کوشش کریں",
+    "Loading tasks...": "کام لوڈ ہو رہے ہیں..."
   }
 }
+
+

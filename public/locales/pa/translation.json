@@ -301,7 +301,46 @@
     "Enter new password (min 8 characters)": "ਨਵਾਂ ਪਾਸਵਰਡ ਦਾਖਲ ਕਰੋ (ਘੱਟੋ-ਘੱਟ 8 ਅੱਖਰ)",
     "Enter your current password": "ਆਪਣਾ ਮੌਜੂਦਾ ਪਾਸਵਰਡ ਦਾਖਲ ਕਰੋ",
     "Enter your new password": "ਆਪਣਾ ਨਵਾਂ ਪਾਸਵਰਡ ਦਾਖਲ ਕਰੋ"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "ਨਵਾਂ ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 8 ਅੱਖਰਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।",
+    "Current password is required.": "ਮੌਜੂਦਾ ਪਾਸਵਰਡ ਲਾਜ਼ਮੀ ਹੈ।",
+    "Please enter your email.": "ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਈਮੇਲ ਦਰਜ ਕਰੋ।",
+    "Both fields are required.": "ਦੋਵੇਂ ਖੇਤਰ ਲਾਜ਼ਮੀ ਹਨ।",
+    "Sending...": "ਭੇਜਿਆ ਜਾ ਰਿਹਾ ਹੈ...",
+    "Send Link": "ਲਿੰਕ ਭੇਜੋ",
+    "Reset link sent successfully!": "ਰੀਸੈਟ ਲਿੰਕ ਸਫਲਤਾਪੂਰਵਕ ਭੇਜਿਆ ਗਿਆ!",
+    "Please enter both employee code and password.": "ਕਿਰਪਾ ਕਰਕੇ ਕਰਮਚਾਰੀ ਕੋਡ ਅਤੇ ਪਾਸਵਰਡ ਦੋਵੇਂ ਦਰਜ ਕਰੋ।",
+    "Invalid employee code or password.": "ਗਲਤ ਕਰਮਚਾਰੀ ਕੋਡ ਜਾਂ ਪਾਸਵਰਡ।",
+    "Invalid input data.": "ਗਲਤ ਡਾਟਾ ਦਰਜ ਕੀਤਾ ਗਿਆ ਹੈ।",
+    "Server error. Please try again later.": "ਸਰਵਰ ਵਿੱਚ ਗਲਤੀ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "Cannot connect to server. Please check your connection.": "ਸਰਵਰ ਨਾਲ ਕਨੈਕਟ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀ ਕੁਨੈਕਸ਼ਨ ਚੈੱਕ ਕਰੋ।",
+    "An unexpected error occurred. Please try again.": "ਇੱਕ ਅਣਅੰਦਾਜ਼ੇ ਗਲਤੀ ਹੋ ਗਈ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  },
+  "calendar": {
+    "Task Calendar": "ਕੰਮ ਦਾ ਕੈਲੰਡਰ",
+    "No tasks assigned.": "ਕੋਈ ਕੰਮ ਸੌਂਪਿਆ ਨਹੀਂ ਗਿਆ।",
+    "You have no tasks scheduled.": "ਤੁਹਾਡੇ ਲਈ ਕੋਈ ਕੰਮ ਤਹਿ ਨਹੀਂ ਕੀਤਾ ਗਿਆ।",
+    "Select a task to view details.": "ਵੇਰਵੇ ਵੇਖਣ ਲਈ ਕੰਮ ਚੁਣੋ।",
+    "Task Details": "ਕੰਮ ਦੇ ਵੇਰਵੇ",
+    "Close": "ਬੰਦ ਕਰੋ",
+    "Assigned By": "ਜਿਸਨੇ ਕੰਮ ਸੌਂਪਿਆ",
+    "Assigned To": "ਜਿਸਨੂੰ ਕੰਮ ਸੌਂਪਿਆ ਗਿਆ",
+    "Start Date": "ਸ਼ੁਰੂ ਕਰਨ ਦੀ ਤਾਰੀਖ",
+    "Due Date": "ਖਤਮ ਕਰਨ ਦੀ ਤਾਰੀਖ",
+    "Status": "ਹਾਲਤ",
+    "Show Tasks": "ਕੰਮ ਦਿਖਾਓ",
+    "Completion Description": "ਪੂਰਾ ਹੋਣ ਦਾ ਵੇਰਵਾ",
+    "Mark as Completed": "ਪੂਰਾ ਹੋਇਆ ਮਾਰਕ ਕਰੋ",
+    "Mark as Incomplete": "ਅਧੂਰਾ ਮਾਰਕ ਕਰੋ",
+    "Completed": "ਪੂਰਾ ਹੋਇਆ",
+    "Pending": "ਬਕਾਇਆ",
+    "Retry": "ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
+    "Loading tasks...": "ਕੰਮ ਲੋਡ ਹੋ ਰਹੇ ਹਨ..."
   }
 }
+
+
 
 

@@ -307,8 +307,47 @@
     "Enter new password (min 8 characters)": "புதிய கடவுச்சொல்லை உள்ளிடவும் (குறைந்தது 8 எழுத்துகள்)",
     "Enter your current password": "உங்கள் தற்போதைய கடவுச்சொல்லை உள்ளிடவும்",
     "Enter your new password": "உங்கள் புதிய கடவுச்சொல்லை உள்ளிடவும்"
+  },
+  
+  "message": {
+    "New password must be at least 8 characters long.": "புதிய கடவுச்சொல் குறைந்தது 8 எழுத்துகள் நீளமாக இருக்க வேண்டும்.",
+    "Current password is required.": "தற்போதைய கடவுச்சொல் அவசியம்.",
+    "Please enter your email.": "தயவு செய்து உங்கள் மின்னஞ்சலை உள்ளிடவும்.",
+    "Both fields are required.": "இரண்டு புலங்களும் அவசியம்.",
+    "Sending...": "அனுப்பப்படுகிறது...",
+    "Send Link": "இணைப்பை அனுப்பவும்",
+    "Reset link sent successfully!": "மீட்டமைப்பு இணைப்பு வெற்றிகரமாக அனுப்பப்பட்டது!",
+    "Please enter both employee code and password.": "தயவு செய்து ஊழியர் குறியீடும் கடவுச்சொல்லும் உள்ளிடவும்.",
+    "Invalid employee code or password.": "தவறான ஊழியர் குறியீடு அல்லது கடவுச்சொல்.",
+    "Invalid input data.": "தவறான உள்ளீட்டு தரவு.",
+    "Server error. Please try again later.": "சேவையக பிழை. தயவு செய்து பிறகு முயற்சிக்கவும்.",
+    "Cannot connect to server. Please check your connection.": "சேவையகத்துடன் இணைக்க முடியவில்லை. தயவு செய்து உங்கள் இணைப்பை சரிபார்க்கவும்.",
+    "An unexpected error occurred. Please try again.": "எதிர்பாராத பிழை ஏற்பட்டுள்ளது. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
+  },
+  "calendar": {
+    "Task Calendar": "பணிக்காலண்டர்",
+    "No tasks assigned.": "எந்த பணியும் ஒதுக்கப்படவில்லை.",
+    "You have no tasks scheduled.": "உங்களுக்கு எந்த பணி திட்டமிடப்படவில்லை.",
+    "Select a task to view details.": "விவரங்களைப் பார்க்க பணியைத் தேர்ந்தெடுக்கவும்.",
+    "Task Details": "பணி விவரங்கள்",
+    "Close": "மூடு",
+    "Assigned By": "ஒதுக்கியவர்",
+    "Assigned To": "ஒதுக்கப்பட்டது",
+    "Start Date": "தொடக்க தேதி",
+    "Due Date": "கடைசி தேதி",
+    "Status": "நிலை",
+    "Show Tasks": "பணிகளை காட்டு",
+    "Completion Description": "முடிந்த விவரம்",
+    "Mark as Completed": "முடிந்ததாக குறிக்கவும்",
+    "Mark as Incomplete": "முழுமையற்றதாக குறிக்கவும்",
+    "Completed": "முடிந்தது",
+    "Pending": "நிலுவையில் உள்ளது",
+    "Retry": "மீண்டும் முயற்சிக்கவும்",
+    "Loading tasks...": "பணிகள் ஏற்றப்படுகின்றன..."
   }
 }
+
+
 
   
   

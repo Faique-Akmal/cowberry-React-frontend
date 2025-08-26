@@ -304,5 +304,44 @@
         "Enter new password (min 8 characters)": "नयाँ पासवर्ड प्रविष्ट गर्नुहोस् (कम्तीमा ८ वर्ण)",
         "Enter your current password": "तपाईंको हालको पासवर्ड प्रविष्ट गर्नुहोस्",
         "Enter your new password": "तपाईंको नयाँ पासवर्ड प्रविष्ट गर्नुहोस्"
-    }
+    },
+    
+  "message": {
+    "New password must be at least 8 characters long.": "नयाँ पासवर्ड कम्तीमा ८ अक्षर लामो हुनुपर्छ।",
+    "Current password is required.": "हालको पासवर्ड आवश्यक छ।",
+    "Please enter your email.": "कृपया आफ्नो इमेल लेख्नुहोस्।",
+    "Both fields are required.": "दुवै फील्ड अनिवार्य छन्।",
+    "Sending...": "पठाइँदैछ...",
+    "Send Link": "लिंक पठाउनुहोस्",
+    "Reset link sent successfully!": "रीसेट लिंक सफलतापूर्वक पठाइयो!",
+    "Please enter both employee code and password.": "कृपया कर्मचारी कोड र पासवर्ड दुवै लेख्नुहोस्।",
+    "Invalid employee code or password.": "अवैध कर्मचारी कोड वा पासवर्ड।",
+    "Invalid input data.": "अवैध डाटा प्रविष्ट गरिएको छ।",
+    "Server error. Please try again later.": "सर्भर त्रुटि। कृपया पछि फेरि प्रयास गर्नुहोस्।",
+    "Cannot connect to server. Please check your connection.": "सर्भरसँग जडान हुन सकेन। कृपया आफ्नो कनेक्शन जाँच गर्नुहोस्।",
+    "An unexpected error occurred. Please try again.": "अप्रत्याशित त्रुटि भयो। कृपया फेरि प्रयास गर्नुहोस्।"
+  },
+  "calendar": {
+    "Task Calendar": "कार्य तालिका",
+    "No tasks assigned.": "कुनै कार्य तोकिएको छैन।",
+    "You have no tasks scheduled.": "तपाईंसँग कुनै कार्य तालिका छैन।",
+    "Select a task to view details.": "विवरण हेर्न कार्य चयन गर्नुहोस्।",
+    "Task Details": "कार्य विवरण",
+    "Close": "बन्द गर्नुहोस्",
+    "Assigned By": "जसले कार्य तोकेको हो",
+    "Assigned To": "जसलाई कार्य तोकिएको हो",
+    "Start Date": "सुरुको मिति",
+    "Due Date": "समाप्त हुने मिति",
+    "Status": "स्थिति",
+    "Show Tasks": "कार्य देखाउनुहोस्",
+    "Completion Description": "पूरा भएको विवरण",
+    "Mark as Completed": "पूरा भएको चिन्ह लगाउनुहोस्",
+    "Mark as Incomplete": "अपूर्ण भएको चिन्ह लगाउनुहोस्",
+    "Completed": "पूरा भयो",
+    "Pending": "बाँकी छ",
+    "Retry": "फेरि प्रयास गर्नुहोस्",
+    "Loading tasks...": "कार्य लोड हुँदैछ..."
+  }
 }
+
+

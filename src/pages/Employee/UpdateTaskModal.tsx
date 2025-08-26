@@ -71,10 +71,10 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
 
 
         {/* Status */}
-       <div className="space-y-2 p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+       {/* <div className="space-y-2 p-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"> */}
               {/* <Clock className="w-4 h-4" /> */}
-              Task Status
+              {/* Task Status
             </label>
             <div className="relative">
               <select
@@ -93,7 +93,7 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
                 </svg>
               </div>
             </div>
-          </div>
+          </div> */}
 
 
         {/* completion_description */}

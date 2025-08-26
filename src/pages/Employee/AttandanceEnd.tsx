@@ -97,9 +97,15 @@ useEffect(() => {
 
   const fetchUserAndLocation = async () => {
     try {
-      const userRes = await API.get('/me/');
-      const user = userRes.data;
+  const userRes = await API.get("/me/");
+  const user = userRes.data;
 
+  // Check if attendance has already been started (from API)
+  if (user.is_attendance_ended) {
+    toast.error("You have already submitted attendance.");
+    navigate("/employee-dashboard");
+    return;
+  }
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setFormData((prev) => ({

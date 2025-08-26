@@ -64,9 +64,33 @@ export default function AttendanceList() {
   const [selectedDate, setSelectedDate] = useState<string>("");
 
 
-  useEffect(() => {
+
+   // 🆕 config state from backend
+  const [config, setConfig] = useState({
+    refresh_interval: 300, // fallback 5min
+    pause_threshold: 2,  // fallback 2 min
+    active: true,
+  });
+
+   useEffect(() => {
+    fetchConfig();
     fetchData();
   }, []);
+
+const fetchConfig = async () => {
+    try {
+      const res = await API.get("/location-log-config/");
+      const cfg = res.data;
+      setConfig({
+        refresh_interval: cfg.refresh_interval || 5,
+        pause_threshold: cfg.pause_threshold || 2,
+        active: cfg.active,
+      });
+      console.log("⚙️ Config loaded:", cfg);
+    } catch (err) {
+      console.error("❌ Failed to fetch config", err);
+    }
+  };
 
   useEffect(() => {
     if (mapView) {
@@ -152,6 +176,50 @@ export default function AttendanceList() {
         try {
           res = await API.get(endpoint);
           console.log(`✅ Successfully fetched from ${endpoint}:`, res.data);
+
+           useEffect(() => {
+    if (mapView) {
+      fetchLocations(mapView.user.id, mapView.date);
+
+      const isOngoing =
+        !mapView.end_time || (!mapView.end_lat || !mapView.end_lng);
+
+      if (isOngoing && autoRefresh && config.active) {
+        console.log(
+          "🔄 Setting up auto-refresh every",
+          config.refresh_interval,
+          "seconds"
+        );
+        locationIntervalRef.current = setInterval(() => {
+          fetchLocations(mapView.user.id, mapView.date);
+        }, config.refresh_interval * 1000);
+      }
+    }
+
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [mapView, autoRefresh, config]);
+
+   const detectPauses = (): LocationLog[] => {
+    if (locations.length < 2) return [];
+
+    const pauses: LocationLog[] = [];
+
+    for (let i = 1; i < locations.length; i++) {
+      const prev = new Date(locations[i - 1].timestamp);
+      const curr = new Date(locations[i].timestamp);
+      const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
+
+      if (diffMinutes > config.pause_threshold || locations[i].is_paused) {
+        pauses.push(locations[i]);
+      }
+    }
+    return pauses;
+  };
           
           // Handle different response structures
           if (Array.isArray(res.data)) {

@@ -150,17 +150,15 @@ export default function AttendanceStart() {
     setMessage("");
 
     try {
-      const userRes = await API.get("/me/");
-      const user = userRes.data;
+  const userRes = await API.get("/me/");
+  const user = userRes.data;
 
-      const today = new Date().toISOString().split("T")[0];
-      const attendanceKey = `attendance_${user.id || user.user_id || user.pk}_${today}`;
-      if (localStorage.getItem(attendanceKey)) {
-        setAlreadySubmitted(true);
-        toast.error(t("toast.You have already submitted attendance for today."));
-        setLoading(false);
-        return;
-      }
+  // Check if attendance has already been started (from API)
+  if (user.is_attendance_started) {
+    toast.error("You have already submitted attendance.");
+    navigate("/employee-dashboard");
+    return;
+  }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {

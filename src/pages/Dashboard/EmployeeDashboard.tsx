@@ -58,10 +58,10 @@ function EmployeeDashboard() {
       </p>
     </div>
 
-    {/* User Meta Card */}
+    {/* User Meta Card
     <div className="col-span-12">
       <UserMetaCard />
-    </div>
+    </div> */}
 
     {/* Dashboard Stats */}
     <div className="col-span-12">

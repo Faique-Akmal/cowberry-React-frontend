@@ -63,7 +63,7 @@ const DashboardStats: React.FC = () => {
   </div>
 
   {/* Cards Grid */}
-  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 justify-items-center">
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 p-4 justify-items-center">
     <div className={cardClass}>
       <p className="text-sm">{t("home.Total Tasks")}</p>
       <p className="text-xl font-semibold">{totalTasks}</p>

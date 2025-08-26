@@ -137,12 +137,12 @@ const TaskCalendar = () => {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">{t("calendar.My Task Calendar")}</h2>
+        <h2 className="text-xl font-semibold">{t("calendar.Task Calendar")}</h2>
         <button
           onClick={fetchTasks}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
-          {t("calendar.Refresh")}
+          {t("Refresh")}
         </button>
       </div>
       

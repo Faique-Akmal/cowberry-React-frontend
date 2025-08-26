@@ -14,6 +14,7 @@ const LangToggleButton: React.FC = () => {
     { code: "kn", label: "ಕನ್ನಡ" }, // Kannada
     { code: "ml", label: "മലയാളം" }, // Malayalam
     { code: "bo", label: "Bodo" }, // Malayalam
+    { code: "mani", label: "Manipuri" }, // manipuri
     { code: "mr", label: "मराठी" }, // Marathi
     { code: "pa", label: "ਪੰਜਾਬੀ" }, // Punjabi
     { code: "ta", label: "தமிழ்" }, // Tamil

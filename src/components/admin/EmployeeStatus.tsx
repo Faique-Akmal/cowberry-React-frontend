@@ -115,7 +115,7 @@ const  EmployeeStatus = () => {
         className="overflow-y-auto max-h-[400px] custom-scrollbar"
       >
         {onlineUsers.map((user) => (
-          <Link to={`/employee/${user.id}`} key={user.id} className="no-underline text-inherit">
+          // <Link to={`/employee/${user.id}`} key={user.id} className="no-underline text-inherit">
             <div className="grid grid-cols-4 py-4 border-b last:border-none items-center">
               <div className="flex items-center gap-3">
                 <img
@@ -132,7 +132,7 @@ const  EmployeeStatus = () => {
               <div className=''><HomeOfficePill active={user.is_online} /></div>
               <div ><StatusPill status="Online"  /></div>
             </div>
-          </Link>
+          // </Link>
         ))}
 
         {loading && <p className="text-center py-4">Loading...</p>}

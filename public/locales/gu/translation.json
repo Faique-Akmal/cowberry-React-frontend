@@ -254,16 +254,19 @@
     "Enter address here": "અહીં સરનામું દાખલ કરો",
     "Registering...": "નોંધણી થઈ રહી છે..."
   },
-
-  "toast": {
-    "Something went wrong. Please try again.": "કઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.",
-    "Password changed successfully!": "પાસવર્ડ સફળતાપૂર્વક બદલાઈ ગયો!",
-    "Error changing password. Please try again.": "પાસવર્ડ બદલવામાં ભૂલ. ફરી પ્રયાસ કરો.",
-    "Registration successful!": "નોંધણી સફળ થઈ!",
-    "Error during registration. Please try again.": "નોંધણી દરમ્યાન ભૂલ. ફરી પ્રયાસ કરો.",
-    "Username already exists. Please choose a different one.": "વપરાશકર્તા નામ પહેલેથી જ અસ્તિત્વમાં છે. કૃપા કરીને બીજું પસંદ કરો.",
-    "Failed to fetch location. Please allow GPS access.": "સ્થાન મેળવવામાં નિષ્ફળ. કૃપા કરીને GPS ઍક્સેસની મંજૂરી આપો."
-  },
+"toast": {
+  "Something went wrong. Please try again.": "કંઈક ખોટું થયું છે. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  "Password changed successfully!": "પાસવર્ડ સફળતાપૂર્વક બદલાઈ ગયો!",
+  "Error changing password. Please try again.": "પાસવર્ડ બદલવામાં ભૂલ થઈ. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  "Registration successful!": "નોંધણી સફળ રહી!",
+  "Error during registration. Please try again.": "નોંધણી દરમ્યાન ભૂલ થઈ. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  "Username already exists. Please choose a different one.": "યૂઝરનેમ પહેલેથી જ અસ્તિત્વમાં છે. કૃપા કરીને બીજું પસંદ કરો.",
+  "Failed to fetch location. Please allow GPS access.": "સ્થાન મેળવવામાં નિષ્ફળ. કૃપા કરીને GPS એક્સેસની મંજૂરી આપો.",
+  "Please enter both employee code and password.": "કૃપા કરીને કર્મચારી કોડ અને પાસવર્ડ બંને દાખલ કરો.",
+  "You have already submitted attendance for today.": "તમે આજની હાજરી પહેલેથી જ સબમિટ કરી છે.",
+  "Failed to fetch user info. Please check your connection.": "વપરાશકર્તાની માહિતી મેળવવામાં નિષ્ફળ. કૃપા કરીને તમારું કનેક્શન તપાસો."
+}
+,
 
   "user": {
     "Users Directory": "વપરાશકર્તા ડિરેક્ટરી",

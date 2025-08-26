@@ -247,15 +247,19 @@
     "Enter address here": "येथे पत्ता टाका",
     "Registering...": "नोंदणी करत आहे..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
-    "Password changed successfully!": "पासवर्ड यशस्वीरित्या बदलला!",
-    "Error changing password. Please try again.": "पासवर्ड बदलताना त्रुटी. कृपया पुन्हा प्रयत्न करा.",
-    "Registration successful!": "नोंदणी यशस्वी!",
-    "Error during registration. Please try again.": "नोंदणी करताना त्रुटी. कृपया पुन्हा प्रयत्न करा.",
-    "Username already exists. Please choose a different one.": "वापरकर्तानाव आधीच अस्तित्वात आहे. कृपया दुसरे निवडा.",
-    "Failed to fetch location. Please allow GPS access.": "स्थान मिळवण्यात अयशस्वी. कृपया GPS प्रवेश द्या."
-  },
+"toast": {
+  "Something went wrong. Please try again.": "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
+  "Password changed successfully!": "पासवर्ड यशस्वीपणे बदलला गेला!",
+  "Error changing password. Please try again.": "पासवर्ड बदलताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.",
+  "Registration successful!": "नोंदणी यशस्वी झाली!",
+  "Error during registration. Please try again.": "नोंदणी दरम्यान त्रुटी आली. कृपया पुन्हा प्रयत्न करा.",
+  "Username already exists. Please choose a different one.": "वापरकर्तानाव आधीच अस्तित्वात आहे. कृपया दुसरे निवडा.",
+  "Failed to fetch location. Please allow GPS access.": "स्थान मिळवण्यात अयशस्वी. कृपया GPS प्रवेशाला परवानगी द्या.",
+  "Please enter both employee code and password.": "कृपया कर्मचारी कोड आणि पासवर्ड दोन्ही टाका.",
+  "You have already submitted attendance for today.": "आपण आजची उपस्थिती आधीच नोंदवली आहे.",
+  "Failed to fetch user info. Please check your connection.": "वापरकर्ता माहिती मिळवण्यात अयशस्वी. कृपया आपला कनेक्शन तपासा."
+}
+,
   "user": {
     "Users Directory": "वापरकर्ते निर्देशिका",
     "Search Users": "वापरकर्ते शोधा",

@@ -249,15 +249,19 @@
       "Enter address here": "यहाँ ठेगाना प्रविष्ट गर्नुहोस्",
       "Registering...": "दर्ता हुँदैछ..."
     },
-    "toast": {
-      "Something went wrong. Please try again.": "केही गलत भयो। कृपया पुन: प्रयास गर्नुहोस्।",
-      "Password changed successfully!": "पासवर्ड सफलतापूर्वक परिवर्तन गरियो!",
-      "Error changing password. Please try again.": "पासवर्ड परिवर्तन गर्दा त्रुटि। कृपया पुन: प्रयास गर्नुहोस्।",
-      "Registration successful!": "दर्ता सफल भयो!",
-      "Error during registration. Please try again.": "दर्ता गर्दा त्रुटि। कृपया पुन: प्रयास गर्नुहोस्।",
-      "Username already exists. Please choose a different one.": "प्रयोगकर्तानाम पहिले नै अवस्थित छ। कृपया अर्को चयन गर्नुहोस्।",
-      "Failed to fetch location. Please allow GPS access.": "स्थान ल्याउन असफल। कृपया जीपीएस पहुँच अनुमति दिनुहोस्।"
-    },
+   "toast": {
+  "Something went wrong. Please try again.": "केही गल्ती भयो। कृपया फेरि प्रयास गर्नुहोस्।",
+  "Password changed successfully!": "पासवर्ड सफलतापूर्वक परिवर्तन गरिएको छ!",
+  "Error changing password. Please try again.": "पासवर्ड परिवर्तन गर्दा त्रुटि भयो। कृपया फेरि प्रयास गर्नुहोस्।",
+  "Registration successful!": "दर्ता सफल भयो!",
+  "Error during registration. Please try again.": "दर्ता गर्दा त्रुटि भयो। कृपया फेरि प्रयास गर्नुहोस्।",
+  "Username already exists. Please choose a different one.": "प्रयोगकर्तानाम पहिले नै अवस्थित छ। कृपया अर्को रोज्नुहोस्।",
+  "Failed to fetch location. Please allow GPS access.": "स्थान ल्याउन असफल। कृपया GPS पहुँच अनुमति दिनुहोस्।",
+  "Please enter both employee code and password.": "कृपया कर्मचारी कोड र पासवर्ड दुवै प्रविष्ट गर्नुहोस्।",
+  "You have already submitted attendance for today.": "तपाईँले आजको उपस्थिति पहिले नै बुझाइसक्नुभएको छ।",
+  "Failed to fetch user info. Please check your connection.": "प्रयोगकर्ता जानकारी ल्याउन असफल। कृपया आफ्नो जडान जाँच गर्नुहोस्।"
+}
+,
     "user": {
       "Users Directory": "प्रयोगकर्ता निर्देशिका",
       "Search Users": "प्रयोगकर्ताहरू खोज्नुहोस्",

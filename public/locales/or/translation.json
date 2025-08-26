@@ -257,15 +257,19 @@
     "Enter address here": "ଠିକଣା ଏଠାରେ ଲେଖନ୍ତୁ",
     "Registering...": "ନିବନ୍ଧନ ହେଉଛି..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "କିଛି ଭୁଲ ହେଲା। ଦୟାକରି ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।",
-    "Password changed successfully!": "ପାସୱାର୍ଡ ସଫଳତାର ସହିତ ପରିବର୍ତ୍ତିତ!",
-    "Error changing password. Please try again.": "ପାସୱାର୍ଡ ପରିବର୍ତ୍ତନରେ ତ୍ରୁଟି। ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।",
-    "Registration successful!": "ନିବନ୍ଧନ ସଫଳ!",
-    "Error during registration. Please try again.": "ନିବନ୍ଧନ ସମୟରେ ତ୍ରୁଟି। ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।",
-    "Username already exists. Please choose a different one.": "ବ୍ୟବହାରକାରୀ ନାମ ପୂର୍ବରୁ ଅଛି। ଦୟାକରି ଅନ୍ୟ ଏକ ଚୟନ କରନ୍ତୁ।",
-    "Failed to fetch location. Please allow GPS access.": "ଅବସ୍ଥାନ ପାଇଁ ତଥ୍ୟ ମିଳିଲା ନାହିଁ। ଦୟାକରି GPS ଅନୁମତି ଦିଅନ୍ତୁ।"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "କିଛି ଭୁଲ୍ ହେଲା। ଦୟାକରି ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "Password changed successfully!": "ପାସୱାର୍ଡ ସଫଳତାର ସହିତ ପରିବର୍ତ୍ତନ ହେଲା!",
+  "Error changing password. Please try again.": "ପାସୱାର୍ଡ ପରିବର୍ତ୍ତନ କରିବା ସମୟରେ ତ୍ରୁଟି ହେଲା। ଦୟାକରି ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "Registration successful!": "ରେଜିଷ୍ଟ୍ରେଶନ ସଫଳ ହେଲା!",
+  "Error during registration. Please try again.": "ରେଜିଷ୍ଟ୍ରେଶନ ସମୟରେ ତ୍ରୁଟି ହେଲା। ଦୟାକରି ପୁଣିଥରେ ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "Username already exists. Please choose a different one.": "ୟୁଜରନେମ ପୂର୍ବରୁ ଅଛି। ଦୟାକରି ଅନ୍ୟଟି ଚୟନ କରନ୍ତୁ।",
+  "Failed to fetch location. Please allow GPS access.": "ଲୋକେଶନ ଆଣିବାରେ ବିଫଳ। ଦୟାକରି GPS ଆକ୍ସେସ୍ ଅନୁମତି ଦିଅନ୍ତୁ।",
+  "Please enter both employee code and password.": "ଦୟାକରି କର୍ମଚାରୀ କୋଡ୍ ଏବଂ ପାସୱାର୍ଡ ଦୁହିଟି ଦିଅନ୍ତୁ।",
+  "You have already submitted attendance for today.": "ଆପଣ ଆଜିର ଉପସ୍ଥିତି ପୂର୍ବରୁ ଦେଇସାରିଛନ୍ତି।",
+  "Failed to fetch user info. Please check your connection.": "ୟୁଜର ସୂଚନା ଆଣିବାରେ ବିଫଳ। ଦୟାକରି ଆପଣଙ୍କ ସଂଯୋଗ ପରୀକ୍ଷା କରନ୍ତୁ।"
+}
+,
   "user": {
     "Users Directory": "ଉପଯୋଗକର୍ତ୍ତା ସୂଚୀ",
     "Search Users": "ଉପଯୋଗକର୍ତ୍ତା ଖୋଜନ୍ତୁ",

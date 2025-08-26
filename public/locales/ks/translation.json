@@ -247,15 +247,19 @@
     "Enter address here": "ايتھ پتھ درج كریو",
     "Registering...": "ريجسٹر گٲنۍ..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "كہين غلط گٲے۔ پُنٛۍ كریو كوشش",
-    "Password changed successfully!": "پاسورڑ كاميابۍ سان بدلٲومُت!",
-    "Error changing password. Please try again.": "پاسورڑ بدلٲونۍ غلطی۔ پُنٛۍ كریو كوشش",
-    "Registration successful!": "ريجسٹریشن كاميابۍ سان!",
-    "Error during registration. Please try again.": "ريجسٹریشن دوران غلطی۔ پُنٛۍ كریو كوشش",
-    "Username already exists. Please choose a different one.": "صارف ناو پَتئ موجود۔ دۄسر چونیو",
-    "Failed to fetch location. Please allow GPS access.": "جگہ حاصل كرنہ ناكام۔ GPS اجازت دییو"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Password changed successfully!": "پاس ورڈ کامیابی سے تبدیل کر دیا گیا!",
+  "Error changing password. Please try again.": "پاس ورڈ تبدیل کرتے وقت خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Registration successful!": "رجسٹریشن کامیاب رہی!",
+  "Error during registration. Please try again.": "رجسٹریشن کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Username already exists. Please choose a different one.": "یوزر نیم پہلے سے موجود ہے۔ براہ کرم دوسرا منتخب کریں۔",
+  "Failed to fetch location. Please allow GPS access.": "لوکیشن حاصل کرنے میں ناکام۔ براہ کرم GPS رسائی کی اجازت دیں۔",
+  "Please enter both employee code and password.": "براہ کرم ملازم کا کوڈ اور پاس ورڈ دونوں درج کریں۔",
+  "You have already submitted attendance for today.": "آپ آج کی حاضری پہلے ہی جمع کر چکے ہیں۔",
+  "Failed to fetch user info. Please check your connection.": "یوزر کی معلومات حاصل کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں۔"
+}
+,
   "user": {
     "Users Directory": "صارف ڈايرکٹری",
     "Search Users": "صارف ژھٲنۍو",

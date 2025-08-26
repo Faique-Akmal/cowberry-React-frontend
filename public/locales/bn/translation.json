@@ -247,15 +247,19 @@
     "Enter address here": "এখানে ঠিকানা লিখুন",
     "Registering...": "নিবন্ধন হচ্ছে..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।",
-    "Password changed successfully!": "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!",
-    "Error changing password. Please try again.": "পাসওয়ার্ড পরিবর্তনে সমস্যা। আবার চেষ্টা করুন।",
-    "Registration successful!": "নিবন্ধন সফল হয়েছে!",
-    "Error during registration. Please try again.": "নিবন্ধনের সময় সমস্যা। আবার চেষ্টা করুন।",
-    "Username already exists. Please choose a different one.": "ব্যবহারকারী নাম ইতিমধ্যেই রয়েছে। দয়া করে অন্যটি বেছে নিন।",
-    "Failed to fetch location. Please allow GPS access.": "অবস্থান পাওয়া যায়নি। দয়া করে GPS অ্যাক্সেস দিন।"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "Password changed successfully!": "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!",
+  "Error changing password. Please try again.": "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "Registration successful!": "নিবন্ধন সফল হয়েছে!",
+  "Error during registration. Please try again.": "নিবন্ধনের সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "Username already exists. Please choose a different one.": "ইউজারনেম ইতিমধ্যেই বিদ্যমান। অনুগ্রহ করে অন্যটি বেছে নিন।",
+  "Failed to fetch location. Please allow GPS access.": "অবস্থান আনতে ব্যর্থ। অনুগ্রহ করে GPS অ্যাক্সেস দিন।",
+  "Please enter both employee code and password.": "অনুগ্রহ করে কর্মী কোড এবং পাসওয়ার্ড দুটোই লিখুন।",
+  "You have already submitted attendance for today.": "আপনি আজকের উপস্থিতি ইতিমধ্যেই জমা দিয়েছেন।",
+  "Failed to fetch user info. Please check your connection.": "ইউজার তথ্য আনতে ব্যর্থ। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করুন।"
+}
+,
   "user": {
     "Users Directory": "ব্যবহারকারী ডিরেক্টরি",
     "Search Users": "ব্যবহারকারী খুঁজুন",

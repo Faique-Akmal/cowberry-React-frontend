@@ -257,16 +257,19 @@
     "Enter address here": "یہاں پتہ درج کریں",
     "Registering...": "رجسٹریشن ہو رہی ہے..."
   },
-
-  "toast": {
-    "Something went wrong. Please try again.": "کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔",
-    "Password changed successfully!": "پاس ورڈ کامیابی سے تبدیل ہوا!",
-    "Error changing password. Please try again.": "پاس ورڈ تبدیل کرنے میں خرابی۔ دوبارہ کوشش کریں۔",
-    "Registration successful!": "رجسٹریشن کامیاب!",
-    "Error during registration. Please try again.": "رجسٹریشن میں خرابی۔ دوبارہ کوشش کریں۔",
-    "Username already exists. Please choose a different one.": "یوزرنیم پہلے سے موجود ہے۔ دوسرا منتخب کریں۔",
-    "Failed to fetch location. Please allow GPS access.": "مقام حاصل کرنے میں ناکامی۔ براہ کرم GPS تک رسائی دیں۔"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Password changed successfully!": "پاس ورڈ کامیابی سے تبدیل کر دیا گیا!",
+  "Error changing password. Please try again.": "پاس ورڈ تبدیل کرتے وقت خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Registration successful!": "رجسٹریشن کامیاب رہی!",
+  "Error during registration. Please try again.": "رجسٹریشن کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
+  "Username already exists. Please choose a different one.": "یوزر نیم پہلے سے موجود ہے۔ براہ کرم دوسرا منتخب کریں۔",
+  "Failed to fetch location. Please allow GPS access.": "لوکیشن حاصل کرنے میں ناکام۔ براہ کرم GPS رسائی کی اجازت دیں۔",
+  "Please enter both employee code and password.": "براہ کرم ملازم کا کوڈ اور پاس ورڈ دونوں درج کریں۔",
+  "You have already submitted attendance for today.": "آپ آج کی حاضری پہلے ہی جمع کر چکے ہیں۔",
+  "Failed to fetch user info. Please check your connection.": "یوزر کی معلومات حاصل کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں۔"
+}
+,
 
   "user": {
     "Users Directory": "صارفین ڈائریکٹری",

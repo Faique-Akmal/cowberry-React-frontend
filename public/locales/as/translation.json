@@ -248,15 +248,19 @@
     "Enter address here": "ঠিকনা ইয়াত দিয়ক",
     "Registering...": "ৰেজিষ্টাৰ হৈ আছে..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "কিবা ভুল হৈছে। পুনৰ চেষ্টা কৰক।",
-    "Password changed successfully!": "পাছৱৰ্ড সফলভাবে পৰিবৰ্তিত হৈছে!",
-    "Error changing password. Please try again.": "পাছৱৰ্ড পৰিবৰ্তন কৰোঁতে ত্ৰুটি। পুনৰ চেষ্টা কৰক।",
-    "Registration successful!": "ৰেজিষ্ট্ৰেশ্বন সফল!",
-    "Error during registration. Please try again.": "ৰেজিষ্ট্ৰেশ্বনত ত্ৰুটি। পুনৰ চেষ্টা কৰক।",
-    "Username already exists. Please choose a different one.": "ইউজাৰনেম ইতিমধ্যে আছে। অনুগ্ৰহ কৰি অন্য এটা বাছক।",
-    "Failed to fetch location. Please allow GPS access.": "অৱস্থান পোৱা নগল। অনুগ্ৰহ কৰি GPS অনুমতি দিয়ক।"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "কিছু ভুল হ'ল। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।",
+  "Password changed successfully!": "পাছৱৰ্ড সফলতাৰে সলনি কৰা হৈছে!",
+  "Error changing password. Please try again.": "পাছৱৰ্ড সলনি কৰোঁতে ত্ৰুটি। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।",
+  "Registration successful!": "ৰেজিষ্ট্ৰেচন সফল হৈছে!",
+  "Error during registration. Please try again.": "ৰেজিষ্ট্ৰেচনৰ সময়ত ত্ৰুটি ঘটিছে। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।",
+  "Username already exists. Please choose a different one.": "ইউজাৰনেম ইতিমধ্যে আছে। অনুগ্ৰহ কৰি অন্য এটা বাছনি কৰক।",
+  "Failed to fetch location. Please allow GPS access.": "অৱস্থান আনিবলৈ বিফল। অনুগ্ৰহ কৰি GPS এক্সেছ দিয়ক।",
+  "Please enter both employee code and password.": "অনুগ্ৰহ কৰি কৰ্মচাৰী কোড আৰু পাছৱৰ্ড দুয়োটা দিয়ক।",
+  "You have already submitted attendance for today.": "আপুনি আজিৰ উপস্থিতি ইতিমধ্যে জমা দিছে।",
+  "Failed to fetch user info. Please check your connection.": "ইউজাৰ তথ্য আনিবলৈ বিফল। অনুগ্ৰহ কৰি আপোনাৰ সংযোগ পৰীক্ষা কৰক।"
+},
+
   "user": {
     "Users Directory": "ব্যৱহাৰকাৰী ডাইৰেক্টৰী",
     "Search Users": "ব্যৱহাৰকাৰী সন্ধান কৰক",

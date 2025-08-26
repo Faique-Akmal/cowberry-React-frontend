@@ -242,15 +242,19 @@
     "Enter address here": "अत्र स्थानं प्रविष्टयतु",
     "Registering...": "पञ्जिकरणं क्रियते..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "किञ्चिद् दोषः जातम्। पुनः प्रयासयतु।",
-    "Password changed successfully!": "कूटशब्दः सफलतया परिवर्तितः!",
-    "Error changing password. Please try again.": "कूटशब्दपरिवर्तनं विफलम्। पुनः प्रयत्नं कुरुत।",
-    "Registration successful!": "पञ्जिकरणं सफलम्!",
-    "Error during registration. Please try again.": "पञ्जिकरणे दोषः। पुनः प्रयत्नं कुरुत।",
-    "Username already exists. Please choose a different one.": "उपयोगकर्तृनाम पूर्वमेव अस्ति। अन्यं चयनयतु।",
-    "Failed to fetch location. Please allow GPS access.": "स्थानं लब्धुं न शक्यते। GPS अनुमतिं दत्तुम्।"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "किञ्चित् दोषः अभवत्। कृपया पुनः प्रयासं कुरुत।",
+  "Password changed successfully!": "गुप्तशब्दः सफलतया परिवर्तितः!",
+  "Error changing password. Please try again.": "गुप्तशब्दं परिवर्तयन् दोषः अभवत्। कृपया पुनः प्रयासं कुरुत।",
+  "Registration successful!": "पञ्जीकरणं सफलम् अभवत्!",
+  "Error during registration. Please try again.": "पञ्जीकरणस्य समये दोषः अभवत्। कृपया पुनः प्रयासं कुरुत।",
+  "Username already exists. Please choose a different one.": "प्रयोक्तृनाम पूर्वमेव अस्ति। कृपया अन्यत् चित्वा गृह्णीत।",
+  "Failed to fetch location. Please allow GPS access.": "स्थानं आहर्तुं असफलम्। कृपया GPS प्रवेशं अनुमन्यताम्।",
+  "Please enter both employee code and password.": "कृपया कर्मचारीसंकेतं गुप्तशब्दं च प्रविशतु।",
+  "You have already submitted attendance for today.": "भवान् अद्यतनं उपस्थितिपत्रं पूर्वमेव समर्पितवान् अस्ति।",
+  "Failed to fetch user info. Please check your connection.": "प्रयोक्तृसूचनां आहर्तुं असफलम्। कृपया स्वस्य सञ्चारजालं परीक्ष्यताम्।"
+}
+,
   "user": {
     "Users Directory": "उपयोगकर्तृ निर्देशिका",
     "Search Users": "उपयोगकर्तारः अन्वेषयतु",

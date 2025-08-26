@@ -252,21 +252,19 @@
        
       
       },
-      "toast": {
-        "Failed to fetch location. Please allow GPS access.": "स्थान प्राप्त करने में विफल। कृपया जीपीएस एक्सेस की अनुमति दें।",
-        "Registration successful!": "पंजीकरण सफल!",
-        "Registration failed. Please try again.": "पंजीकरण विफल। कृपया पुनः प्रयास करें.",
-        "Task created successfully!": "कार्य सफलतापूर्वक बनाया गया!",
-        "Announcement posted successfully!": "घोषणा सफलतापूर्वक पोस्ट की गई!",
-        "Announcement deleted successfully!": "घोषणा सफलतापूर्वक हटाई गई!",
-        "Announcement updated successfully!": "घोषणा सफलतापूर्वक अपडेट की गई!",
-        "Registration failed. Try again.": "पंजीकरण विफल। पुनः प्रयास करें.",
-        "Error during registration. Please try again.": "पंजीकरण के दौरान त्रुटि। कृपया पुनः प्रयास करें.",
-        "Username already exists. Please choose a different one.": "उपयोगकर्ता नाम पहले से मौजूद है। कृपया एक अलग चुनें.",
-        "Attendance marked successfully!": "हाज़िरी सफलतापूर्वक दर्ज की गई!",
-        "You have already submitted attendance for today.": "आपने आज के लिए हाज़िरी पहले ही जमा कर दी है।",
-        "Describe your work for today...": "आज के अपने काम का वर्णन करें..."
-      },
+     "toast": {
+  "Something went wrong. Please try again.": "कुछ गलत हो गया। कृपया दोबारा प्रयास करें।",
+  "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदल दिया गया!",
+  "Error changing password. Please try again.": "पासवर्ड बदलते समय त्रुटि हुई। कृपया दोबारा प्रयास करें।",
+  "Registration successful!": "पंजीकरण सफल हुआ!",
+  "Error during registration. Please try again.": "पंजीकरण के दौरान त्रुटि हुई। कृपया दोबारा प्रयास करें।",
+  "Username already exists. Please choose a different one.": "उपयोगकर्ता नाम पहले से मौजूद है। कृपया कोई और चुनें।",
+  "Failed to fetch location. Please allow GPS access.": "स्थान प्राप्त करने में विफल। कृपया GPS एक्सेस की अनुमति दें।",
+  "Please enter both employee code and password.": "कृपया कर्मचारी कोड और पासवर्ड दोनों दर्ज करें।",
+  "You have already submitted attendance for today.": "आप आज की उपस्थिति पहले ही जमा कर चुके हैं।",
+  "Failed to fetch user info. Please check your connection.": "उपयोगकर्ता जानकारी प्राप्त करने में विफल। कृपया अपना कनेक्शन जांचें।"
+}
+,
       "user": {
   "Users Directory": "उपयोगकर्ता निर्देशिका",
   "Search Users": "उपयोगकर्ता खोजें",

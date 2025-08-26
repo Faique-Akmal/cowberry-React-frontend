@@ -253,15 +253,19 @@
        "Enter address here": "ಇಲ್ಲಿ ವಿಳಾಸ ನಮೂದಿಸಿ",
        "Registering...": "ನೋಂದಣಿ ನಡೆಯುತ್ತಿದೆ..."
     },
-    "toast": {
-      "Something went wrong. Please try again.": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-      "Password changed successfully!": "ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ!",
-      "Error changing password. Please try again.": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸುವಲ್ಲಿ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-        "Registration successful!": "ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ!",
-        "Error during registration. Please try again.": "ನೋಂದಣಿಯ ಸಮಯದಲ್ಲಿ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-        "Username already exists. Please choose a different one.": "ಬಳಕೆದಾರ ಹೆಸರು ಈಗಾಗಲೇ ಅಸ್ತಿತ್ವದಲ್ಲಿದೆ. ದಯವಿಟ್ಟು ಬೇರೊಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
-        "Failed to fetch location. Please allow GPS access.": "ಸ್ಥಳವನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು GPS ಪ್ರವೇಶವನ್ನು ಅನುಮತಿಸಿ."
-    },
+   "toast": {
+  "Something went wrong. Please try again.": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "Password changed successfully!": "ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ!",
+  "Error changing password. Please try again.": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸುವಾಗ ದೋಷ ಉಂಟಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "Registration successful!": "ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ!",
+  "Error during registration. Please try again.": "ನೋಂದಣಿಯ ಸಮಯದಲ್ಲಿ ದೋಷ ಉಂಟಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "Username already exists. Please choose a different one.": "ಬಳಕೆದಾರ ಹೆಸರು ಈಗಾಗಲೇ ಅಸ್ತಿತ್ವದಲ್ಲಿದೆ. ದಯವಿಟ್ಟು ಬೇರೆ ಒಂದು ಆಯ್ಕೆಮಾಡಿ.",
+  "Failed to fetch location. Please allow GPS access.": "ಸ್ಥಳವನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು GPS ಪ್ರವೇಶಕ್ಕೆ ಅನುಮತಿ ನೀಡಿ.",
+  "Please enter both employee code and password.": "ದಯವಿಟ್ಟು ನೌಕರರ ಕೋಡ್ ಮತ್ತು ಪಾಸ್ವರ್ಡ್ ಎರಡನ್ನೂ ನಮೂದಿಸಿ.",
+  "You have already submitted attendance for today.": "ನೀವು ಇಂದಿನ ಹಾಜರಾತಿಯನ್ನು ಈಗಾಗಲೇ ಸಲ್ಲಿಸಿದ್ದೀರಿ.",
+  "Failed to fetch user info. Please check your connection.": "ಬಳಕೆದಾರರ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ."
+}
+,
     "user": {
       "Users Directory": "ಬಳಕೆದಾರರ ಡೈರೆಕ್ಟರಿ",
       "Search Users": "ಬಳಕೆದಾರರನ್ನು ಹುಡುಕಿ",

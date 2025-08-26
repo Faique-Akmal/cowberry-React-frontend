@@ -252,15 +252,19 @@
     "Enter address here": "முகவரியை இங்கே உள்ளிடவும்",
     "Registering...": "பதிவு செய்யப்படுகிறது..."
   },
-  "toast": {
-    "Something went wrong. Please try again.": "ஏதோ தவறு ஏற்பட்டுள்ளது. மீண்டும் முயற்சிக்கவும்.",
-    "Password changed successfully!": "கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது!",
-    "Error changing password. Please try again.": "கடவுச்சொல்லை மாற்றுவதில் பிழை. மீண்டும் முயற்சிக்கவும்.",
-    "Registration successful!": "பதிவு வெற்றிகரமாக முடிந்தது!",
-    "Error during registration. Please try again.": "பதிவு செய்யும்போது பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.",
-    "Username already exists. Please choose a different one.": "பயனர் பெயர் ஏற்கனவே உள்ளது. வேறொன்றைத் தேர்ந்தெடுக்கவும்.",
-    "Failed to fetch location. Please allow GPS access.": "இருப்பிடத்தைப் பெற முடியவில்லை. தயவுசெய்து GPS அணுகலை அனுமதிக்கவும்."
-  },
+"toast": {
+  "Something went wrong. Please try again.": "ஏதோ தவறு ஏற்பட்டுள்ளது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
+  "Password changed successfully!": "கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது!",
+  "Error changing password. Please try again.": "கடவுச்சொல்லை மாற்றும்போது பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
+  "Registration successful!": "பதிவு வெற்றிகரமாக முடிந்தது!",
+  "Error during registration. Please try again.": "பதிவின்போது பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
+  "Username already exists. Please choose a different one.": "பயனர்பெயர் ஏற்கனவே உள்ளது. தயவுசெய்து வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.",
+  "Failed to fetch location. Please allow GPS access.": "இருப்பிடத்தை பெற முடியவில்லை. தயவுசெய்து GPS அணுகலை அனுமதிக்கவும்.",
+  "Please enter both employee code and password.": "தயவுசெய்து பணியாளர் குறியீடும் கடவுச்சொல்லும் இரண்டையும் உள்ளிடவும்.",
+  "You have already submitted attendance for today.": "நீங்கள் இன்றைய வருகையை ஏற்கனவே சமர்ப்பித்துவிட்டீர்கள்.",
+  "Failed to fetch user info. Please check your connection.": "பயனர் தகவலை பெற முடியவில்லை. தயவுசெய்து உங்கள் இணைப்பைச் சரிபார்க்கவும்."
+}
+,
   "user": {
     "Users Directory": "பயனர் அடைவு",
     "Search Users": "பயனர்களைத் தேடவும்",

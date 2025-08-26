@@ -43,35 +43,35 @@ const AppHeader: React.FC = () => {
     };
   }, []);
 
-  // Dummy list of routes/pages to search from
-  const searchableItems = [
-    { label: "home", path: "/home" },
-    { label: "Users", path: "/users-list" },
-    { label: "User-registeration", path: "/user-register" },
-    { label: "Users-profile", path: "/users-profile" },
-    { label: "Attendance-start", path: "/attandanceStart-page" },
-    { label: "Attendance-end", path: "/attandanceEnd-page" },
-    { label: "Inventory", path: "/inventory" },
-    { label: "Announcement", path: "/announcement" },
-    { label: "Task", path: "/assign-task-page" },
-    { label: "Task-calendar", path: "/task-calendar" },
-    { label: "Task-admin", path: "/admin-task-manager" },
-    { label: "Dashboard", path: "/employee-dashboard" },
-    { label: "my-task", path: "/task-show-page" },
-    { label: "Farmers", path: "/farmers" },
-    { label: "Purchases", path: "/purchase" },
-    { label: "User Profile", path: "/profile" },
-    { label: "chat", path: "/chat" },
-    { label: "All Users", path: "/all-users" },
-    { label: "LogOut", path: "/logout" },
-  ];
+  // // Dummy list of routes/pages to search from
+  // const searchableItems = [
+  //   { label: "home", path: "/home" },
+  //   { label: "Users", path: "/users-list" },
+  //   { label: "User-registeration", path: "/user-register" },
+  //   { label: "Users-profile", path: "/users-profile" },
+  //   { label: "Attendance-start", path: "/attandanceStart-page" },
+  //   { label: "Attendance-end", path: "/attandanceEnd-page" },
+  //   { label: "Inventory", path: "/inventory" },
+  //   { label: "Announcement", path: "/announcement" },
+  //   { label: "Task", path: "/assign-task-page" },
+  //   { label: "Task-calendar", path: "/task-calendar" },
+  //   { label: "Task-admin", path: "/admin-task-manager" },
+  //   { label: "Dashboard", path: "/employee-dashboard" },
+  //   { label: "my-task", path: "/task-show-page" },
+  //   { label: "Farmers", path: "/farmers" },
+  //   { label: "Purchases", path: "/purchase" },
+  //   { label: "User Profile", path: "/profile" },
+  //   { label: "chat", path: "/chat" },
+  //   { label: "All Users", path: "/all-users" },
+  //   { label: "LogOut", path: "/logout" },
+  // ];
 
-  const filteredResults = searchableItems.filter((item) =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // const filteredResults = searchableItems.filter((item) =>
+  //   item.label.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   return (
-    <header className="sticky top-0 flex w-full bg-dashboard-bg-200  z-40 dark:border-gray-800 dark:bg-gray-900">
+    <header className="sticky top-0 flex w-full bg-white  z-40 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           {/* Sidebar Toggle */}
@@ -91,10 +91,10 @@ const AppHeader: React.FC = () => {
          
 
           {/* Search Bar */}
-     <div className="relative w-auto max-w-sm mx-auto sm:w-full px-2 sm:px-0">
+     {/* <div className="relative w-auto max-w-sm mx-auto sm:w-full px-2 sm:px-0">
   <form onSubmit={(e) => e.preventDefault()}>
     {/* Desktop Search Input */}
-    <div className="hidden sm:flex relative w-full">
+    {/* <div className="hidden sm:flex relative w-full">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
       <input
         ref={inputRef}
@@ -111,20 +111,20 @@ const AppHeader: React.FC = () => {
       >
         ⌘ K
       </button>
-    </div>
+    </div> */}
 
     {/* Mobile Search Icon */}
-    <div className="sm:hidden relative w-auto">
+    {/* <div className="sm:hidden relative w-auto">
       <button
         type="button"
         onClick={() => setShowMobileSearch(!showMobileSearch)}
         className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full float-right"
       >
         🔍
-      </button>
+      </button> */}
 
       {/* Mobile Dropdown Input */}
-      {showMobileSearch && (
+      {/* {showMobileSearch && (
         <div className="absolute top-12 right-0 z-10 bg-white border rounded-lg shadow-lg w-72 p-2 dark:bg-gray-800">
           <div className="relative">
             <input
@@ -142,10 +142,10 @@ const AppHeader: React.FC = () => {
             >
               ⌘ K
             </button>
-          </div>
+          </div> */}
 
           {/* Dropdown Results */}
-          {searchQuery && (
+          {/* {searchQuery && (
             <div className="mt-2 max-h-60 overflow-y-auto">
               {filteredResults.length > 0 ? (
                 filteredResults.map((item, index) => (
@@ -167,7 +167,7 @@ const AppHeader: React.FC = () => {
       )}
     </div>
   </form>
-</div>
+</div> */} 
 
            {/* App Menu Button */}
           <button

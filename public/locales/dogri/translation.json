@@ -257,16 +257,19 @@
     "Enter address here": "पता इत्ते लिखो",
     "Registering...": "रजिस्टर हो रिया ऐ..."
   },
-
-  "toast": {
-    "Something went wrong. Please try again.": "कुझ गड़बड़ हो गई। किरपा करके दुबारा कोशिश करो।",
-    "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदल्या गया!",
-    "Error changing password. Please try again.": "पासवर्ड बदलन विच गलती। दुबारा कोशिश करो।",
-    "Registration successful!": "रजिस्ट्रेशन सफल होया!",
-    "Error during registration. Please try again.": "रजिस्ट्रेशन दौरान गलती। दुबारा कोशिश करो।",
-    "Username already exists. Please choose a different one.": "यूज़रनेम पहले ही मौजूद ऐ। कोई होर चुनो।",
-    "Failed to fetch location. Please allow GPS access.": "लोकेशन नहीं मिल पई। किरपा करके GPS एक्सेस दियो।"
-  },
+"toast": {
+  "Something went wrong. Please try again.": "कुझ गलत होग्या ऐ। किरपा करके फेर कोशिश करो।",
+  "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदल्या गया ऐ!",
+  "Error changing password. Please try again.": "पासवर्ड बदलदें समय गलती होई। किरपा करके फेर कोशिश करो।",
+  "Registration successful!": "रजिस्ट्रेशन सफल होया ऐ!",
+  "Error during registration. Please try again.": "रजिस्ट्रेशन दौरान गलती होई। किरपा करके फेर कोशिश करो।",
+  "Username already exists. Please choose a different one.": "यूज़रनेम पहलें ही मौजूद ऐ। किरपा करके होर चुनो।",
+  "Failed to fetch location. Please allow GPS access.": "लोकेशन लैण च असफल। किरपा करके GPS एक्सेस दियो।",
+  "Please enter both employee code and password.": "किरपा करके करमचारी कोड अते पासवर्ड दोवें भरो।",
+  "You have already submitted attendance for today.": "तुसीं अज्ज दा हाज़री पहलें ही जमा करा चुके ओ।",
+  "Failed to fetch user info. Please check your connection.": "यूज़र जानकारी लैण च असफल। किरपा करके आपणा कनेक्शन चैक करो।"
+}
+,
 
   "user": {
     "Users Directory": "यूज़र डिरेक्टरी",

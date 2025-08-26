@@ -248,14 +248,18 @@
     "Registering...": "രജിസ്റ്റർ ചെയ്യുന്നു..."
   },
   "toast": {
-    "Something went wrong. Please try again.": "എന്തോ പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
-    "Password changed successfully!": "പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!",
-    "Error changing password. Please try again.": "പാസ്‌വേഡ് മാറ്റുന്നതിൽ പിശക്. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
-    "Registration successful!": "രജിസ്ട്രേഷൻ വിജയകരമായി!",
-    "Error during registration. Please try again.": "രജിസ്ട്രേഷനിൽ പിശക്. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
-    "Username already exists. Please choose a different one.": "ഉപയോക്തൃനാമം ഇതിനകം നിലവിലുണ്ട്. ദയവായി മറ്റൊന്ന് തിരഞ്ഞെടുക്കുക.",
-    "Failed to fetch location. Please allow GPS access.": "ലൊക്കേഷൻ കൊണ്ടുവരുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി ജിപിഎസ് പ്രവേശനം അനുവദിക്കുക."
-  },
+  "Something went wrong. Please try again.": "എന്തോ തെറ്റായി. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+  "Password changed successfully!": "പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!",
+  "Error changing password. Please try again.": "പാസ്‌വേഡ് മാറ്റുന്നതിനിടെ പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+  "Registration successful!": "രജിസ്ട്രേഷൻ വിജയകരമായി!",
+  "Error during registration. Please try again.": "രജിസ്ട്രേഷനിൽ പിശക് സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+  "Username already exists. Please choose a different one.": "ഉപയോക്തൃനാമം ഇതിനകം നിലവിലുണ്ട്. ദയവായി മറ്റൊന്ന് തിരഞ്ഞെടുക്കുക.",
+  "Failed to fetch location. Please allow GPS access.": "ലൊക്കേഷൻ ലഭ്യമാക്കാൻ സാധിച്ചില്ല. ദയവായി GPS ആക്സസ് അനുവദിക്കുക.",
+  "Please enter both employee code and password.": "ദയവായി ജീവനക്കാരന്റെ കോഡും പാസ്‌വേഡും നൽകുക.",
+  "You have already submitted attendance for today.": "നിങ്ങൾ ഇന്നത്തെ ഹാജർ ഇതിനകം സമർപ്പിച്ചു.",
+  "Failed to fetch user info. Please check your connection.": "ഉപയോക്താവിന്റെ വിവരങ്ങൾ ലഭ്യമാക്കാൻ സാധിച്ചില്ല. ദയവായി നിങ്ങളുടെ ബന്ധം പരിശോധിക്കുക."
+}
+,
   "user": {
     "Users Directory": "ഉപയോക്തൃ ഡയറക്ടറി",
     "Search Users": "ഉപയോക്താക്കളെ തിരയുക",

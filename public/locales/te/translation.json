@@ -249,16 +249,19 @@
     "Enter address here": "ఇక్కడ చిరునామా ఇవ్వండి",
     "Registering...": "నమోదు జరుగుతోంది..."
   },
-
-  "toast": {
-    "Something went wrong. Please try again.": "ఏదో తప్పు జరిగింది. మళ్లీ ప్రయత్నించండి.",
-    "Password changed successfully!": "పాస్‌వర్డ్ విజయవంతంగా మార్చబడింది!",
-    "Error changing password. Please try again.": "పాస్‌వర్డ్ మార్చడంలో లోపం. మళ్లీ ప్రయత్నించండి.",
-    "Registration successful!": "నమోదు విజయవంతమైంది!",
-    "Error during registration. Please try again.": "నమోదు సమయంలో లోపం. మళ్లీ ప్రయత్నించండి.",
-    "Username already exists. Please choose a different one.": "వినియోగదారు పేరు ఇప్పటికే ఉంది. వేరొకదాన్ని ఎంచుకోండి.",
-    "Failed to fetch location. Please allow GPS access.": "ప్రదేశాన్ని పొందడంలో విఫలమైంది. దయచేసి GPS యాక్సెస్ అనుమతించండి."
-  },
+"toast": {
+  "Something went wrong. Please try again.": "ఏదో తప్పు జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+  "Password changed successfully!": "పాస్‌వర్డ్ విజయవంతంగా మార్చబడింది!",
+  "Error changing password. Please try again.": "పాస్‌వర్డ్ మార్చేటప్పుడు లోపం జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+  "Registration successful!": "నమోదు విజయవంతంగా పూర్తయింది!",
+  "Error during registration. Please try again.": "నమోదు సమయంలో లోపం జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+  "Username already exists. Please choose a different one.": "వినియోగదారు పేరు ఇప్పటికే ఉంది. దయచేసి వేరొకదాన్ని ఎంచుకోండి.",
+  "Failed to fetch location. Please allow GPS access.": "ప్రాంతాన్ని పొందడంలో విఫలమైంది. దయచేసి GPS యాక్సెస్ అనుమతించండి.",
+  "Please enter both employee code and password.": "దయచేసి ఉద్యోగి కోడ్ మరియు పాస్‌వర్డ్ రెండూ నమోదు చేయండి.",
+  "You have already submitted attendance for today.": "మీరు ఈరోజు హాజరు ఇప్పటికే సమర్పించారు.",
+  "Failed to fetch user info. Please check your connection.": "వినియోగదారు సమాచారాన్ని పొందడంలో విఫలమైంది. దయచేసి మీ కనెక్షన్‌ను తనిఖీ చేయండి."
+}
+,
 
   "user": {
     "Users Directory": "వినియోగదారుల డైరెక్టరీ",

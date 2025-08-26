@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import API from '../../api/axios';
 import { role } from "../../store/store";
+import { useTranslation } from 'react-i18next';
 
 
 interface User {
@@ -33,12 +34,13 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
   </span>
 );
 
- const getRoleName = (roleId: number): string => {
-    const roleObj = role.find((r) => r.id === roleId);
-    return roleObj ? roleObj.name : "Unknown";
-  };
+//  const getRoleName = (roleId: number): string => {
+//     const roleObj = role.find((r) => r.id === roleId);
+//     return roleObj ? roleObj.name : "Unknown";
+//   };
 
 const  EmployeeStatus = () => {
+  const { t } = useTranslation();
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -101,10 +103,10 @@ const  EmployeeStatus = () => {
       </div>
 
       <div className="grid grid-cols-4 text-sm font-semibold text-gray-700 border-b pb-2 dark:text-white">
-        <span>EMPLOYEE NAME</span>
-        <span>EMAIL ADDRESS</span>
+        <span>{t("location.Employee Name")}</span>
+        <span>{t("profile.Email")}</span>
         <span>HOME OFFICE</span>
-        <span>STATUS</span>
+        <span>{t("attendence.Status")}</span>
       </div>
 
       <div
@@ -123,7 +125,7 @@ const  EmployeeStatus = () => {
                 />
                 <div>
                   <p className="font-medium text-sm capitalize">{user.username}</p>
-                  <p className="text-xs text-gray-500 capitalize">{getRoleName(user.role)}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
                 </div>
               </div>
               <div className="text-sm text-gray-800 dark:text-white">{user.email}</div>

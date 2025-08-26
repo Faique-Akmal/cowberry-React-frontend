@@ -13,6 +13,7 @@ const LangToggleButton: React.FC = () => {
     { code: "gu", label: "ગુજરાતી" }, // Gujarati
     { code: "kn", label: "ಕನ್ನಡ" }, // Kannada
     { code: "ml", label: "മലയാളം" }, // Malayalam
+    { code: "bo", label: "Bodo" }, // Malayalam
     { code: "mr", label: "मराठी" }, // Marathi
     { code: "pa", label: "ਪੰਜਾਬੀ" }, // Punjabi
     { code: "ta", label: "தமிழ்" }, // Tamil
@@ -22,7 +23,7 @@ const LangToggleButton: React.FC = () => {
     { code: "as", label: "অসমীয়া" }, // Assamese
     { code: "ks", label: "کٲشُر" }, // Kashmiri
     { code: "ne", label: "नेपाली" }, // Nepali
-    { code: "si", label: "සිංහල" }, // Sinhala
+    { code: "kon", label: "konkani" }, // konkani
     { code: "bh", label: "भोजपुरी" }, // Bhojpuri
     { code: "mag", label: "मगही" }, // Magahi
     { code: "mai", label: "मैथिली" }, // Maithili

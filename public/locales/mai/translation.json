@@ -257,16 +257,19 @@
       "Enter address here": "पता एतय दर्ज करू",
       "Registering...": "पंजीकरण भए रहल अछि..."
     },
-
-  "toast": {
-      "Something went wrong. Please try again.": "किछु गलत भेल। कृपया फेर प्रयास करू।",
-      "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदलल गेल!",
-      "Error changing password. Please try again.": "पासवर्ड बदलैत त्रुटि भेल। कृपया फेर प्रयास करू।",
-      "Registration successful!": "पंजीकरण सफल भेल!",
-      "Error during registration. Please try again.": "पंजीकरण करैत त्रुटि भेल। कृपया फेर प्रयास करू।",
-      "Username already exists. Please choose a different one.": "उपयोगकर्ता नाम पहिने सँ मौजूद अछि। कृपया आन चुनू।",
-      "Failed to fetch location. Please allow GPS access.": "स्थान लाबैत असफल। कृपया जीपीएस एक्सेस दिअ।"
-    },
+"toast": {
+  "Something went wrong. Please try again.": "किछु गलती भ' गेल। कृपया पुनः प्रयास करू।",
+  "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदलि देल गेल!",
+  "Error changing password. Please try again.": "पासवर्ड बदलबाक समय त्रुटि भेल। कृपया पुनः प्रयास करू।",
+  "Registration successful!": "पंजीकरण सफल भेल!",
+  "Error during registration. Please try again.": "पंजीकरणक दौरान त्रुटि भेल। कृपया पुनः प्रयास करू।",
+  "Username already exists. Please choose a different one.": "प्रयोगकर्तानाम पहिने सँ मौजूद अछि। कृपया आन एकटा चुनू।",
+  "Failed to fetch location. Please allow GPS access.": "स्थान प्राप्त करबामे विफल। कृपया GPS एक्सेस अनुमति दिअ।",
+  "Please enter both employee code and password.": "कृपया कर्मचारी कोड आ पासवर्ड दुनू दर्ज करू।",
+  "You have already submitted attendance for today.": "अहाँ आजुक उपस्थिति पहिने सँ जमा कएने छी।",
+  "Failed to fetch user info. Please check your connection.": "प्रयोगकर्ता जानकारी प्राप्त करबामे विफल। कृपया अपन कनेक्शन जाँचू।"
+}
+,
 
   "user": {
       "Users Directory": "उपयोगकर्ता निर्देशिका",

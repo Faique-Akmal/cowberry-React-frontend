@@ -8,7 +8,7 @@ const LangToggleButton: React.FC = () => {
   // List of Indian languages with their i18n codes
   const languages: { code: string; label: string }[] = [
     { code: "en", label: "English" },
-    { code: "hi", label: "हिन्दी" },
+    { code: "hi", label: "हिन्दी" },  
     { code: "bn", label: "বাংলা" }, // Bengali
     { code: "gu", label: "ગુજરાતી" }, // Gujarati
     { code: "kn", label: "ಕನ್ನಡ" }, // Kannada

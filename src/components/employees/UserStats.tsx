@@ -59,7 +59,7 @@ const DashboardStats: React.FC = () => {
     
   {/* Title */}
   <div className="relative flex justify-center mb-4">
-    <h1 className="text-2xl font-bold text-gray-600">{t("home.TASK UPDATES")}</h1>
+    <h1 className="text-2xl font-bold text-gray-600 border rounded-full p-4 dark:border-cowberry-green-600">{t("home.TASK UPDATES")}</h1>
   </div>
 
   {/* Cards Grid */}

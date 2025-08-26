@@ -44,7 +44,7 @@ function EmployeeDashboard() {
    <>
   <PageMeta title="Employee Dashboard" description="Employee dashboard" />
   
-  <div className="grid gap-6 md:gap-4 bg-white  dark:bg-black rounded-2xl p-4 sm:p-6">
+  <div className="grid gap-6 md:gap-4 bg-white  dark:bg-black rounded-2xl p-4 sm:p-6 border dark:border-cowberry-green-600 md:grid-cols-12">
     
     {/* Greeting Section */}
     <div className="col-span-12 border rounded-2xl p-4 sm:p-5">

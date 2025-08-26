@@ -150,20 +150,20 @@ export default function AttendanceStart() {
     setMessage("");
 
     try {
-  const userRes = await API.get("/me/");
-  const user = userRes.data;
+      const userRes = await API.get("/me/");
+      const user = userRes.data;
 
-  // Check if attendance has already been started (from API)
-  if (user.is_attendance_started) {
-    toast.error("You have already submitted attendance.");
-    navigate("/employee-dashboard");
-    return;
-  }
+      // Check if attendance has already been started (from API)
+      if (user.is_attendance_started) {
+        toast.error("You have already submitted attendance.");
+        navigate("/employee-dashboard");
+        return;
+      }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-         const lat = position.coords.latitude.toFixed(6); // ✅ round to 6 decimals
-    const lng = position.coords.longitude.toFixed(6);
+          const lat = position.coords.latitude.toFixed(6); // ✅ round to 6 decimals
+          const lng = position.coords.longitude.toFixed(6);
 
           setFormData((prev) => ({
             ...prev,
@@ -204,13 +204,14 @@ export default function AttendanceStart() {
           const lng = position.coords.longitude.toString();
           setLiveLocation({ lat, lng });
         },
-        () => {},
+        () => { },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
       );
 
       intervalId = setInterval(() => {
         if (liveLocation.lat && liveLocation.lng && formData.user) {
           sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
+          console.log(liveLocation.lat, liveLocation.lng, formData.user)
         }
       }, 10000);
     };
@@ -279,14 +280,14 @@ export default function AttendanceStart() {
 
       {alreadySubmitted && (
         <div className="p-3 bg-yellow-100 text-yellow-700 rounded text-center mb-4">
-       {t("attendence.You have already submitted attendance for today.")}
+          {t("attendence.You have already submitted attendance for today.")}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-           {t("attendence.Description")}
+            {t("attendence.Description")}
           </label>
           <textarea
             required
@@ -301,29 +302,29 @@ export default function AttendanceStart() {
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-           {t("attendence.Odometer Image")}
+            {t("attendence.Odometer Image")}
           </label>
           <input
             type="file"
             accept="image/*"
-            capture="environment" 
+            capture="environment"
             onChange={(e) => handleFileChange(e, "odometer_image")}
             required
             disabled={alreadySubmitted}
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 disabled:bg-gray-100"
           />
           {odometerPreview && (
-            <img 
-              src={odometerPreview} 
+            <img
+              src={odometerPreview}
               alt="Odometer preview"
-              className="mt-2 w-32 h-32 object-cover rounded border" 
+              className="mt-2 w-32 h-32 object-cover rounded border"
             />
           )}
         </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          {t("attendence.Selfie Image")}
+            {t("attendence.Selfie Image")}
           </label>
           <input
             type="file"
@@ -335,10 +336,10 @@ export default function AttendanceStart() {
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 disabled:bg-gray-100"
           />
           {selfiePreview && (
-            <img 
-              src={selfiePreview} 
+            <img
+              src={selfiePreview}
               alt="Selfie preview"
-              className="mt-2 w-32 h-32 object-cover rounded border" 
+              className="mt-2 w-32 h-32 object-cover rounded border"
             />
           )}
         </div>
@@ -348,7 +349,7 @@ export default function AttendanceStart() {
           disabled={loading || !locationFetched || alreadySubmitted}
           className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-         {loading ? t("attendence.submitting") : t("attendence.submit")}
+          {loading ? t("attendence.submitting") : t("attendence.submit")}
         </button>
       </form>
     </div>

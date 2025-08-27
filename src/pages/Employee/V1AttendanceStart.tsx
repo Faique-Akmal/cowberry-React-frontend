@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { useLocationTracker } from "../../hooks/LocationTrackerProvider.tsx";
 
 interface FormDataState {
   user: string;
@@ -15,11 +14,15 @@ interface FormDataState {
   selfie_image: File | null;
 }
 
+interface LocationPayload {
+  user: number;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+}
+
 export default function AttendanceStart() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const tracker = useLocationTracker();
-
   const [formData, setFormData] = useState<FormDataState>({
     user: "",
     username: "",
@@ -35,7 +38,29 @@ export default function AttendanceStart() {
   const [locationFetched, setLocationFetched] = useState(false);
   const [odometerPreview, setOdometerPreview] = useState<string | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [liveLocation, setLiveLocation] = useState<{ lat: string; lng: string }>({ lat: "", lng: "" });
+  const [trackingActive, setTrackingActive] = useState(false);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+
+  const navigate = useNavigate();
+
+  // ✅ Check attendance once on mount
+  useEffect(() => {
+    const checkAttendance = async () => {
+      try {
+        const userRes = await API.get("/me/");
+        const user = userRes.data;
+        const today = new Date().toISOString().split("T")[0];
+        const attendanceKey = `attendance_${user.id || user.user_id || user.pk}_${today}`;
+        if (localStorage.getItem(attendanceKey)) {
+          setAlreadySubmitted(true);
+        }
+      } catch (error) {
+        console.error("Attendance check failed:", error);
+      }
+    };
+    checkAttendance();
+  }, []);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -49,27 +74,87 @@ export default function AttendanceStart() {
       toast.error(`Unsupported file format for ${field}.`);
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error(`${field} exceeds 5MB.`);
       return;
     }
+
     setFormData((prev) => ({ ...prev, [field]: file }));
     setMessage("");
+
     const previewUrl = URL.createObjectURL(file);
     if (field === "odometer_image") setOdometerPreview(previewUrl);
     else setSelfiePreview(previewUrl);
   };
+
+  const cacheOfflineLocation = useCallback((payload: LocationPayload) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("pendingLocationUpdates") || "[]");
+      cached.push(payload);
+      localStorage.setItem("pendingLocationUpdates", JSON.stringify(cached));
+    } catch (error) {
+      console.error("Error caching location:", error);
+    }
+  }, []);
+
+  const sendLocationUpdate = useCallback(
+    (lat: string, lng: string, user: string) => {
+      if (!lat || !lng || !user || user === "0") return;
+
+      const payload: LocationPayload = {
+        user: parseInt(user),
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng),
+        timestamp: new Date().toISOString(),
+      };
+
+      if (navigator.onLine) {
+        API.post("/locations/", payload).catch(() => {
+          cacheOfflineLocation(payload);
+        });
+      } else {
+        cacheOfflineLocation(payload);
+      }
+    },
+    [cacheOfflineLocation]
+  );
+
+  const syncOfflineData = useCallback(() => {
+    try {
+      const cachedUpdates = JSON.parse(localStorage.getItem("pendingLocationUpdates") || "[]");
+
+      if (cachedUpdates.length > 0) {
+        Promise.all(
+          cachedUpdates.map((loc: LocationPayload) =>
+            API.post("/locations/", loc).catch((err) => {
+              console.error("Sync failed for location:", loc, err);
+              throw err;
+            })
+          )
+        )
+          .then(() => {
+            localStorage.removeItem("pendingLocationUpdates");
+          })
+          .catch(() => {
+            console.log("Some locations failed to sync, keeping in cache");
+          });
+      }
+    } catch (error) {
+      console.error("Error syncing offline data:", error);
+    }
+  }, []);
 
   const fetchUserAndLocation = async () => {
     setLoading(true);
     setMessage("");
 
     try {
-      const user = JSON.parse(localStorage.getItem("meUser")!);
+      const userRes = await API.get("/me/");
+      const user = userRes.data;
 
+      // Check if attendance has already been started (from API)
       if (user.is_attendance_started) {
-        await tracker.stop();
-
         toast.error("You have already submitted attendance.");
         navigate("/employee-dashboard");
         return;
@@ -77,7 +162,7 @@ export default function AttendanceStart() {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const lat = position.coords.latitude.toFixed(6);
+          const lat = position.coords.latitude.toFixed(6); // ✅ round to 6 decimals
           const lng = position.coords.longitude.toFixed(6);
 
           setFormData((prev) => ({
@@ -88,6 +173,7 @@ export default function AttendanceStart() {
             start_lng: lng,
           }));
 
+          setLiveLocation({ lat, lng });
           setLocationFetched(true);
           toast.success("✅ Location fetched successfully! You can now fill the form.");
         },
@@ -103,14 +189,47 @@ export default function AttendanceStart() {
     }
   };
 
+  useEffect(() => {
+    if (!locationFetched || !formData.user || trackingActive) return;
+
+    let watchId: number;
+    let intervalId: NodeJS.Timeout;
+
+    const startTracking = () => {
+      setTrackingActive(true);
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude.toString();
+          const lng = position.coords.longitude.toString();
+          setLiveLocation({ lat, lng });
+        },
+        () => { },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      );
+
+      intervalId = setInterval(() => {
+        if (liveLocation.lat && liveLocation.lng && formData.user) {
+          sendLocationUpdate(liveLocation.lat, liveLocation.lng, formData.user);
+          console.log(liveLocation.lat, liveLocation.lng, formData.user)
+        }
+      }, 10000);
+    };
+
+    startTracking();
+    window.addEventListener("online", syncOfflineData);
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener("online", syncOfflineData);
+      setTrackingActive(false);
+    };
+  }, [locationFetched, formData.user, sendLocationUpdate, syncOfflineData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (alreadySubmitted || loading) return;
-
-    if (!formData.user || !formData.start_lat || !formData.start_lng) {
-      toast.error("Please fetch your location first.");
-      return;
-    }
+    if (alreadySubmitted) return;
 
     setLoading(true);
     setMessage("");
@@ -135,26 +254,18 @@ export default function AttendanceStart() {
 
       if (res.status === 200 || res.status === 201) {
         toast.success("Attendance submitted successfully!");
-
-        // Mark local “submitted today”
         const today = new Date().toISOString().split("T")[0];
         localStorage.setItem(`attendance_${formData.user}_${today}`, "submitted");
         setAlreadySubmitted(true);
 
-        // 🔥 Start background location logging for this user
-        const userId = Number(formData.user);
-        await tracker.start(userId);
-
-        // Smooth exit
-        setTimeout(() => navigate("/employee-dashboard"), 1200);
+        setTimeout(() => navigate("/employee-dashboard"), 2000);
       }
     } catch (err: any) {
-      setMessage(`❌ ${err?.response?.data?.message || "Submission failed"}`);
+      setMessage(`❌ ${err.response?.data?.message || "Submission failed"}`);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white">
       <h2 className="text-xl font-bold mb-4 text-center">{t("attendence.📍 Check In")}</h2>
@@ -164,13 +275,7 @@ export default function AttendanceStart() {
         disabled={locationFetched || loading || alreadySubmitted}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
-        {loading
-          ? "🔄 Fetching Location..."
-          : alreadySubmitted
-            ? "✅ Already Submitted"
-            : locationFetched
-              ? t("attendence.✅ Ready to Submit")
-              : t("attendence.📍Click to Start Attendance")}
+        {loading ? "🔄 Fetching Location..." : alreadySubmitted ? "✅ Already Submitted" : locationFetched ? t("attendence.✅ Ready to Submit") : t("attendence.📍Click to Start Attendance")}
       </button>
 
       {alreadySubmitted && (
@@ -209,7 +314,11 @@ export default function AttendanceStart() {
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 disabled:bg-gray-100"
           />
           {odometerPreview && (
-            <img src={odometerPreview} alt="Odometer preview" className="mt-2 w-32 h-32 object-cover rounded border" />
+            <img
+              src={odometerPreview}
+              alt="Odometer preview"
+              className="mt-2 w-32 h-32 object-cover rounded border"
+            />
           )}
         </div>
 
@@ -227,7 +336,11 @@ export default function AttendanceStart() {
             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 disabled:bg-gray-100"
           />
           {selfiePreview && (
-            <img src={selfiePreview} alt="Selfie preview" className="mt-2 w-32 h-32 object-cover rounded border" />
+            <img
+              src={selfiePreview}
+              alt="Selfie preview"
+              className="mt-2 w-32 h-32 object-cover rounded border"
+            />
           )}
         </div>
 
@@ -238,14 +351,6 @@ export default function AttendanceStart() {
         >
           {loading ? t("attendence.submitting") : t("attendence.submit")}
         </button>
-
-        {tracker.status === "running" && (
-          <p className="text-xs text-gray-500 mt-2">
-            Location tracking active. {tracker.intervalMs ? `Every ${Math.round(tracker.intervalMs / 1000)}s.` : ""}
-            {tracker.lastSentAt ? ` Last sent: ${new Date(tracker.lastSentAt).toLocaleTimeString()}` : ""}
-          </p>
-        )}
-        {message && <p className="text-sm text-red-600 mt-2">{message}</p>}
       </form>
     </div>
   );

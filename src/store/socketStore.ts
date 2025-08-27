@@ -30,7 +30,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const meUserId = meUser?.id;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-    const socketUrl = `wss:${SOCKET_URL}/ws/chat/${chatInfo.chatType === "group" ?
+    const socketUrl = `ws:${SOCKET_URL}/ws/chat/${chatInfo.chatType === "group" ?
       chatInfo?.chatId :
       (!!(chatInfo?.chatType === "personal") &&
         `personal/${chatInfo?.chatId}`)}/?token=${token}`

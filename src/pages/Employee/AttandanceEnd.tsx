@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import API from '../../api/axios';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useLocationTracker } from "../../hooks/LocationTrackerProvider.tsx";
 
 interface FormDataState {
   user: string;
@@ -33,37 +34,41 @@ export default function AttendanceForm() {
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const navigate = useNavigate();
+  const tracker = useLocationTracker();
 
   // ✅ Check if today's attendance already submitted
-useEffect(() => {
-  const checkSubmitted = async () => {
-    try {
-      const userRes = await API.get('/me/');
-      const user = userRes.data;
-      const today = new Date().toISOString().split('T')[0];
+  useEffect(() => {
+    const checkSubmitted = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("meUser")!);
 
-      // ✅ Ask backend if end attendance exists for today
-      const res = await API.get(`/attendance-end/?user=${user.id}&date=${today}`);
-      
-      if (res.data && res.data.length > 0) {
-        // if backend says attendance end exists
-        setAlreadySubmitted(true);
-        setMessage('✅ Attendance already submitted for today.');
-        
-        // also update localStorage (optional)
-        localStorage.setItem(`attendance_${user.id}_${today}`, 'submitted');
-      } else {
-        // no record → allow submission
-        setAlreadySubmitted(false);
-        localStorage.removeItem(`attendance_${user.id}_${today}`);
+        const today = new Date().toISOString().split('T')[0];
+
+        // ✅ Ask backend if end attendance exists for today
+        const res = await API.get(`/attendance-end/?user=${user.id}&date=${today}`);
+
+        if (res.data && res.data.length > 0) {
+          // if backend says attendance end exists
+
+          setAlreadySubmitted(true);
+          await tracker.stop();
+          console.log("🤚 Location tracker stopped!");
+          setMessage('✅ Attendance already submitted for today.');
+
+          // also update localStorage (optional)
+          localStorage.setItem(`attendance_${user.id}_${today}`, 'submitted');
+        } else {
+          // no record → allow submission
+          setAlreadySubmitted(false);
+          localStorage.removeItem(`attendance_${user.id}_${today}`);
+        }
+      } catch (error) {
+        console.error('Check attendance failed:', error);
       }
-    } catch (error) {
-      console.error('Check attendance failed:', error);
-    }
-  };
+    };
 
-  checkSubmitted();
-}, []);
+    checkSubmitted();
+  }, []);
 
 
   const handleFileChange = (
@@ -97,15 +102,15 @@ useEffect(() => {
 
   const fetchUserAndLocation = async () => {
     try {
-  const userRes = await API.get("/me/");
-  const user = userRes.data;
+      const user = JSON.parse(localStorage.getItem("meUser")!);
 
-  // Check if attendance has already been started (from API)
-  if (user.is_attendance_ended) {
-    toast.error("You have already submitted attendance.");
-    navigate("/employee-dashboard");
-    return;
-  }
+      // Check if attendance has already been started (from API)
+      if (user.is_attendance_ended) {
+        await tracker.stop();
+        toast.error("You have already submitted attendance.");
+        navigate("/employee-dashboard");
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setFormData((prev) => ({
@@ -133,6 +138,7 @@ useEffect(() => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (alreadySubmitted) {
+      await tracker.stop();
       toast.error('Attendance already submitted today.');
       return;
     }
@@ -164,6 +170,7 @@ useEffect(() => {
 
       if (res.status === 200 || res.status === 201) {
         toast.success('Attendance submitted successfully.');
+        await tracker.stop();
 
         // Save today's flag
         const today = new Date().toISOString().split('T')[0];
@@ -215,7 +222,7 @@ useEffect(() => {
         disabled={locationFetched || alreadySubmitted}
         className="w-full mb-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
       >
-        {locationFetched ?  t("attendence.✅ Ready to Submit") : t("attendence.📍Click to End Attendance")}
+        {locationFetched ? t("attendence.✅ Ready to Submit") : t("attendence.📍Click to End Attendance")}
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">

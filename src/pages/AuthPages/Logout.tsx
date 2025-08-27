@@ -2,19 +2,24 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import { useLocationTracker } from "../../hooks/LocationTrackerProvider";
 
 const Logout: React.FC = () => {
   const navigate = useNavigate();
   const { axiosLogout } = useAuth();
+  const tracker = useLocationTracker();
+
 
   useEffect(() => {
     const handleLogout = async () => {
       try {
-      
+
         await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log("Logging out...");
-      
+
         await axiosLogout?.();
+        await tracker.stop();
+
 
         // Clear ALL stored data
         localStorage.clear();

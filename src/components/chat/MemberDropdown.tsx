@@ -15,7 +15,7 @@ const MemberDropdown: React.FC<Props> = ({ members }) => {
   const { onlineGroupUsers } = useSocketStore();
   const [isOpen, setIsOpen] = useState(false);
   const [allMembers, setAllMembers] = useState<Members[]>(members);
-   console.log("all members", members);
+  //  console.log("all members", members);
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }

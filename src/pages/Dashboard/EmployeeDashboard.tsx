@@ -47,7 +47,7 @@ function EmployeeDashboard() {
   <div className="grid gap-6 md:gap-4 bg-white  dark:bg-black rounded-2xl p-4 sm:p-6 border dark:border-cowberry-green-600 md:grid-cols-12">
     
     {/* Greeting Section */}
-    <div className="col-span-12 border rounded-2xl p-4 sm:p-5">
+    <div className="col-span-12 border rounded-2xl p-2 sm:p-2">
       <h1 className="text-2xl sm:text-3xl mb-4 font-extrabold animate-pulse font-serif text-black dark:text-white">
       {t("greetings.withName", {
         greet: getGreeting(),

@@ -49,14 +49,17 @@ import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import { LocationTrackerProvider } from "./context/LocationContext";
 export default function App() {
 
   
   return (
     <>
+     <LocationTrackerProvider>
             <Toaster position="bottom-right" reverseOrder={false} />
 
         <ScrollToTop />
+        
         {/* <NotificationListener/> */}
         <Routes>
      
@@ -145,6 +148,7 @@ export default function App() {
             },
           }}
         />
+      </LocationTrackerProvider>
       </>
   );
 }

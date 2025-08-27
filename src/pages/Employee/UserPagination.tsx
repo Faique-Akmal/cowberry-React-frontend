@@ -171,7 +171,8 @@ const closeModal = () => {
   };
 
   return (
-    <div className="rounded-2xl border p-6  max-w-6xl mx-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
+   <div className="max-w-4xl mx-auto rounded-2xl border p-2 w-full border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
+
       <div className="mb-6">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">
           {t("user.Users Directory")}
@@ -292,7 +293,7 @@ const closeModal = () => {
                         {t("register.Mobile No")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        {t("user.Employee Code")}
+                        {t("location.Employee Code")}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
                         {t("register.Role")}

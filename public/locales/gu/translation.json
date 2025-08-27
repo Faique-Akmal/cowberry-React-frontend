@@ -255,6 +255,7 @@
     "Registering...": "નોંધણી થઈ રહી છે..."
   },
 "toast": {
+  "Logged in successfully": "સફળતાપૂર્વક લોગિન થયું",
   "Something went wrong. Please try again.": "કંઈક ખોટું થયું છે. કૃપા કરીને ફરી પ્રયાસ કરો.",
   "Password changed successfully!": "પાસવર્ડ સફળતાપૂર્વક બદલાઈ ગયો!",
   "Error changing password. Please try again.": "પાસવર્ડ બદલવામાં ભૂલ થઈ. કૃપા કરીને ફરી પ્રયાસ કરો.",

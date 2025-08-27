@@ -261,6 +261,7 @@
   },
 
   "toast": {
+    "Logged in successfully": "सफर लागिन होबाय",
     "Something went wrong. Please try again.": "गुबुन ट्रुटि। फिन खालाम।",
     "Password changed successfully!": "Password सफर सोलाय!",
     "Error changing password. Please try again.": "Password सोलायनाय ट्रुटि। फिन खालाम।",

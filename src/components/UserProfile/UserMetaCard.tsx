@@ -58,7 +58,7 @@ const handleSave = async () => {
 
     console.log("Profile updated:", response.data);
     closeModal();
-    window.location.reload(); // Consider replacing with a UI update
+    window.location.reload(); 
   } catch (error) {
     console.error("Failed to update profile:", error);
   }

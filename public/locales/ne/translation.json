@@ -250,6 +250,7 @@
       "Registering...": "दर्ता हुँदैछ..."
     },
    "toast": {
+    "Logged in successfully": "सफलतापूर्वक लगइन भयो",
   "Something went wrong. Please try again.": "केही गल्ती भयो। कृपया फेरि प्रयास गर्नुहोस्।",
   "Password changed successfully!": "पासवर्ड सफलतापूर्वक परिवर्तन गरिएको छ!",
   "Error changing password. Please try again.": "पासवर्ड परिवर्तन गर्दा त्रुटि भयो। कृपया फेरि प्रयास गर्नुहोस्।",

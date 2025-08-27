@@ -88,7 +88,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             onClick={handleCloseAll}
             className="text-gray-500 hover:underline"
           >
-            {t("button.Cancel")}
+            {t("button.cancel")}
           </button>
           <button
             onClick={handleSendResetLink}

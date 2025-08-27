@@ -50,11 +50,15 @@ import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 export default function App() {
+
+  
   return (
     <>
+    
             <Toaster position="bottom-right" reverseOrder={false} />
 
         <ScrollToTop />
+        
         {/* <NotificationListener/> */}
         <Routes>
      

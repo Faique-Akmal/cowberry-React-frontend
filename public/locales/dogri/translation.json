@@ -258,6 +258,7 @@
     "Registering...": "रजिस्टर हो रिया ऐ..."
   },
 "toast": {
+  "Logged in successfully": "सफलतापूर्वक लॉगिन होया",
   "Something went wrong. Please try again.": "कुझ गलत होग्या ऐ। किरपा करके फेर कोशिश करो।",
   "Password changed successfully!": "पासवर्ड सफलतापूर्वक बदल्या गया ऐ!",
   "Error changing password. Please try again.": "पासवर्ड बदलदें समय गलती होई। किरपा करके फेर कोशिश करो।",

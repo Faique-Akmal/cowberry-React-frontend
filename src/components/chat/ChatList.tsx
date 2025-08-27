@@ -98,7 +98,9 @@ const ChatList: React.FC<Props> = ({ groups, activeChatInfo, onSelectChat }) => 
                   className={`lg:max-w-80 flex gap-2 mx-2 my-1 rounded-xl p-4 cursor-pointer text-white hover:opacity-75 ${(activeChatInfo?.chatType === "group") && (activeChatInfo?.chatId === group?.group_id) ? "bg-brand-500" : "bg-cowberry-cream-500"}`}
                 >
                   <span className="mr-3">
-                    <Avatar src="/images/user/user-01.jpg" size="large" newClassName="overflow-hidden" />
+                    <Avatar src="/images/user/user-01.jpg" size="large"
+                    // newClassName="overflow-hidden"
+                    />
                   </span>
                   <div className="w-full truncate">
                     <h3 className="font-semibold truncate">{group?.group_name}</h3>

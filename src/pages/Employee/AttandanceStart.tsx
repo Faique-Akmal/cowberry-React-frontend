@@ -49,8 +49,8 @@ export default function AttendanceStart() {
       toast.error(`Unsupported file format for ${field}.`);
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(`${field} exceeds 5MB.`);
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error(`${field} exceeds 15MB.`);
       return;
     }
     setFormData((prev) => ({ ...prev, [field]: file }));

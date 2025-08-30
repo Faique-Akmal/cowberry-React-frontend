@@ -70,6 +70,7 @@ export default function SignInForm() {
         
 localStorage.setItem("userRole", response.data.role);
   localStorage.setItem("userId", response.data.userid); 
+  localStorage.setItem("department", response.data.department); 
   localStorage.setItem("profile-img", response.data.profile_image); 
 
   login(response.data?.refresh, response.data?.access);

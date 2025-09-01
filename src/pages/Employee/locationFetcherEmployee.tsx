@@ -95,8 +95,6 @@ const fetchConfig = async () => {
   useEffect(() => {
     if (mapView) {
       fetchLocations(mapView.user.id, mapView.date);
-
-      // Set up real-time updates for ongoing attendance
       const isOngoing = !mapView.end_time || (!mapView.end_lat || !mapView.end_lng);
       if (isOngoing && autoRefresh) {
         console.log("🔄 Setting up auto-refresh for ongoing attendance");
@@ -156,179 +154,91 @@ const fetchConfig = async () => {
     return `${hours}:${minutes}`;
   };
 
-  const fetchLocations = async (userId: number, date: string) => {
-    setIsLoadingLocations(true);
+ const fetchLocations = async (userId: number, date: string) => {
+  setIsLoadingLocations(true);
+  try {
+    console.log(`🔍 Fetching locations for user ${userId} on ${date}`);
+    let logs: LocationLog[] = [];
+
+    // --- Try backend endpoint ---
     try {
-      console.log(`🔍 Fetching locations for user ${userId} on ${date}`);
-      
-      // Try multiple API endpoint formats to ensure compatibility
-      const endpoints = [
-        `/locations/?user=${userId}&date=${date}`,
-        `/locations?user=${userId}&date=${date}`,
-        `/locations/${userId}/${date}/`,
-        `/locations/`
-      ];
-      
-      let res;
-      let logs: LocationLog[] = [];
-      
-      for (const endpoint of endpoints) {
-        try {
-          res = await API.get(endpoint);
-          console.log(`✅ Successfully fetched from ${endpoint}:`, res.data);
-
-           useEffect(() => {
-    if (mapView) {
-      fetchLocations(mapView.user.id, mapView.date);
-
-      const isOngoing =
-        !mapView.end_time || (!mapView.end_lat || !mapView.end_lng);
-
-      if (isOngoing && autoRefresh && config.active) {
-        console.log(
-          "🔄 Setting up auto-refresh every",
-          config.refresh_interval,
-          "seconds"
-        );
-        locationIntervalRef.current = setInterval(() => {
-          fetchLocations(mapView.user.id, mapView.date);
-        }, config.refresh_interval * 1000);
+      const res = await API.get(`/locations/?user=${userId}&date=${date}`);
+      if (Array.isArray(res.data)) {
+        logs = res.data;
+      } else if (res.data.results) {
+        logs = res.data.results;
       }
-    }
-
-    return () => {
-      if (locationIntervalRef.current) {
-        clearInterval(locationIntervalRef.current);
-        locationIntervalRef.current = null;
-      }
-    };
-  }, [mapView, autoRefresh, config]);
-
-   const detectPauses = (): LocationLog[] => {
-    if (locations.length < 2) return [];
-
-    const pauses: LocationLog[] = [];
-
-    for (let i = 1; i < locations.length; i++) {
-      const prev = new Date(locations[i - 1].timestamp);
-      const curr = new Date(locations[i].timestamp);
-      const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
-
-      if (diffMinutes > config.pause_threshold || locations[i].is_paused) {
-        pauses.push(locations[i]);
-      }
-    }
-    return pauses;
-  };
-          
-          // Handle different response structures
-          if (Array.isArray(res.data)) {
-            logs = res.data;
-          } else if (res.data.results && Array.isArray(res.data.results)) {
-            logs = res.data.results;
-          } else if (res.data.data && Array.isArray(res.data.data)) {
-            logs = res.data.data;
-          } else if (res.data && typeof res.data === "object") {
-            logs = [res.data];
-          }
-          
-          // If we got data, break out of the loop
-          if (logs.length > 0) {
-            break;
-          }
-        } catch (endpointError) {
-          console.log(` Failed to fetch from ${endpoint}:`, endpointError);
-          continue;
-        }
-      }
-      
-      // If no specific endpoint worked, try to get all locations and filter
-      if (logs.length === 0) {
-        try {
-          res = await API.get('/locations/');
-          let allLogs = res.data.results || res.data || [];
-          
-          // Filter by user and date if we have all locations
-          logs = allLogs.filter((log: any) => {
-            const logUserId = typeof log.user === 'object' ? log.user.id : log.user;
-            const logDate = new Date(log.timestamp).toISOString().split('T')[0];
-            return logUserId === userId && logDate === date;
-          });
-          
-          console.log(`📊 Filtered ${logs.length} locations from all data`);
-        } catch (allLogsError) {
-          console.error("❌ Failed to fetch all locations:", allLogsError);
-        }
-      }
-
-      // Enhanced filtering and sorting for dummy data
-      if (mapView && logs.length > 0) {
-        logs = filterAndSortLocations(logs, mapView);
-      }
-
-      console.log(`📍 Final location logs (${logs.length} points):`, logs);
-      setLocations(logs);
-      setLastUpdateTime(new Date());
-      
     } catch (err) {
-      console.error("❌ Failed to fetch location logs", err);
-      setLocations([]);
-    } finally {
-      setIsLoadingLocations(false);
+      console.warn("Fallback to /locations/ all fetch");
+      const res = await API.get("/locations/");
+      const allLogs = res.data.results || res.data || [];
+      logs = allLogs.filter((log: any) => {
+        const logUserId = typeof log.user === "object" ? log.user.id : log.user;
+        return logUserId === userId;
+      });
     }
-  };
 
-  // Enhanced filtering specifically optimized for dummy data
-  // Filter and sort location logs for an employee (less strict date filter)
-const filterAndSortLocations = (
-  locations: EmployeeLocationLog[] | undefined,
-  attendance: EmployeeAttendance
-): EmployeeLocationLog[] => {
-  if (!locations || locations.length === 0) {
-    console.warn("No locations provided for filtering.");
-    return [];
+    // --- Normalize + filter ---
+    if (mapView && logs.length > 0) {
+      logs = filterAndSortLocations(logs, mapView);
+    }
+
+    console.log(`📍 Final location logs (${logs.length} points):`, logs);
+    setLocations(logs);
+    setLastUpdateTime(new Date());
+  } catch (err) {
+    console.error("❌ Failed to fetch location logs", err);
+    setLocations([]);
+  } finally {
+    setIsLoadingLocations(false);
   }
+};
 
-  // 1️⃣ Keep only points with valid lat/lng
-  const validLogs = locations.filter(log =>
-    isValidCoordinate(parseFloat(log.latitude), parseFloat(log.longitude))
+const filterAndSortLocations = (locations: LocationLog[], attendance: Attendance): LocationLog[] => {
+  if (!locations || locations.length === 0) return [];
+
+  const validLogs = locations.filter(
+    (log) => isValidCoordinate(log.latitude, log.longitude)
   );
 
-  // 2️⃣ Normalize attendance date to YYYY-MM-DD
-  const attendanceDate = new Date(attendance.date).toLocaleDateString("en-CA");
+  // normalize to YYYY-MM-DD (always UTC-safe)
+  const attDate = new Date(attendance.date).toISOString().split("T")[0];
 
-  // 3️⃣ Looser date/time filter:
-  //    Instead of requiring exact date match, allow +/- 1 day for timezone shifts
-  const dateFilteredLogs = validLogs.filter(log => {
-    const logDate = new Date(log.timestamp).toLocaleDateString("en-CA");
+  const dateFilteredLogs = validLogs.filter((log) => {
+    const logDate = new Date(log.timestamp).toISOString().split("T")[0];
 
-    // Allow same date OR 1 day difference
-    const dateDiff = Math.abs(
-      (new Date(logDate).getTime() - new Date(attendanceDate).getTime()) / (1000 * 60 * 60 * 24)
-    );
+    // ✅ Allow same date OR 1-day diff (timezone tolerance)
+    const diffDays =
+      Math.abs(
+        (new Date(logDate).getTime() - new Date(attDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
 
-    if (dateDiff > 1) return false; // skip if more than 1 day apart
+    if (diffDays > 1) return false;
 
-    // Time filter with wider buffer (+/- 2 hours instead of 10 minutes for testing)
-    if (attendance.startTime && attendance.endTime) {
+    // ✅ Time window check if available
+    if (attendance.start_time && attendance.end_time) {
       const logTime = new Date(log.timestamp).getTime();
-      const start = new Date(`${attendance.date}T${attendance.startTime}`).getTime() - 2 * 60 * 60 * 1000;
-      const end = new Date(`${attendance.date}T${attendance.endTime}`).getTime() + 2 * 60 * 60 * 1000;
+      const start = new Date(`${attendance.date}T${attendance.start_time}`).getTime() - 2 * 60 * 60 * 1000;
+      const end = new Date(`${attendance.date}T${attendance.end_time}`).getTime() + 2 * 60 * 60 * 1000;
       return logTime >= start && logTime <= end;
     }
 
-    return true; // if no times given, keep the point
+    return true;
   });
 
-  // 4️⃣ Sort chronologically
+  // sort chronologically
   dateFilteredLogs.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  console.log(`Filtered ${validLogs.length} → ${dateFilteredLogs.length} logs`);
+  console.log(
+    `✅ Filtered ${validLogs.length} → ${dateFilteredLogs.length} logs for ${attendance.date}`
+  );
   return dateFilteredLogs;
 };
- 
+
 
   // Helper function to safely parse coordinates
   const parseCoordinate = (coord: string | number): number => {
@@ -528,22 +438,36 @@ const filteredData = attendances.filter((att) => {
             <label className="block mb-1 font-medium text-gray-700 dark:text-white">
              {t("location.Filter by Date")}:
             </label>
-            <input
-              type="date"
-              className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-gray-800 dark:text-black"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
-            />
+            
+          <input
+  type="date"
+  className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-gray-800 dark:text-white"
+  value={selectedDate}
+  onChange={(e) => setSelectedDate(e.target.value)}
+  onFocus={(e) => {
+    // Open calendar when the input gets focus
+    if (e.target.showPicker) {
+      e.target.showPicker();
+    }
+  }}
+  onClick={(e) => {
+    // Fallback: also trigger on click (some browsers need this)
+    if (e.target.showPicker) {
+      e.target.showPicker();
+    }
+  }}
+  max={new Date().toISOString().split("T")[0]}
+/>
+     
           </div>
 
 
-      <div className="mb-4">
+      <div className="mt-4">
         <label className="block mb-1 font-medium text-gray-700">
          {t("location.Filter by Department:")}
         </label>
         <select
-          className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
+          className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-black dark:text-white"
           onChange={(e) => setSelectedDept(e.target.value)}
           value={selectedDept}
         >

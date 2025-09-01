@@ -26,25 +26,25 @@ interface User {
 const AdminTaskManager = () => {
   const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  // const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<number | "all">("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10); // Load 10 tasks initially
 
 
-  const fetchUsers = async () => {
-    try {
-      const res = await API.get("/users/", {
-        // headers: {
-        //   Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        // },
-      });
-      setUsers(res.data.results || res.data);
-    } catch (err) {
-      console.error("Error fetching users", err);
-    }
-  };
+  // const fetchUsers = async () => {
+  //   try {
+  //     const res = await API.get("/users/", {
+  //       // headers: {
+  //       //   Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+  //       // },
+  //     });
+  //     setUsers(res.data.results || res.data);
+  //   } catch (err) {
+  //     console.error("Error fetching users", err);
+  //   }
+  // };
 
   const fetchTasks = async () => {
     try {
@@ -60,7 +60,7 @@ const AdminTaskManager = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
+    // fetchUsers();
     fetchTasks();
   }, []);
 
@@ -172,7 +172,7 @@ useEffect(() => {
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{t("task.Task Manager")}</h2>
         <hr/>
-        <select
+        {/* <select
           onChange={handleUserChange}
           className="border px-3 py-1 rounded"
           value={selectedUser}
@@ -183,20 +183,20 @@ useEffect(() => {
               {user.username}
             </option>
           ))}
-        </select>
+        </select> */}
       </div>
 
       <div className="space-y-4">
         {filteredTasks.map((task) => (
           <div
             key={task.id}
-            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-green-500 cursor-pointer"
+            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-dashboard-brown-200 cursor-pointer"
             onClick={() => openTaskModal(task)}
           >
             <div>
               <h3 className="font-semibold">{task.title}</h3>
               <p className="text-sm text-gray-600">
-                {t("task.Assigned to")}: {task.id}
+                {t("task.Assigned to")}: {task.assigned_to}
               </p>
               <p className="text-sm text-gray-500">
                 {t("task.Date")}: {dayjs(task.date).format("DD MMM YYYY")}

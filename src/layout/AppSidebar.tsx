@@ -245,17 +245,17 @@ const AppSidebar: React.FC = () => {
     path: "/user-register",
     role: ["admin","department_head","manager","hr","executive"],
   },
-  {
-    icon: <RiUserSharedFill />,
-    name: t("menu.preference"),
-    subItems: [
-      { name: t("menu.farmers"), path: "/blank", role: ["admin","department_head","manager","hr","employee","executive"] },
-      { name: t("menu.procurement"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-      { name: t("menu.inventory"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-      { name: t("menu.accounts"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-      { name: t("menu.sales"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] }
-    ],
-  },
+  // {
+  //   icon: <RiUserSharedFill />,
+  //   name: t("menu.preference"),
+  //   subItems: [
+  //     { name: t("menu.farmers"), path: "/blank", role: ["admin","department_head","manager","hr","employee","executive"] },
+  //     { name: t("menu.procurement"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
+  //     { name: t("menu.inventory"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
+  //     { name: t("menu.accounts"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
+  //     { name: t("menu.sales"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] }
+  //   ],
+  // },
   {
     icon: <FaTasks />,
     name: t("menu.taskManager"),
@@ -284,7 +284,7 @@ const AppSidebar: React.FC = () => {
     icon: <CalenderIcon />,
     name: t("menu.announcement"),
     path: "/announcement",
-    role: ["admin","hr"],
+    role: ["admin","department_head","manager"],
   },
 ];
 

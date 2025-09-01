@@ -190,7 +190,7 @@ useEffect(() => {
         {filteredTasks.map((task) => (
           <div
             key={task.id}
-            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-green-500 cursor-pointer"
+            className="p-4 border rounded-md shadow-sm flex justify-between items-center hover:bg-dashboard-brown-200 cursor-pointer"
             onClick={() => openTaskModal(task)}
           >
             <div>

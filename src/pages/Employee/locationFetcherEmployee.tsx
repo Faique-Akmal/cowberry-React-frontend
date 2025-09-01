@@ -441,7 +441,7 @@ const filteredData = attendances.filter((att) => {
             
           <input
   type="date"
-  className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-gray-800 dark:text-black"
+  className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-gray-800 dark:text-white"
   value={selectedDate}
   onChange={(e) => setSelectedDate(e.target.value)}
   onFocus={(e) => {
@@ -462,12 +462,12 @@ const filteredData = attendances.filter((att) => {
           </div>
 
 
-      <div className="mb-4">
+      <div className="mt-4">
         <label className="block mb-1 font-medium text-gray-700">
          {t("location.Filter by Department:")}
         </label>
         <select
-          className="border border-gray-300 p-2 rounded-md w-full sm:w-64"
+          className="border border-gray-300 p-2 rounded-md w-full sm:w-64 dark:bg-black dark:text-white"
           onChange={(e) => setSelectedDept(e.target.value)}
           value={selectedDept}
         >

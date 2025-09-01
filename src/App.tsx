@@ -49,6 +49,7 @@ import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import ThemeCustomizer from "./themes/themecutomizer";
 export default function App() {
 
   
@@ -56,9 +57,9 @@ export default function App() {
     <>
     
             <Toaster position="bottom-right" reverseOrder={false} />
-
+              
         <ScrollToTop />
-        
+           
         {/* <NotificationListener/> */}
         <Routes>
      
@@ -80,7 +81,7 @@ export default function App() {
        <Home />
     </ProtectedRoute>
      }  />
-
+     <Route path="/theme-customizer" element={  <ThemeCustomizer />}/>
        
             {/* Employee Pages */}
           

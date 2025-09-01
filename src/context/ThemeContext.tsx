@@ -1,57 +1,62 @@
-"use client";
+// src/context/ThemeContext.tsx
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { defaultThemeConfig, themePresets, ThemeConfig, SectionTheme } from "../themes/Themes";
 
-import type React from "react";
-import { createContext, useState, useContext, useEffect } from "react";
 
-type Theme = "light" | "dark";
-
-type ThemeContextType = {
-  theme: Theme;
-  toggleTheme: () => void;
-};
+interface ThemeContextType {
+  themeConfig: ThemeConfig;
+  updateSectionTheme: (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => void;
+  switchPreset: (presetName: ThemeName) => void;
+  toggleTheme: () => void;   // ✅ add toggleTheme
+}
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [isInitialized, setIsInitialized] = useState(false);
+interface ThemeProviderProps {
+  children: ReactNode;
+}
+
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(() => {
+    const saved = localStorage.getItem("themeConfig");
+    return saved ? JSON.parse(saved) : defaultThemeConfig;
+  });
 
   useEffect(() => {
-    // This code will only run on the client side
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme = savedTheme || "light"; // Default to light theme
+    localStorage.setItem("themeConfig", JSON.stringify(themeConfig));
+  }, [themeConfig]);
 
-    setTheme(initialTheme);
-    setIsInitialized(true);
-  }, []);
+  const updateSectionTheme = (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => {
+    setThemeConfig((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], ...newConfig },
+    }));
+  };
 
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("theme", theme);
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+  const switchPreset = (presetName: ThemeName) => {
+    if (themePresets[presetName]) {
+      setThemeConfig(themePresets[presetName]);
     }
-  }, [theme, isInitialized]);
+  };
 
+  // ✅ Toggle between light & dark
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+    setThemeConfig((prev) => {
+      const isDark = prev.header.background === themePresets.dark.header.background;
+      return isDark ? themePresets.light : themePresets.dark;
+    });
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeConfig, updateSectionTheme, switchPreset, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;

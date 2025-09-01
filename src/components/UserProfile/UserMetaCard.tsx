@@ -8,6 +8,8 @@ import API from "../../api/axios";
 import toast from "react-hot-toast";
 // import API from "../../api/axios";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
+
 
 interface UserProfile {
   username: string;
@@ -17,6 +19,8 @@ interface UserProfile {
 }
 
 export default function UserMetaCard() {
+
+     const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const localMeData = localStorage.getItem("meUser");
 const meUserData = localMeData ? JSON.parse(localMeData) : null;
@@ -81,7 +85,12 @@ const handleSave = async () => {
 
   return (
     <>
-      <div className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-cowberry-green-500">
+      <div
+       style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+       className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-cowberry-green-500">
   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
     {/* Profile Section */}
     <div className="flex flex-col items-center w-full gap-4 sm:gap-6 lg:flex-row">

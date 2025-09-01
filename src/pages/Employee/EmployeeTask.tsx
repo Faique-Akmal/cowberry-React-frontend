@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import toast from "react-hot-toast";
 import UpdateTaskModal from "./UpdateTaskModal";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 type Task = {
   id: number;
@@ -22,6 +23,7 @@ type Task = {
 };
 
 export default function TaskShowPage() {
+   const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -104,7 +106,12 @@ export default function TaskShowPage() {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="p-6 max-w-5xl mx-auto bg-white rounded-2xl dark:bg-black dark:text-white shadow-lg">
       <h1 className="text-3xl font-bold mb-2 p-3 rounded-2xl border text-center text-black dark:text-white border-b-4">
       {t("task.My Tasks")}
       </h1>

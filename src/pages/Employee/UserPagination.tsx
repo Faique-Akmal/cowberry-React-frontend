@@ -3,6 +3,7 @@ import axios from "axios";
 import { role } from "../../store/store";
 import API from "../../api/axios";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 type User = {
   id: number;
@@ -23,6 +24,7 @@ type PaginationResponse = {
 };
 
 const UserList: React.FC = () => {
+    const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -171,7 +173,12 @@ const closeModal = () => {
   };
 
   return (
-   <div className="max-w-4xl mx-auto rounded-2xl border p-2 w-full border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
+   <div
+    style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}  
+   className="max-w-4xl mx-auto rounded-2xl border p-2 w-full border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white shadow-lg">
 
       <div className="mb-6">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">

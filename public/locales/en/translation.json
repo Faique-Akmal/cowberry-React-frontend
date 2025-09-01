@@ -11,6 +11,7 @@
   "2025 COWBERRY All rights reserved.": "2025 COWBERRY All rights reserved.",
   "COWBERRY": "COWBERRY",
    "menu": {
+    "themeCustomizer": "Theme Customizer",
     "dashboard": "Dashboard",
     "employeeDashboard": "Employee Dashboard",
     "calendar": "Calendar",

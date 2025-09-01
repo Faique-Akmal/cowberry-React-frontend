@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import API from "../api/axios"; // Axios instance
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../context/ThemeContext.tsx';
 
 const AnnouncementForm = () => {
+    const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -85,7 +87,12 @@ const AnnouncementForm = () => {
   };
 
   return (
-    <div className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl dark:bg-black dark:text-white ">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className=" mx-auto mt-8 p-4 shadow-lg bg-white rounded-2xl dark:bg-black dark:text-white ">
       <h2 className="flex justify-center text-center text-2xl font-semibold mb-4">{t("announcement.Create Announcement")}</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">

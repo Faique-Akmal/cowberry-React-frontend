@@ -9,6 +9,8 @@ import Label from "../form/Label";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
+
 
 interface UserProfile {
   username: string;
@@ -23,6 +25,7 @@ interface UserProfile {
 }
 
 export default function UserInfoCard() {
+   const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [user, setUser] = useState<UserProfile | null>(null);
   // const [userRole, setUserRole] = useState<string>("");
@@ -164,7 +167,12 @@ const handleSave = async (e: React.FormEvent) => {
   }
 
   return (
-    <div className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-cowberry-green-500 lg:p-6 dark:text-white dark:bg-black">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="p-3 border bg-white border-gray-200 rounded-2xl dark:border-cowberry-green-500 lg:p-6 dark:text-white dark:bg-black">
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-cowberry-green-500 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>

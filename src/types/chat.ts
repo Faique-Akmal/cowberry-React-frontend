@@ -14,7 +14,18 @@ export interface ChatMessage {
   is_read?: boolean;
   read_at?: null;
   is_deleted?: boolean;
+  // Attachments?: Attachment[];
 }
+
+// export interface Attachment {
+//   id: number;
+//   message: number;
+//   file_url: string;
+//   file_type: string;
+//   file_name: string;
+//   file_size: number;
+//   uploaded_at: string;
+// }
 
 export interface ActiveChatInfo {
   chatId: number | null;

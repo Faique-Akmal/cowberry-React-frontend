@@ -76,7 +76,7 @@ const ChatUserList: React.FC<Props> = ({ activeChatInfo, onSelectChat }) => {
   }, []);
 
   return (
-    <div className="pb-26 lg:pb-10">
+    <div className="pb-26 lg:pb-20">
       {users?.map((item, index) => {
         const isLast = index === users?.length - 1;
         if (!item) return null; // Skip if item is undefined or null

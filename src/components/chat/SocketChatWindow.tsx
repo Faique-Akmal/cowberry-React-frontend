@@ -196,7 +196,7 @@ const SocketChatWindow: React.FC<Props> = ({
 
       {/* File Preview */}
       {selectedFiles.length > 0 && (
-        <div className="bg-gray-100 p-2 flex gap-2 overflow-x-auto">
+        <div className="bg-cowberry-cream-500 pt-3 px-2 flex gap-2 overflow-x-auto rounded-tl-xl rounded-tr-xl">
           {selectedFiles.map((file, idx) => (
             <div
               key={idx}
@@ -250,7 +250,7 @@ const SocketChatWindow: React.FC<Props> = ({
         />
         <label
           htmlFor="file-upload"
-          className="cursor-pointer bg-gray-200 px-3 py-2 rounded text-yellow-800"
+          className="cursor-pointer bg-green-100 px-3 py-2 rounded text-yellow-800"
         >
           📎
         </label>

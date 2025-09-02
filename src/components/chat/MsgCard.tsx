@@ -45,7 +45,7 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
           </div>
         </div>
       }
-      <div className="px-1 gap-2 flex flex-col">
+      <div className="gap-2 flex flex-col">
         {msg.is_deleted ?
           <div className="flex gap-2 items-center text-gray-200">
             <div title="delete icon">
@@ -59,13 +59,13 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
               </em>
             </div>
           </div> :
-          <div className="break-words px-2">
+          <div className="break-words">
             {msg.attachments!.length > 0 && <MsgAttachments
               attachments={msg.attachments || []}
               fileBaseUrl={import.meta.env.VITE_FILE_URL}
             />}
 
-            <p>{msg?.content}</p>
+            <p className="mt-2 px-2">{msg?.content}</p>
           </div>}
 
         <small className="flex gap-2 text-xs justify-end text-gray-200">

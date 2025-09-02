@@ -40,6 +40,8 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
             <video
               key={attachment.id}
               className="rounded-lg max-w-xs shadow"
+              muted
+              loop
               controls
               src={fileUrl}
             />
@@ -50,7 +52,7 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
         return (
           <div
             key={attachment.id}
-            className="flex items-center gap-3 bg-gray-100 border rounded-lg p-3 max-w-xs shadow"
+            className="flex items-center gap-3 bg-green-100 border rounded-lg p-3 max-w-xs shadow"
           >
             {/* File Icon */}
             <div className="bg-brand-500 text-white w-10 h-10 flex items-center justify-center rounded-lg text-lg">
@@ -59,7 +61,7 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
 
             {/* File Info */}
             <div className="flex-1 w-1/2">
-              <p className="text-sm w-full font-semibold text-gray-800 truncate">
+              <p className="text-sm w-full font-semibold text-green-800 truncate">
                 {getFileName(attachment.file)}
               </p>
               <p className="text-xs text-gray-500">{fileType}</p>

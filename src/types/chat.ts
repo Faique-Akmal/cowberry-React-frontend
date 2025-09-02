@@ -1,3 +1,10 @@
+export interface ChatAttachment {
+  id: number;
+  file: string;       // actual file path
+  file_url: string;   // accessible URL
+  file_type: string;  // MIME type e.g. "text/csv", "image/jpeg"
+}
+
 export interface ChatMessage {
   type?: string;
   id: number;
@@ -5,27 +12,20 @@ export interface ChatMessage {
   sender_username: string;
   recipient: number | null;
   group: number | null;
-  group_name: string;
+  group_name?: string | null;
   content: string;
+  message_type: "text" | "file" | "image" | "video"; // extend as needed
+  latitude?: string | null;
+  longitude?: string | null;
   parent?: number | null;
   replies?: ChatMessage[];
-  sent_at: string;
-  is_edited?: boolean;
+  attachments?: ChatAttachment[];
+  sent_at: string; // ISO 8601 datetime string
   is_read?: boolean;
-  read_at?: null;
+  read_at?: string | null;
   is_deleted?: boolean;
-  // Attachments?: Attachment[];
+  is_edited?: boolean;
 }
-
-// export interface Attachment {
-//   id: number;
-//   message: number;
-//   file_url: string;
-//   file_type: string;
-//   file_name: string;
-//   file_size: number;
-//   uploaded_at: string;
-// }
 
 export interface ActiveChatInfo {
   chatId: number | null;

@@ -3,6 +3,7 @@ import MsgDropdown from "./MsgDropdown";
 import TimeZone from "../common/TimeZone";
 import { useMessageStore } from "../../store/messageStore";
 import { ActiveChatInfo, ChatMessage } from "../../types/chat";
+import MsgAttachments from "./MsgAttachments";
 
 interface Props {
   activeChatInfo?: ActiveChatInfo;
@@ -57,11 +58,17 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
                 This message was deleted
               </em>
             </div>
-          </div> : <p>{msg?.content}</p>}
+          </div> :
+          <div className="break-words px-2">
+            {msg.attachments!.length > 0 && <MsgAttachments
+              attachments={msg.attachments || []}
+              fileBaseUrl={import.meta.env.VITE_FILE_URL}
+            />}
+
+            <p>{msg?.content}</p>
+          </div>}
 
         <small className="flex gap-2 text-xs justify-end text-gray-200">
-          {/* {msg?.is_edited} */}
-          {/* {msg?.sent_at} */}
           {!msg?.is_deleted && !!msg?.is_edited && <span>Edited</span>}
           <TimeZone utcDateStr={msg?.sent_at} />
         </small>

@@ -64,7 +64,8 @@ const MsgCard: React.FC<Props> = React.memo(({ meUserId, msgId, replyMsg }) => {
               attachments={msg.attachments || []}
               fileBaseUrl={import.meta.env.VITE_FILE_URL}
             />}
-
+            {!!msg?.latitude && <p className="mt-2 px-2 text-green-300">Lat: {msg?.latitude}</p>}
+            {!!msg?.longitude && <p className="mt-2 px-2 text-green-300">Long: {msg?.longitude}</p>}
             <p className="mt-2 px-2">{msg?.content}</p>
           </div>}
 

@@ -10,6 +10,7 @@ import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
 import { useSocketStore } from "../../store/socketStore";
 import { RiCloseFill } from "react-icons/ri";
+import { FiPaperclip, FiMapPin, FiFileText, FiImage } from "react-icons/fi";
 import MemberDropdown from "./MemberDropdown";
 import { Members } from "../../store/chatStore";
 import TypingIndicator from "./TypingIndicator";
@@ -31,6 +32,7 @@ const SocketChatWindow: React.FC<Props> = ({
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const sendMsgInputRef = useRef<HTMLInputElement>(null);
@@ -86,12 +88,13 @@ const SocketChatWindow: React.FC<Props> = ({
       reader.onerror = (err) => reject(err);
     });
 
-  /** Select files (multi) */
+  /** Select files */
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       setSelectedFiles((prev) => [...prev, ...files]);
     }
+    setShowAttachmentMenu(false);
   };
 
   /** Remove selected file */
@@ -116,8 +119,8 @@ const SocketChatWindow: React.FC<Props> = ({
       receiver_id:
         activeChatInfo?.chatType === "personal" ? activeChatInfo?.chatId : null,
       parent_id: replyTo?.id || null,
-      latitude: 21.28459945,
-      longitude: 72.9640772,
+      latitude: null,
+      longitude: null,
       files: filesBase64,
     };
 
@@ -131,6 +134,39 @@ const SocketChatWindow: React.FC<Props> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e?.key === "Enter") sendMessage();
+  };
+
+  /** Share Location */
+  const handleSendLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        sendJson({
+          type: "send_message",
+          message_type: "location",
+          content: "📍 Shared current location",
+          group_id:
+            activeChatInfo?.chatType === "group"
+              ? activeChatInfo?.chatId
+              : null,
+          receiver_id:
+            activeChatInfo?.chatType === "personal"
+              ? activeChatInfo?.chatId
+              : null,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          files: [],
+        });
+      },
+      (err) => {
+        console.error(err);
+        alert("Unable to fetch location");
+      }
+    );
+    setShowAttachmentMenu(false);
   };
 
   const renderMessages = useMemo(
@@ -148,7 +184,7 @@ const SocketChatWindow: React.FC<Props> = ({
   );
 
   return (
-    <div className="flex flex-col h-[80vh] w-full">
+    <div className="flex flex-col h-[80vh] w-full relative">
       {/* Header */}
       <div className="pl-12 p-4 flex h-17 items-center justify-between bg-cowberry-cream-500">
         <div className="flex flex-col gap-2">
@@ -173,6 +209,8 @@ const SocketChatWindow: React.FC<Props> = ({
         <div ref={bottomRef} className="pt-10" />
       </div>
 
+
+
       {/* Reply Preview */}
       {replyTo && (
         <div className="relative p-1 bg-cowberry-cream-500 rounded-tl-xl rounded-tr-xl">
@@ -182,7 +220,7 @@ const SocketChatWindow: React.FC<Props> = ({
                 ? `${replyTo?.sender_username} (You)`
                 : replyTo?.sender_username}
             </h4>
-            <p>{replyTo?.content}</p>
+            <p className="max-w-112 truncate">{replyTo?.content}</p>
             <button
               type="button"
               className="absolute top-2 right-2 text-xl text-gray-200"
@@ -230,7 +268,7 @@ const SocketChatWindow: React.FC<Props> = ({
       )}
 
       {/* Input + Send */}
-      <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2 items-center">
+      <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2 items-center relative">
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
@@ -240,20 +278,59 @@ const SocketChatWindow: React.FC<Props> = ({
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
         />
+
+        {/* Hidden File Inputs */}
         <input
           type="file"
           multiple
-          accept="image/*,video/*,.pdf,.doc,.docx"
+          accept="image/*,video/*"
           className="hidden"
-          id="file-upload"
+          id="image-video-upload"
           onChange={handleFileSelect}
         />
-        <label
-          htmlFor="file-upload"
-          className="cursor-pointer bg-green-100 px-3 py-2 rounded text-yellow-800"
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.csv,.xls,.xlsx"
+          className="hidden"
+          id="doc-upload"
+          onChange={handleFileSelect}
+        />
+
+        {/* Attachment Menu Button */}
+        <button
+          type="button"
+          onClick={() => setShowAttachmentMenu((prev) => !prev)}
+          className="cursor-pointer bg-green-100 p-2 rounded text-yellow-800"
         >
-          📎
-        </label>
+          <FiPaperclip size={20} />
+        </button>
+
+        {/* Floating Attachment Menu */}
+        {showAttachmentMenu && (
+          <div className="absolute bottom-14 right-16 bg-white shadow-lg rounded-lg p-3 flex flex-col gap-2 z-50">
+            <label
+              htmlFor="image-video-upload"
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+            >
+              <FiImage /> <span>Image/Video</span>
+            </label>
+            <label
+              htmlFor="doc-upload"
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+            >
+              <FiFileText /> <span>Document</span>
+            </label>
+            <button
+              onClick={handleSendLocation}
+              className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded"
+            >
+              <FiMapPin /> <span>Location</span>
+            </button>
+          </div>
+        )}
+
+        {/* Send Button */}
         <button
           onClick={sendMessage}
           className="bg-brand-500 text-white px-4 py-2 rounded"

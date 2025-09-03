@@ -145,12 +145,12 @@ const AppSidebar: React.FC = () => {
     path: "/all-users",
     role: ["admin","department_head","manager","hr","executive"],
   },
-    {
-    icon: <PiUsersThreeBold />,
-    name: t("menu.themeCustomizer"),
-    path: "/theme-customizer",
-    role: ["admin","department_head","manager","hr","executive" ,"employee"],
-  },
+  //   {
+  //   icon: <PiUsersThreeBold />,
+  //   name: t("menu.themeCustomizer"),
+  //   path: "/theme-customizer",
+  //   role: ["admin","department_head","manager","hr","executive" ,"employee"],
+  // },
   {
     icon: <CalenderIcon />,
     name: t("menu.taskCalendar"),

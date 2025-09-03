@@ -22,7 +22,7 @@ export const ThemeToggleButton: React.FC = () => {
       </svg>
 
       {/* ☀️ Sun (light mode) */}
-      <svg
+      <svg 
         className="dark:hidden"
         xmlns="http://www.w3.org/2000/svg"
         fill="currentColor"

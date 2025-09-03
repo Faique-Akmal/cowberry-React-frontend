@@ -14,7 +14,7 @@ export interface ChatMessage {
   group: number | null;
   group_name?: string | null;
   content: string;
-  message_type: "text" | "file" | "image" | "video"; // extend as needed
+  message_type: "text" | "file" | "image" | "video" | "location"; // extend as needed
   latitude?: string | null;
   longitude?: string | null;
   parent?: number | null;

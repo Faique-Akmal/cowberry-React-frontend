@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import DashboardStats from "../../components/employees/UserStats";
-import UserMetaCard from "../../components/UserProfile/UserMetaCard";
+// import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";

@@ -117,11 +117,11 @@ export default function TaskShowPage() {
       </h1>
 
       {/* ✅ Dropdown for filtering */}
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end rounded-full">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white"
+          className="border px-3 py-2 rounded-full dark:bg-gray-800 dark:text-white"
         >
           <option value="all">{t("task.All Tasks")}</option>
           <option value="pending">{t("task.Pending")}</option>
@@ -154,7 +154,7 @@ export default function TaskShowPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 m-4">
         {filteredTasks.map((task) => (
-          <div key={task.id} className="p-4 shadow bg-dashboard-brown-200 rounded-2xl border-b-4">
+          <div key={task.id} className="p-4 shadow bg-white rounded-2xl border-b-4">
             <h2 className="text-lg font-semibold dark:text-black">
               <span>{t("task.Title")}:</span> {task.title}
             </h2>
@@ -177,8 +177,11 @@ export default function TaskShowPage() {
               >
                 {task.is_completed ? "Completed" : "Pending"}
               </span>
-              <span className="text-black">{t("task.Start Date")}: {formatDate(task.start_date)}</span>
+              
+             
             </div>
+
+             <span className="text-black">{t("task.Start Date")}: {formatDate(task.start_date)}</span>
             <hr />
                 <div>
                   <button

@@ -15,6 +15,8 @@ import MemberDropdown from "./MemberDropdown";
 import { Members } from "../../store/chatStore";
 import TypingIndicator from "./TypingIndicator";
 import { useTypingEmitter } from "../../hooks/useTypingEmitter";
+import { IoSend } from "react-icons/io5";
+import { SiSocketdotio } from "react-icons/si";
 
 interface Props {
   activeChatInfo: ActiveChatInfo;
@@ -193,12 +195,12 @@ const SocketChatWindow: React.FC<Props> = ({
           </h2>
           <TypingIndicator typingUsers={typingStatus} currentUser={meUsername} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex pr-1 items-center gap-2">
           {activeChatInfo?.chatType === "group" && (
             <MemberDropdown members={groupMembers!} />
           )}
-          <p className="text-lg font-bold text-yellow-800">
-            {isConnected ? "🟢" : "🔴"}
+          <p className={`text-lg ${isConnected ? "text-green-500" : "text-red-500"}`}>
+            <SiSocketdotio />
           </p>
         </div>
       </div>
@@ -238,27 +240,27 @@ const SocketChatWindow: React.FC<Props> = ({
           {selectedFiles.map((file, idx) => (
             <div
               key={idx}
-              className="relative border rounded p-2 bg-white shadow-sm flex flex-col items-center w-24"
+              className="relative drop-shadow-xl px-2 py-2 w-30 h-fit overflow-hidden rounded-xl bg-green-900"
             >
               {file.type.startsWith("image/") ? (
                 <img
                   src={URL.createObjectURL(file)}
                   alt={file.name}
-                  className="h-16 w-16 object-cover rounded"
+                  className="h-20 w-4/5 mx-auto object-contain rounded"
                 />
               ) : file.type.startsWith("video/") ? (
                 <video
                   src={URL.createObjectURL(file)}
-                  className="h-16 w-16 rounded"
+                  className="h-16 w-4/5 rounded"
                   muted
                 />
               ) : (
-                <span className="text-xs text-gray-600">{file.type}</span>
+                <span className="text-xs text-gray-300">{file.type}</span>
               )}
-              <p className="text-xs truncate w-full">{file.name}</p>
+              <p className="text-xs mt-2 text-white truncate w-full">{file.name}</p>
               <button
                 onClick={() => removeFile(idx)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center"
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center"
               >
                 <RiCloseFill />
               </button>
@@ -268,7 +270,7 @@ const SocketChatWindow: React.FC<Props> = ({
       )}
 
       {/* Input + Send */}
-      <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2 items-center relative">
+      <div className="w-full px-4 py-2 bg-cowberry-cream-500 flex gap-2 items-center rounded-tl-lg rounded-tr-lg relative">
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
@@ -300,8 +302,9 @@ const SocketChatWindow: React.FC<Props> = ({
         {/* Attachment Menu Button */}
         <button
           type="button"
+          title="Attach"
           onClick={() => setShowAttachmentMenu((prev) => !prev)}
-          className="cursor-pointer bg-green-100 p-2 rounded text-yellow-800"
+          className="cursor-pointer bg-transparent hover:bg-green-200 transition px-3 py-3 rounded-full text-brand-500"
         >
           <FiPaperclip size={20} />
         </button>
@@ -333,9 +336,9 @@ const SocketChatWindow: React.FC<Props> = ({
         {/* Send Button */}
         <button
           onClick={sendMessage}
-          className="bg-brand-500 text-white px-4 py-2 rounded"
+          className="text-xl bg-[#21C063] hover:bg-[#21A156] transition text-black px-3 py-3 rounded-full"
         >
-          Send
+          <IoSend />
         </button>
       </div>
     </div>

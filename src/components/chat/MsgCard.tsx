@@ -4,6 +4,7 @@ import TimeZone from "../common/TimeZone";
 import { useMessageStore } from "../../store/messageStore";
 import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import MsgAttachments from "./MsgAttachments";
+import { BsCheck2All } from "react-icons/bs";
 
 interface Props {
   activeChatInfo?: ActiveChatInfo;
@@ -110,17 +111,22 @@ const MsgCard: React.FC<Props> = React.memo(
                       />
 
                     </a>
-                    <div className=" p-2">
-                      <p className="text-sm font-semibold">
+                    <div className="p-2 flex flex-col items-center gap-2">
+                      <p className="text-sm self-start font-semibold">
                         {msg.content || "📍 Location shared"}
                       </p>
                       <a
                         href={`https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block mt-2 text-xs bg-brand-500 text-white px-3 py-1 rounded hover:bg-brand-600 transition"
                       >
-                        Open in Maps
+                        <button className="mx-auto overflow-hidden relative w-32 h-8 bg-green-800 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
+                          Open map
+                          <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
+                          <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
+                          <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
+                          <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-9 z-10">Explore!</span>
+                        </button>
                       </a>
                     </div>
                   </div>
@@ -134,9 +140,12 @@ const MsgCard: React.FC<Props> = React.memo(
           )}
 
           {/* Footer */}
-          <small className="flex gap-2 text-xs justify-end text-gray-200">
+          <small className="flex gap-2 text-xs items-center justify-end text-gray-200">
             {!msg?.is_deleted && !!msg?.is_edited && <span>Edited</span>}
             <TimeZone utcDateStr={msg?.sent_at} />
+            {isMe && <span className={`text-xl ${msg.is_read ? "text-[#00CAFF]" : "text-gray-300"}`} title={msg.is_read ? "Read" : "Delivered"}>
+              <BsCheck2All />
+            </span>}
           </small>
         </div>
       </div>

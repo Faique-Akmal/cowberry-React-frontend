@@ -688,7 +688,7 @@ const detectPausesFor = (logs: LocationLog[], pauseThresholdSec: number): PauseI
                       positions={path}
                       pathOptions={{
                         color: mapView.end_time ? "#3B82F6" : "#10B981",
-                        weight: 3,
+                        weight: 8,
                         opacity: 0.8,
                         lineCap: "round",
                         lineJoin: "round",

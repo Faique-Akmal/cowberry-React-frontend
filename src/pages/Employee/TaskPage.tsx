@@ -103,57 +103,62 @@ useEffect(() => {
 useEffect(() => {
   const fetchUsers = async () => {
     try {
-      const res = await API.get("/users/");
-      console.log("🔍 API RESPONSE DATA:", res.data);
+      let allUsers: any[] = [];
+      let nextUrl: string | null = "/users/";
 
-      // Normalize user list
-      let userList: any[] = [];
-      if (Array.isArray(res.data)) {
-        userList = res.data;
-      } else if (Array.isArray(res.data?.results)) {
-        userList = res.data.results;
-      } else if (Array.isArray(res.data?.data)) {
-        userList = res.data.data;
-      } else if (Array.isArray(res.data?.users)) {
-        userList = res.data.users;
-      }
+     while (nextUrl) {
+  const res = await API.get(nextUrl);
 
-      console.log("✅ NORMALIZED USERS:", userList.length);
+  let userList: any[] = [];
+  let next: string | null = null;
 
-      // ✅ Get meUser from localStorage
+  if (Array.isArray(res.data)) {
+    userList = res.data;
+    next = null;
+  } else if (res.data?.results) {
+    userList = res.data.results;
+    next = res.data.next;   // ✅ keep full URL
+  } else if (res.data?.data) {
+    userList = res.data.data;
+    next = res.data.next;   // ✅ keep full URL
+  } else if (res.data?.users) {
+    userList = res.data.users;
+    next = res.data.next;   // ✅ keep full URL
+  }
+
+  allUsers = [...allUsers, ...userList];
+  nextUrl = next; // ✅ don’t rebuild URL
+}
+
+
+      console.log("✅ ALL USERS FETCHED:", allUsers);
+
+      // --- get current user ---
       const meUserRaw = localStorage.getItem("meUser");
       const meUser = meUserRaw ? JSON.parse(meUserRaw) : null;
 
       if (!meUser?.department) {
-        console.warn("⚠️ No department found in meUser");
-        setUsers(userList);
+        console.warn("⚠️ No department in meUser, showing all");
+        setUsers(allUsers);
         return;
       }
 
-      // --- Helper to normalize department ---
+      // --- department normalization ---
       const normalizeDept = (dept: any): string | null => {
         if (!dept) return null;
-
-        if (typeof dept === "string") {
-          return dept.toLowerCase();
-        }
-        if (typeof dept === "object") {
-          return dept.name?.toLowerCase() ?? null;
-        }
-        if (typeof dept === "number") {
+        if (typeof dept === "string") return dept.toLowerCase();
+        if (typeof dept === "object") return dept.name?.toLowerCase() ?? null;
+        if (typeof dept === "number")
           return DEPT_ID_TO_NAME[String(dept)]?.toLowerCase() ?? null;
-        }
         return null;
       };
 
-      // --- Get my department ---
       const myDept = normalizeDept(meUser.department);
       console.log("👤 My department:", myDept);
 
-      // --- Filter users by my department ---
-      const filteredUsers = userList.filter((user: any) => {
+      const filteredUsers = allUsers.filter((user) => {
         const userDept = normalizeDept(user.department);
-        return userDept === myDept; // same department only
+        return userDept === myDept;
       });
 
       console.log("✅ FILTERED USERS:", filteredUsers);
@@ -166,6 +171,8 @@ useEffect(() => {
 
   fetchUsers();
 }, []);
+
+
 
 
 
@@ -311,21 +318,23 @@ const handleChange = (
         />
 
         {/* Assigned To Dropdown */}
-        <label>Assigned To</label>
-        <select
-          name="assigned_to"
-          required
-          value={formData.assigned_to}
-          onChange={handleChange}
-          className="w-full border p-2 rounded dark:bg-black bg-black text-white"
-        >
-          <option value="">Select User</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.username || user.name || `User ${user.id}`}
-            </option>
-          ))}
-        </select>
+       <label>Assigned To</label>
+<select
+  name="assigned_to"
+  required
+  value={formData.assigned_to}
+  onChange={handleChange}
+  className="w-full border p-2 rounded dark:bg-black bg-black text-white max-h-40 overflow-y-auto"
+  size={5}
+>
+  {/* <option value="">Select User</option> */}
+  {users.map((user) => (
+    <option key={user.id} value={user.id}>
+      {user.username || user.name || `User ${user.id}`}
+    </option>
+  ))}
+</select>
+
 
   <label>Assigned By</label>
 <select
@@ -351,7 +360,7 @@ const handleChange = (
           required
           value={formData.created_by}
           onChange={handleChange}
-        className="w-full border p-2 rounded dark:bg-black bg-black text-white"
+       className="w-full border p-2 rounded dark:bg-black bg-black text-white max-h-40 overflow-y-auto"
         >
           <option value="">Select User</option>
           {users.map((user) => (

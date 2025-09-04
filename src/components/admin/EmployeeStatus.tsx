@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import API from '../../api/axios';
-import { role } from "../../store/store";
+// import { role } from "../../store/store";
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
 
 
 interface User {
@@ -40,6 +41,7 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
 //   };
 
 const  EmployeeStatus = () => {
+     const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,12 @@ const  EmployeeStatus = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6 h-full dark:bg-black dark:text-white">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+    className="bg-white shadow-md rounded-xl p-6 h-full dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Online Employees</h2>
         <button className="border px-3 py-1 text-sm rounded-md">Online Only</button>

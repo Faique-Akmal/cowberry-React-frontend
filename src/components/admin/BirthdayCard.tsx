@@ -3,6 +3,8 @@ import Confetti from 'react-confetti';
 import API from '../../api/axios';
 import { role } from "../../store/store";
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
+
 
 interface User {
   id: number;
@@ -13,6 +15,7 @@ interface User {
 }
 
 const BirthdayCardList: React.FC = () => {
+   const { themeConfig } = useTheme();
   const {t} = useTranslation();
   const [birthdayUsers, setBirthdayUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -78,7 +81,12 @@ const BirthdayCardList: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white  rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+    className="p-6 bg-white  rounded-2xl shadow-xl  h-full relative overflow-hidden dark:bg-black dark:text-white">
       {birthdayUsers.length > 0 && (
         <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={600}
          recycle={false} 

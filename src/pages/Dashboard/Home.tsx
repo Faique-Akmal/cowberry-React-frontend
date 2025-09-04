@@ -1,5 +1,5 @@
 
-import MonthlySalesChart from "../../components/admin/AttendanceChart";
+// import MonthlySalesChart from "../../components/admin/AttendanceChart";
 
 import EmployeeStatus from "../../components/admin/EmployeeStatus";
 // import DemographicCard from "../../components/ecommerce/DemographicCard";

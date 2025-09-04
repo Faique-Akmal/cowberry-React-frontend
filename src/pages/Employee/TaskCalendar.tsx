@@ -7,6 +7,7 @@ import API from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { role } from "../../store/store";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 // Define proper TypeScript interfaces
 interface Task {
@@ -36,6 +37,7 @@ interface CalendarEvent {
 }
 
 const TaskCalendar = () => {
+  const { themeConfig } = useTheme();
   const {t} = useTranslation();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedTask, setSelectedTask] = useState<any>(null);
@@ -135,7 +137,12 @@ const TaskCalendar = () => {
   }
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md dark:bg-black dark:text-white">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="p-4 bg-white rounded-lg shadow-md dark:bg-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">{t("calendar.Task Calendar")}</h2>
         <button
@@ -172,7 +179,7 @@ const TaskCalendar = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">{t("caledar.Task Details")}</h2>
+              <h2 className="text-lg font-semibold text-gray-800">{t("calendar.Task Details")}</h2>
               <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"

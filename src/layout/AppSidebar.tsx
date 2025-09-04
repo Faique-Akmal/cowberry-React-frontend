@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { TbTableShare } from "react-icons/tb";
-import { RiUserSharedFill } from "react-icons/ri";
+// import { RiUserSharedFill } from "react-icons/ri";
 import { PiUsersThreeBold } from "react-icons/pi";
 // import  LogoutIcon from '@mui/icons-material/Logout';
 
@@ -26,6 +26,7 @@ import { FaTasks } from "react-icons/fa";
 // import { FaHouseChimneyUser } from "react-icons/fa6";
 import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../context/ThemeContext";
 
 
 // interface UserProfile {
@@ -51,135 +52,11 @@ type NavItem = {
   subItems?: SubItem[];
 };
 
-// const navItems: NavItem[] = [
-//   {
-//     icon: <GridIcon />,
-//     name: "Dashboard",
-//     subItems: [
-//       { name: "Dashboard", path: "/home", role: ["admin" , "department_head" ,"manager" , "hr"] },
-//       { name: "Employee Dashboard", path: "/employee-dashboard", role: ["employee"] },
-//     ],
-//   },
-//   {
-//     icon: <CalenderIcon />,
-//     name: "Calendar",
-//     path: "/calendar",
-//     role: ["admin" , "department_head" ,"manager" , "hr"],
-//   },
-//   {
-//     icon: <UserCircleIcon />,
-//     name: "Profile",
-//     path: "/profile",
-//     role: ["admin" ,"employee", "department_head" ,"manager" , "hr"],
-//   },
-//   {
-//     icon: <ChatIcon />,
-//     name: "Chat",
-//     path: "/chat",
-//     role: ["admin", "employee" , "department_head" ,"manager" , "hr"],
-//   },
-//   {
-//     name: "Attandance",
-//     icon: <ListIcon />,
-//     subItems: [
-//       // { name: "My Tasks", path: "/task-show-page", role: ["employee"] },
-//       { name: "Attandance Start", path: "/attandanceStart-page", role: ["employee"] },
-//       { name: "Attandance END", path: "/attandanceEnd-page", role: ["employee"] },
-//       // { name: "location ", path: "/user-location", role: ["employee"] },
-//       // { name: "Task-Calendar", path: "/task-calendar", role: ["employee"] },
-//     ],
-//   },
-//   {
-//     name: "Forms",
-//     icon: <TbTableShare  />,
-//     subItems: [
-//       // { name: "Users List", path: "/basic-tables", role: ["admin", "department_head" ,"manager" , "hr"] },
-//       // { name: "Register User form", path: "/user-register", role: ["admin" , "department_head" ,"manager" , "hr"] },
-//       { name: "Assign Task form", path: "/assign-task-page", role: ["admin" , "department_head" ,"manager" , "hr"] },
-//       // { name: "Task Manager", path: "/admin-task-manager", role: ["admin" , "department_head" ,"manager" , "hr"] },
-//       // { name: "Attandance Start list ", path: "/attandance-start-admin", role: ["admin" , "department_head" ,"manager" , "hr"] },
-//     ],
-//   },
-
-//    {
-//     icon: <MdListAlt />,
-//     name: "Attandance list",
-//     path: "/attandance-start-admin",
-//     role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
-//     },
-    
-//   {
-//     icon: <MdAppRegistration />,
-//     name: "Register User form",
-//     path: "/user-register",
-//      role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
-//   },
-
-//   {
-//     icon: <RiUserSharedFill  />,
-//     name: "Prefrence",
-//      subItems: [
-//       { name: "Farmers", path: "/blank", role: ["admin", "department_head" ,"manager" , "hr","employee" , "executive"] },
-//       { name: "Procurement", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
-//       { name: "Inventory", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
-//       { name: "Accounts", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
-//       { name: "Sales", path: "/blank", role: ["admin" , "department_head" ,"manager" , "hr" , "executive" , "employee"] },
-//      ],
-//   },
-
-// {
-  
-//     icon: <FaTasks />,
-//     name: "Task Manager",
-//     path: "/admin-task-manager",
-//   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
-//   },
-//    {
-//     icon: <PiUsersThreeBold  />,
-//     name: "All Users",
-//     path: "/all-users",
-//   role: ["admin" , "department_head" ,"manager" , "hr" , "executive"] ,
-//   },
-//   {
-//     icon: <CalenderIcon />,
-//     name: "Task-Calendar",
-//     path: "/task-calendar",
-//     role: ["employee"],
-//   },
-//    {
-//     icon: <CalenderIcon />,
-//     name: "My Tasks",
-//     path: "/task-show-page",
-//     role: ["employee"],
-//   },
-//   // {
-//   //   icon: <CalenderIcon />,
-//   //   name: "Employee Tracker",
-//   //   path: "/live-tracking",
-//   //    role: ["admin" , "department_head" ,"manager" , "hr"] 
-   
-//   // },
-//   {
-//     icon: <CalenderIcon />,
-//     name: "Announcement",
-//     path: "/announcement",
-//      role: ["admin" ,  "hr"] 
-   
-//   },
-   
-//   // {
-//   //   name: "Pages",
-//   //   icon: <PageIcon />,
-//   //   subItems: [
-//   //     { name: "Blank Page", path: "/blank", role: ["admin", "employee"] },
-//   //     { name: "404 Error", path: "/error-404", role: ["admin", "employee"] },
-//   //   ],
-//   // },
-// ];
-
 
 
 const AppSidebar: React.FC = () => {
+
+    const { themeConfig } = useTheme();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
@@ -268,6 +145,12 @@ const AppSidebar: React.FC = () => {
     path: "/all-users",
     role: ["admin","department_head","manager","hr","executive"],
   },
+  //   {
+  //   icon: <PiUsersThreeBold />,
+  //   name: t("menu.themeCustomizer"),
+  //   path: "/theme-customizer",
+  //   role: ["admin","department_head","manager","hr","executive" ,"employee"],
+  // },
   {
     icon: <CalenderIcon />,
     name: t("menu.taskCalendar"),
@@ -418,13 +301,21 @@ const othersItems: NavItem[] = [
 
   return (
   
-  <aside
-    className={`fixed top-0 left-0 bg-dashboard-brown-200 dark:bg-gray-900 border-r border-gray-200 dark:text-blue-light-25 dark:border-gray-800 h-screen z-50 transition-all duration-300
+ <aside
+  style={{
+    backgroundColor: themeConfig.sidebar.background || undefined,
+    color: themeConfig.sidebar.text || undefined,
+  }}
+  className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
+    bg-dashboard-brown-200 dark:bg-dashboard-brown-800
+    text-gray-900 dark:text-blue-light-25
+    border-r border-gray-200 dark:border-gray-800
     ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
     ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-    onMouseEnter={() => !isExpanded && setIsHovered(true)}
-    onMouseLeave={() => setIsHovered(false)}
-  >
+  onMouseEnter={() => !isExpanded && setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+>
+
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>

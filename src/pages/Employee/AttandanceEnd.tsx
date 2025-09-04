@@ -4,6 +4,8 @@ import API from '../../api/axios';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useLocationTracker } from "../../hooks/LocationTrackerProvider.tsx";
+import { useTheme } from '../../context/ThemeContext.tsx';
+
 
 interface FormDataState {
   user: string;
@@ -16,6 +18,7 @@ interface FormDataState {
 }
 
 export default function AttendanceForm() {
+   const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [formData, setFormData] = useState<FormDataState>({
     user: '',
@@ -208,7 +211,12 @@ export default function AttendanceForm() {
   };
 
   return (
-    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+    className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white">
       <h2 className="text-xl font-bold mb-4 text-center">{t("attendence.📍 Check Out")}</h2>
 
       {message && (

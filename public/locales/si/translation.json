@@ -8,6 +8,7 @@
   "logout": "ලොග්ඉන් ඉවත් වන්න",
 
   "menu": {
+   "themeCustomizer": "තේමය අභිරුචිකරණය",
     "dashboard": "පුවරුව",
     "employeeDashboard": "සේවක පුවරුව",
     "calendar": "දිනදර්ශනය",

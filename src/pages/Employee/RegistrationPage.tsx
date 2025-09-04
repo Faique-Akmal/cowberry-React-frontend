@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 export default function RegisterUserForm() {
+  const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     first_name: "",
@@ -158,7 +160,12 @@ const roleOptions = [
   };
 
   return (
-    <div className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
+    <div 
+      style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="rounded-2xl border p-8 max-w-[700px] m-auto border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
       <h2 className="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-white">{t("register.User Registration")}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

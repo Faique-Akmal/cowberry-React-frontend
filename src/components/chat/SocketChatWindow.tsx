@@ -3,16 +3,16 @@ import MsgCard from "./MsgCard";
 import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
 import { useSocketStore } from "../../store/socketStore";
-import { RiCloseFill } from "react-icons/ri";
-import { FiPaperclip, FiMapPin, FiFileText, FiImage } from "react-icons/fi";
 import MemberDropdown from "./MemberDropdown";
 import { Members } from "../../store/chatStore";
 import TypingIndicator from "./TypingIndicator";
 import { useTypingEmitter } from "../../hooks/useTypingEmitter";
-import { IoSend } from "react-icons/io5";
+import { FiMapPin, FiFileText, FiImage } from "react-icons/fi";
+import { IoClose, IoSend } from "react-icons/io5";
+import { RiCloseFill } from "react-icons/ri";
 import { SiSocketdotio } from "react-icons/si";
 import { MdOutlineDarkMode } from "react-icons/md";
-import { IoClose } from "react-icons/io5";
+import { TbGridDots } from "react-icons/tb";
 
 interface Props {
   activeChatInfo: ActiveChatInfo;
@@ -273,9 +273,9 @@ const SocketChatWindow: React.FC<Props> = ({
           type="button"
           title="Attach"
           onClick={() => setShowAttachmentMenu((prev) => !prev)}
-          className="cursor-pointer bg-transparent hover:bg-green-200 transition px-3 py-3 rounded-full text-brand-500"
+          className="cursor-pointer text-xl bg-transparent hover:bg-green-200 transition px-3 py-3 rounded-full text-brand-500"
         >
-          <FiPaperclip size={20} />
+          <TbGridDots />
         </button>
 
         {/* 9 Dot Floating Attachment Menu */}

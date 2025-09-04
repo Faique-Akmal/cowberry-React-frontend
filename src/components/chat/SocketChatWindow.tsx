@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import MsgCard from "./MsgCard";
 import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
@@ -17,6 +11,8 @@ import TypingIndicator from "./TypingIndicator";
 import { useTypingEmitter } from "../../hooks/useTypingEmitter";
 import { IoSend } from "react-icons/io5";
 import { SiSocketdotio } from "react-icons/si";
+import { MdOutlineDarkMode } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
 
 interface Props {
   activeChatInfo: ActiveChatInfo;
@@ -236,7 +232,7 @@ const SocketChatWindow: React.FC<Props> = ({
 
       {/* File Preview */}
       {selectedFiles.length > 0 && (
-        <div className="bg-cowberry-cream-500 pt-3 px-2 flex gap-2 overflow-x-auto rounded-tl-xl rounded-tr-xl">
+        <div className="bg-cowberry-cream-500 pt-3 px-2 flex flex-row-reverse gap-2 overflow-x-auto rounded-tl-xl rounded-tr-xl">
           {selectedFiles.map((file, idx) => (
             <div
               key={idx}
@@ -271,6 +267,178 @@ const SocketChatWindow: React.FC<Props> = ({
 
       {/* Input + Send */}
       <div className="w-full px-4 py-2 bg-cowberry-cream-500 flex gap-2 items-center rounded-tl-lg rounded-tr-lg relative">
+
+        {/* Attachment Menu Button */}
+        <button
+          type="button"
+          title="Attach"
+          onClick={() => setShowAttachmentMenu((prev) => !prev)}
+          className="cursor-pointer bg-transparent hover:bg-green-200 transition px-3 py-3 rounded-full text-brand-500"
+        >
+          <FiPaperclip size={20} />
+        </button>
+
+        {/* 9 Dot Floating Attachment Menu */}
+        <div
+          className={`absolute bottom-16 left-4 flex justify-center items-center rounded-lg bg-brand-500 transition-all duration-500 ${showAttachmentMenu
+            ? "w-[130px] h-[130px] opacity-100 delay-0"
+            : "w-[50px] h-[50px] opacity-0 delay-[800ms]"
+            }`}
+        >
+          {/* Image/Video pin */}
+          <span
+            style={
+              {
+                "--i": 1,
+                "--x": 1,
+                "--y": 0,
+              } as React.CSSProperties
+            }
+            className={`absolute rounded-full flex items-center text-green-800 justify-center bg-green-200 hover:bg-green-300 transition-all duration-500 ease-in-out 
+                      [transition-delay:calc(0.1s*var(--i))]
+                      ${showAttachmentMenu
+                ? "w-[30px] h-[30px] bg-[#333849] translate-x-[calc(40px*var(--x))] translate-y-[calc(40px*var(--y))]"
+                : "w-[7px] h-[7px] translate-x-[calc(12px*var(--x))] translate-y-[calc(12px*var(--y))]"
+              }`}
+          >
+            <label
+              title="Image/Video"
+              htmlFor="image-video-upload"
+              className={`${showAttachmentMenu ? "opacity-100 delay-[100ms]" : "opacity-0 delay-[800ms]"
+                } flex items-center gap-2 cursor-pointer p-2 rounded`}
+            >
+              <FiImage />
+            </label>
+          </span>
+
+          {/* Document pin */}
+          <span
+            style={
+              {
+                "--i": 0,
+                "--x": -1,
+                "--y": 0,
+              } as React.CSSProperties
+            }
+            className={`absolute rounded-full flex items-center text-green-800 justify-center bg-green-200 hover:bg-green-300 transition-all duration-500 ease-in-out 
+                      [transition-delay:calc(0.1s*var(--i))]
+                      ${showAttachmentMenu
+                ? "w-[30px] h-[30px] bg-[#333849] translate-x-[calc(40px*var(--x))] translate-y-[calc(40px*var(--y))]"
+                : "w-[7px] h-[7px] translate-x-[calc(12px*var(--x))] translate-y-[calc(12px*var(--y))]"
+              }`}
+          >
+            <label
+              title="Document"
+              htmlFor="doc-upload"
+              className={`${showAttachmentMenu ? "opacity-100 delay-[300ms]" : "opacity-0 delay-[800ms]"
+                } flex items-center gap-2 cursor-pointer p-2 rounded`}
+            >
+              <FiFileText />
+            </label>
+          </span>
+
+          {/* Location pin */}
+          <span
+            style={
+              {
+                "--i": 2,
+                "--x": 0,
+                "--y": -1,
+              } as React.CSSProperties
+            }
+            className={`absolute rounded-full flex items-center text-green-800 justify-center bg-green-200 hover:bg-green-300 transition-all duration-500 ease-in-out 
+                      [transition-delay:calc(0.1s*var(--i))]
+                      ${showAttachmentMenu
+                ? "w-[30px] h-[30px] bg-[#333849] translate-x-[calc(40px*var(--x))] translate-y-[calc(40px*var(--y))]"
+                : "w-[7px] h-[7px] translate-x-[calc(12px*var(--x))] translate-y-[calc(12px*var(--y))]"
+              }`}
+          >
+            <label
+              title="Location"
+              onClick={handleSendLocation}
+              className={`${showAttachmentMenu ? "opacity-100 delay-[300ms]" : "opacity-0 delay-[800ms]"
+                } flex items-center gap-2 cursor-pointer p-2 rounded`}
+            >
+              <FiMapPin />
+            </label>
+          </span>
+
+          {/* Chat Theme pin */}
+          <span
+            style={
+              {
+                "--i": 3,
+                "--x": 0,
+                "--y": 1,
+              } as React.CSSProperties
+            }
+            className={`absolute rounded-full flex items-center text-green-800 justify-center bg-green-200 hover:bg-green-300 transition-all duration-500 ease-in-out 
+                      [transition-delay:calc(0.1s*var(--i))]
+                      ${showAttachmentMenu
+                ? "w-[30px] h-[30px] bg-[#333849] translate-x-[calc(40px*var(--x))] translate-y-[calc(40px*var(--y))]"
+                : "w-[7px] h-[7px] translate-x-[calc(12px*var(--x))] translate-y-[calc(12px*var(--y))]"
+              }`}
+          >
+            <label
+              title="Chat Theme"
+              className={`${showAttachmentMenu ? "opacity-100 delay-0" : "opacity-0 delay-[800ms]"
+                } flex items-center gap-2 cursor-pointer p-2 rounded`}
+            >
+              <MdOutlineDarkMode />
+            </label>
+          </span>
+
+          {/* Close pin */}
+          <span
+            style={
+              {
+                "--i": 6,
+                "--x": 0,
+                "--y": 0,
+              } as React.CSSProperties
+            }
+            className={`absolute rounded-full flex items-center text-green-800 justify-center bg-green-200 hover:bg-green-300 transition-all duration-500 ease-in-out 
+                      [transition-delay:calc(0.1s*var(--i))]
+                      ${showAttachmentMenu
+                ? "w-[30px] h-[30px] bg-[#333849] translate-x-[calc(40px*var(--x))] translate-y-[calc(40px*var(--y))]"
+                : "w-[7px] h-[7px] translate-x-[calc(12px*var(--x))] translate-y-[calc(12px*var(--y))]"
+              }`}
+          >
+            <label
+              title="Close"
+              onClick={() => setShowAttachmentMenu(false)}
+              className={`${showAttachmentMenu ? "opacity-100 delay-0" : "opacity-0 delay-[800ms]"
+                } flex text-xl items-center gap-2 cursor-pointer p-2 rounded`}
+            >
+              <IoClose />
+            </label>
+          </span>
+        </div>
+
+        {/* Floating Attachment Menu */}
+        {/* {showAttachmentMenu && (
+          <div className="absolute bottom-14 right-16 bg-white shadow-lg rounded-lg p-3 flex flex-col gap-2 z-50">
+            <label
+              htmlFor="image-video-upload"
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+            >
+              <FiImage /> <span>Image/Video</span>
+            </label>
+            <label
+              htmlFor="doc-upload"
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+            >
+              <FiFileText /> <span>Document</span>
+            </label>
+            <button
+              onClick={handleSendLocation}
+              className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded"
+            >
+              <FiMapPin /> <span>Location</span>
+            </button>
+          </div>
+        )} */}
+
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"
@@ -298,40 +466,6 @@ const SocketChatWindow: React.FC<Props> = ({
           id="doc-upload"
           onChange={handleFileSelect}
         />
-
-        {/* Attachment Menu Button */}
-        <button
-          type="button"
-          title="Attach"
-          onClick={() => setShowAttachmentMenu((prev) => !prev)}
-          className="cursor-pointer bg-transparent hover:bg-green-200 transition px-3 py-3 rounded-full text-brand-500"
-        >
-          <FiPaperclip size={20} />
-        </button>
-
-        {/* Floating Attachment Menu */}
-        {showAttachmentMenu && (
-          <div className="absolute bottom-14 right-16 bg-white shadow-lg rounded-lg p-3 flex flex-col gap-2 z-50">
-            <label
-              htmlFor="image-video-upload"
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
-            >
-              <FiImage /> <span>Image/Video</span>
-            </label>
-            <label
-              htmlFor="doc-upload"
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
-            >
-              <FiFileText /> <span>Document</span>
-            </label>
-            <button
-              onClick={handleSendLocation}
-              className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded"
-            >
-              <FiMapPin /> <span>Location</span>
-            </button>
-          </div>
-        )}
 
         {/* Send Button */}
         <button

@@ -1,5 +1,6 @@
 import React from "react";
 import { ChatAttachment } from "../../types/chat";
+import { FaFile } from "react-icons/fa6";
 
 interface MsgAttachmentsProps {
   attachments: ChatAttachment[];
@@ -55,8 +56,8 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
             className="flex items-center gap-3 bg-green-100 border rounded-lg p-3 max-w-xs shadow"
           >
             {/* File Icon */}
-            <div className="bg-brand-500 text-white w-10 h-10 flex items-center justify-center rounded-lg text-lg">
-              📄
+            <div className="bg-brand-500 text-white w-10 h-10 flex items-center justify-center rounded-lg text-xl">
+              <FaFile />
             </div>
 
             {/* File Info */}
@@ -71,7 +72,6 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
             <a
               href={fileUrl}
               download
-            // className="bg-brand-500 text-white text-xs px-3 py-1 rounded hover:bg-brand-600 transition"
             >
               <div className="group relative">
                 <button className="bg-cowberry-green-500 w-10 h-10 flex justify-center items-center rounded-lg hover:text-green-200 hover:translate-y-1 hover:duration-300">
@@ -79,7 +79,6 @@ const MsgAttachments: React.FC<MsgAttachmentsProps> = ({
                     <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinejoin="round" strokeLinecap="round" />
                   </svg>
                 </button>
-                {/* <span className="absolute w-20 text-center -bottom-12 left-[50%] -translate-x-[50%] origin-bottom tracking-wider z-20 scale-0 px-1 rounded-lg bg-white text-blue-600 py-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-100">00.00 MB<span> </span></span> */}
               </div>
             </a>
           </div>

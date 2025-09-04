@@ -5,6 +5,7 @@ import { useMessageStore } from "../../store/messageStore";
 import { ActiveChatInfo, ChatMessage } from "../../types/chat";
 import MsgAttachments from "./MsgAttachments";
 import { BsCheck2All } from "react-icons/bs";
+import { FaMapLocationDot } from "react-icons/fa6";
 
 interface Props {
   activeChatInfo?: ActiveChatInfo;
@@ -29,7 +30,13 @@ const MsgCard: React.FC<Props> = React.memo(
           }`}
       >
         {/* Header */}
-        {!msg?.is_deleted && (
+        {msg?.is_deleted ? (
+          <div className="relative flex justify-between gap-2">
+            <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
+              {isMe ? "" : msg?.sender_username}
+            </h4>
+          </div>
+        ) : (
           <div className="relative flex justify-between gap-2">
             <h4 className="text-xs capitalize font-bold text-cowberry-cream-500">
               {isMe ? `${msg?.sender_username} (You)` : msg?.sender_username}
@@ -112,15 +119,15 @@ const MsgCard: React.FC<Props> = React.memo(
 
                     </a>
                     <div className="p-2 flex flex-col items-center gap-2">
-                      <p className="text-sm self-start font-semibold">
-                        {msg.content || "📍 Location shared"}
+                      <p className="flex items-center text-sm self-start font-semibold">
+                        <FaMapLocationDot className="text-lg" />&nbsp;&nbsp;{msg.content || "Location shared"}
                       </p>
                       <a
                         href={`https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <button className="mx-auto overflow-hidden relative w-32 h-8 bg-green-800 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
+                        <button className="mx-auto overflow-hidden relative w-32 h-8 bg-brand-500 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
                           Open map
                           <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
                           <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
@@ -143,7 +150,7 @@ const MsgCard: React.FC<Props> = React.memo(
           <small className="flex gap-2 text-xs items-center justify-end text-gray-200">
             {!msg?.is_deleted && !!msg?.is_edited && <span>Edited</span>}
             <TimeZone utcDateStr={msg?.sent_at} />
-            {isMe && <span className={`text-xl ${msg.is_read ? "text-[#00CAFF]" : "text-gray-300"}`} title={msg.is_read ? "Read" : "Delivered"}>
+            {!msg?.is_deleted && isMe && <span className={`text-xl ${msg.is_read ? "text-[#00CAFF]" : "text-gray-300"}`} title={msg.is_read ? "Read" : "Delivered"}>
               <BsCheck2All />
             </span>}
           </small>

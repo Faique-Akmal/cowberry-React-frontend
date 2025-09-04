@@ -149,7 +149,7 @@ const SocketChatWindow: React.FC<Props> = ({
         sendJson({
           type: "send_message",
           message_type: "location",
-          content: "📍 Shared current location",
+          content: "Shared current location",
           group_id:
             activeChatInfo?.chatType === "group"
               ? activeChatInfo?.chatId
@@ -240,7 +240,7 @@ const SocketChatWindow: React.FC<Props> = ({
           {selectedFiles.map((file, idx) => (
             <div
               key={idx}
-              className="relative drop-shadow-xl px-2 py-2 w-30 h-fit overflow-hidden rounded-xl bg-green-900"
+              className="relative drop-shadow-xl px-2 py-2 w-34 h-fit overflow-hidden rounded-xl bg-green-900"
             >
               {file.type.startsWith("image/") ? (
                 <img

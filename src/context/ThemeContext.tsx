@@ -2,32 +2,50 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { defaultThemeConfig, themePresets, ThemeConfig, SectionTheme } from "../themes/Themes";
 
+type ThemeName = keyof typeof themePresets;
 
 interface ThemeContextType {
   themeConfig: ThemeConfig;
   updateSectionTheme: (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => void;
   switchPreset: (presetName: ThemeName) => void;
-  toggleTheme: () => void;   // ✅ add toggleTheme
+  toggleTheme: () => void;
+  isDarkMode: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
-
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(() => {
-    const saved = localStorage.getItem("themeConfig");
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // load from localStorage
+  const [customTheme, setCustomTheme] = useState<ThemeConfig>(() => {
+    const saved = localStorage.getItem("customTheme");
     return saved ? JSON.parse(saved) : defaultThemeConfig;
   });
 
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(customTheme);
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem("isDarkMode");
+    return saved ? JSON.parse(saved) : false;
+  });
+
   useEffect(() => {
-    localStorage.setItem("themeConfig", JSON.stringify(themeConfig));
-  }, [themeConfig]);
+    if (isDarkMode) {
+      setThemeConfig(themePresets.dark);
+    } else {
+      setThemeConfig(customTheme);
+    }
+  }, [isDarkMode, customTheme]);
+
+  useEffect(() => {
+    localStorage.setItem("customTheme", JSON.stringify(customTheme));
+  }, [customTheme]);
+
+  useEffect(() => {
+    localStorage.setItem("isDarkMode", JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   const updateSectionTheme = (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => {
-    setThemeConfig((prev) => ({
+    setCustomTheme((prev) => ({
       ...prev,
       [section]: { ...prev[section], ...newConfig },
     }));
@@ -35,29 +53,23 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const switchPreset = (presetName: ThemeName) => {
     if (themePresets[presetName]) {
-      setThemeConfig(themePresets[presetName]);
+      setCustomTheme(themePresets[presetName]);
     }
   };
 
-  // ✅ Toggle between light & dark
   const toggleTheme = () => {
-    setThemeConfig((prev) => {
-      const isDark = prev.header.background === themePresets.dark.header.background;
-      return isDark ? themePresets.light : themePresets.dark;
-    });
+    setIsDarkMode((prev) => !prev);
   };
 
   return (
-    <ThemeContext.Provider value={{ themeConfig, updateSectionTheme, switchPreset, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeConfig, updateSectionTheme, switchPreset, toggleTheme, isDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = (): ThemeContextType => {
+export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
   return context;
 };

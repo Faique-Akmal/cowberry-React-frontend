@@ -49,6 +49,11 @@ interface LocationLog {
   battery_level?: number | null;
   is_paused?: boolean;
   user?: number | { id: number };
+} 
+interface PauseInterval {
+  start: LocationLog;
+  end: LocationLog;
+  durationMinutes: number;
 }
 
 /**
@@ -106,20 +111,16 @@ export default function AttendanceList() {
     fetchData();
   }, []);
 
-  const fetchConfig = async () => {
+   const fetchConfig = async () => {
     try {
-      const res = await API.get("/location-log-config/");
-      const cfg = res.data;
-      setConfig(
-        {
-        refresh_interval: cfg.refresh_interval || 300,
-        pause_threshold: cfg.pause_threshold || 2,
-        active: cfg.active ?? true,
-      }
-    );
-      console.log("⚙️ Config loaded:", cfg);
+      const res = await API.get("/location-log-config"); 
+      // assume API returns an array, pick the active one
+      const activeConfig = Array.isArray(res.data)
+        ? res.data.find((c) => c.active)
+        : res.data;
+      setConfig(activeConfig);
     } catch (err) {
-      console.error("❌ Failed to fetch config", err);
+      console.error("Failed to fetch config:", err);
     }
   };
 
@@ -345,22 +346,28 @@ const fetchLocations = async (userId: number, date: string) => {
   };
 
   // detectPauses for given logs
-  const detectPausesFor = (logs: LocationLog[]): LocationLog[] => {
-    if (!logs || logs.length < 2) return [];
+const detectPausesFor = (logs: LocationLog[], pauseThresholdSec: number): PauseInterval[] => {
+  if (!logs || logs.length < 2) return [];
 
-    const pauses: LocationLog[] = [];
-    const PAUSE_THRESHOLD_MINUTES = (config.pause_threshold || 2); // minutes
+  const pauses: PauseInterval[] = [];
+  const PAUSE_THRESHOLD_MINUTES = pauseThresholdSec / 60;
 
-    for (let i = 1; i < logs.length; i++) {
-      const prev = new Date(logs[i - 1].timestamp);
-      const curr = new Date(logs[i].timestamp);
-      const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
-      if (diffMinutes > PAUSE_THRESHOLD_MINUTES || logs[i].is_paused) {
-        pauses.push(logs[i]);
-      }
+  for (let i = 1; i < logs.length; i++) {
+    const prev = new Date(logs[i - 1].timestamp);
+    const curr = new Date(logs[i].timestamp);
+    const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
+
+    if (diffMinutes > PAUSE_THRESHOLD_MINUTES || logs[i].is_paused) {
+      pauses.push({
+        start: logs[i - 1],
+        end: logs[i],
+        durationMinutes: diffMinutes,
+      });
     }
-    return pauses;
-  };
+  }
+
+  return pauses;
+};
 
   const openMap = (record: Attendance) => {
     console.log("🗺️ Opening map for:", record);
@@ -709,7 +716,8 @@ const fetchLocations = async (userId: number, date: string) => {
                       <strong>🟢 Start Location</strong><br />
                       <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
                       <strong>Time:</strong> {formatTime(mapView.start_time)}<br />
-                      <strong>Coordinates:</strong> {parseCoordinate(mapView.start_lat).toFixed(5)}, {parseCoordinate(mapView.start_lng).toFixed(5)}
+                      {/* <strong>Coordinates:</strong> {parseCoordinate(mapView.start_lat).toFixed(5)}, {parseCoordinate(mapView.start_lng).toFixed(5)} */}
+                      
                     </div>
                   </Popup>
                 </Marker>
@@ -780,34 +788,44 @@ const fetchLocations = async (userId: number, date: string) => {
                 return null;
               })()}
 
-              {/* Pause markers */}
-              {currentPauses.map((log, i) => {
-                if (!isValidCoordinate(log.latitude, log.longitude)) return null;
-                const lat = parseCoordinate(log.latitude);
-                const lng = parseCoordinate(log.longitude);
-                return (
-                  <Marker
-                    key={`pause-${log.id || i}`}
-                    position={[lat, lng]}
-                    icon={L.icon({
-                      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
-                      shadowUrl,
-                      iconAnchor: [12, 41],
-                      iconSize: [20, 32],
-                    })}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <strong>⏱️ Extended Pause</strong><br />
-                        <strong>Paused at:</strong> {new Date(log.timestamp).toLocaleTimeString()}<br />
-                        <strong>Date:</strong> {new Date(log.timestamp).toLocaleDateString()}<br />
-                        <strong>Coordinates:</strong> {lat.toFixed(5)}, {lng.toFixed(5)}<br />
-                        <strong>Reason:</strong> Gap in location tracking
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
+           {/* Pause markers */}
+{currentPauses.map((pause, i) => {
+  if (!isValidCoordinate(pause.start.latitude, pause.start.longitude)) return null;
+
+  const lat = parseCoordinate(pause.start.latitude);
+  const lng = parseCoordinate(pause.start.longitude);
+
+  return (
+    <Marker
+      key={`pause-${pause.start.id || i}`}
+      position={[lat, lng]}
+      icon={L.icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+        shadowUrl,
+        iconAnchor: [12, 41],
+        iconSize: [20, 32],
+      })}
+    >
+      <Popup>
+        <div className="text-sm">
+          <strong>⏱️ Pause Detected</strong>
+          <br />
+          <strong>Start:</strong>{" "}
+          {new Date(pause.start.timestamp).toLocaleTimeString()}
+          <br />
+          <strong>End:</strong>{" "}
+          {new Date(pause.end.timestamp).toLocaleTimeString()}
+          <br />
+          <strong>Duration:</strong>{" "}
+          {pause.durationMinutes.toFixed(1)} minutes
+          <br />
+          <strong>Coordinates:</strong> {lat.toFixed(5)}, {lng.toFixed(5)}
+        </div>
+      </Popup>
+    </Marker>
+  );
+})}
 
               {/* End marker */}
               {isValidCoordinate(mapView.end_lat, mapView.end_lng) && (
@@ -832,11 +850,11 @@ const fetchLocations = async (userId: number, date: string) => {
               )}
 
               {/* High density overlay */}
-              {currentLogs.length > 100 && (
+              {/* {currentLogs.length > 100 && (
                 <div className="absolute bottom-4 left-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded-lg text-sm z-[999]">
                   ⚠️ High density data ({currentLogs.length} points) - Individual markers hidden for performance
                 </div>
-              )}
+              )} */}
             </MapContainer>
 
             {/* Debug panel */}

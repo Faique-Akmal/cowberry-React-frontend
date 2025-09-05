@@ -280,7 +280,7 @@ const SocketChatWindow: React.FC<Props> = ({
 
         {/* 9 Dot Floating Attachment Menu */}
         <div
-          className={`absolute bottom-16 left-4 flex justify-center items-center rounded-lg bg-brand-500 transition-all duration-500 ${showAttachmentMenu
+          className={`absolute z-15 bottom-16 left-4 flex justify-center items-center rounded-lg bg-brand-500 transition-all duration-500 ${showAttachmentMenu
             ? "w-[130px] h-[130px] opacity-100 delay-0"
             : "w-[50px] h-[50px] opacity-0 delay-[800ms]"
             }`}
@@ -304,7 +304,7 @@ const SocketChatWindow: React.FC<Props> = ({
             <label
               title="Image/Video"
               htmlFor="image-video-upload"
-              className={`${showAttachmentMenu ? "opacity-100 delay-[100ms]" : "opacity-0 delay-[800ms]"
+              className={`[transition-delay:calc(0.1s*var(--i))] ${showAttachmentMenu ? "opacity-100" : "opacity-0"
                 } flex items-center gap-2 cursor-pointer p-2 rounded`}
             >
               <FiImage />
@@ -330,7 +330,7 @@ const SocketChatWindow: React.FC<Props> = ({
             <label
               title="Document"
               htmlFor="doc-upload"
-              className={`${showAttachmentMenu ? "opacity-100 delay-[300ms]" : "opacity-0 delay-[800ms]"
+              className={`[transition-delay:calc(0.1s*var(--i))] ${showAttachmentMenu ? "opacity-100" : "opacity-0"
                 } flex items-center gap-2 cursor-pointer p-2 rounded`}
             >
               <FiFileText />
@@ -356,7 +356,7 @@ const SocketChatWindow: React.FC<Props> = ({
             <label
               title="Location"
               onClick={handleSendLocation}
-              className={`${showAttachmentMenu ? "opacity-100 delay-[300ms]" : "opacity-0 delay-[800ms]"
+              className={`[transition-delay:calc(0.1s*var(--i))] ${showAttachmentMenu ? "opacity-100" : "opacity-0"
                 } flex items-center gap-2 cursor-pointer p-2 rounded`}
             >
               <FiMapPin />
@@ -381,7 +381,7 @@ const SocketChatWindow: React.FC<Props> = ({
           >
             <label
               title="Chat Theme"
-              className={`${showAttachmentMenu ? "opacity-100 delay-0" : "opacity-0 delay-[800ms]"
+              className={`[transition-delay:calc(0.1s*var(--i))] ${showAttachmentMenu ? "opacity-100" : "opacity-0"
                 } flex items-center gap-2 cursor-pointer p-2 rounded`}
             >
               <MdOutlineDarkMode />
@@ -407,7 +407,7 @@ const SocketChatWindow: React.FC<Props> = ({
             <label
               title="Close"
               onClick={() => setShowAttachmentMenu(false)}
-              className={`${showAttachmentMenu ? "opacity-100 delay-0" : "opacity-0 delay-[800ms]"
+              className={`[transition-delay:calc(0.11s*var(--i))] ${showAttachmentMenu ? "opacity-100" : "opacity-0"
                 } flex text-xl items-center gap-2 cursor-pointer p-2 rounded`}
             >
               <IoClose />
@@ -417,7 +417,7 @@ const SocketChatWindow: React.FC<Props> = ({
 
         {/* Floating Attachment Menu */}
         {/* {showAttachmentMenu && (
-          <div className="absolute bottom-14 right-16 bg-white shadow-lg rounded-lg p-3 flex flex-col gap-2 z-50">
+          <div className="absolute z-15 bottom-14 right-16 bg-white shadow-lg rounded-lg p-3 flex flex-col gap-2 z-50">
             <label
               htmlFor="image-video-upload"
               className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded"

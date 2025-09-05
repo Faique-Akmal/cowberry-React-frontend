@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import API from "../../api/axios";
+// import API from "../../api/axios";
 import toast from "react-hot-toast";
 import UpdateTaskModal from "./UpdateTaskModal";
 import { useTranslation } from "react-i18next";
 import { useTheme } from '../../context/ThemeContext.tsx';
+import { useData } from "../../context/DataProvider.tsx";
+
 
 type Task = {
   id: number;
@@ -23,6 +25,7 @@ type Task = {
 };
 
 export default function TaskShowPage() {
+  const { fetchMyTasks } = useData();
    const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -42,42 +45,23 @@ export default function TaskShowPage() {
     // you could replace task in state or refetch tasks here
   };
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      setError("");
+useEffect(() => {
+  const loadTasks = async () => {
+    try {
+      const taskList = await fetchMyTasks(); // 👈 no force = uses cache
+      setTasks(taskList || []);
+    } catch (err: any) {
+      console.error("Error fetching tasks:", err);
+      toast.error("Failed to load tasks.");
+      setError(err.message || "Unexpected error.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) throw new Error("User not authenticated. Please log in again.");
+  loadTasks();
+}, [fetchMyTasks]);
 
-        const response = await API.get("/my-assigned-tasks/", { timeout: 10000 });
-        let responseTasks: Task[] = [];
-        if (Array.isArray(response.data)) {
-          responseTasks = response.data;
-        } else if (typeof response.data === "object") {
-          responseTasks =
-            response.data.tasks ||
-            response.data.results ||
-            response.data.data ||
-            response.data.items ||
-            [];
-        }
-
-        if (!Array.isArray(responseTasks)) throw new Error("Invalid data format");
-
-        setTasks(responseTasks);
-      } catch (err: any) {
-        console.error("Error fetching tasks:", err);
-        toast.error("Failed to load tasks.");
-        setError(err.message || "Unexpected error.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

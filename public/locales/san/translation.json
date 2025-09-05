@@ -7,6 +7,7 @@
   "login": "प्रवेशः",
   "logout": "निर्गमनम्",
   "menu": {
+     "themeCustomizer": "थीम कस्टमाइज़र",
     "dashboard": "सारिणीपत्रम्",
     "employeeDashboard": "कर्मचारी सारिणीपत्रम्",
     "calendar": "पञ्जिका",

@@ -5,8 +5,12 @@ import { CiUser } from "react-icons/ci";
 import { FcDepartment } from "react-icons/fc";
 import { GrUserManager } from "react-icons/gr";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
+
+
 
 export default function Metrics() {
+    const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [roleStats, setRoleStats] = useState({
@@ -17,6 +21,7 @@ export default function Metrics() {
     admin:0,
   });
   const [totalUsers, setTotalUsers] = useState(0);
+  
 
   const fetchEmployeeStats = async () => {
     try {
@@ -97,10 +102,16 @@ export default function Metrics() {
   ];
 
   return (
-   <div className="grid grid-cols-2 gap-4 md:grid-cols-3 ">
+   <div 
+    
+   className="grid grid-cols-2 gap-4 md:grid-cols-3 ">
   {cards.map((card, index) => (
     <div
       key={index}
+       style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
       className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 w-full flex flex-col justify-between hover:shadow-lg transition-shadow duration-300"
     >
       <div className="flex justify-between items-center">

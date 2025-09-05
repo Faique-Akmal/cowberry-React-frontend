@@ -1,49 +1,68 @@
-"use client";
+// src/context/ThemeContext.tsx
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { defaultThemeConfig, themePresets, ThemeConfig, SectionTheme } from "../themes/Themes";
 
-import type React from "react";
-import { createContext, useState, useContext, useEffect } from "react";
+type ThemeName = keyof typeof themePresets;
 
-type Theme = "light" | "dark";
-
-type ThemeContextType = {
-  theme: Theme;
+interface ThemeContextType {
+  themeConfig: ThemeConfig;
+  updateSectionTheme: (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => void;
+  switchPreset: (presetName: ThemeName) => void;
   toggleTheme: () => void;
-};
+  isDarkMode: boolean;
+}
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [isInitialized, setIsInitialized] = useState(false);
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // load from localStorage
+  const [customTheme, setCustomTheme] = useState<ThemeConfig>(() => {
+    const saved = localStorage.getItem("customTheme");
+    return saved ? JSON.parse(saved) : defaultThemeConfig;
+  });
+
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(customTheme);
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem("isDarkMode");
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
-    // This code will only run on the client side
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme = savedTheme || "light"; // Default to light theme
-
-    setTheme(initialTheme);
-    setIsInitialized(true);
-  }, []);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("theme", theme);
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+    if (isDarkMode) {
+      setThemeConfig(themePresets.dark);
+    } else {
+      setThemeConfig(customTheme);
     }
-  }, [theme, isInitialized]);
+  }, [isDarkMode, customTheme]);
+
+  useEffect(() => {
+    localStorage.setItem("customTheme", JSON.stringify(customTheme));
+  }, [customTheme]);
+
+  useEffect(() => {
+    localStorage.setItem("isDarkMode", JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
+  const updateSectionTheme = (section: keyof ThemeConfig, newConfig: Partial<SectionTheme>) => {
+    setCustomTheme((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], ...newConfig },
+    }));
+  };
+
+  const switchPreset = (presetName: ThemeName) => {
+    if (themePresets[presetName]) {
+      setCustomTheme(themePresets[presetName]);
+    }
+  };
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+    setIsDarkMode((prev) => !prev);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeConfig, updateSectionTheme, switchPreset, toggleTheme, isDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -51,8 +70,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
   return context;
 };

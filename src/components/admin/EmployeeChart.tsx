@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
+
+
 
 interface DepartmentStats {
   id: number;
@@ -21,6 +24,7 @@ const COLORS = [
 ];
 
 export default function EmployeeChart() {
+    const { themeConfig } = useTheme();
   const [data, setData] = useState<DepartmentCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +84,12 @@ export default function EmployeeChart() {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-2  dark:bg-black dark:text-white ">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+    className="bg-white rounded-xl shadow-lg p-2  dark:bg-black dark:text-white ">
       <h2 className="text-2xl font-bold text-center text-gray-800 p-3 mb-6 dark:text-white">
        {t("home.UsersbyDepartment")}
       </h2>

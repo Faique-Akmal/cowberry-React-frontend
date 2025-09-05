@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import DashboardStats from "../../components/employees/UserStats";
-import UserMetaCard from "../../components/UserProfile/UserMetaCard";
+// import UserMetaCard from "../../components/UserProfile/UserMetaCard";
 import API from "../../api/axios";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 // import Confetti from "react-confetti";
+import { useTheme } from "../../context/ThemeContext";
 
 interface User {
   id: number;
@@ -16,6 +17,7 @@ interface User {
 }
 
 function EmployeeDashboard() {
+    const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   
@@ -44,7 +46,13 @@ function EmployeeDashboard() {
    <>
   <PageMeta title="Employee Dashboard" description="Employee dashboard" />
   
-  <div className="grid gap-6 md:gap-4 bg-white  dark:bg-black rounded-2xl p-4 sm:p-6 border dark:border-cowberry-green-600 md:grid-cols-12">
+  <div 
+  
+       style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }} 
+  className="grid gap-6 md:gap-4 bg-white  dark:bg-black rounded-2xl p-4 sm:p-6 border dark:border-cowberry-green-600 md:grid-cols-12">
     
     {/* Greeting Section */}
     <div className="col-span-12 border rounded-2xl p-2 sm:p-2">

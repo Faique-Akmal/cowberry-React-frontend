@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 interface Task {
   id: number;
@@ -24,6 +25,8 @@ interface User {
 }
 
 const AdminTaskManager = () => {
+
+  const { themeConfig } = useTheme();
   const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   // const [users, setUsers] = useState<User[]>([]);
@@ -168,7 +171,12 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6 bg-white  border-2 dark:border-green-500 shadow rounded-lg dark:text-white dark:bg-black ">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="p-6 bg-white  border-2 dark:border-green-500 shadow rounded-lg dark:text-white dark:bg-black ">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{t("task.Task Manager")}</h2>
         <hr/>

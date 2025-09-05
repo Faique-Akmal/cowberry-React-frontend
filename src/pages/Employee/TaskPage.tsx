@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useTheme } from '../../context/ThemeContext.tsx';
 
 const TaskPage = () => {
+  const { themeConfig } = useTheme();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -238,7 +240,12 @@ const handleChange = (
   };
 
   return (
-    <div className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
+    <div 
+     style={{
+        backgroundColor: themeConfig.content.background,
+        color: themeConfig.content.text,
+      }}
+    className="rounded-2xl border p-8 border-gray-200 bg-white dark:border-gray-800 dark:bg-black dark:text-white lg:p-10">
       <h2 className="text-2xl font-bold mb-4 text-center">
         {t("task.Assign New Task")}
       </h2>
@@ -310,7 +317,7 @@ const handleChange = (
           required
           value={formData.assigned_to}
           onChange={handleChange}
-          className="w-full border p-2 rounded dark:bg-black"
+          className="w-full border p-2 rounded dark:bg-black bg-black text-white"
         >
           <option value="">Select User</option>
           {users.map((user) => (
@@ -344,7 +351,7 @@ const handleChange = (
           required
           value={formData.created_by}
           onChange={handleChange}
-          className="w-full border p-2 rounded dark:bg-black"
+        className="w-full border p-2 rounded dark:bg-black bg-black text-white"
         >
           <option value="">Select User</option>
           {users.map((user) => (

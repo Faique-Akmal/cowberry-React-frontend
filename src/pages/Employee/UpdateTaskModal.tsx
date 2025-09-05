@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import { ImCross } from "react-icons/im";
+import { useTheme } from "../../context/ThemeContext";
+
+
 
 const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -9,7 +12,7 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
     completed_at: "",
     is_completed: false,
   });
-
+ const { themeConfig } = useTheme();
   // Update form when task changes
   useEffect(() => {
     if (task) {
@@ -57,7 +60,12 @@ const UpdateTaskModal = ({ task, isOpen, onClose, onUpdate }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-in fade-in duration-200">
+    <div
+    style={{
+    backgroundColor: themeConfig.content.background || undefined,
+    color: themeConfig.content.text || undefined,
+  }}
+    className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-in fade-in duration-200">
 
    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100 animate-in slide-in-from-bottom-4">
 

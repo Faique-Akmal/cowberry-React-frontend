@@ -717,7 +717,7 @@ const detectPausesFor = (logs: LocationLog[], pauseThresholdSec: number): PauseI
                       <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
                       <strong>Time:</strong> {formatTime(mapView.start_time)}<br />
                       {/* <strong>Coordinates:</strong> {parseCoordinate(mapView.start_lat).toFixed(5)}, {parseCoordinate(mapView.start_lng).toFixed(5)} */}
-                      
+                        <p>Address: {mapView.address}</p>
                     </div>
                   </Popup>
                 </Marker>
@@ -844,6 +844,7 @@ const detectPausesFor = (logs: LocationLog[], pauseThresholdSec: number): PauseI
                       <strong>Employee:</strong> {mapView.user.first_name} {mapView.user.last_name}<br />
                       <strong>Time:</strong> {formatTime(mapView.end_time)}<br />
                       <strong>Coordinates:</strong> {parseCoordinate(mapView.end_lat).toFixed(5)}, {parseCoordinate(mapView.end_lng).toFixed(5)}
+                    
                     </div>
                   </Popup>
                 </Marker>

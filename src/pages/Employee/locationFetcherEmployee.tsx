@@ -31,11 +31,12 @@ interface Attendance {
   odometer_image: string;
   selfie_image: string;
   description: string;
-  username: string;
+
   department: string;
   user: {
     id: number;
     first_name: string;
+      username: string;
     last_name: string;
     employee_code: string;
   };
@@ -581,7 +582,7 @@ const detectPausesFor = (logs: LocationLog[], pauseThresholdSec: number): PauseI
               <tr key={item.user.id + "-" + item.date} className="hover:bg-green-500 transition-colors ">
                 <td className="px-4 py-2">{idx + 1}</td>
                 <td className="px-4 py-2">
-                  {item.user.first_name} {item.user.last_name}
+                  {item.user.username}
                 </td>
                 <td className="px-4 py-2">{item.user.employee_code}</td>
                 <td className="px-4 py-2">{item.date}</td>

@@ -89,12 +89,12 @@ const AppSidebar: React.FC = () => {
     path: "/profile",
     role: ["admin","employee","department_head","manager","hr"],
   },
-  {
-    icon: <ChatIcon />,
-    name: t("menu.chat"),
-    path: "/chat",
-    role: ["admin","employee","department_head","manager","hr"],
-  },
+  // {
+  //   icon: <ChatIcon />,
+  //   name: t("menu.chat"),
+  //   path: "/chat",
+  //   role: ["admin","employee","department_head","manager","hr"],
+  // },
   {
     icon: <ListIcon />,
     name: t("menu.attendance"),

@@ -50,6 +50,7 @@ import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";
+import ChatToggle from "./context/ChatToggle";
 export default function App() {
 
   
@@ -133,6 +134,7 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatToggle/>
         <Toaster
           position="bottom-right"
           reverseOrder={true}

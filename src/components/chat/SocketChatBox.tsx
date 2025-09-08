@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import ChatList from "./ChatList";
-import ChatWindow from "./ChatWindow";
+// import ChatWindow from "./ChatWindow";
 // import SocketChatWindow from "./SocketChatWindow";
 import { axiosGetAllGroup, AxiosAllGroup } from "../../store/chatStore";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocketStore } from "../../store/socketStore";
 import { ActiveChatInfo } from "../../types/chat";
 import { useMessageStore } from "../../store/messageStore";
+import SocketChatWindow from "./SocketChatWindow";
 
 
 const SocketChatBox: React.FC = () => {
@@ -86,8 +87,8 @@ const SocketChatBox: React.FC = () => {
 
         {/* Main Chat Area */}
         <div className="w-full flex overflow-hidden bg-[url(/123.png)] bg-size-[25%] bg-repeat">
-          <ChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} />
-          {/* <SocketChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} /> */}
+          {/* <ChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} /> */}
+          <SocketChatWindow activeChatInfo={activeChatInfo!} groupMembers={activeChat?.members} />
         </div>
       </div>
     </div>

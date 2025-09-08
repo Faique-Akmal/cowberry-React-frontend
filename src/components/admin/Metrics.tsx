@@ -81,24 +81,24 @@ export default function Metrics() {
       icon: <FcDepartment className="h-6 w-6 text-yellow-500" />,
       iconBg: "bg-yellow-100",
     },
-    {
-      title: t("home.Total Managers"),
-      value: loading ? "..." : roleStats.manager.toLocaleString(),
-      icon: <GrUserManager className="h-6 w-6 text-green-600" />,
-      iconBg: "bg-green-100",
-    },
-    {
-      title: t("home.Total HR"),
-      value: loading ? "..." : roleStats.hr.toLocaleString(),
-      icon: <GrUserManager className="h-6 w-6 text-orange-500" />,
-      iconBg: "bg-orange-100",
-    },
-     {
-      title: t("home.Total Admin"),
-      value: loading ? "..." : roleStats.admin.toLocaleString(),
-      icon: <GrUserManager className="h-6 w-6 text-blue-500" />,
-      iconBg: "bg-blue-100",
-    },
+    // {
+    //   title: t("home.Total Managers"),
+    //   value: loading ? "..." : roleStats.manager.toLocaleString(),
+    //   icon: <GrUserManager className="h-6 w-6 text-green-600" />,
+    //   iconBg: "bg-green-100",
+    // },
+    // {
+    //   title: t("home.Total HR"),
+    //   value: loading ? "..." : roleStats.hr.toLocaleString(),
+    //   icon: <GrUserManager className="h-6 w-6 text-orange-500" />,
+    //   iconBg: "bg-orange-100",
+    // },
+    //  {
+    //   title: t("home.Total Admin"),
+    //   value: loading ? "..." : roleStats.admin.toLocaleString(),
+    //   icon: <GrUserManager className="h-6 w-6 text-blue-500" />,
+    //   iconBg: "bg-blue-100",
+    // },
   ];
 
   return (

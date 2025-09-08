@@ -22,10 +22,10 @@ const ChatToggle = () => {
 
       {/* Chat Popup Modal (bottom-right) */}
       {isOpen && (
-        <div className="fixed bottom-2 right-6 z-[9998] h-[500px] w-[350px] bg-white dark:bg-gray-900 rounded-t-xl shadow-2xl flex flex-col">
+        <div className="fixed bottom-2 right-6 z-[9998] h-[500px] w-[350px] bg-white dark:bg-gray-900 rounded-2xl  shadow-2xl flex flex-col">
           {/* Header */}
-          <div className="flex justify-between items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          <div className="flex justify-between items-center px-3 py-2 bg-black text-white border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-white dark:text-gray-200">
               Messaging
             </h2>
             <div className="flex items-center gap-3">

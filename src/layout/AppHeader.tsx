@@ -5,7 +5,7 @@ import { useSidebar } from "../context/SidebarContext";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import LangToggleButton from "../components/common/LangToggleButton";
-import AnnouncementNotification from "../pages/AnnouncementNotification";
+// import AnnouncementNotification from "../pages/AnnouncementNotification";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { useTheme } from "../context/ThemeContext";
 
@@ -202,7 +202,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-2">
             <LangToggleButton />
             <ThemeToggleButton />
-            <AnnouncementNotification />
+            {/* <AnnouncementNotification /> */}
             <NotificationDropdown />
           </div>
           <UserDropdown />

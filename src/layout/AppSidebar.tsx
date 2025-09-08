@@ -163,12 +163,12 @@ const AppSidebar: React.FC = () => {
     path: "/task-show-page",
     role: ["employee"],
   },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.announcement"),
-    path: "/announcement",
-    role: ["admin","department_head","manager"],
-  },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: t("menu.announcement"),
+  //   path: "/announcement",
+  //   role: ["admin","department_head","manager"],
+  // },
 ];
 
 

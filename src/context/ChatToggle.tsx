@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { MessageCircle } from "lucide-react";
-
 import { useNavigate } from "react-router";
 import SocketChatBox from "../components/chat/SocketChatBox";
 import { TbArrowsMaximize } from "react-icons/tb";
+import MessageToggle from "../components/chat/modal/Messagetoggle";
 
 const ChatToggle = () => {
   const navigate = useNavigate();
@@ -14,40 +14,44 @@ const ChatToggle = () => {
       {/* Floating Toggle Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed z-[9999] bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition"
+        className="fixed z-[9999] bottom-2 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition"
       >
         <MessageCircle size={24} />
       </button>
 
-      {/* Chat Modal */}
+      {/* Chat Popup Modal (bottom-right) */}
       {isOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 ">
-          <div className="relative  bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-[900px] ">
-                        <div className="flex justify-between items-center mb-4">
-                    {/* Close button */}
-                    <button
-                        onClick={() => setIsOpen(false)}
-                        className="text-gray-600 hover:text-red-500 p-2 m-2 absolute top-0 right-0"
-                    >
-                        ✖
-                    </button>
+        <div className="fixed bottom-2 right-6 z-[9998]  h-[500px] bg-white dark:bg-gray-900 rounded-t-xl shadow-2xl flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              Messaging
+            </h2>
+            <div className="flex items-center gap-3">
+              {/* Maximize button */}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate("/chat");
+                }}
+                className="text-gray-600 hover:text-blue-600"
+              >
+                <TbArrowsMaximize size={20} />
+              </button>
 
-                    {/* Full screen navigation button */}
-                    <button
-                        onClick={() => {
-                        setIsOpen(false);
-                        navigate("/chat");
-                        }}
-                        className="px-4 py-2 text-black  rounded hover:bg-cowberry-green-600 top-0 left-0 m-2 "
-                    >
-                  <TbArrowsMaximize />
-                    </button>
-                    </div>
+              {/* Close button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-gray-600 hover:text-red-500"
+              >
+                ✖
+              </button>
+            </div>
+          </div>
 
-            {/* Chat Component */}
-            <SocketChatBox />
-
-          
+          {/* Chat Component */}
+          <div className="flex-1 overflow-hidden">
+           <MessageToggle />
           </div>
         </div>
       )}

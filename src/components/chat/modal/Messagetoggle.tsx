@@ -3,9 +3,10 @@ import { axiosGetAllGroup, AxiosAllGroup } from "../../../store/chatStore";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useMessageStore } from "../../../store/messageStore";
 import ChatList from "../ChatList";
-import ChatWindow from "../ChatWindow";
+
 import { ActiveChatInfo } from "../../../types/chat";
 import { useSocketStore } from "../../../store/socketStore";
+import SocketChatWindow from "../SocketChatWindow";
 
 const MessageToggle: React.FC = () => {
   const { connect, disconnect } = useSocketStore();
@@ -88,7 +89,7 @@ const MessageToggle: React.FC = () => {
         {/* Main Chat Area */}
         <div className="flex-1 overflow-hidden">
           {activeChatInfo && activeChat ? (
-            <ChatWindow
+            <SocketChatWindow
               activeChatInfo={activeChatInfo}
               groupMembers={activeChat?.members}
             />

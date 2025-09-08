@@ -62,13 +62,15 @@ const MessageToggle: React.FC = () => {
   return (
     <div className="relative bg-white dark:bg-gray-900 rounded-t-xl h-[400px] flex flex-col">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-gray-600 dark:text-gray-300 hover:text-blue-600"
-        >
-          {isSidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-        </button>
+      <div className="flex items-center justify-between px-3 py-2  border-b border-gray-200 dark:border-gray-700">
+        {!isSidebarOpen && (
+    <button
+      onClick={() => setIsSidebarOpen(true)}
+      className="text-gray-600 dark:text-gray-300 hover:text-blue-600"
+    >
+      <FaBars size={20} />
+    </button>
+  )}
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
           {activeChatInfo?.chatName || "Select a chat"}
         </h2>
@@ -76,15 +78,23 @@ const MessageToggle: React.FC = () => {
 
       <div className="flex flex-1 relative overflow-hidden">
         {/* Sidebar with ChatList */}
-        {isSidebarOpen && (
-          <div className="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-20 shadow-lg overflow-y-auto">
-            <ChatList
-              groups={groups}
-              activeChatInfo={activeChatInfo!}
-              onSelectChat={handleSelectChat}
-            />
-          </div>
-        )}
+       {isSidebarOpen && (
+  <div className="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-20 shadow-lg overflow-y-auto">
+    <div className="flex justify-end p-2">
+      <button
+        onClick={() => setIsSidebarOpen(false)}
+        className="text-gray-600 dark:text-gray-300 hover:text-red-500"
+      >
+        <FaTimes size={20} />
+      </button>
+    </div>
+    <ChatList
+      groups={groups}
+      activeChatInfo={activeChatInfo!}
+      onSelectChat={handleSelectChat}
+    />
+  </div>
+)}
 
         {/* Main Chat Area */}
         <div className="flex-1 overflow-hidden">

@@ -13,6 +13,7 @@ import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { BrowserRouter } from 'react-router-dom';
 import "./i18n.ts";
+import { DataProvider } from "./context/DataProvider.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,7 +22,9 @@ createRoot(document.getElementById("root")!).render(
         <LocationTrackerProvider>
           <AppWrapper>
             <BrowserRouter>
-              <App />
+             <DataProvider>
+               <App />
+             </DataProvider>
             </BrowserRouter>
           </AppWrapper>
         </LocationTrackerProvider>

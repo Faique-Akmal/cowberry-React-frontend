@@ -1,119 +1,95 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
 import { role } from "../../store/store";
-import API from "../../api/axios";
 import { useTranslation } from "react-i18next";
-import { useTheme } from '../../context/ThemeContext.tsx';
-
-type User = {
-  id: number;
-  username: string;
-  email: string;
-  mobile_no: string | null;
-  employee_code: string;
-  role: number;
-  profile_image: string | null;
-  is_online: boolean;
-};
-
-type PaginationResponse = {
-  results: User[];
-  current_page: number;
-  total_pages: number;
-  total_count?: number;
-};
+import { useTheme } from "../../context/ThemeContext.tsx";
+import { useData } from "../../context/DataProvider";
 
 const UserList: React.FC = () => {
-    const { themeConfig } = useTheme();
+  const { themeConfig } = useTheme();
   const { t } = useTranslation();
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const { fetchUsers } = useData();
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // inside UserList component
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [selectedUser, setSelectedUser] = useState<any>(null);
+
+
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [hasMore, setHasMore] = useState<boolean>(true);
   const [roleFilter, setRoleFilter] = useState<number | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">("");
-  const [selectedUser, setSelectedUser] = useState(null);
-const [isModalOpen, setIsModalOpen] = useState(false);
 
-const handleRowClick = (user) => {
-  setSelectedUser(user);
-  setIsModalOpen(true);
-};
-
-const closeModal = () => {
-  setIsModalOpen(false);
-  setSelectedUser(null);
-};
-
+  // Infinite scroll observer
   const observer = useRef<IntersectionObserver>();
-  const lastUserElementRef = useCallback((node: HTMLTableRowElement) => {
-    if (loading || loadingMore) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loadingMore) {
-        loadMoreUsers();
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore, loadingMore]);
-
-  const fetchUsers = async (page: number, reset: boolean = false) => {
-    if (reset) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
-
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      const res = await API.get<PaginationResponse>(
-        "/users/",
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          params: {
-            page,
-            limit: 10, // Smaller limit for better infinite scroll experience
-            username: searchTerm || "",
-            sort_by: "username",
-            sort_order: sortOrder,
-          },
+  const lastUserElementRef = useCallback(
+    (node: HTMLTableRowElement) => {
+      if (loading || loadingMore) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreUsers();
         }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore, loadingMore]
+  );
+
+const fetchPageUsers = async () => {
+  setLoading(true);
+  try {
+    const res = await fetchUsers({}, true); // no page/limit
+    setUsers(res);
+    setHasMore(false); // ✅ no more pages to load
+  } catch (err) {
+    console.error("❌ Failed to fetch users:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const loadMoreUsers = () => fetchPageUsers(currentPage + 1, false);
+
+  // Filters
+  useEffect(() => {
+    let filtered = users;
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (u) =>
+          u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-
-      if (reset) {
-        setUsers(res.data.results);
-      } else {
-        setUsers(prev => [...prev, ...res.data.results]);
-      }
-      
-      setCurrentPage(res.data.current_page);
-      setTotalPages(res.data.total_pages);
-      // Check if we have more pages to load
-      setHasMore(res.data.current_page < res.data.total_pages);
-    } catch (error) {
-      console.error("Failed to fetch users", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
     }
-  };
-
-  const loadMoreUsers = () => {
-    if (!loadingMore && hasMore) {
-      fetchUsers(currentPage + 1, false);
+    if (roleFilter !== "") filtered = filtered.filter((u) => u.role === roleFilter);
+    if (statusFilter) {
+      filtered = filtered.filter((u) => (statusFilter === "online" ? u.is_online : !u.is_online));
     }
-  };
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, roleFilter, statusFilter]);
+
+  // Initial & on filter change
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchPageUsers(1, true);
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [searchTerm, sortOrder]);
+
+  useEffect(() => {
+    fetchPageUsers(1, true);
+  }, []);
 
   const getRoleName = (roleId: number): string => {
-    const roleObj = role.find((r) => r.id === roleId);
-    return roleObj ? roleObj.name : "Unknown";
+    const r = role.find((r) => r.id === roleId);
+    return r ? r.name : "Unknown";
   };
 
   // Filter users based on search term, role, and status
@@ -171,6 +147,16 @@ const closeModal = () => {
     setRoleFilter("");
     setStatusFilter("");
   };
+
+  const handleRowClick = (user) => {
+  setSelectedUser(user);
+  setIsModalOpen(true);
+};
+
+const closeModal = () => {
+  setIsModalOpen(false);
+  setSelectedUser(null);
+};
 
   return (
    <div
@@ -274,9 +260,9 @@ const closeModal = () => {
         ) : (
           <>
             {/* Users Table */}
-            <div className="overflow-hidden max-w-6xl rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="overflow-hidden max-w-5xl rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="overflow-x-auto max-h-96 overflow-y-auto custom-scrollbar">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <table className="min-w-md divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">

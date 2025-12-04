@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { useTranslation } from "react-i18next";
+import { useData } from "../../context/DataProvider";
+
 
 interface Task {
   id: number;
@@ -11,15 +13,15 @@ interface Task {
 }
 
 const DashboardStats: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+const { fetchMyTasks } = useData();
+const [tasks, setTasks] = useState<any[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
 
- const fetchStats = async () => {
+const fetchStats = async () => {
   try {
-    const response = await API.get("/my-assigned-tasks/");
-    const taskList = Array.isArray(response.data) ? response.data : response.data.results; // <- FIX
+    const taskList = await fetchMyTasks(true); // fetch fresh tasks
     setTasks(taskList || []);
   } catch (err) {
     setError("Failed to fetch stats.");
@@ -28,6 +30,7 @@ const DashboardStats: React.FC = () => {
     setLoading(false);
   }
 };
+
 
 
   useEffect(() => {

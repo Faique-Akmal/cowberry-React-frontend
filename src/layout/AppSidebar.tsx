@@ -73,7 +73,7 @@ const AppSidebar: React.FC = () => {
     icon: <GridIcon />,
     name: t("menu.dashboard"),
     subItems: [
-      { name: t("menu.dashboard"), path: "/home", role: ["admin","department_head","manager","hr"] },
+      { name: t("menu.dashboard"), path: "/home", role: ["admin","department_head","manager","HR" ,"employee"] },
       { name: t("menu.employeeDashboard"), path: "/employee-dashboard", role: ["employee"] }
     ],
   },
@@ -81,20 +81,20 @@ const AppSidebar: React.FC = () => {
     icon: <CalenderIcon />,
     name: t("menu.calendar"),
     path: "/calendar",
-    role: ["admin","department_head","manager","hr"],
+    role: ["admin","department_head","manager","HR"],
   },
   {
     icon: <UserCircleIcon />,
     name: t("menu.profile"),
     path: "/profile",
-    role: ["admin","employee","department_head","manager","hr"],
+    role: ["admin","employee","department_head","manager","HR"],
   },
-  {
-    icon: <ChatIcon />,
-    name: t("menu.chat"),
-    path: "/chat",
-    role: ["admin","employee","department_head","manager","hr"],
-  },
+  // {
+  //   icon: <ChatIcon />,
+  //   name: t("menu.chat"),
+  //   path: "/chat",
+  //   role: ["admin","employee","department_head","manager","hr"],
+  // },
   {
     icon: <ListIcon />,
     name: t("menu.attendance"),
@@ -107,20 +107,20 @@ const AppSidebar: React.FC = () => {
     icon: <TbTableShare />,
     name: t("menu.forms"),
     subItems: [
-      { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","hr"] },
+      { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","HR"] },
     ],
   },
   {
     icon: <MdListAlt />,
     name: t("menu.attendanceList"),
     path: "/attandance-start-admin",
-    role: ["admin","department_head","manager","hr","executive"],
+    role: ["admin","department_head","manager","HR","executive"],
   },
   {
     icon: <MdAppRegistration />,
     name: t("menu.registerUserForm"),
     path: "/user-register",
-    role: ["admin","department_head","manager","hr","executive"],
+    role: ["admin","department_head","manager","HR","executive"],
   },
   // {
   //   icon: <RiUserSharedFill />,
@@ -137,13 +137,13 @@ const AppSidebar: React.FC = () => {
     icon: <FaTasks />,
     name: t("menu.taskManager"),
     path: "/admin-task-manager",
-    role: ["admin","department_head","manager","hr","executive"],
+    role: ["admin","department_head","manager","HR","executive"],
   },
   {
     icon: <PiUsersThreeBold />,
     name: t("menu.allUsers"),
     path: "/all-users",
-    role: ["admin","department_head","manager","hr","executive"],
+    role: ["admin","department_head","manager","HR","executive"],
   },
   //   {
   //   icon: <PiUsersThreeBold />,
@@ -163,12 +163,12 @@ const AppSidebar: React.FC = () => {
     path: "/task-show-page",
     role: ["employee"],
   },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.announcement"),
-    path: "/announcement",
-    role: ["admin","department_head","manager"],
-  },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: t("menu.announcement"),
+  //   path: "/announcement",
+  //   role: ["admin","department_head","manager"],
+  // },
 ];
 
 

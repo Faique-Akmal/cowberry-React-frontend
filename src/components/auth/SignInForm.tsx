@@ -1,6 +1,6 @@
 import { useState } from "react";
-import {  useNavigate } from "react-router";
-import {  EyeCloseIcon, EyeIcon } from "../../icons";
+import { useNavigate } from "react-router";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
@@ -8,17 +8,14 @@ import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
-// import Home from "../../pages/Dashboard/Home";
 import toast, { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
-
 export default function SignInForm() {
-
   const { t } = useTranslation();
   const { login } = useAuth();
 
-  const [employeeCode, setEmployeeCode] = useState("");
+  const [email, setEmail] = useState(""); // Changed variable name for consistency
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
@@ -33,124 +30,194 @@ export default function SignInForm() {
   const openForgotModal = () => setIsForgotModalOpen(true);
   const closeForgotModal = () => setIsForgotModalOpen(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage("");
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setMessage("");
+  
+  const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
+  // Basic validation
+  if (!email.trim() || !password.trim()) {
+    setMessage(t("message.Please enter both email and password."));
+    toast.error(t("toast.Please enter both email and password."));
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    console.log("Sending login request with:", { email: email.trim(), password: "***" });
     
-    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-    // Basic validation
-    if (!employeeCode.trim() || !password.trim()) {
-      setMessage(t("message.Please enter both employee code and password."));
-      toast.error(t("toast.Please enter both employee code and password."));
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await API.post(
-        "/login/",
-        {
-          employee_code: employeeCode.trim(),
-          password: password.trim(),
-          deviceType: isMobileDevice ? "mobile" : "desktop"
-        }
-      );
-
-    if (response.data?.message?.toLowerCase().includes("login successful")) {
-  const userRole = response.data.role?.toLowerCase();
-        
-        // Check if employee is trying to login from desktop/laptop
-        // if (userRole === "employee" && !isMobileDevice) {
-        //   setMessage("YOU CAN LOGIN IN MOBILE DEVICE ONLY");
-        //   setIsLoading(false);
-        //   return;
-        // }
-        
-localStorage.setItem("userRole", response.data.role);
-  localStorage.setItem("userId", response.data.userid); 
-  localStorage.setItem("department", response.data.department); 
-  localStorage.setItem("profile-img", response.data.profile_image); 
-
-  login(response.data?.refresh, response.data?.access);
-
-  const isVerified = response.data?.is_employee_code_verified || false;
-
-  setTimeout(() => {
-    if (userRole === "employee") {
-      if (isVerified) {
-           setMessage(t("toast.Logged in successfully"));
-        toast.success(t("toast.Logged in successfully")); 
-        navigate("/attandanceStart-page", { replace: true });  
-      } else {
-           setMessage(t("toast.Logged in successfully"));
-        navigate("/LoginWithOtp", { replace: true });
+    const response = await API.post(
+      "/auth/login/",
+      {
+        email: email.trim(),
+        password: password.trim(),
+        deviceType: isMobileDevice ? "mobile" : "desktop"
       }
-    } else if (["admin","hr","department_head","manager","executive"].includes(userRole)) {
-      if (isVerified) {
-        navigate("/home", { replace: true });  
-        setMessage(t("toast.Logged in successfully"));
-        toast.success(t("toast.Logged in successfully")); 
-      } else {
-        navigate("/LoginWithOtp", { replace: true });
-      }
-    }
-  }, 1000);
-} else {
-        setMessage(response.data.message || "Login failed.");
-      }
-    } catch (error: any) {
-      console.error("Login error:", error);
+    );
+
+    console.log("Login API Response:", response);
+    console.log("Full response data:", response.data);
+
+    // Check for successful login based on status code
+    if (response.status === 200 || response.status === 201) {
+      const { user, tokens, message } = response.data;
       
-      if (error.response) {
-        // Server responded with error status
-        const status = error.response.status;
-        const data = error.response.data;
-        
-        console.log("Error response:", data);
-        
-        if (status === 401) {
-          setMessage(t("message.Invalid employee code or password."));
-        } else if (status === 422) {
-          setMessage(t(data.message || "message.Invalid input data."));
-        } else if (status === 500) {
-          setMessage(t("message.Server error. Please try again later."));
-        } else {
-          setMessage(data.message || `Error: ${status}`);
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        console.log("No response received:", error.request);
-        setMessage(t("message.Cannot connect to server. Please check your connection."));
-      } else {
-        // Something else happened
-        console.log("Request error:", error.message);
-        setMessage(t("message.An unexpected error occurred. Please try again."));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      console.log("User data:", user);
+      console.log("Tokens:", tokens);
+      console.log("Server message:", message);
 
+      // Store user data in localStorage
+      localStorage.setItem("userRole", user?.role || "employee");
+      localStorage.setItem("userId", user?.id || "");
+      localStorage.setItem("department", user?.department || "");
+      localStorage.setItem("username", user?.username || "");
+      localStorage.setItem("employee_code", user?.employee_code || "");
+      localStorage.setItem("email", user?.email || "");
+      localStorage.setItem("mobileNo", user?.mobileNo || "");
+      localStorage.setItem("isActiveEmployee", user?.isActiveEmployee ? "true" : "false");
+      
+      console.log("LocalStorage after saving user data:");
+      console.log("userRole:", localStorage.getItem("userRole"));
+      console.log("userId:", localStorage.getItem("userId"));
+      console.log("email:", localStorage.getItem("email"));
+
+      // Set tokens in auth context and WAIT for it to complete
+      if (tokens?.access && tokens?.refresh) {
+        try {
+          console.log("Calling login function with tokens...");
+          
+          // WAIT for login to complete (this should store tokens in context)
+          await login(tokens.refresh, tokens.access);
+          console.log("Login function completed successfully");
+          
+          // Store "Keep me logged in" preference
+          if (isChecked) {
+            localStorage.setItem('rememberMe', 'true');
+            console.log("Remember me enabled");
+          } else {
+            localStorage.removeItem('rememberMe');
+          }
+          
+          // Show success message
+          const successMessage = message || t("toast.Logged in successfully");
+          setMessage(successMessage);
+          toast.success(successMessage);
+          
+          // Debug: Check if tokens are stored
+          console.log("Access token in localStorage:", localStorage.getItem("accessToken") ? "Yes" : "No");
+          console.log("Refresh token in localStorage:", localStorage.getItem("refreshToken") ? "Yes" : "No");
+          
+          // Get user role and normalize it (handle case sensitivity)
+          const userRole = user?.role || "employee";
+          const normalizedRole = userRole.toLowerCase();
+          console.log("User role for navigation:", userRole, "(normalized:", normalizedRole, ")");
+          
+          // Role-based navigation logic
+          let targetRoute = "/home"; // Default for HR and admin
+          
+          if (normalizedRole === "employee") {
+            targetRoute = "/employee-dashboard";
+          } else if (normalizedRole === "hr" || normalizedRole === "admin") {
+            targetRoute = "/home";
+          }
+          
+          console.log(`Navigating ${userRole} user to: ${targetRoute}`);
+          
+          // Small delay to ensure state updates (optional, can remove if not needed)
+          setTimeout(() => {
+            navigate(targetRoute, { replace: true });
+          }, 100);
+          
+        } catch (loginError) {
+          console.error("Error in login function:", loginError);
+          setMessage("Authentication context error. Please try again.");
+          toast.error("Authentication context error. Please try again.");
+        }
+      } else {
+        console.error("No tokens in response:", response.data);
+        setMessage("No authentication tokens received from server.");
+        toast.error("No authentication tokens received from server.");
+      }
+    } else {
+      // If we have a message, show it
+      if (response.data?.error || response.data?.message) {
+        const errorMsg = response.data.error || response.data.message;
+        setMessage(errorMsg);
+        toast.error(errorMsg);
+      } else {
+        setMessage("Login failed. Please try again.");
+        toast.error("Login failed. Please try again.");
+      }
+    }
+  } catch (error: any) {
+    console.error("Login error:", error);
+    
+    if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      const data = error.response.data;
+      
+      console.log("Error response status:", status);
+      console.log("Error response data:", data);
+      
+      if (status === 400 || status === 401) {
+        const errorMsg = data.error || data.message || data.detail || t("message.Invalid email or password.");
+        setMessage(errorMsg);
+        toast.error(errorMsg);
+      } else if (status === 422) {
+        const errorMsg = data.message || t("message.Invalid input data.");
+        setMessage(errorMsg);
+        toast.error(errorMsg);
+      } else if (status === 500) {
+        const errorMsg = t("message.Server error. Please try again later.");
+        setMessage(errorMsg);
+        toast.error(errorMsg);
+      } else {
+        const errorMsg = data.error || data.message || data.detail || `Error: ${status}`;
+        setMessage(errorMsg);
+        toast.error(errorMsg);
+      }
+    } else if (error.request) {
+      // Request was made but no response received
+      console.log("No response received:", error.request);
+      const errorMsg = t("message.Cannot connect to server. Please check your connection.");
+      setMessage(errorMsg);
+      toast.error(errorMsg);
+    } else {
+      // Something else happened
+      console.log("Request setup error:", error.message);
+      const errorMsg = t("message.An unexpected error occurred. Please try again.");
+      setMessage(errorMsg);
+      toast.error(errorMsg);
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
+      <Toaster position="top-right" />
+      
       <div className="w-20 h-20 mx-auto mb-6 mt-6">
         <img src="logo-cowberry.png" alt="cowberry-logo" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700" />
       </div>
       <div className="flex items-center justify-center w-full h-20">
-        <h1>{t("WELCOME TO COWBERRY")}</h1>
+        <h1 className="text-xl font-bold">{t("WELCOME TO COWBERRY")}</h1>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>
           <div className="space-y-6">
             <div className="capitalize">
-              <Label>{t("register.Employee Code")} <span className="text-red-500">*</span></Label>
+              <Label>{t("register.email")} <span className="text-red-500">*</span></Label>
               <Input
-                placeholder={t("register.Enter your Employee code")}
-                value={employeeCode}
-                onChange={(e) => setEmployeeCode(e.target.value)}
+                placeholder={t("register.Enter your email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
+                autoComplete="email"
+                type="email"
               />
             </div>
 
@@ -163,6 +230,7 @@ localStorage.setItem("userRole", response.data.role);
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
                 <span
                   onClick={() => setShowPassword(!showPassword)}
@@ -186,6 +254,7 @@ localStorage.setItem("userRole", response.data.role);
                 type="button"
                 onClick={openForgotModal}
                 className="text-sm text-brand-500 hover:underline"
+                disabled={isLoading}
               >
                 {t("Forgot Password?")}
               </button>
@@ -206,15 +275,39 @@ localStorage.setItem("userRole", response.data.role);
             
             {message && (
               <p className={`text-sm text-center font-medium ${
-                message.includes("successful") 
+                message.toLowerCase().includes("success") 
                   ? "text-green-500" 
-                  : message === t("YOU CAN LOGIN IN MOBILE DEVICE ONLY")
-                    ? "text-red-600 bg-red-50 p-3 rounded-md border border-red-200"
-                    : "text-red-500"
+                  : "text-red-500"
               }`}>
                 {message}
               </p>
             )}
+            
+            {/* Debug info - Remove in production */}
+            {/* {process.env.NODE_ENV === 'development' && (
+              <div className="p-2 mt-4 text-xs text-gray-500 border border-gray-200 rounded">
+                <p className="font-semibold">Debug Info:</p>
+                <p>Email: {email}</p>
+                <p>Access Token: {localStorage.getItem('accessToken') ? '✅ Present' : '❌ Missing'}</p>
+                <p>Refresh Token: {localStorage.getItem('refreshToken') ? '✅ Present' : '❌ Missing'}</p>
+                <p>User Role: {localStorage.getItem('userRole') || 'Not set'}</p>
+                <p>User ID: {localStorage.getItem('userId') || 'Not set'}</p>
+                <button 
+                  onClick={() => {
+                    console.log("LocalStorage dump:", {
+                      accessToken: localStorage.getItem('accessToken'),
+                      refreshToken: localStorage.getItem('refreshToken'),
+                      userRole: localStorage.getItem('userRole'),
+                      userId: localStorage.getItem('userId'),
+                      email: localStorage.getItem('email')
+                    });
+                  }}
+                  className="mt-1 p-1 bg-gray-200 rounded"
+                >
+                  Log Storage
+                </button>
+              </div>
+            )} */}
           </div>
         </form>
       </div>

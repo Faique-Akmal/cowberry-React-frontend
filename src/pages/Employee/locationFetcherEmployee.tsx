@@ -139,10 +139,10 @@ export default function AttendanceList() {
       if (isOngoing && autoRefresh) {
         console.log("🔄 Setting up auto-refresh for ongoing attendance");
         // use configured refresh_interval (in seconds)
-        const ms = (config.refresh_interval || 300) * 1000;
+        // const ms = (config.refresh_interval || 300) * 1000;
         locationIntervalRef.current = setInterval(() => {
           fetchLocations(mapView.user.id, mapView.date);
-        }, Math.max(5000, ms)); // never lower than 5s for safety
+        }, Math.max(5000, )); // never lower than 5s for safety
       }
     }
 

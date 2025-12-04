@@ -22,13 +22,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   }
 
-  const login = (refreshToken: string, accessToken: string) => {
+const login = async (refreshToken: string, accessToken: string) => {
+  try {
+    console.log("AuthContext: Storing tokens...");
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('accessToken', accessToken);
-
-    getMeData()!;
-  };
-
+    
+    // Optional: Verify tokens are stored
+    console.log("AuthContext: Tokens stored -", {
+      hasAccessToken: !!localStorage.getItem('accessToken'),
+      hasRefreshToken: !!localStorage.getItem('refreshToken')
+    });
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error("AuthContext: Error storing tokens:", error);
+    return Promise.reject(error);
+  }
+};
   
 
 

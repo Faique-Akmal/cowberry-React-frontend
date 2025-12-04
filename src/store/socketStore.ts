@@ -29,7 +29,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const meUser = JSON.parse(localStorage.getItem("meUser")!);
     const meUserId = meUser?.id;
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
     const socketUrl = `wss:${SOCKET_URL}/ws/chat/${chatInfo.chatType === "group" ?
       chatInfo?.chatId :
       (!!(chatInfo?.chatType === "personal") &&

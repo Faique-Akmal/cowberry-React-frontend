@@ -59,12 +59,34 @@ const SocketChatWindow: React.FC<Props> = ({ activeChatInfo, groupMembers }) => 
 
   const sendMessage = useCallback(() => {
     if (!input.trim()) return;
+
+    //     {
+    //   "type": "send_message",
+    //   "message_type": "file",
+    //   "receiver_id": 5,
+    //   "content": "Please check all these documents",
+    //   "files": [
+    //     "data:application/pdf;base64,JVBERi0xLjMKJc...",
+    //     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+    //     "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQABg..."
+    //   ]
+    // }
+
     const sendData = {
       type: "send_message",
+      message_type: "file",
       content: input.trim(),
       group_id: activeChatInfo?.chatType === "group" ? activeChatInfo?.chatId : null,
       receiver_id: activeChatInfo?.chatType === "personal" ? activeChatInfo?.chatId : null,
       parent_id: replyTo?.id || null,
+      latitude: 21.28459945,
+      longitude: 72.9640772,
+      files: [
+        "C:/Users/ParthivParmar/Downloads/Images/free-photo-of-geisha-in-kyoto-streets-at-night.jpeg"
+        // "data:application/pdf;base64,JVBERi0xLjMKJc...",
+        // "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+        // "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQABg..."
+      ]
     };
     sendJson(sendData);
     setInput("");
@@ -123,6 +145,7 @@ const SocketChatWindow: React.FC<Props> = ({ activeChatInfo, groupMembers }) => 
       )}
 
       <div className="w-full p-4 bg-cowberry-cream-500 flex gap-2">
+
         <input
           className="flex-1 text-yellow-800 outline-none border-none rounded px-3 py-2"
           type="text"

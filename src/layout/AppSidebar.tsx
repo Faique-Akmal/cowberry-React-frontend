@@ -89,6 +89,12 @@ const AppSidebar: React.FC = () => {
     path: "/profile",
     role: ["admin","employee","department_head","manager","HR"],
   },
+   {
+    icon: <UserCircleIcon />,
+    name: t("menu.EmployeeCheckin"),
+    path: "/employeecheckin",
+    role: ["admin","department_head","manager","HR","employee"],
+  },
   // {
   //   icon: <ChatIcon />,
   //   name: t("menu.chat"),
@@ -303,19 +309,22 @@ const othersItems: NavItem[] = [
   
  <aside
   style={{
-    backgroundColor: themeConfig.sidebar.background || undefined,
+    backgroundColor: themeConfig.sidebar.background 
+      ? `${themeConfig.sidebar.background}80` // Add transparency
+      : 'rgba(255, 255, 255, 0.15)',
     color: themeConfig.sidebar.text || undefined,
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+    border: '1px solid rgba(255, 255, 255, 0.18)',
   }}
   className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
-    bg-dashboard-brown-200 dark:bg-dashboard-brown-800
     text-gray-900 dark:text-blue-light-25
-    border-r border-gray-200 dark:border-gray-800
+    shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
     ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
     ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
   onMouseEnter={() => !isExpanded && setIsHovered(true)}
   onMouseLeave={() => setIsHovered(false)}
 >
-
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>

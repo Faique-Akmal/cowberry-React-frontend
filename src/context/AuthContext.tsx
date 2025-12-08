@@ -45,7 +45,7 @@ const login = async (refreshToken: string, accessToken: string) => {
 
   const axiosLogout = async () =>{
     try {
-      const res = await API.post("/logout/")!;
+      const res = await API.post("/auth/user_logout/")!;
       console.log(res.data)
     } catch (err) {
       console.error('Failed to logout user', err);

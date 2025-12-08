@@ -76,12 +76,19 @@ const AppHeader: React.FC = () => {
 
   return (
     <header
-     style={{
-        backgroundColor: themeConfig.header.background,
-        color: themeConfig.header.text,
-      }}
-    
-    className="sticky top-0 flex w-full bg-white  z-40 dark:border-gray-800 dark:bg-gray-900">
+  style={{
+    backgroundColor: themeConfig.header.background 
+      ? `${themeConfig.header.background}40`
+      : 'rgba(255, 255, 255, 0.2)',
+    color: themeConfig.header.text,
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+  }}
+  className="sticky top-0 flex w-full z-40 
+    dark:bg-gray-900/30
+    shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]"
+>
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           {/* Sidebar Toggle */}

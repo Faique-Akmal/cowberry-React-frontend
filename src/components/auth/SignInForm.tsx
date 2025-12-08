@@ -76,6 +76,7 @@ const handleLogin = async (e: React.FormEvent) => {
       localStorage.setItem("employee_code", user?.employee_code || "");
       localStorage.setItem("email", user?.email || "");
       localStorage.setItem("mobileNo", user?.mobileNo || "");
+      localStorage.setItem("token", user?.accesstoken || "");
       localStorage.setItem("isActiveEmployee", user?.isActiveEmployee ? "true" : "false");
       
       console.log("LocalStorage after saving user data:");
@@ -210,9 +211,9 @@ const handleLogin = async (e: React.FormEvent) => {
         <form onSubmit={handleLogin}>
           <div className="space-y-6">
             <div className="capitalize">
-              <Label>{t("register.email")} <span className="text-red-500">*</span></Label>
+              <Label>{t("email")} <span className="text-red-500">*</span></Label>
               <Input
-                placeholder={t("register.Enter your email")}
+                placeholder={t("Enter your email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}

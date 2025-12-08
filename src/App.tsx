@@ -51,6 +51,8 @@ import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";
 import ChatToggle from "./context/ChatToggle";
+import Testingmap from "./pages/Employee/Testing-map";
+import EmployeeCheckin from "./components/employees/Employeecheckin";
 export default function App() {
 
   
@@ -93,6 +95,7 @@ export default function App() {
               <Route path="/task-calendar" element={<AttendanceGuard><TaskCalendar /></AttendanceGuard>}></Route>
               <Route path="/employee-dashboard" element={<AttendanceGuard> <EmployeeDashboard/> </AttendanceGuard>}></Route>
               <Route path="/user-register" element={<AttendanceGuard> <RegistrationPage /> </AttendanceGuard>}></Route>
+              <Route path="/employeecheckin" element={<AttendanceGuard> <EmployeeCheckin/> </AttendanceGuard>}></Route>
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -109,7 +112,7 @@ export default function App() {
             <Route path="/admin-task-manager" element={ <AdminTaskManager />} />
             <Route path="/attandance-start-admin" element={ <AttendanceList />} />
             <Route path="/announcement" element={ <AnnouncementForm />} />
-            <Route path="/live-tracking" element={ <LocationFetcher />} />
+            {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}
             
           
 

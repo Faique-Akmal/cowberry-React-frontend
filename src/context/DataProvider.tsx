@@ -12,33 +12,73 @@ export const DataProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   // ✅ Flexible user fetcher (with pagination/search support)
-  const fetchUsers = async (
-    { page = 1, limit = 50, search = "", sort_order = "asc" } = {},
-    force = false
-  ) => {
-    if (users && !force && !search) return users;
+const fetchUsers = async (
+  { search = "", sort_order = "asc" } = {},
+  force = false
+) => {
+  // Check if we should use cached data
+  if (users && !force && !search) {
+    return {
+      data: users,
+      success: true
+    };
+  }
 
-    setLoading(true);
-    try {
-      const res = await API.get("/users/", {
-        params: {
-          page,
-          limit,
-          username: search,
-          sort_order,
-        },
-      });
-
-      // handle both paginated & simple list
-      const results = res.data.results || res.data;
-
-      setUsers(results);
-      return results;
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const params = {};
+    
+    // Use the correct parameter name for search
+    // From your screenshot, it seems to search by name
+    if (search) {
+      params.name = search; // Changed from username to name
     }
-  };
+    
+    if (sort_order) {
+      params.sort_order = sort_order;
+    }
 
+    const res = await API.get("/admin/users/", { params });
+    
+    // Extract data from the response structure
+    let userData = [];
+    let success = false;
+    
+    if (res.data && res.data.success !== undefined) {
+      // Response has {data: [...], success: true} structure
+      userData = Array.isArray(res.data.data) ? res.data.data : [];
+      success = res.data.success;
+    } else if (Array.isArray(res.data)) {
+      // Direct array response (fallback)
+      userData = res.data;
+      success = true;
+    } else if (Array.isArray(res.data.data)) {
+      // Alternative structure {data: [...]}
+      userData = res.data.data;
+      success = true;
+    }
+    
+    // Update state
+    setUsers(userData);
+    
+    // Return consistent response structure
+    return {
+      data: userData,
+      success: success,
+      total: userData.length // Add total count
+    };
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    // Return error structure
+    return {
+      data: [],
+      success: false,
+      error: error.message || "Failed to fetch users"
+    };
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchTasks = async (force = false) => {
     if (tasks && !force) return tasks;
     setLoading(true);
@@ -96,17 +136,17 @@ const fetchMyTasks = async (force = false) => {
     }
   };
 
-  const fetchLocations = async (force = false) => {
-    if (locations && !force) return locations;
-    setLoading(true);
-    try {
-      const res = await API.get("/locations/");
-      setLocations(res.data);
-      return res.data;
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchLocations = async (force = false) => {
+  //   if (locations && !force) return locations;
+  //   setLoading(true);
+  //   try {
+  //     const res = await API.get("/locations/");
+  //     setLocations(res.data);
+  //     return res.data;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <DataContext.Provider
@@ -120,7 +160,7 @@ const fetchMyTasks = async (force = false) => {
         fetchTasks,
         fetchMyTasks,
         fetchAttendance,
-        fetchLocations,
+        // fetchLocations,
         loading,
       }}
     >

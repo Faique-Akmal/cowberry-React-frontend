@@ -13,6 +13,7 @@
    "menu": {
     "themeCustomizer": "Theme Customizer",
     "dashboard": "Dashboard",
+    "EmployeeCheckin": "Employee Check-in",
     "employeeDashboard": "Employee Dashboard",
     "calendar": "Calendar",
     "profile": "Profile",

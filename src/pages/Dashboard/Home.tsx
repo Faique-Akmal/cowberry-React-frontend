@@ -7,9 +7,9 @@ import PageMeta from "../../components/common/PageMeta";
 import MapComponent from "../../components/Maps/MapComponent";
 import EmployeeChart from "../../components/admin/EmployeeChart";
 import BirthdaysToday from "../../components/admin/BirthdayCard";
-import Customers from "../../components/admin/Customers";
-import JobApplicationCard from "../../components/admin/JobApplicationCard";
-import JobRejectionCard from "../../components/admin/JobRejectionCard";
+// import Customers from "../../components/admin/Customers";
+// import JobApplicationCard from "../../components/admin/JobApplicationCard";
+// import JobRejectionCard from "../../components/admin/JobRejectionCard";
 import Metrics from "../../components/admin/Metrics";
 
 
@@ -30,23 +30,26 @@ export default function Home() {
     {/* Chart */}
     <div className="col-span-1 md:col-span-2 xl:col-span-12">
       <EmployeeChart />
+       <div className="col-span-1 md:col-span-1 xl:col-span-4">
+      <BirthdaysToday />
+    </div>
     </div>
 
     {/* Customers */}
-    <div className="col-span-1 md:col-span-1 xl:col-span-4">
+    {/* <div className="col-span-1 md:col-span-1 xl:col-span-4">
       <Customers />
-    </div>
+    </div> */}
 
     {/* Birthdays */}
-    <div className="col-span-1 md:col-span-1 xl:col-span-4">
+    {/* <div className="col-span-1 md:col-span-1 xl:col-span-4">
       <BirthdaysToday />
-    </div>
+    </div> */}
 
     {/* Job Applications + Rejections */}
-    <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
+    {/* <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
       <JobApplicationCard />
       <JobRejectionCard />
-    </div>
+    </div> */}
 
     {/* Employee Status */}
     <div className="col-span-1 md:col-span-2 xl:col-span-12">

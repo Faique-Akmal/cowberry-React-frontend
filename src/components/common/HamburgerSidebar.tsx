@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import ChatList from "../chat/ChatList";
-import ChatWindow from "../chat/ChatWindow";
+import ChatList from "../chat-old/ChatList";
+import ChatWindow from "../chat-old/ChatWindow";
 import {
   axiosGetAllGroup,
   AxiosAllGroup,
@@ -53,14 +53,14 @@ const HamburgerSidebar: React.FC = () => {
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         md:translate-x-0 md:flex md:flex-col`}
       >
-          <ChatList
-            groups={groups}
-            activeChatId={activeChatId}
-            onSelectChat={(id) => {
-              setActiveChatId(id);
-              setIsSidebarOpen(false); // close sidebar on select (mobile)
-            }}
-          />
+        <ChatList
+          groups={groups}
+          activeChatId={activeChatId}
+          onSelectChat={(id) => {
+            setActiveChatId(id);
+            setIsSidebarOpen(false); // close sidebar on select (mobile)
+          }}
+        />
       </div>
 
       {/* Main Chat Area */}

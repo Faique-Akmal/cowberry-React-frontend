@@ -25,7 +25,7 @@ import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import Logout from "./pages/AuthPages/Logout";
 // import CompTestHistorySocket from "./pages/CompTestHistorySocket";
-import SocketChatBox from "./components/chat/SocketChatBox";
+// import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 
 import TaskShowPage from "./pages/Employee/EmployeeTask";
@@ -52,11 +52,11 @@ import ThemeCustomizer from "./themes/themecutomizer";
 import ChatToggle from "./context/ChatToggle";
 // import Testingmap from "./pages/Employee/Testing-map";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
+import { ChatInterface } from "./components/chat/ChatInterface";
+
 export default function App() {
   return (
     <>
-      <Toaster position="bottom-right" reverseOrder={false} />
-
       <ScrollToTop />
 
       {/* <NotificationListener/> */}
@@ -148,7 +148,8 @@ export default function App() {
 
           {/* Others Page */}
           <Route path="/profile" element={<UserProfiles />} />
-          <Route path="/chat" element={<SocketChatBox />} />
+          {/* new chat  */}
+          <Route path="/chat" element={<ChatInterface />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/blank" element={<Blank />} />
 

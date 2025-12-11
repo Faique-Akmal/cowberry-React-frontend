@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router";
 import { TbArrowsMaximize } from "react-icons/tb";
-import MessageToggle from "../components/chat/modal/Messagetoggle";
+// import MessageToggle from "../components/chat/modal/Messagetoggle";
 
 const ChatToggle = () => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const ChatToggle = () => {
 
           {/* Chat Component */}
           <div className="flex-1 overflow-hidden">
-            <MessageToggle />
+            {/* <MessageToggle /> */}
           </div>
         </div>
       )}

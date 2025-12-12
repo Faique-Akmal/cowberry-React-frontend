@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { useChatStore } from "./useChatStore";
 
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 interface SocketState {
   socket: Socket | null;

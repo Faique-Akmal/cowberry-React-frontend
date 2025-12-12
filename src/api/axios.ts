@@ -1,141 +1,79 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios from "axios";
 
-// --- Configuration ---
-const API_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-// --- Types ---
-// Queue item ka structure: promise ko resolve ya reject karne ke liye
-interface FailedRequest {
-  resolve: (token: string) => void;
-  reject: (error: any) => void;
-}
-
-// --- State Variables ---
-let isRefreshing = false; // Check karta hai ki refresh process chal raha hai ya nahi
-let failedQueue: FailedRequest[] = []; // Ruke hue requests ko store karta hai
-
-// --- Helper: Queue Process ---
-// Jab naya token mil jaye, to ruke hue requests ko retry karwata hai
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
-  });
-
-  failedQueue = [];
-};
-
-// --- Axios Instance ---
+// 2. Axios Instance banao
 const API = axios.create({
-  baseURL: API_URL,
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  // withCredentials: true, // Agar cookies use kar rahe hain to uncomment karein
 });
 
-// --- Request Interceptor ---
-// Har request ke sath Access Token attach karta hai
+// 3. Request Interceptor: Har request ke sath Access Token bhejo
 API.interceptors.request.use(
   (config) => {
+    // LocalStorage se access token nikalo
     const token = localStorage.getItem("accessToken");
-    if (token && config.headers) {
+
+    if (token) {
+      // Agar token hai, to Authorization header mein jod do
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// --- Response Interceptor ---
-// 401 Errors handle karta hai aur Token Refresh karta hai
+// 4. Response Interceptor: Agar 401 aaye to Refresh Token use karo
 API.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-    };
+  (response) => {
+    // Agar sab sahi hai, to response return kar do
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
 
-    // Agar 401 error hai aur ye request pehle retry nahi hua hai
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // CASE 1: Agar already koi refresh process chal raha hai
-      // Toh is request ko queue mein daal do aur wait karo
-      if (isRefreshing) {
-        return new Promise(function (resolve, reject) {
-          failedQueue.push({
-            resolve: (token: string) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-              }
-              resolve(API(originalRequest));
-            },
-            reject: (err: any) => {
-              reject(err);
-            },
-          });
-        });
-      }
-
-      // CASE 2: Ye pehla 401 hai, Refresh process start karo
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      // Agar refresh token hi nahi hai, to seedha logout
-      if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = "/signin";
-        return Promise.reject(error);
-      }
+    // Check: Error 401 hai (Unauthorized) aur ye request pehle retry nahi hui hai
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true; // Flag set karo taaki loop na bane
 
       try {
-        // Refresh API Call
-        const response = await axios.post(
-          `${API_URL}/auth/refresh-token`,
-          { refresh: refreshToken },
-          { withCredentials: true } // Important agar refresh logic cookies/session dependent hai
-        );
+        // LocalStorage se Refresh Token nikalo
+        const refreshToken = localStorage.getItem("refreshToken");
 
-        console.log("Token Refreshed :: ", response);
-        // Backend response structure ke hisaab se adjust karein
-        // Usually: response.data.accessToken ya response.data.access
-        const newAccessToken =
-          response.data.accessToken || response.data.access || response.data;
+        if (refreshToken) {
+          // Django ko request bhejo naya access token lene ke liye
+          const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
+            refresh: refreshToken,
+          });
 
-        // 1. Storage Update
-        localStorage.setItem("accessToken", newAccessToken);
+          // Naya token save karo
+          const newAccessToken = response.data.access;
+          localStorage.setItem("access", newAccessToken);
 
-        // 2. Axios Defaults Update
-        API.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccessToken}`;
-
-        // 3. Queue Process (Ruke hue requests ko naya token do)
-        processQueue(null, newAccessToken);
-
-        // 4. Current Request Retry
-        if (originalRequest.headers) {
+          // Original request ke headers update karo
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        }
-        return API(originalRequest);
-      } catch (err) {
-        // Refresh Failed (Token expired or invalid)
-        processQueue(err, null);
 
-        console.error("Session expired, logging out...");
-        localStorage.clear(); // Saara data saaf
-        window.location.href = "/signin"; // Redirect to Login
-        return Promise.reject(err);
-      } finally {
-        // Flag reset karein taaki future requests normal flow mein chalein
-        isRefreshing = false;
+          // Original request wapas bhejo (Retry)
+          return API(originalRequest);
+        }
+      } catch (refreshError) {
+        // Agar Refresh Token bhi expire ho gaya hai, to user ko logout kar do
+        console.log("Error 1: ", refreshError);
+        console.error("Session expired. Please login again.");
+        // localStorage.clear(); // Sare tokens hata do
+        // window.location.href = "/login"; // Login page par bhej do
       }
     }
 
+    // Agar error 401 nahi hai, ya refresh fail ho gaya, to error throw karo
     return Promise.reject(error);
   }
 );

@@ -14,7 +14,7 @@ const ChatToggle = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed z-[9999] bottom-2 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition"
+          className="fixed z-[9999] bottom-2 right-6 bg-brand-500 text-white p-4 rounded-full shadow-lg hover:bg-brand-600 transition"
         >
           <MessageCircle size={24} />
         </button>
@@ -35,7 +35,7 @@ const ChatToggle = () => {
                   setIsOpen(false);
                   navigate("/chat");
                 }}
-                className="text-gray-600 hover:text-blue-600"
+                className="text-gray-600 hover:text-brand-400"
               >
                 <TbArrowsMaximize size={20} />
               </button>

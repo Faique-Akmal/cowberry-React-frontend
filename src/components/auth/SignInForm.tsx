@@ -8,7 +8,7 @@ import Button from "../ui/button/Button";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
 export default function SignInForm() {
@@ -18,7 +18,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState(""); // Changed variable name for consistency
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [isChecked, setIsChecked] = useState(true);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,6 +35,7 @@ export default function SignInForm() {
     setIsLoading(true);
     setMessage("");
 
+    const loadingToast = toast.loading("Logging in...");
     const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(
       navigator.userAgent
     );
@@ -42,7 +43,9 @@ export default function SignInForm() {
     // Basic validation
     if (!email.trim() || !password.trim()) {
       setMessage(t("message.Please enter both email and password."));
-      toast.error(t("toast.Please enter both email and password."));
+      toast.error(t("toast.Please enter both email and password."), {
+        id: loadingToast,
+      });
       setIsLoading(false);
       return;
     }
@@ -78,7 +81,7 @@ export default function SignInForm() {
         localStorage.setItem("employee_code", user?.employee_code || "");
         localStorage.setItem("email", user?.email || "");
         localStorage.setItem("mobileNo", user?.mobileNo || "");
-        localStorage.setItem("token", user?.accesstoken || "");
+        // localStorage.setItem("token", user?.accesstoken || "");
         localStorage.setItem(
           "isActiveEmployee",
           user?.isActiveEmployee ? "true" : "false"
@@ -109,7 +112,9 @@ export default function SignInForm() {
             // Show success message
             const successMessage = message || t("toast.Logged in successfully");
             setMessage(successMessage);
-            toast.success(successMessage);
+            toast.success(`Welcome back, ${user.username}!`, {
+              id: loadingToast, // Ye ID use karne se loading wala toast replace ho jata hai
+            });
 
             // Debug: Check if tokens are stored
             console.log(
@@ -150,22 +155,30 @@ export default function SignInForm() {
           } catch (loginError) {
             console.error("Error in login function:", loginError);
             setMessage("Authentication context error. Please try again.");
-            toast.error("Authentication context error. Please try again.");
+            toast.error("Authentication context error. Please try again.", {
+              id: loadingToast,
+            });
           }
         } else {
           console.error("No tokens in response:", response.data);
           setMessage("No authentication tokens received from server.");
-          toast.error("No authentication tokens received from server.");
+          toast.error("No authentication tokens received from server.", {
+            id: loadingToast,
+          });
         }
       } else {
         // If we have a message, show it
         if (response.data?.error || response.data?.message) {
           const errorMsg = response.data.error || response.data.message;
           setMessage(errorMsg);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            id: loadingToast,
+          });
         } else {
           setMessage("Login failed. Please try again.");
-          toast.error("Login failed. Please try again.");
+          toast.error("Login failed. Please try again.", {
+            id: loadingToast,
+          });
         }
       }
     } catch (error: any) {
@@ -186,20 +199,28 @@ export default function SignInForm() {
             data.detail ||
             t("message.Invalid email or password.");
           setMessage(errorMsg);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            id: loadingToast,
+          });
         } else if (status === 422) {
           const errorMsg = data.message || t("message.Invalid input data.");
           setMessage(errorMsg);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            id: loadingToast,
+          });
         } else if (status === 500) {
           const errorMsg = t("message.Server error. Please try again later.");
           setMessage(errorMsg);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            id: loadingToast,
+          });
         } else {
           const errorMsg =
             data.error || data.message || data.detail || `Error: ${status}`;
           setMessage(errorMsg);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            id: loadingToast,
+          });
         }
       } else if (error.request) {
         // Request was made but no response received
@@ -208,7 +229,9 @@ export default function SignInForm() {
           "message.Cannot connect to server. Please check your connection."
         );
         setMessage(errorMsg);
-        toast.error(errorMsg);
+        toast.error(errorMsg, {
+          id: loadingToast,
+        });
       } else {
         // Something else happened
         console.log("Request setup error:", error.message);
@@ -216,9 +239,12 @@ export default function SignInForm() {
           "message.An unexpected error occurred. Please try again."
         );
         setMessage(errorMsg);
-        toast.error(errorMsg);
+        toast.error(errorMsg, {
+          id: loadingToast,
+        });
       }
     } finally {
+      setIsLoading(false);
       setIsLoading(false);
     }
   };

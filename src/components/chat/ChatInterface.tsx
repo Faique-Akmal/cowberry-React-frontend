@@ -74,13 +74,6 @@ export const ChatInterface = () => {
 
   // 1. Initial Setup
   useEffect(() => {
-    // Current User Load (Replace with real Auth logic)
-    //   id: number;
-    // username: string;
-    // firstName?: string;
-    // lastName?: string;
-    // profileImageUrl?: string;
-    // email: string;
     const storedUserId = localStorage.getItem("userId");
     const storedUsername = localStorage.getItem("username");
     const storedUserEmail = localStorage.getItem("email");
@@ -187,7 +180,7 @@ export const ChatInterface = () => {
             <input
               type="text"
               placeholder="Search users..."
-              className="w-full pl-8 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full pl-8 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:border-brand-500"
             />
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" />
           </div>
@@ -234,7 +227,7 @@ export const ChatInterface = () => {
             {/* Header */}
             <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold">
                   {/* Logic to show other participant's initial */}
                   {activeConversation.type === "PERSONAL" ? "P" : "G"}
                 </div>
@@ -251,8 +244,8 @@ export const ChatInterface = () => {
                 </div>
               </div>
               <div className="flex items-center gap-4 text-gray-600">
-                <Phone className="w-5 h-5 cursor-pointer hover:text-blue-600" />
-                <Video className="w-5 h-5 cursor-pointer hover:text-blue-600" />
+                <Phone className="w-5 h-5 cursor-pointer hover:text-brand-600" />
+                <Video className="w-5 h-5 cursor-pointer hover:text-brand-600" />
                 <MoreVertical className="w-5 h-5 cursor-pointer" />
               </div>
             </div>
@@ -269,8 +262,8 @@ export const ChatInterface = () => {
                     <div
                       className={`max-w-xs md:max-w-md lg:max-w-lg rounded-2xl p-3 shadow-sm relative group ${
                         isMe
-                          ? "bg-blue-600 text-white rounded-tr-none"
-                          : "bg-white text-gray-800 rounded-tl-none border border-gray-100"
+                          ? "bg-brand-500 text-white rounded-tr-none"
+                          : "bg-green-100 text-gray-800 rounded-tl-none border border-brand-100"
                       }`}
                     >
                       {/* Image/File Rendering */}
@@ -313,7 +306,7 @@ export const ChatInterface = () => {
               <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-gray-500 hover:text-blue-600"
+                  className="text-gray-500 hover:text-brand-600"
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>
@@ -334,7 +327,7 @@ export const ChatInterface = () => {
                 />
 
                 {isUploading ? (
-                  <span className="text-xs text-blue-500 animate-pulse">
+                  <span className="text-xs text-brand-500 animate-pulse">
                     Uploading...
                   </span>
                 ) : (
@@ -342,7 +335,7 @@ export const ChatInterface = () => {
                     onClick={handleSendMessage}
                     className={`p-2 rounded-full ${
                       input.trim()
-                        ? "bg-blue-600 text-white shadow-lg"
+                        ? "bg-brand-500 hover:bg-brand-400 text-white shadow-lg"
                         : "bg-gray-300 text-gray-500"
                     }`}
                     disabled={!input.trim()}

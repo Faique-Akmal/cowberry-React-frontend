@@ -187,17 +187,27 @@ export default function App() {
       </Routes>
       <ChatToggle />
       <Toaster
-        position="bottom-right"
-        reverseOrder={true}
+        position="bottom-right" // Options: 'top-center', 'bottom-right', etc.
+        reverseOrder={false}
         toastOptions={{
+          // Global styling (Optional)
           style: {
-            border: "1px solid #377355",
-            padding: "16px",
-            color: "#377355",
+            borderRadius: "10px",
+            background: "#333",
+            color: "#fff",
+            fontSize: "14px",
           },
-          iconTheme: {
-            primary: "#377355",
-            secondary: "#FFFAEE",
+          // Success specific style
+          success: {
+            style: {
+              background: "green",
+            },
+          },
+          // Error specific style
+          error: {
+            style: {
+              background: "red",
+            },
           },
         }}
       />

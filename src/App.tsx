@@ -55,7 +55,7 @@ import EmployeeCheckin from "./components/employees/Employeecheckin";
 export default function App() {
   return (
     <>
-      <Toaster position="bottom-right" reverseOrder={false} />
+      {/* <Toaster position="bottom-right" reverseOrder={false} /> */}
 
       <ScrollToTop />
 
@@ -185,7 +185,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatToggle />
-      <Toaster
+      {/* <Toaster
         position="bottom-right"
         reverseOrder={true}
         toastOptions={{
@@ -199,7 +199,7 @@ export default function App() {
             secondary: "#FFFAEE",
           },
         }}
-      />
+      /> */}
     </>
   );
 }

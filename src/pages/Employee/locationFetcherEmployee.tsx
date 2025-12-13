@@ -1,5 +1,5 @@
 // src/components/admin/TravelSessions.tsx
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
 import {
   MapContainer,
@@ -21,17 +21,27 @@ import {
   FaCalendarAlt,
   FaClock,
   FaRoad,
+  FaDownload, FaFileCsv,
+  FaInfoCircle,
+  FaTimes,
   FaPlayCircle,
   FaStopCircle,
   FaPauseCircle,
   FaMapPin,
   FaSearch,
-  FaFilter,
+  FaCar,
   FaEye,
-  FaListAlt
+  FaListAlt,
+  FaExpand,
+  FaLayerGroup,
+  FaChartLine,
+  FaSortAmountDown,
+  FaChevronRight,
+  FaLocationArrow
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
+import ImageZoom from "../../components/ImageZoom";
 
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
@@ -47,6 +57,8 @@ interface TravelSession {
   endTime: string;
   endLatitude: string;
   endLongitude: string;
+  startOdometer: string;  
+  endOdometer: string;   
   totalDistance: number;
   logs: LocationLog[];
 }
@@ -67,7 +79,91 @@ interface PauseInterval {
   durationMinutes: number;
 }
 
-const LOCAL_CACHE_KEY = "travelSessionsCache_v1";
+interface FarmerTravelData {
+  sessionId: number;
+  userId: number;
+  startTime: string;
+  endTime: string;
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number;
+  endLongitude: number;
+  startDescription: string;
+  endDescription: string;
+  status: string;
+  isActive: boolean;
+  totalDistance: number;
+  date: string;
+  durationMinutes: number;
+  startOdometerImage: string;
+  endOdometerImage: string;
+  locationLogs?: {
+    count: number;
+    data: LocationLog[];
+  };
+  farmerData?: {
+    count: number;
+    data: FarmerData[];
+  };
+}
+
+interface FarmerData {
+  id: number;
+  farmerName: string;
+  farmerDescription: string;
+  farmerImage?: string;
+  createdAt: string;
+}
+
+interface GroupedSession {
+  userId: number;
+  username: string;
+  employeeCode: string;
+  date: string;
+  sessions: TravelSession[];
+  totalSessions: number;
+  totalDistance: number;
+  activeSessions: number;
+  startTime: string;
+  endTime: string;
+  totalPoints: number;
+}
+
+interface MultiSessionMapView {
+  userId: number;
+  username: string;
+  employeeCode: string;
+  date: string;
+  sessions: TravelSession[];
+  center: [number, number];
+  zoom: number;
+}
+
+// Glassmorphism CSS classes
+const glassmorphismClasses = {
+  card: "backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/50 shadow-xl",
+  cardHover: "hover:bg-white/15 dark:hover:bg-gray-800/40 hover:border-white/30 dark:hover:border-gray-600/50 transition-all duration-300",
+  input: "backdrop-blur-sm bg-white/5 dark:bg-gray-800/20 border border-white/10 dark:border-gray-700/30 focus:border-white/30 dark:focus:border-blue-500/50 focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30",
+  button: {
+    primary: "backdrop-blur-sm bg-gradient-to-r from-blue-500/90 to-indigo-600/90 hover:from-blue-600 hover:to-indigo-700 border border-blue-400/20 dark:border-blue-500/30 text-white shadow-lg hover:shadow-xl transition-all duration-300",
+    secondary: "backdrop-blur-sm bg-gradient-to-r from-purple-500/90 to-pink-600/90 hover:from-purple-600 hover:to-pink-700 border border-purple-400/20 dark:border-purple-500/30 text-white shadow-lg hover:shadow-xl transition-all duration-300",
+    outline: "backdrop-blur-sm bg-white/5 dark:bg-gray-800/20 border border-white/20 dark:border-gray-600/50 text-gray-800 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-800/30 transition-all duration-300"
+  },
+  statCard: "backdrop-blur-lg bg-gradient-to-br from-white/15 to-white/5 dark:from-gray-800/30 dark:to-gray-900/20 border border-white/20 dark:border-gray-700/50 shadow-lg",
+  modal: "backdrop-blur-xl bg-white/20 dark:bg-gray-900/30 border border-white/30 dark:border-gray-700/50 shadow-2xl"
+};
+
+// Color palette for session polylines
+const SESSION_COLORS = [
+  '#FF0000', '#0000FF', '#00FF00', '#FFA500', '#800080',
+  '#FF69B4', '#00FFFF', '#FFD700', '#008000', '#FF4500',
+  '#4B0082', '#FF1493', '#00FF7F', '#8B4513', '#000080',
+  '#808000', '#DC143C', '#FF8C00', '#9932CC', '#20B2AA',
+];
+
+const getSessionColor = (index: number): string => {
+  return SESSION_COLORS[index % SESSION_COLORS.length];
+};
 
 export default function AttendanceList() {
   const { t } = useTranslation();
@@ -83,47 +179,108 @@ export default function AttendanceList() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Load cache from localStorage on mount
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LOCAL_CACHE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") {
-          setSessionsMap(parsed);
+  const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
+  
+  // Grouped view states
+  const [groupedView, setGroupedView] = useState<GroupedSession[]>([]);
+  const [multiSessionMapView, setMultiSessionMapView] = useState<MultiSessionMapView | null>(null);
+  const [viewMode, setViewMode] = useState<'grouped' | 'individual'>('grouped');
+  
+  // Farmer data state
+  const [farmerTravelData, setFarmerTravelData] = useState<FarmerTravelData[]>([]);
+  const [showFarmerDataModal, setShowFarmerDataModal] = useState(false);
+  const [selectedUserForFarmerData, setSelectedUserForFarmerData] = useState<string>("");
+  const [isLoadingFarmerData, setIsLoadingFarmerData] = useState(false);
+  const [farmerDataError, setFarmerDataError] = useState<string | null>(null);
+  
+  // Format date without time (YYYY-MM-DD)
+  const formatDateOnly = useCallback((dateTimeStr: string): string => {
+    if (!dateTimeStr) return "";
+    const date = new Date(dateTimeStr);
+    return date.toISOString().split('T')[0];
+  }, []);
+  
+  // Group sessions by user and date
+  const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
+    const groupedMap = new Map<string, GroupedSession>();
+    
+    sessions.forEach(session => {
+      const dateKey = formatDateOnly(session.startTime);
+      const groupKey = `${session.userId}-${dateKey}`;
+      
+      if (!groupedMap.has(groupKey)) {
+        groupedMap.set(groupKey, {
+          userId: session.userId,
+          username: session.username,
+          employeeCode: session.employeeCode,
+          date: dateKey,
+          sessions: [session],
+          totalSessions: 1,
+          totalDistance: session.totalDistance || 0,
+          activeSessions: session.endTime ? 0 : 1,
+          startTime: session.startTime,
+          endTime: session.endTime || session.startTime,
+          totalPoints: session.logs?.length || 0
+        });
+      } else {
+        const existingGroup = groupedMap.get(groupKey)!;
+        existingGroup.sessions.push(session);
+        existingGroup.totalSessions += 1;
+        existingGroup.totalDistance += session.totalDistance || 0;
+        existingGroup.activeSessions += session.endTime ? 0 : 1;
+        existingGroup.totalPoints += session.logs?.length || 0;
+        
+        existingGroup.sessions.sort((a, b) => 
+          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+        );
+        
+        if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
+          existingGroup.startTime = session.startTime;
+        }
+        
+        const sessionEndTime = session.endTime || session.startTime;
+        if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
+          existingGroup.endTime = sessionEndTime;
         }
       }
-    } catch (e) {
-      console.warn("Failed to load travel sessions cache", e);
-    }
+    });
+    
+    return Array.from(groupedMap.values()).sort((a, b) => {
+      const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return b.userId - a.userId;
+    });
+  }, [formatDateOnly]);
+  
+  // Calculate duration in hours and minutes
+  const calculateDuration = useCallback((startTime: string, endTime: string) => {
+    if (!startTime) return { hours: 0, minutes: 0 };
+    
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : new Date();
+    const durationMs = end.getTime() - start.getTime();
+    
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { hours, minutes };
   }, []);
-
-  // Persist map to localStorage on change
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(sessionsMap));
-    } catch (e) {
-      console.warn("Failed to save travel sessions cache", e);
-    }
-  }, [sessionsMap]);
-
+  
   useEffect(() => {
     fetchTravelSessions();
   }, []);
-
+  
   useEffect(() => {
     if (mapView && autoRefresh) {
       const isOngoing = !mapView.endTime || mapView.endTime === mapView.startTime;
       
       if (isOngoing) {
-        console.log("🔄 Setting up auto-refresh for ongoing session");
         locationIntervalRef.current = setInterval(() => {
           fetchTravelSessions();
-        }, 10000); // Refresh every 10 seconds for ongoing sessions
+        }, 10000);
       }
     }
-
+    
     return () => {
       if (locationIntervalRef.current) {
         clearInterval(locationIntervalRef.current);
@@ -131,7 +288,7 @@ export default function AttendanceList() {
       }
     };
   }, [mapView, autoRefresh]);
-
+  
   const fetchTravelSessions = async () => {
     setIsLoading(true);
     try {
@@ -140,7 +297,6 @@ export default function AttendanceList() {
         const sessions = res.data.data || [];
         setTravelSessions(sessions);
         
-        // Extract unique users
         const uniqueUsers = Array.from(
           new Map(
             sessions.map(session => [
@@ -151,13 +307,16 @@ export default function AttendanceList() {
         );
         setUsers(uniqueUsers);
         
-        // Update cache
         const newCache: Record<string, TravelSession> = {};
         sessions.forEach(session => {
           const key = `${session.userId}-${session.sessionId}`;
           newCache[key] = session;
         });
         setSessionsMap(prev => ({ ...prev, ...newCache }));
+        
+        const filtered = filterSessions(sessions);
+        const grouped = groupSessionsByUserAndDate(filtered);
+        setGroupedView(grouped);
         
         setLastUpdateTime(new Date());
       }
@@ -167,51 +326,128 @@ export default function AttendanceList() {
       setIsLoading(false);
     }
   };
-
-  const formatDateTime = (dateTimeStr: string) => {
+  
+  const handleFetchTravelData = async (userId: string, sessionDate?: string) => {
+    if (!userId) {
+      alert("Please select a user first");
+      return;
+    }
+    
+    setIsLoadingFarmerData(true);
+    setFarmerDataError(null);
+    setSelectedUserForFarmerData(userId);
+    
+    if (sessionDate) {
+      setSelectedSessionDate(sessionDate);
+    }
+    
+    try {
+      const response = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+        params: { userId }
+      });
+      
+      const data = response.data;
+      
+      if (data.success && data.sessions && data.sessions.data) {
+        const allSessions: FarmerTravelData[] = data.sessions.data.map((session: any) => ({
+          sessionId: session.sessionId,
+          userId: session.userId || data.user?.id,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          startLatitude: session.startLatitude,
+          startLongitude: session.startLongitude,
+          endLatitude: session.endLatitude,
+          endLongitude: session.endLongitude,
+          startDescription: session.startDescription || '',
+          endDescription: session.endDescription || '',
+          status: session.status,
+          isActive: session.isActive,
+          totalDistance: session.totalDistance,
+          date: session.date,
+          durationMinutes: session.durationMinutes,
+          startOdometerImage: session.startOdometerImage || '',
+          endOdometerImage: session.endOdometerImage || '',
+          locationLogs: session.locationLogs,
+          farmerData: session.farmerData
+        }));
+        
+        let filteredSessions = allSessions;
+        
+        if (sessionDate) {
+          filteredSessions = allSessions.filter(session => {
+            const sessionDateStr = formatDateOnly(session.date || session.startTime);
+            return sessionDateStr === sessionDate;
+          });
+        }
+        
+        setFarmerTravelData(filteredSessions);
+        setShowFarmerDataModal(true);
+      } else {
+        setFarmerDataError(data.message || "No travel data found");
+        setFarmerTravelData([]);
+        setShowFarmerDataModal(true);
+      }
+      
+    } catch (error: any) {
+      console.error("Error fetching travel data:", error);
+      
+      if (error.response) {
+        setFarmerDataError(`Error ${error.response.status}: ${error.response.data?.message || 'Server error'}`);
+      } else if (error.request) {
+        setFarmerDataError("No response from server. Please check your connection.");
+      } else {
+        setFarmerDataError("Failed to fetch travel session data. Please try again.");
+      }
+      
+      setShowFarmerDataModal(true);
+    } finally {
+      setIsLoadingFarmerData(false);
+    }
+  };
+  
+  const closeFarmerDataModal = () => {
+    setShowFarmerDataModal(false);
+    setFarmerTravelData([]);
+    setFarmerDataError(null);
+  };
+  
+  const formatDateTime = useCallback((dateTimeStr: string) => {
     if (!dateTimeStr) return "-";
     const date = new Date(dateTimeStr);
     return date.toLocaleString();
-  };
-
-  const formatTimeOnly = (dateTimeStr: string) => {
+  }, []);
+  
+  const formatTimeOnly = useCallback((dateTimeStr: string) => {
     if (!dateTimeStr) return "-";
     const date = new Date(dateTimeStr);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDateOnly = (dateTimeStr: string) => {
-    if (!dateTimeStr) return "-";
-    const date = new Date(dateTimeStr);
-    return date.toISOString().split('T')[0];
-  };
-
-  const formatShortDate = (dateTimeStr: string) => {
+  }, []);
+  
+  const formatShortDate = useCallback((dateTimeStr: string) => {
     if (!dateTimeStr) return "-";
     const date = new Date(dateTimeStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const parseCoordinate = (coord: string | number): number => {
+  }, []);
+  
+  const parseCoordinate = useCallback((coord: string | number): number => {
     if (typeof coord === "number") return coord;
     const parsed = parseFloat(String(coord));
     return isNaN(parsed) ? 0 : parsed;
-  };
-
-  const isValidCoordinate = (lat: string | number, lng: string | number): boolean => {
+  }, []);
+  
+  const isValidCoordinate = useCallback((lat: string | number, lng: string | number): boolean => {
     const latNum = parseCoordinate(lat);
     const lngNum = parseCoordinate(lng);
     return latNum !== 0 && lngNum !== 0 &&
       Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180 &&
       !isNaN(latNum) && !isNaN(lngNum);
-  };
-
-  const buildPolylinePath = (session: TravelSession): [number, number][] => {
+  }, [parseCoordinate]);
+  
+  const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    // Add all log points
     session.logs.forEach(log => {
       if (isValidCoordinate(log.latitude, log.longitude)) {
         path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
@@ -219,11 +455,11 @@ export default function AttendanceList() {
     });
     
     return path;
-  };
-
-  const getMapCenter = (session: TravelSession): [number, number] => {
+  }, [isValidCoordinate, parseCoordinate]);
+  
+  const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session || !session.logs || session.logs.length === 0) {
-      return [21.1702, 72.8311]; // Default center
+      return [21.1702, 72.8311];
     }
     
     const validLogs = session.logs.filter(log => 
@@ -232,14 +468,13 @@ export default function AttendanceList() {
     
     if (validLogs.length === 0) return [21.1702, 72.8311];
     
-    // Calculate average of all points
     const sumLat = validLogs.reduce((sum, log) => sum + parseCoordinate(log.latitude), 0);
     const sumLng = validLogs.reduce((sum, log) => sum + parseCoordinate(log.longitude), 0);
     
     return [sumLat / validLogs.length, sumLng / validLogs.length];
-  };
-
-  const getMapZoom = (session: TravelSession): number => {
+  }, [isValidCoordinate, parseCoordinate]);
+  
+  const getMapZoom = useCallback((session: TravelSession): number => {
     if (!session || !session.logs || session.logs.length < 2) return 15;
     
     const validLogs = session.logs.filter(log => 
@@ -260,9 +495,9 @@ export default function AttendanceList() {
     if (maxRange > 0.01) return 14;
     if (maxRange > 0.005) return 15;
     return 16;
-  };
-
-  const detectPauses = (logs: LocationLog[], pauseThresholdMinutes: number = 2): PauseInterval[] => {
+  }, [isValidCoordinate, parseCoordinate]);
+  
+  const detectPauses = useCallback((logs: LocationLog[], pauseThresholdMinutes: number = 2): PauseInterval[] => {
     if (!logs || logs.length < 2) return [];
     
     const pauses: PauseInterval[] = [];
@@ -282,14 +517,13 @@ export default function AttendanceList() {
     }
     
     return pauses;
-  };
-
+  }, []);
+  
   const openMap = (session: TravelSession) => {
-    console.log("🗺️ Opening map for session:", session.sessionId);
     setMapView(session);
     setLastUpdateTime(new Date());
   };
-
+  
   const closeMap = () => {
     setMapView(null);
     if (locationIntervalRef.current) {
@@ -297,13 +531,59 @@ export default function AttendanceList() {
       locationIntervalRef.current = null;
     }
   };
-
+  
+  const openMultiSessionMap = useCallback((group: GroupedSession) => {
+    const allLogs = group.sessions.flatMap(s => s.logs || []);
+    const validLogs = allLogs.filter(log => 
+      isValidCoordinate(log.latitude, log.longitude)
+    );
+    
+    let center: [number, number] = [21.1702, 72.8311];
+    let zoom = 13;
+    
+    if (validLogs.length > 0) {
+      const sumLat = validLogs.reduce((sum, log) => sum + parseCoordinate(log.latitude), 0);
+      const sumLng = validLogs.reduce((sum, log) => sum + parseCoordinate(log.longitude), 0);
+      center = [sumLat / validLogs.length, sumLng / validLogs.length];
+      
+      const lats = validLogs.map(log => parseCoordinate(log.latitude));
+      const lngs = validLogs.map(log => parseCoordinate(log.longitude));
+      const latRange = Math.max(...lats) - Math.min(...lats);
+      const lngRange = Math.max(...lngs) - Math.min(...lngs);
+      const maxRange = Math.max(latRange, lngRange);
+      
+      if (maxRange > 0.1) zoom = 10;
+      else if (maxRange > 0.05) zoom = 12;
+      else if (maxRange > 0.01) zoom = 14;
+      else if (maxRange > 0.005) zoom = 15;
+      else zoom = 16;
+    }
+    
+    setMultiSessionMapView({
+      userId: group.userId,
+      username: group.username,
+      employeeCode: group.employeeCode,
+      date: group.date,
+      sessions: group.sessions.sort((a, b) => 
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+      ),
+      center,
+      zoom,
+    });
+    
+    setLastUpdateTime(new Date());
+  }, [isValidCoordinate, parseCoordinate]);
+  
+  const closeMultiSessionMap = () => {
+    setMultiSessionMapView(null);
+  };
+  
   const manualRefresh = () => {
     fetchTravelSessions();
   };
-
-  const filterSessions = () => {
-    let filtered = travelSessions;
+  
+  const filterSessions = useCallback((sessions: TravelSession[] = travelSessions) => {
+    let filtered = [...sessions];
     
     if (selectedDate) {
       filtered = filtered.filter(session => 
@@ -325,63 +605,325 @@ export default function AttendanceList() {
       );
     }
     
-    // Sort by start time (newest first)
     return filtered.sort((a, b) => 
       new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
-  };
-
-  const filteredSessions = filterSessions();
-
-  // Calculate stats
+  }, [selectedDate, selectedUser, searchQuery, formatDateOnly, travelSessions]);
+  
+  const filteredSessions = useMemo(() => filterSessions(), [filterSessions]);
+  
+  useEffect(() => {
+    const grouped = groupSessionsByUserAndDate(filteredSessions);
+    setGroupedView(grouped);
+  }, [filteredSessions, groupSessionsByUserAndDate]);
+  
   const totalSessions = filteredSessions.length;
   const activeSessions = filteredSessions.filter(s => !s.endTime).length;
   const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
-
-  // Group sessions by date for display
-  const sessionsByDate = filteredSessions.reduce((acc, session) => {
-    const date = formatDateOnly(session.startTime);
-    if (!acc[date]) {
-      acc[date] = [];
+  
+  const exportToCSV = () => {
+    try {
+      const csvData = filteredSessions.map(session => {
+        const duration = session.endTime 
+          ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
+          : Math.round((new Date().getTime() - new Date(session.startTime).getTime()) / 60000);
+        
+        const pauses = detectPauses(session.logs || []);
+        
+        return {
+          'Session ID': session.sessionId,
+          'User ID': session.userId,
+          'Username': session.username,
+          'Employee Code': session.employeeCode,
+          'Start Time': formatDateTime(session.startTime),
+          'Start Latitude': parseCoordinate(session.startLatitude),
+          'Start Longitude': parseCoordinate(session.startLongitude),
+          'End Time': session.endTime ? formatDateTime(session.endTime) : 'Active',
+          'End Latitude': parseCoordinate(session.endLatitude),
+          'End Longitude': parseCoordinate(session.endLongitude),
+          'Total Distance (km)': (session.totalDistance / 1000).toFixed(2),
+          'Duration (minutes)': duration,
+          'Log Points Count': session.logs?.length || 0,
+          'Pauses Count': pauses.length,
+          'Status': session.endTime ? 'Completed' : 'Active',
+          'Start Odometer Image URL': session.startOdometer,
+          'End Odometer Image URL': session.endOdometer
+        };
+      });
+      
+      const headers = [
+        'Session ID',
+        'User ID',
+        'Username',
+        'Employee Code',
+        'Start Time',
+        'Start Latitude',
+        'Start Longitude',
+        'End Time',
+        'End Latitude',
+        'End Longitude',
+        'Total Distance (km)',
+        'Duration (minutes)',
+        'Log Points Count',
+        'Pauses Count',
+        'Status',
+        'Start Odometer Image URL',
+        'End Odometer Image URL'
+      ];
+      
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => 
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            if (value === null || value === undefined) return '""';
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',')
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `travel_sessions_${dateStr}.csv`;
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export data. Please try again.');
     }
-    acc[date].push(session);
-    return acc;
-  }, {} as Record<string, TravelSession[]>);
+  };
+  
+  const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
+    const path: [number, number][] = [];
+    
+    if (!session || !session.logs || session.logs.length === 0) return path;
+    
+    session.logs.forEach(log => {
+      if (isValidCoordinate(log.latitude, log.longitude)) {
+        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+      }
+    });
+    
+    return path;
+  }, [isValidCoordinate, parseCoordinate]);
+  
+  const renderIndividualView = useMemo(() => {
+    const groupedByDate = groupSessionsByUserAndDate(filteredSessions).reduce((acc, group) => {
+      if (!acc[group.date]) acc[group.date] = [];
+      acc[group.date].push(...group.sessions);
+      return acc;
+    }, {} as Record<string, TravelSession[]>);
+    
+    return (
+      <div className="space-y-6">
+        {Object.entries(groupedByDate).map(([date, dateSessions]) => (
+          <div key={date} className={`${glassmorphismClasses.card} rounded-2xl overflow-hidden`}>
+            <div className="px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FaCalendarAlt className="text-blue-400" />
+                  <h3 className="font-semibold text-gray-800 dark:text-white">
+                    {new Date(date).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                </div>
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {dateSessions.length} session{dateSessions.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+            
+            <div className="divide-y divide-white/5 dark:divide-gray-700/50">
+              {dateSessions.map((session) => {
+                const duration = calculateDuration(session.startTime, session.endTime);
+                const isActive = !session.endTime;
+                
+                return (
+                  <div key={session.sessionId} className="p-6 hover:bg-white/5 dark:hover:bg-gray-800/20 transition-colors">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-semibold">
+                            {session.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-lg text-gray-800 dark:text-white">
+                                {session.username}
+                              </h4>
+                              {isActive && (
+                                <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 dark:border-green-500/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Employee Code: {session.employeeCode} • Session ID: #{session.sessionId}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
+                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                              <FaClock className="text-sm" />
+                              <span className="text-xs font-medium">Start Time</span>
+                            </div>
+                            <p className="text-sm font-semibold">{formatTimeOnly(session.startTime)}</p>
+                          </div>
+                          
+                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
+                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                              <FaStopCircle className="text-sm" />
+                              <span className="text-xs font-medium">End Time</span>
+                            </div>
+                            <p className="text-sm font-semibold">
+                              {session.endTime ? formatTimeOnly(session.endTime) : "—"}
+                            </p>
+                          </div>
+                          
+                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
+                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                              <FaRoad className="text-sm" />
+                              <span className="text-xs font-medium">Distance</span>
+                            </div>
+                            <p className="text-sm font-semibold">
+                              {(session.totalDistance / 1000).toFixed(2)} km
+                            </p>
+                          </div>
+                          
+                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
+                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                              <FaMapPin className="text-sm" />
+                              <span className="text-xs font-medium">Points</span>
+                            </div>
+                            <p className="text-sm font-semibold">
+                              {session.logs?.length || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleFetchTravelData(
+                            session.userId.toString(), 
+                            formatDateOnly(session.startTime)
+                          )}
+                          className={`px-4 py-3 ${glassmorphismClasses.button.secondary} rounded-xl font-semibold flex items-center gap-2`}
+                        >
+                          <FaInfoCircle />
+                          Details
+                        </button>
+                        <button
+                          onClick={() => openMap(session)}
+                          className={`px-4 py-3 ${glassmorphismClasses.button.primary} rounded-xl font-semibold flex items-center gap-2`}
+                        >
+                          <FaEye />
+                          Map
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [filteredSessions, groupSessionsByUserAndDate, calculateDuration, formatTimeOnly, formatDateOnly]);
+
+  const renderOdometerImage = (imageData: string) => {
+    if (!imageData || imageData.trim() === '') {
+      return (
+        <div className="bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 text-center border border-white/10 dark:border-gray-700/50">
+          <FaCar className="text-gray-400 dark:text-gray-600 text-3xl mx-auto mb-2" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">No odometer image</p>
+        </div>
+      );
+    }
+    
+    if (imageData.startsWith('data:image') || imageData.startsWith('/9j/') || imageData.length > 1000) {
+      return (
+        <ImageZoom
+          src={imageData.startsWith('data:image') ? imageData : `data:image/jpeg;base64,${imageData}`}
+          alt="Odometer Image"
+          className="rounded-xl"
+        />
+      );
+    }
+    
+    return (
+      <ImageZoom
+        src={imageData}
+        alt="Odometer Image"
+        className="rounded-xl"
+      />
+    );
+  };
 
   return (
-    <div   
-      style={{
-        backgroundColor: themeConfig.content.background,
-        color: themeConfig.content.text,
-      }} 
-      className="p-4 md:p-6 rounded-xl"
-    >
+    <div className="min-h-screen p-4 md:p-6 bg-gradient-to-br from-gray-100/50 via-white/30 to-blue-50/30 dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-              <FaRoute className="text-blue-500" />
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-gray-800 dark:text-white">
+              <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-xl">
+                <FaRoute className="text-blue-500" />
+              </div>
               Travel Sessions
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-600 dark:text-gray-300 mt-1">
               Track employee travel activities and paths
             </p>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-600 dark:text-gray-300">
               {lastUpdateTime && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 backdrop-blur-sm bg-white/20 dark:bg-gray-800/30 px-3 py-1 rounded-lg">
                   <FaClock className="text-xs" />
                   Updated: {lastUpdateTime.toLocaleTimeString()}
                 </span>
               )}
             </div>
+            
+            {filteredSessions.length > 0 && (
+              <button
+                onClick={exportToCSV}
+                className={`flex items-center gap-2 px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl`}
+                title="Export all sessions to CSV"
+              >
+                <FaFileCsv />
+                Export CSV
+              </button>
+            )}
+            
             <button
               onClick={manualRefresh}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50"
+              className={`flex items-center gap-2 px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl disabled:opacity-50`}
             >
               <FaSync className={isLoading ? "animate-spin" : ""} />
               Refresh
@@ -390,46 +932,58 @@ export default function AttendanceList() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Sessions</p>
-                <p className="text-2xl font-bold mt-1">{totalSessions}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Total Sessions</p>
+                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{totalSessions}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
                 <FaListAlt className="text-blue-500 text-xl" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
+          <div className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Active Sessions</p>
-                <p className="text-2xl font-bold mt-1 text-green-600">{activeSessions}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Active Sessions</p>
+                <p className="text-2xl font-bold mt-1 text-green-500">{activeSessions}</p>
               </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
                 <FaPlayCircle className="text-green-500 text-xl" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
+          <div className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Distance</p>
-                <p className="text-2xl font-bold mt-1">{(totalDistance / 1000).toFixed(1)} km</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Total Distance</p>
+                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{(totalDistance / 1000).toFixed(1)} km</p>
               </div>
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
                 <FaRoad className="text-purple-500 text-xl" />
+              </div>
+            </div>
+          </div>
+          
+          <div className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Users</p>
+                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{users.length}</p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-600/20 backdrop-blur-sm rounded-xl">
+                <FaUser className="text-orange-500 text-xl" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700 mb-6">
+        <div className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -439,7 +993,7 @@ export default function AttendanceList() {
               <input
                 type="text"
                 placeholder="Search by name or employee code..."
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -451,7 +1005,7 @@ export default function AttendanceList() {
                 Filter by User
               </label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                 onChange={(e) => setSelectedUser(e.target.value)}
                 value={selectedUser}
               >
@@ -471,20 +1025,35 @@ export default function AttendanceList() {
               </label>
               <input
                 type="date"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 max={new Date().toISOString().split("T")[0]}
               />
             </div>
+            
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <FaChartLine className="inline mr-2" />
+                View Mode
+              </label>
+              <select
+                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
+                onChange={(e) => setViewMode(e.target.value as 'grouped' | 'individual')}
+                value={viewMode}
+              >
+                <option value="grouped">Grouped by User/Date</option>
+                <option value="individual">Individual Sessions</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Sessions List */}
-      {filteredSessions.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-12 text-center">
-          <FaRoute className="text-gray-300 dark:text-gray-600 text-5xl mx-auto mb-4" />
+      {/* Sessions List - Grouped View */}
+      {groupedView.length === 0 ? (
+        <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
+          <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
           <p className="text-gray-500 dark:text-gray-400">
             {selectedDate || selectedUser || searchQuery 
@@ -492,150 +1061,674 @@ export default function AttendanceList() {
               : "No travel sessions recorded yet."}
           </p>
         </div>
-      ) : (
+      ) : viewMode === 'grouped' ? (
         <div className="space-y-6">
-          {Object.entries(sessionsByDate).map(([date, dateSessions]) => (
-            <div key={date} className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 overflow-hidden">
-              {/* Date Header */}
-              <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FaCalendarAlt className="text-gray-400" />
-                    <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-                      {new Date(date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </h3>
+          {groupedView.map((group) => {
+            const groupDuration = calculateDuration(group.startTime, group.endTime);
+            const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            
+            return (
+              <div key={`${group.userId}-${group.date}`} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}>
+                {/* Group Header */}
+                <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {group.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                          {group.username} 
+                          <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
+                            ({group.employeeCode})
+                          </span>
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                            <FaCalendarAlt className="text-sm" />
+                            <span className="text-sm">
+                              {formattedDate}
+                            </span>
+                          </div>
+                          <span className="text-gray-400">•</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
+                              group.activeSessions > 0 
+                                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
+                                : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
+                            }`}>
+                              {group.activeSessions > 0 ? `${group.activeSessions} Active` : 'All Completed'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="flex items-center gap-3">
+                          <div className="text-center">
+                            <p className="text-xs text-gray-600 dark:text-gray-300">Sessions</p>
+                            <p className="text-lg font-bold text-gray-800 dark:text-white">{group.totalSessions}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
+                            <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
+                          </div>
+                          <div className="text-center">
+                            <button
+                              onClick={() => openMultiSessionMap(group)}
+                              className={`px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl flex items-center gap-2`}
+                            >
+                              <FaLayerGroup />
+                              View Session
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {dateSessions.length} session{dateSessions.length !== 1 ? 's' : ''}
-                  </span>
                 </div>
-              </div>
 
-              {/* Sessions List */}
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {dateSessions.map((session) => {
-                  const isActive = !session.endTime;
-                  const pauses = detectPauses(session.logs || []);
-                  const duration = session.endTime 
-                    ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
-                    : Math.round((new Date().getTime() - new Date(session.startTime).getTime()) / 60000);
-                  
-                  return (
-                    <div key={session.sessionId} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        {/* Left Section - User Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                              {session.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-lg text-gray-800 dark:text-white">
-                                  {session.username}
-                                </h4>
-                                {isActive && (
-                                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                    Active
-                                  </span>
-                                )}
+                {/* Group Content */}
+                <div className="p-6">
+                  {/* Group Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                        <FaClock className="text-sm" />
+                        <span className="text-xs font-medium">First Session</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatTimeOnly(group.sessions[0].startTime)}</p>
+                    </div>
+                    
+                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                        <FaClock className="text-sm" />
+                        <span className="text-xs font-medium">Last Session</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                        {formatTimeOnly(group.sessions[group.sessions.length - 1].endTime || 
+                                      group.sessions[group.sessions.length - 1].startTime)}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                        <FaRoad className="text-sm" />
+                        <span className="text-xs font-medium">Total Distance</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
+                    </div>
+                    
+                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                        <FaMapPin className="text-sm" />
+                        <span className="text-xs font-medium">Log Points</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                    </div>
+                  </div>
+
+                  {/* Session List */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                      <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-lg">
+                        <FaListAlt className="text-blue-500" />
+                      </div>
+                      Sessions ({group.sessions.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {group.sessions.map((session, sessionIndex) => {
+                        const sessionDuration = calculateDuration(session.startTime, session.endTime);
+                        const isActive = !session.endTime;
+                        
+                        return (
+                          <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
+                                     style={{ backgroundColor: getSessionColor(sessionIndex) }}>
+                                  {sessionIndex + 1}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-800 dark:text-white">
+                                      Session #{session.sessionId}
+                                    </span>
+                                    {isActive && (
+                                      <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                        Active
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                    <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
+                                    <span>•</span>
+                                    <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
+                                    <span>•</span>
+                                    <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+                                  </div>
+                                </div>
                               </div>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Employee Code: {session.employeeCode} • Session ID: #{session.sessionId}
-                              </p>
+                              
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleFetchTravelData(
+                                    session.userId.toString(), 
+                                    group.date
+                                  )}
+                                  className={`px-3 py-2 ${glassmorphismClasses.button.secondary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                                >
+                                  <FaInfoCircle />
+                                  Details
+                                </button>
+                                <button
+                                  onClick={() => openMap(session)}
+                                  className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                                >
+                                  <FaEye />
+                                  Single Map
+                                </button>
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                          {/* Session Stats */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
-                                <FaClock className="text-sm" />
-                                <span className="text-xs font-medium">Start Time</span>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => openMultiSessionMap(group)}
+                      className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 ${glassmorphismClasses.button.primary} rounded-xl font-semibold`}
+                    >
+                      <FaLayerGroup className="text-xl" />
+                      View All Sessions on Map
+                      <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
+                        {group.sessions.length} session{group.sessions.length > 1 ? 's' : ''}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        renderIndividualView
+      )}
+
+      {/* Farmer Data Modal */}
+      {showFarmerDataModal && (
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className={`${glassmorphismClasses.modal} w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col`}>
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-amber-600/90 to-orange-600/90 backdrop-blur-sm p-4 text-white flex-shrink-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg flex-shrink-0">
+                    <FaCar className="text-lg" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold truncate">Travel Session Details</h2>
+                    <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
+                      <span className="truncate backdrop-blur-sm bg-white/10 px-2 py-1 rounded">
+                        User ID: {selectedUserForFarmerData}
+                      </span>
+                      {users.find(u => u.userId.toString() === selectedUserForFarmerData)?.username && (
+                        <>
+                          <span className="text-white/50">•</span>
+                          <span className="truncate">
+                            User: {users.find(u => u.userId.toString() === selectedUserForFarmerData)?.username}
+                          </span>
+                        </>
+                      )}
+                      {selectedSessionDate && (
+                        <>
+                          <span className="text-white/50">•</span>
+                          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded">
+                            <FaCalendarAlt className="text-xs" />
+                            <span className="truncate">
+                              {new Date(selectedSessionDate).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+                  <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
+                    <p className="text-xs opacity-80">Sessions</p>
+                    <p className="font-bold">{farmerTravelData.length}</p>
+                  </div>
+                  {farmerTravelData.length > 0 && (
+                    <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
+                      <p className="text-xs opacity-80">Showing</p>
+                      <p className="font-bold">1-{Math.min(farmerTravelData.length, 10)}</p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={closeFarmerDataModal}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-lg transition-all flex-shrink-0"
+                  title="Close"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {isLoadingFarmerData ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300">Loading travel session data...</p>
+                  </div>
+                </div>
+              ) : farmerDataError ? (
+                <div className="bg-gradient-to-br from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-200/50 dark:border-red-800/50 rounded-xl p-8 text-center">
+                  <FaInfoCircle className="text-red-500 text-4xl mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-red-700 dark:text-red-400 mb-2">Error Loading Data</h3>
+                  <p className="text-red-600 dark:text-red-300">{farmerDataError}</p>
+                </div>
+              ) : farmerTravelData.length === 0 ? (
+                <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-12 text-center border border-white/10 dark:border-gray-700/50">
+                  <FaCar className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Data Found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No travel sessions recorded for this user.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/10 dark:border-gray-700/50">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Sessions</p>
+                        <p className="text-2xl font-bold text-purple-500">{farmerTravelData.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Active Sessions</p>
+                        <p className="text-2xl font-bold text-green-500">
+                          {farmerTravelData.filter(s => s.isActive).length}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Distance</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                          {(farmerTravelData.reduce((sum, s) => sum + (s.totalDistance || 0), 0) / 1000).toFixed(1)} km
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Farmers Met</p>
+                        <p className="text-2xl font-bold text-orange-500">
+                          {farmerTravelData.reduce((sum, s) => sum + (s.farmerData?.count || 0), 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Sessions List */}
+                  {farmerTravelData.map((session, index) => {
+                    const duration = calculateDuration(session.startTime, session.endTime);
+                    const farmerCount = session.farmerData?.count || 0;
+                    
+                    return (
+                      <div key={session.sessionId} className={`${glassmorphismClasses.card} rounded-2xl overflow-hidden backdrop-blur-lg mb-6`}>
+                        <div className="bg-gradient-to-r from-gray-500/10 via-gray-600/10 to-gray-700/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-xl">
+                                <FaRoute className="text-purple-500 dark:text-purple-400" />
                               </div>
-                              <p className="text-sm font-semibold">{formatTimeOnly(session.startTime)}</p>
+                              <div>
+                                <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                                  Session #{session.sessionId}
+                                </h3>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${session.isActive ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400' : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'}`}>
+                                    {session.status}
+                                  </span>
+                                  <span className="px-2 py-1 backdrop-blur-sm bg-white/10 dark:bg-gray-800/30 rounded-full text-xs text-gray-600 dark:text-gray-400">
+                                    {formatDateOnly(session.startTime)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
-                                <FaStopCircle className="text-sm" />
-                                <span className="text-xs font-medium">End Time</span>
+                            <div className="flex items-center gap-4 mt-2 md:mt-0">
+                              <div className="text-right">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                  {formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}
+                                </p>
+                                <p className="text-sm font-medium text-gray-800 dark:text-white">
+                                  Duration: {duration.hours}h {duration.minutes}m
+                                </p>
                               </div>
-                              <p className="text-sm font-semibold">
-                                {session.endTime ? formatTimeOnly(session.endTime) : "—"}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-6">
+                          {/* Session Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaClock />
+                                <span className="text-sm font-medium">Duration</span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {duration.hours}h {duration.minutes}m
                               </p>
                             </div>
                             
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
-                                <FaRoad className="text-sm" />
-                                <span className="text-xs font-medium">Distance</span>
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaRoad />
+                                <span className="text-sm font-medium">Distance</span>
                               </div>
-                              <p className="text-sm font-semibold">
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
                                 {(session.totalDistance / 1000).toFixed(2)} km
                               </p>
                             </div>
                             
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
-                                <FaMapPin className="text-sm" />
-                                <span className="text-xs font-medium">Points</span>
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaUser />
+                                <span className="text-sm font-medium">Farmers Met</span>
                               </div>
-                              <p className="text-sm font-semibold">
-                                {session.logs?.length || 0}
+                              <p className="text-lg font-bold text-purple-500">
+                                {farmerCount}
                               </p>
                             </div>
                           </div>
-
-                          {/* Additional Info */}
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                              Duration: {Math.floor(duration / 60)}h {duration % 60}m
-                            </span>
-                            {pauses.length > 0 && (
-                              <span className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-full">
-                                <FaPauseCircle className="inline mr-1" />
-                                {pauses.length} Pause{pauses.length > 1 ? 's' : ''}
-                              </span>
-                            )}
+                          
+                          {/* Odometer Images Section */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                Start Odometer
+                              </h4>
+                              {renderOdometerImage(session.startOdometerImage)}
+                            </div>
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                End Odometer
+                              </h4>
+                              {renderOdometerImage(session.endOdometerImage)}
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Right Section - Action Button */}
-                        <div className="lg:ml-4">
-                          <button
-                            onClick={() => openMap(session)}
-                            className="w-full lg:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-semibold whitespace-nowrap"
-                          >
-                            <FaEye className="text-lg" />
-                            View Travel Path
-                          </button>
+                          
+                          {/* Farmer Data Section */}
+                          {farmerCount > 0 && session.farmerData?.data && (
+                            <div className="mb-6">
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-lg">
+                                  <FaUser className="text-purple-500" />
+                                </div>
+                                Farmers Met During This Session ({farmerCount})
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {session.farmerData.data.map((farmer, farmerIndex) => (
+                                  <div key={farmer.id || farmerIndex} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <div>
+                                        <h5 className="font-bold text-gray-800 dark:text-white">
+                                          {farmer.farmerName || `Farmer #${farmerIndex + 1}`}
+                                        </h5>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                                          Recorded: {formatDateTime(farmer.createdAt)}
+                                        </p>
+                                      </div>
+                                      <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-purple-500/20 to-pink-600/20 border border-purple-400/30 text-purple-700 dark:text-purple-400 text-xs font-semibold rounded-full">
+                                        ID: {farmer.id}
+                                      </span>
+                                    </div>
+                                    
+                                    {farmer.farmerDescription && (
+                                      <div className="mb-3">
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                          {farmer.farmerDescription}
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    {farmer.farmerImage && farmer.farmerImage.trim() !== '' && (
+                                      <div className="mt-3">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Farmer Image:</p>
+                                        <div className="rounded-xl overflow-hidden max-w-xs">
+                                          {renderOdometerImage(farmer.farmerImage)}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 backdrop-blur-sm border-t border-white/10 dark:border-gray-700/50 p-4 flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  Showing {farmerTravelData.length} session{farmerTravelData.length !== 1 ? 's' : ''}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      alert('Export functionality to be implemented');
+                    }}
+                    className={`px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl font-medium flex items-center gap-2`}
+                  >
+                    <FaDownload />
+                    Export Data
+                  </button>
+                  <button
+                    onClick={closeFarmerDataModal}
+                    className={`px-6 py-2 ${glassmorphismClasses.button.outline} rounded-xl font-medium`}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      {/* Map Modal */}
-      {mapView && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl w-full h-full max-w-7xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      {/* Multi-Session Map Modal */}
+      {multiSessionMapView && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}>
             {/* Map Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white flex-shrink-0">
+            <div className="bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-sm p-6 text-white flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="bg-white/20 p-3 rounded-xl">
+                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <FaUser className="text-2xl" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">{multiSessionMapView.username}</h2>
+                    <p className="text-blue-100">
+                      {multiSessionMapView.employeeCode} • 
+                      {new Date(multiSessionMapView.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })} • 
+                      {multiSessionMapView.sessions.length} Session{multiSessionMapView.sessions.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeMultiSessionMap}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
+                >
+                  <span className="text-2xl">✕</span>
+                </button>
+              </div>
+              
+              {/* Session Legend */}
+              <div className="mt-4">
+                <div className="flex flex-wrap gap-2">
+                  {multiSessionMapView.sessions.map((session, index) => (
+                    <div key={session.sessionId} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                      <div 
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: getSessionColor(index) }}
+                      ></div>
+                      <span className="text-sm font-medium">
+                        Session #{session.sessionId}: {formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Map Container */}
+            <div className="flex-1 relative">
+              <MapContainer
+                center={multiSessionMapView.center}
+                zoom={multiSessionMapView.zoom}
+                scrollWheelZoom
+                style={{ height: "100%", width: "100%" }}
+                key={`multi-map-${multiSessionMapView.userId}-${multiSessionMapView.date}`}
+              >
+                <TileLayer
+                  attribution="Google Maps"
+                  url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                />
+
+                {/* Render all session polylines with different colors */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  const path = buildSessionPolylinePath(session);
+                  if (path.length >= 2) {
+                    const isActive = !session.endTime;
+                    return (
+                      <Polyline
+                        key={`session-${session.sessionId}`}
+                        positions={path}
+                        pathOptions={{
+                          color: getSessionColor(index),
+                          weight: 5,
+                          opacity: 0.8,
+                          lineCap: "round",
+                          lineJoin: "round",
+                          dashArray: isActive ? "10, 5" : undefined,
+                        }}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Start markers for each session */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
+                    return (
+                      <Marker
+                        key={`start-${session.sessionId}`}
+                        position={[
+                          parseCoordinate(session.startLatitude), 
+                          parseCoordinate(session.startLongitude)
+                        ]}
+                        icon={L.icon({
+                          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+                          shadowUrl,
+                          iconAnchor: [12, 41],
+                          iconSize: [25, 41],
+                        })}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>🟢 Start (Session #{session.sessionId})</strong><br />
+                            <strong>Time:</strong> {formatDateTime(session.startTime)}<br />
+                            <div 
+                              className="inline-block w-3 h-3 rounded-full mr-1"
+                              style={{ backgroundColor: getSessionColor(index) }}
+                            ></div>
+                            <span>Session Color</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* End markers for each session */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+                    return (
+                      <Marker
+                        key={`end-${session.sessionId}`}
+                        position={[
+                          parseCoordinate(session.endLatitude), 
+                          parseCoordinate(session.endLongitude)
+                        ]}
+                        icon={L.icon({
+                          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+                          shadowUrl,
+                          iconAnchor: [12, 41],
+                          iconSize: [25, 41],
+                        })}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>🔴 End (Session #{session.sessionId})</strong><br />
+                            <strong>Time:</strong> {formatDateTime(session.endTime)}<br />
+                            <strong>Distance:</strong> {(session.totalDistance / 1000).toFixed(2)} km<br />
+                            <div 
+                              className="inline-block w-3 h-3 rounded-full mr-1"
+                              style={{ backgroundColor: getSessionColor(index) }}
+                            ></div>
+                            <span>Session Color</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })}
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Session Map Modal */}
+      {mapView && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}>
+            <div className="bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-sm p-6 text-white flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
                     <FaUser className="text-2xl" />
                   </div>
                   <div>
@@ -645,57 +1738,13 @@ export default function AttendanceList() {
                 </div>
                 <button
                   onClick={closeMap}
-                  className="bg-white/20 hover:bg-white/30 p-3 rounded-xl transition-all"
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
                 >
                   <span className="text-2xl">✕</span>
                 </button>
               </div>
-              
-              {/* Session Stats */}
-              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                  <p className="text-xs text-blue-100 mb-1">Start Time</p>
-                  <p className="font-bold text-sm">{formatTimeOnly(mapView.startTime)}</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                  <p className="text-xs text-blue-100 mb-1">End Time</p>
-                  <p className="font-bold text-sm">{mapView.endTime ? formatTimeOnly(mapView.endTime) : "Active"}</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                  <p className="text-xs text-blue-100 mb-1">Distance</p>
-                  <p className="font-bold text-lg">{(mapView.totalDistance / 1000).toFixed(1)} km</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
-                  <p className="text-xs text-blue-100 mb-1">Points</p>
-                  <p className="font-bold text-lg">{mapView.logs?.length || 0}</p>
-                </div>
-              </div> */}
+            </div>
 
-              {/* Controls */}
-                {/* <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() => setAutoRefresh(!autoRefresh)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                      autoRefresh 
-                        ? 'bg-green-500 hover:bg-green-600' 
-                        : 'bg-white/20 hover:bg-white/30'
-                    }`}
-                  >
-                    <FaSync className={autoRefresh ? "animate-spin" : ""} />
-                    Auto Refresh: {autoRefresh ? 'ON' : 'OFF'}
-                  </button>
-                  <button
-                    onClick={manualRefresh}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all disabled:opacity-50"
-                  >
-                    <FaSync className={isLoading ? "animate-spin" : ""} />
-                    Refresh Now
-                  </button>
-                </div> */}
-              </div>
-
-            {/* Map Container */}
             <div className="flex-1 relative">
               <MapContainer
                 center={getMapCenter(mapView)}
@@ -754,123 +1803,6 @@ export default function AttendanceList() {
                     </Popup>
                   </Marker>
                 )}
-
-                {/* Markers for important points */}
-                {mapView.logs && mapView.logs.length > 0 && mapView.logs.length <= 100 && (
-                  <>
-                    {mapView.logs.map((log, index) => {
-                      if (!isValidCoordinate(log.latitude, log.longitude)) return null;
-                      
-                      // Show markers for specific points: start, end, pauses, and every 5th point
-                      const isStart = index === 0;
-                      const isEnd = index === mapView.logs.length - 1;
-                      const isPause = log.pause;
-                      const shouldShow = isStart || isEnd || isPause || index % 5 === 0;
-                      
-                      if (!shouldShow) return null;
-                      
-                      const lat = parseCoordinate(log.latitude);
-                      const lng = parseCoordinate(log.longitude);
-                      
-                      return (
-                        <Marker
-                          key={`log-${log.id}`}
-                          position={[lat, lng]}
-                          icon={L.icon({
-                            iconUrl: isStart 
-                              ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png"
-                              : isEnd
-                              ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"
-                              : isPause
-                              ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png"
-                              : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-                            shadowUrl,
-                            iconAnchor: [12, 41],
-                            iconSize: [20, 32],
-                          })}
-                        >
-                          <Popup>
-                            <div className="text-sm">
-                              <strong>
-                                {isStart ? '🟢 Start' : isEnd ? '🔴 End' : isPause ? '⏸️ Pause' : '🔵 Point'}
-                              </strong><br />
-                              <strong>Time:</strong> {formatDateTime(log.timestamp)}<br />
-                              <strong>Speed:</strong> {log.speed?.toFixed(2)} km/h<br />
-                              <strong>Battery:</strong> {log.battery}%<br />
-                              <strong>Coordinates:</strong> {lat.toFixed(6)}, {lng.toFixed(6)}<br />
-                              <strong>Point:</strong> {index + 1} of {mapView.logs.length}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* Current position marker for ongoing session */}
-                {!mapView.endTime && mapView.logs && mapView.logs.length > 0 && (() => {
-                  const lastLog = mapView.logs[mapView.logs.length - 1];
-                  if (isValidCoordinate(lastLog.latitude, lastLog.longitude)) {
-                    const lat = parseCoordinate(lastLog.latitude);
-                    const lng = parseCoordinate(lastLog.longitude);
-                    
-                    return (
-                      <Marker
-                        position={[lat, lng]}
-                        icon={L.icon({
-                          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png",
-                          shadowUrl,
-                          iconAnchor: [12, 41],
-                          iconSize: [30, 48],
-                        })}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <strong>📍 Current Position</strong><br />
-                            <strong>User:</strong> {mapView.username}<br />
-                            <strong>Last Update:</strong> {formatDateTime(lastLog.timestamp)}<br />
-                            <strong>Speed:</strong> {lastLog.speed?.toFixed(2)} km/h<br />
-                            <strong>Battery:</strong> {lastLog.battery}%<br />
-                            <strong>Coordinates:</strong> {lat.toFixed(6)}, {lng.toFixed(6)}<br />
-                            <strong>Status:</strong> <span className="text-green-600">● Active</span>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Pause intervals */}
-                {detectPauses(mapView.logs || []).map((pause, index) => {
-                  if (!isValidCoordinate(pause.start.latitude, pause.start.longitude)) return null;
-                  
-                  const lat = parseCoordinate(pause.start.latitude);
-                  const lng = parseCoordinate(pause.start.longitude);
-                  
-                  return (
-                    <Marker
-                      key={`pause-${index}`}
-                      position={[lat, lng]}
-                      icon={L.icon({
-                        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png",
-                        shadowUrl,
-                        iconAnchor: [12, 41],
-                        iconSize: [20, 32],
-                      })}
-                    >
-                      <Popup>
-                        <div className="text-sm">
-                          <strong>⏸️ Pause Interval</strong><br />
-                          <strong>Start:</strong> {formatDateTime(pause.start.timestamp)}<br />
-                          <strong>End:</strong> {formatDateTime(pause.end.timestamp)}<br />
-                          <strong>Duration:</strong> {pause.durationMinutes.toFixed(1)} minutes<br />
-                          <strong>Coordinates:</strong> {lat.toFixed(6)}, {lng.toFixed(6)}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
 
                 {/* End marker */}
                 {isValidCoordinate(mapView.endLatitude, mapView.endLongitude) && (

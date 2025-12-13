@@ -102,7 +102,7 @@ export const axiosGetMe = async () => {
 
 export const axiosPostChangePassword = async (oldNewPassword: AxiosPostChangePassword) => {
   try {
-      const res = await API.post("/change-password/", oldNewPassword);
+      const res = await API.post("/auth/change-password/", oldNewPassword);
       
       if(res.data){
         return res.data;

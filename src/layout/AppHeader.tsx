@@ -103,7 +103,7 @@ const AppHeader: React.FC = () => {
           {/* Logo */}
           {/* <Link to="/" className="lg:hidden"> */}
             <div >
-              <img src="/images/logo/cowberry-logo.svg" alt="Logo" className="flex justify-center items-center"/>
+              <img src="cowberry_organics_2.png" alt="Logo" className="flex justify-center items-center " width={170} height={0}/>
             </div>
           {/* </Link> */}
 

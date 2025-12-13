@@ -112,7 +112,7 @@ export default function SignInForm() {
             // Show success message
             const successMessage = message || t("toast.Logged in successfully");
             setMessage(successMessage);
-            toast.success(`Welcome back, ${user.username}!`, {
+            toast.success(`Welcome back, ${user.username} 🍁`, {
               id: loadingToast, // Ye ID use karne se loading wala toast replace ho jata hai
             });
 
@@ -140,9 +140,12 @@ export default function SignInForm() {
             // Role-based navigation logic
             let targetRoute = "/home"; // Default for HR and admin
 
-            if (normalizedRole === "employee") {
+            if (
+              normalizedRole === "employee" ||
+              normalizedRole === "Fieldemployee"
+            ) {
               targetRoute = "/employee-dashboard";
-            } else if (normalizedRole === "hr" || normalizedRole === "admin") {
+            } else if (normalizedRole === "Hr" || normalizedRole === "admin") {
               targetRoute = "/home";
             }
 

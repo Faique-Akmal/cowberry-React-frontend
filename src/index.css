@@ -1,7 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
 layer(base);
 
-
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -42,24 +41,24 @@ layer(base);
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-cowberry-green-300: #9BB9AA;
+  --color-cowberry-green-300: #9bb9aa;
   --color-cowberry-green-400: #67bc38;
   --color-cowberry-green-500: #377355;
   --color-cowberry-green-600: #184719;
 
-  --color-cowberry-cream-500: #DAC495;
+  --color-cowberry-cream-500: #dac495;
 
-  --color-dashboard-brown-200: #B17F59;
-  --color-dashboard-gray-600: #4C585B;
-  --color-dashboard-royalblue-200: #0D5EA6;
-  --color-dashboard-gray-200: #F3EFE9;
+  --color-dashboard-brown-200: #b17f59;
+  --color-dashboard-gray-600: #4c585b;
+  --color-dashboard-royalblue-200: #0d5ea6;
+  --color-dashboard-gray-200: #f3efe9;
 
   --color-brand-25: #f2f7ff;
   --color-brand-50: #ecf3ff;
   --color-brand-100: #dde9ff;
   --color-brand-200: #c2d6ff;
 
-  --color-brand-300: #9BB9AA;
+  --color-brand-300: #9bb9aa;
   --color-brand-400: #67bc38;
   --color-brand-500: #377355;
   --color-brand-600: #184719;
@@ -200,19 +199,18 @@ layer(base);
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
- body {
-  @apply relative font-normal font-outfit z-1 bg-repeat ;
+  body {
+    @apply relative font-normal font-outfit z-1 bg-repeat;
 
-  /* Apply fake opacity via semi-transparent gradient layer */
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, .5), rgba(255, 255, 255, .5)), 
-    url('/'),
-    url('/');
-  
-  background-size: cover, contain, cover;
- 
-}
+    /* Apply fake opacity via semi-transparent gradient layer */
+    background-image: linear-gradient(
+        rgba(255, 255, 255, 0.5),
+        rgba(255, 255, 255, 0.5)
+      ),
+      url("/"), url("/");
 
+    background-size: cover, contain, cover;
+  }
 }
 
 @utility menu-item {
@@ -290,7 +288,7 @@ layer(base);
 }
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
-    @apply size-1.5;
+    @apply size-0.5;
   }
 
   &::-webkit-scrollbar-track {
@@ -298,7 +296,7 @@ layer(base);
   }
 
   &::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 rounded-full dark:bg-gray-700;
+    @apply bg-gray-200/25 rounded-full dark:bg-gray-700;
   }
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {

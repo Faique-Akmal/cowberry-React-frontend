@@ -285,7 +285,7 @@ export default function EmployeeChart() {
       </div>
       
       <div className="relative z-10">
-        <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-green-700 to-gray-600 bg-clip-text text-transparent">
           {t("home.UsersbyDepartment") || "Users by Department"}
         </h2>
 
@@ -429,7 +429,7 @@ export default function EmployeeChart() {
         </div>
 
         {/* Stats Summary */}
-        <div className="mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
+        {/* <div className="mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 rounded-xl backdrop-blur-sm"
               style={{
@@ -493,7 +493,7 @@ export default function EmployeeChart() {
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Avg per Dept</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

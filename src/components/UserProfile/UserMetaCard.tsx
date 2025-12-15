@@ -352,7 +352,7 @@ export default function UserMetaCard() {
             <div className="
               w-full h-full
               flex items-center justify-center
-              bg-gradient-to-r from-blue-500/80 to-purple-600/80
+              bg-gradient-to-r from-green-500/80 to-green-600/80
               text-white text-xl sm:text-2xl font-medium
               backdrop-blur-sm
             ">
@@ -365,9 +365,9 @@ export default function UserMetaCard() {
         <div className="text-center lg:text-left">
           <h4 className="
             mb-2 text-lg sm:text-xl font-semibold capitalize
-            bg-gradient-to-r from-blue-600 to-purple-600
-            dark:from-blue-400 dark:to-purple-400
-            bg-clip-text text-transparent
+           text-white dark:text-gray-100
+            
+            bg-clip-text 
           ">
             {meUserData.username}
           </h4>
@@ -428,7 +428,7 @@ export default function UserMetaCard() {
       </div>
 
       {/* Edit Button */}
-      <button
+      {/* <button
         onClick={openModal}
         disabled={loading}
         className="
@@ -463,7 +463,7 @@ export default function UserMetaCard() {
           </svg>
         </div>
         Edit
-      </button>
+      </button> */}
     </div>
   </div>
 

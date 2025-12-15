@@ -133,7 +133,7 @@ const UserList: React.FC = () => {
   <div className="relative z-10">
     <h2 className="
       text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-center
-      bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600
+      text-white
       dark:from-blue-400 dark:via-purple-400 dark:to-pink-400
       bg-clip-text text-transparent
       px-2
@@ -441,7 +441,7 @@ const UserList: React.FC = () => {
                           <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10">
                             <div className="
                               h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 rounded-lg sm:rounded-xl
-                              bg-gradient-to-r from-blue-500/80 to-purple-600/80
+                              bg-gradient-to-r from-green-500/80 to-green-600/80
                               border border-blue-400/50 dark:border-purple-500/50
                               flex items-center justify-center text-white text-xs sm:text-sm md:text-base font-medium
                               shadow
@@ -572,7 +572,7 @@ const UserList: React.FC = () => {
                         </div>
                         <p className="
                           text-sm sm:text-base md:text-lg font-medium
-                          text-gray-700 dark:text-gray-300
+                           dark:text-gray-300
                           bg-gradient-to-r from-blue-600 to-purple-600
                           dark:from-blue-400 dark:to-purple-400
                           bg-clip-text text-transparent
@@ -654,7 +654,7 @@ const UserList: React.FC = () => {
           ) : (
             <div className="
               w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 rounded-lg sm:rounded-xl
-              bg-gradient-to-r from-blue-500/80 to-purple-600/80
+              bg-gradient-to-r from-green-500/80 to-green-600/80
               border-2 border-blue-400/50 dark:border-purple-500/50
               flex items-center justify-center text-white text-lg sm:text-xl md:text-2xl font-bold
               shadow

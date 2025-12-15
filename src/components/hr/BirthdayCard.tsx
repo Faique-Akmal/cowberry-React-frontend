@@ -213,8 +213,8 @@ const BirthdayCardList: React.FC = () => {
                 : '1px solid rgba(139, 92, 246, 0.2)',
             }}
           >
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              🎉 {t("home.Today's Birthdays") || "Today's Birthdays"}
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-gray-600 bg-clip-text text-transparent">
+              🎉 {t("home.Today’s Birthdays") || "Today's Birthdays"}
             </h2>
           </div>
           
@@ -229,7 +229,7 @@ const BirthdayCardList: React.FC = () => {
                   : '1px solid rgba(139, 92, 246, 0.1)',
               }}
             >
-              <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse"></span>
+              <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-gray-900 rounded-full animate-pulse"></span>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {birthdayUsers.length} birthday{birthdayUsers.length !== 1 ? 's' : ''} today!
               </span>

@@ -47,33 +47,6 @@ const AppHeader: React.FC = () => {
     };
   }, []);
 
-  // // Dummy list of routes/pages to search from
-  // const searchableItems = [
-  //   { label: "home", path: "/home" },
-  //   { label: "Users", path: "/users-list" },
-  //   { label: "User-registeration", path: "/user-register" },
-  //   { label: "Users-profile", path: "/users-profile" },
-  //   { label: "Attendance-start", path: "/attandanceStart-page" },
-  //   { label: "Attendance-end", path: "/attandanceEnd-page" },
-  //   { label: "Inventory", path: "/inventory" },
-  //   { label: "Announcement", path: "/announcement" },
-  //   { label: "Task", path: "/assign-task-page" },
-  //   { label: "Task-calendar", path: "/task-calendar" },
-  //   { label: "Task-admin", path: "/admin-task-manager" },
-  //   { label: "Dashboard", path: "/employee-dashboard" },
-  //   { label: "my-task", path: "/task-show-page" },
-  //   { label: "Farmers", path: "/farmers" },
-  //   { label: "Purchases", path: "/purchase" },
-  //   { label: "User Profile", path: "/profile" },
-  //   { label: "chat", path: "/chat" },
-  //   { label: "All Users", path: "/all-users" },
-  //   { label: "LogOut", path: "/logout" },
-  // ];
-
-  // const filteredResults = searchableItems.filter((item) =>
-  //   item.label.toLowerCase().includes(searchQuery.toLowerCase())
-  // );
-
   return (
     <header
   style={{
@@ -107,88 +80,7 @@ const AppHeader: React.FC = () => {
             </div>
           {/* </Link> */}
 
-         
-
-          {/* Search Bar */}
-     {/* <div className="relative w-auto max-w-sm mx-auto sm:w-full px-2 sm:px-0">
-  <form onSubmit={(e) => e.preventDefault()}>
-    {/* Desktop Search Input */}
-    {/* <div className="hidden sm:flex relative w-full">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Search or type command..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full h-11 pl-10 pr-14 rounded-lg border bg-white text-sm text-gray-800 shadow focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-800 dark:text-white"
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.focus()}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400"
-      >
-        ⌘ K
-      </button>
-    </div> */}
-
-    {/* Mobile Search Icon */}
-    {/* <div className="sm:hidden relative w-auto">
-      <button
-        type="button"
-        onClick={() => setShowMobileSearch(!showMobileSearch)}
-        className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full float-right"
-      >
-        🔍
-      </button> */}
-
-      {/* Mobile Dropdown Input */}
-      {/* {showMobileSearch && (
-        <div className="absolute top-12 right-0 z-10 bg-white border rounded-lg shadow-lg w-72 p-2 dark:bg-gray-800">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search or type command..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-3 pr-10 rounded-lg border bg-white text-sm text-gray-800 shadow focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-800 dark:text-white"
-            />
-            <button
-              type="button"
-              onClick={() => inputRef.current?.focus()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400"
-            >
-              ⌘ K
-            </button>
-          </div> */}
-
-          {/* Dropdown Results */}
-          {/* {searchQuery && (
-            <div className="mt-2 max-h-60 overflow-y-auto">
-              {filteredResults.length > 0 ? (
-                filteredResults.map((item, index) => (
-                  <Link
-                    key={index}
-                    to={item.path}
-                    className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setSearchQuery("")}
-                  >
-                    {item.label}
-                  </Link>
-                ))
-              ) : (
-                <div className="px-4 py-2 text-gray-500">{t("header.No results found.")}</div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  </form>
-</div> */} 
-
-           {/* App Menu Button */}
+          {/* App Menu Button */}
           <button
             onClick={toggleApplicationMenu}
             className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
@@ -210,6 +102,8 @@ const AppHeader: React.FC = () => {
             <LangToggleButton />
             <ThemeToggleButton />
             {/* <AnnouncementNotification /> */}
+            
+            {/* ✅ FIXED: NotificationDropdown without props */}
             <NotificationDropdown />
           </div>
           <UserDropdown />

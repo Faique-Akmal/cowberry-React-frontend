@@ -912,7 +912,7 @@ export default function AttendanceList() {
             {filteredSessions.length > 0 && (
               <button
                 onClick={exportToCSV}
-                className={`flex items-center gap-2 px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600`}
                 title="Export all sessions to CSV"
               >
                 <FaFileCsv />
@@ -923,7 +923,7 @@ export default function AttendanceList() {
             <button
               onClick={manualRefresh}
               disabled={isLoading}
-              className={`flex items-center gap-2 px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl disabled:opacity-50`}
+              className={`flex items-center gap-2 px-4 py-2  rounded-xl disabled:opacity-50 bg-blue-700`}
             >
               <FaSync className={isLoading ? "animate-spin" : ""} />
               Refresh
@@ -1224,7 +1224,7 @@ export default function AttendanceList() {
                                     session.userId.toString(), 
                                     group.date
                                   )}
-                                  className={`px-3 py-2 ${glassmorphismClasses.button.secondary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                                  className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
                                 >
                                   <FaInfoCircle />
                                   Details
@@ -1248,7 +1248,7 @@ export default function AttendanceList() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={() => openMultiSessionMap(group)}
-                      className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 ${glassmorphismClasses.button.primary} rounded-xl font-semibold`}
+                      className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
                     >
                       <FaLayerGroup className="text-xl" />
                       View All Sessions on Map

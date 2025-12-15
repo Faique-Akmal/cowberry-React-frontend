@@ -129,12 +129,12 @@ const AppSidebar: React.FC = () => {
     role: ["admin","department_head","manager","HR","executive"],
   },
   
-  // {
-  //   icon: <FaTasks />,
-  //   name: t("menu.taskManager"),
-  //   path: "/admin-task-manager",
-  //   role: ["admin","department_head","manager","HR","executive"],
-  // },
+  {
+    icon: <FaTasks />,
+    name: t("menu.announcement"),
+    path: "/announcementList",
+    role: ["admin","department_head","manager","HR","executive"],
+  },
   {
     icon: <PiUsersThreeBold />,
     name: t("menu.allUsers"),

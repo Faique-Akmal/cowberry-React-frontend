@@ -52,6 +52,8 @@ import ThemeCustomizer from "./themes/themecutomizer";
 import ChatToggle from "./context/ChatToggle";
 // import Testingmap from "./pages/Employee/Testing-map";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
+import AnnouncementModal from "./components/header/NotificationDropdown";
+import CreateAnnouncement from "./components/hr/Announcement";
 export default function App() {
   return (
     <>
@@ -160,7 +162,8 @@ export default function App() {
           <Route path="/assign-task-page" element={<TaskPage />} />
           <Route path="/admin-task-manager" element={<AdminTaskManager />} />
           <Route path="/attandance-start-admin" element={<AttendanceList />} />
-          <Route path="/announcement" element={<AnnouncementForm />} />
+          <Route path="/announcement" element={<AnnouncementModal/>} />
+          <Route path="/announcementList" element={<CreateAnnouncement/>} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}
 
           {/* Ui Elements */}

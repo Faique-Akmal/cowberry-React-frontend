@@ -109,16 +109,16 @@ const AppSidebar: React.FC = () => {
       { name: t("menu.attendanceEnd"), path: "/attandanceEnd-page", role: ["employee"] },
     ],
   },
-  {
-    icon: <TbTableShare />,
-    name: t("menu.forms"),
-    subItems: [
-      { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","HR"] },
-    ],
-  },
+  // {
+  //   icon: <TbTableShare />,
+  //   name: t("menu.forms"),
+  //   subItems: [
+  //     { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","HR"] },
+  //   ],
+  // },
   {
     icon: <MdListAlt />,
-    name: t("menu.attendanceList"),
+    name: t("menu.TravelSessions"),
     path: "/attandance-start-admin",
     role: ["admin","department_head","manager","HR","executive"],
   },
@@ -128,21 +128,11 @@ const AppSidebar: React.FC = () => {
     path: "/user-register",
     role: ["admin","department_head","manager","HR","executive"],
   },
-  // {
-  //   icon: <RiUserSharedFill />,
-  //   name: t("menu.preference"),
-  //   subItems: [
-  //     { name: t("menu.farmers"), path: "/blank", role: ["admin","department_head","manager","hr","employee","executive"] },
-  //     { name: t("menu.procurement"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-  //     { name: t("menu.inventory"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-  //     { name: t("menu.accounts"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] },
-  //     { name: t("menu.sales"), path: "/blank", role: ["admin","department_head","manager","hr","executive","employee"] }
-  //   ],
-  // },
+  
   {
     icon: <FaTasks />,
-    name: t("menu.taskManager"),
-    path: "/admin-task-manager",
+    name: t("menu.announcement"),
+    path: "/announcementList",
     role: ["admin","department_head","manager","HR","executive"],
   },
   {
@@ -151,30 +141,20 @@ const AppSidebar: React.FC = () => {
     path: "/all-users",
     role: ["admin","department_head","manager","HR","executive"],
   },
-  //   {
-  //   icon: <PiUsersThreeBold />,
-  //   name: t("menu.themeCustomizer"),
-  //   path: "/theme-customizer",
-  //   role: ["admin","department_head","manager","hr","executive" ,"employee"],
+ 
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: t("menu.taskCalendar"),
+  //   path: "/task-calendar",
+  //   role: ["employee"],
   // },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.taskCalendar"),
-    path: "/task-calendar",
-    role: ["employee"],
-  },
   {
     icon: <CalenderIcon />,
     name: t("menu.myTasks"),
     path: "/task-show-page",
     role: ["employee"],
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: t("menu.announcement"),
-  //   path: "/announcement",
-  //   role: ["admin","department_head","manager"],
-  // },
+ 
 ];
 
 
@@ -310,7 +290,7 @@ const othersItems: NavItem[] = [
  <aside
   style={{
     backgroundColor: themeConfig.sidebar.background 
-      ? `${themeConfig.sidebar.background}80` // Add transparency
+      ? `${themeConfig.sidebar.background}80` 
       : 'rgba(255, 255, 255, 0.15)',
     color: themeConfig.sidebar.text || undefined,
     backdropFilter: 'blur(12px) saturate(180%)',
@@ -329,7 +309,7 @@ const othersItems: NavItem[] = [
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>
         {/* <Link to="/"> */}
-          <img src="/images/logo/cowberry-logo.svg" alt="Logo" width={170} height={0} />
+          <img src="cowberry_organics_2.png" alt="Logo" width={170} height={0} />
         {/* </Link> */}
       </div>
 

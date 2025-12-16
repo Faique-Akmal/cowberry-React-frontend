@@ -24,7 +24,7 @@ export default function AnnouncementNotification() {
 
   //   const accessToken = localStorage.getItem("accessToken");
   //   const meUser = JSON.parse(localStorage.getItem("meUser")!);
-  // const userId= meUser?.id;
+  // const userId=meUser?.id;
 
   // Fetch initial announcements on mount
   useEffect(() => {

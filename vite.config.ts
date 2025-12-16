@@ -19,6 +19,10 @@ export default defineConfig({
   ],
 
    server: {
+      headers: {
+      // Increase header size limit
+      'Connection': 'keep-alive'
+    },
     host: '0.0.0.0',   // makes it accessible on your LAN
     port: 5173,        // you can change this to 3000, 8080, etc.
   }

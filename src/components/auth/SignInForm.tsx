@@ -51,60 +51,58 @@ export default function SignInForm() {
     }
 
     try {
-      console.log("Sending login request with:", {
-        email: email.trim(),
-        password: "***",
-      });
+      // console.log("Sending login request with:", { email: email.trim(), password: "***" });
 
-      const response = await API.post("/auth/login/", {
+      const response = await API.post("/auth/login", {
         email: email.trim(),
         password: password.trim(),
         deviceType: isMobileDevice ? "mobile" : "desktop",
       });
 
-      console.log("Login API Response:", response);
-      console.log("Full response data:", response.data);
+      // console.log("Login API Response:", response);
+      // console.log("Full response data:", response.data);
 
       // Check for successful login based on status code
       if (response.status === 200 || response.status === 201) {
         const { user, tokens, message } = response.data;
 
-        console.log("User data:", user);
-        console.log("Tokens:", tokens);
-        console.log("Server message:", message);
+        // console.log("User data:", user);
+        // console.log("Tokens:", tokens);
+        // console.log("Server message:", message);
 
         // Store user data in localStorage
         localStorage.setItem("userRole", user?.role || "employee");
         localStorage.setItem("userId", user?.id || "");
+        localStorage.setItem("profileimg", user?.profileimg || "");
         localStorage.setItem("department", user?.department || "");
         localStorage.setItem("username", user?.username || "");
         localStorage.setItem("employee_code", user?.employee_code || "");
         localStorage.setItem("email", user?.email || "");
         localStorage.setItem("mobileNo", user?.mobileNo || "");
-        // localStorage.setItem("token", user?.accesstoken || "");
+        localStorage.setItem("token", user?.accesstoken || "");
         localStorage.setItem(
           "isActiveEmployee",
           user?.isActiveEmployee ? "true" : "false"
         );
 
-        console.log("LocalStorage after saving user data:");
-        console.log("userRole:", localStorage.getItem("userRole"));
-        console.log("userId:", localStorage.getItem("userId"));
-        console.log("email:", localStorage.getItem("email"));
+        // console.log("LocalStorage after saving user data:");
+        // console.log("userRole:", localStorage.getItem("userRole"));
+        // console.log("userId:", localStorage.getItem("userId"));
+        // console.log("email:", localStorage.getItem("email"));
 
         // Set tokens in auth context and WAIT for it to complete
         if (tokens?.access && tokens?.refresh) {
           try {
-            console.log("Calling login function with tokens...");
+            // console.log("Calling login function with tokens...");
 
             // WAIT for login to complete (this should store tokens in context)
             await login(tokens.refresh, tokens.access);
-            console.log("Login function completed successfully");
+            // console.log("Login function completed successfully");
 
             // Store "Keep me logged in" preference
             if (isChecked) {
               localStorage.setItem("rememberMe", "true");
-              console.log("Remember me enabled");
+              // console.log("Remember me enabled");
             } else {
               localStorage.removeItem("rememberMe");
             }
@@ -117,57 +115,37 @@ export default function SignInForm() {
             });
 
             // Debug: Check if tokens are stored
-            console.log(
-              "Access token in localStorage:",
-              localStorage.getItem("accessToken") ? "Yes" : "No"
-            );
-            console.log(
-              "Refresh token in localStorage:",
-              localStorage.getItem("refreshToken") ? "Yes" : "No"
-            );
+            // console.log("Access token in localStorage:", localStorage.getItem("accessToken") ? "Yes" : "No");
+            // console.log("Refresh token in localStorage:", localStorage.getItem("refreshToken") ? "Yes" : "No");
 
             // Get user role and normalize it (handle case sensitivity)
             const userRole = user?.role || "employee";
             const normalizedRole = userRole.toLowerCase();
-            console.log(
-              "User role for navigation:",
-              userRole,
-              "(normalized:",
-              normalizedRole,
-              ")"
-            );
+            // console.log("User role for navigation:", userRole, "(normalized:", normalizedRole, ")");
 
             // Role-based navigation logic
-            let targetRoute = "/home"; // Default for HR and admin
+            let targetRoute = "/home";
 
-            if (
-              normalizedRole === "employee" ||
-              normalizedRole === "Fieldemployee"
-            ) {
+            if (normalizedRole === "employee") {
               targetRoute = "/employee-dashboard";
-            } else if (normalizedRole === "Hr" || normalizedRole === "admin") {
+            } else if (normalizedRole === "hr" || normalizedRole === "admin") {
               targetRoute = "/home";
             }
 
-            console.log(`Navigating ${userRole} user to: ${targetRoute}`);
-
-            // Small delay to ensure state updates (optional, can remove if not needed)
             setTimeout(() => {
               navigate(targetRoute, { replace: true });
             }, 100);
           } catch (loginError) {
-            console.error("Error in login function:", loginError);
+            // console.error("Error in login function:", loginError);
             setMessage("Authentication context error. Please try again.");
             toast.error("Authentication context error. Please try again.", {
               id: loadingToast,
             });
           }
         } else {
-          console.error("No tokens in response:", response.data);
+          // console.error("No tokens in response:", response.data);
           setMessage("No authentication tokens received from server.");
-          toast.error("No authentication tokens received from server.", {
-            id: loadingToast,
-          });
+          toast.error("No authentication tokens received from server.");
         }
       } else {
         // If we have a message, show it
@@ -179,21 +157,19 @@ export default function SignInForm() {
           });
         } else {
           setMessage("Login failed. Please try again.");
-          toast.error("Login failed. Please try again.", {
-            id: loadingToast,
-          });
+          toast.error("Login failed. Please try again.");
         }
       }
     } catch (error: any) {
-      console.error("Login error:", error);
+      // console.error("Login error:", error);
 
       if (error.response) {
         // Server responded with error status
         const status = error.response.status;
         const data = error.response.data;
 
-        console.log("Error response status:", status);
-        console.log("Error response data:", data);
+        // console.log("Error response status:", status);
+        // console.log("Error response data:", data);
 
         if (status === 400 || status === 401) {
           const errorMsg =
@@ -227,17 +203,15 @@ export default function SignInForm() {
         }
       } else if (error.request) {
         // Request was made but no response received
-        console.log("No response received:", error.request);
+        // console.log("No response received:", error.request);
         const errorMsg = t(
           "message.Cannot connect to server. Please check your connection."
         );
         setMessage(errorMsg);
-        toast.error(errorMsg, {
-          id: loadingToast,
-        });
+        toast.error(errorMsg);
       } else {
         // Something else happened
-        console.log("Request setup error:", error.message);
+        // console.log("Request setup error:", error.message);
         const errorMsg = t(
           "message.An unexpected error occurred. Please try again."
         );
@@ -248,20 +222,30 @@ export default function SignInForm() {
       }
     } finally {
       setIsLoading(false);
-      setIsLoading(false);
     }
   };
   return (
     <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
-      <div className="w-20 h-20 mx-auto mb-6 mt-6">
+      <div className="w-30 h-30 mx-auto mb-6 mt-2">
         <img
-          src="logo-cowberry.png"
+          src="cowberry_organics_1.png"
           alt="cowberry-logo"
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
         />
       </div>
       <div className="flex items-center justify-center w-full h-20">
-        <h1 className="text-xl font-bold">{t("WELCOME TO COWBERRY")}</h1>
+        <h1 className="text-xl font-bold">{t("WELCOME ")} </h1>
+        <br></br>
+      </div>
+      <div className="flex items-center justify-center w-full h-20">
+        <h1 className="text-xl font-bold">{t("TO ")} </h1>
+        <br></br>
+      </div>
+
+      <div className="flex items-center justify-center w-full h-20">
+        <h2 className="text-xl font-bold text-brand-500 ml-2">
+          {t("COWBERRY ORGANICS")}
+        </h2>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <form onSubmit={handleLogin}>

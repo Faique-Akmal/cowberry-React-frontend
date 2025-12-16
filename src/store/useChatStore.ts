@@ -4,7 +4,11 @@ import { Conversation, Message, User } from "../types/chatTypes";
 interface ChatState {
   activeConversation: Conversation | null;
   messages: Message[];
-  currentUser: User | null; // Logged in user
+  currentUser: User | null;
+
+  // New States for UI Actions
+  replyingTo: Message | null;
+  editingMessage: Message | null;
 
   // Actions
   setActiveConversation: (conversation: Conversation) => void;
@@ -12,12 +16,18 @@ interface ChatState {
   addMessage: (message: Message) => void;
   updateMessage: (messageId: number, updates: Partial<Message>) => void;
   setCurrentUser: (user: User) => void;
+
+  // New Actions
+  setReplyingTo: (message: Message | null) => void;
+  setEditingMessage: (message: Message | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
   activeConversation: null,
   messages: [],
   currentUser: null,
+  replyingTo: null,
+  editingMessage: null,
 
   setActiveConversation: (conversation) =>
     set({ activeConversation: conversation }),
@@ -39,4 +49,9 @@ export const useChatStore = create<ChatState>((set) => ({
     })),
 
   setCurrentUser: (user) => set({ currentUser: user }),
+
+  setReplyingTo: (message) =>
+    set({ replyingTo: message, editingMessage: null }), // Clear edit if replying
+  setEditingMessage: (message) =>
+    set({ editingMessage: message, replyingTo: null }), // Clear reply if editing
 }));

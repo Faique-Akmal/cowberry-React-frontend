@@ -58,6 +58,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       });
     });
 
+    // 3. Message Edited
+    newSocket.on("message_edited", (updatedMsg) => {
+      useChatStore.getState().updateMessage(updatedMsg.id, {
+        content: updatedMsg.content,
+        isEdited: true,
+      });
+    });
+
     set({ socket: newSocket });
   },
 

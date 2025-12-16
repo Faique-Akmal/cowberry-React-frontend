@@ -16,8 +16,6 @@ import {
   Loader2,
   FileText,
   MapPin,
-  MapPinned,
-  Telescope,
   Ban,
   BadgePlus,
   Download,
@@ -88,17 +86,14 @@ export const ChatInterface = () => {
   const [isSendingLocation, setIsSendingLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
-
-  // --- UI States ---
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false); // Attachment Menu State
 
   const { users, loading: usersLoading } = useUserList();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // --- Input Refs ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null); // For Images/Videos
-  const docInputRef = useRef<HTMLInputElement>(null); // For Documents
+  const docInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
   // Filter users
@@ -130,11 +125,11 @@ export const ChatInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, showMobileChat, replyingTo]);
 
-  // Handle Editing State
+  // Handle Editing State: Populate input
   useEffect(() => {
     if (editingMessage) {
       setInput(editingMessage.content || "");
-      textInputRef.current?.focus();
+      fileInputRef.current?.focus();
     }
   }, [editingMessage]);
 
@@ -147,7 +142,6 @@ export const ChatInterface = () => {
       // Clear states when changing chat
       setReplyingTo(null);
       setEditingMessage(null);
-      setIsAttachMenuOpen(false);
       setInput("");
     }
   }, [activeConversation, socket]);
@@ -172,7 +166,6 @@ export const ChatInterface = () => {
   }, []);
 
   // --- Handlers ---
-
   const handleUserClick = async (receiverId: number) => {
     try {
       const conversation = await ChatService.startChat(receiverId);
@@ -186,6 +179,7 @@ export const ChatInterface = () => {
     if (!input.trim() || !activeConversation || !currentUser || !socket) return;
 
     if (editingMessage) {
+      // --- Handle Edit ---
       socket.emit("edit_message", {
         messageId: editingMessage.id,
         newContent: input,
@@ -194,12 +188,13 @@ export const ChatInterface = () => {
       setEditingMessage(null);
       toast.success("Message updated");
     } else {
+      // --- Handle New Message / Reply ---
       const payload = {
         conversationId: activeConversation.id,
         senderId: currentUser.id,
         content: input,
         type: "TEXT",
-        replyToId: replyingTo?.id || null,
+        replyToId: replyingTo?.id || null, // Include reply ID
       };
       socket.emit("send_message", payload);
       setReplyingTo(null);
@@ -245,16 +240,13 @@ export const ChatInterface = () => {
 
       socket.emit("send_message", payload);
       setReplyingTo(null);
-      setIsAttachMenuOpen(false); // Close menu after selection
       toast.success("Attachment sent!");
     } catch (error) {
       console.error("Upload failed", error);
       toast.error("Failed to upload file");
     } finally {
       setIsUploading(false);
-      // Reset inputs
-      if (mediaInputRef.current) mediaInputRef.current.value = "";
-      if (docInputRef.current) docInputRef.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -279,7 +271,6 @@ export const ChatInterface = () => {
         socket.emit("send_message", payload);
         setIsSendingLocation(false);
         setReplyingTo(null);
-        setIsAttachMenuOpen(false);
         toast.success("Location sent!");
       },
       (error) => {
@@ -320,33 +311,19 @@ export const ChatInterface = () => {
       const [lat, lng] = msg.content.split(",");
       const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
       return (
-        <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
-          <div className="flex items-center gap-2 text-white/90 font-medium">
-            {/* <MapPin className="w-5 h-5 text-red-500" /> */}
-            <img
-              // src={mapUrl}
-              src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
-              alt="Location Preview"
-              className="w-full h-40 object-cover rounded-tl rounded-tr"
-            />{" "}
+        <div className="mb-2 overflow-hidden rounded-lg border border-white/20 bg-black/20 p-2">
+          <div className="flex items-center gap-2 mb-2 text-white/90 font-medium">
+            <MapPin className="w-5 h-5 text-gray-50" />
+            <span>Current Location</span>
           </div>
-          <div className="p-2 flex flex-col items-center">
-            <a href={mapUrl} target="_blank" rel="noopener noreferrer">
-              <button className="mx-auto overflow-hidden relative w-32 h-8 bg-brand-500 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
-                <span className="flex items-center justify-center gap-1">
-                  <MapPinned className="w-5 h-5" /> Open map
-                </span>
-                <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
-                <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
-                <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
-                <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-6 z-10">
-                  <span className="flex items-center justify-center gap-1">
-                    <Telescope className="w-5 h-5" /> Explore!
-                  </span>
-                </span>
-              </button>
-            </a>
-          </div>
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-xs text-blue-300 hover:underline break-all"
+          >
+            View on Maps ({Number(lat).toFixed(4)}, {Number(lng).toFixed(4)})
+          </a>
         </div>
       );
     }
@@ -360,7 +337,7 @@ export const ChatInterface = () => {
           <p className="truncate text-sm font-medium text-white/90">
             {msg.content}
           </p>
-          <p className="text-[10px] text-white/50 uppercase">Document</p>
+          <p className="text-[10px] text-white/50 uppercase">File</p>
         </div>
         <a
           href={fullUrl}
@@ -436,6 +413,10 @@ export const ChatInterface = () => {
                   <div className="relative">
                     <img
                       src={`https://ui-avatars.com/api/?name=${user?.username}&background=random`}
+                      //   src={
+                      //     user.profileImageUrl ||
+                      //     `https://ui-avatars.com/api/?name=${user.username}&background=random`
+                      //   }
                       alt="avatar"
                       className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
                     />
@@ -446,6 +427,7 @@ export const ChatInterface = () => {
                       <h3 className="truncate text-base font-semibold text-white drop-shadow-sm group-hover:text-white">
                         {user.username}
                       </h3>
+                      {/* <span className="text-[10px] text-white/50">Online</span> */}
                     </div>
                     <p className="truncate text-sm text-white/60 group-hover:text-white/80">
                       {user.email}
@@ -523,7 +505,7 @@ export const ChatInterface = () => {
                     >
                       {/* Message Bubble */}
                       <div
-                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 shadow-lg backdrop-blur-md group ${
+                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-2 pt-4 pb-2 shadow-lg backdrop-blur-md group ${
                           !isMe
                             ? "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
                             : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
@@ -555,11 +537,13 @@ export const ChatInterface = () => {
                           renderAttachment(msg)}
 
                         {/* Text Content */}
-                        {!isDeleted && msg.content && msg.type === "TEXT" && (
-                          <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                        )}
+                        {!msg.isDeleted &&
+                          msg.content &&
+                          msg.type === "TEXT" && (
+                            <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
+                              {msg.content}
+                            </p>
+                          )}
 
                         {msg.isDeleted && (
                           <p className="italic text-md opacity-60 flex items-center gap-2">
@@ -584,7 +568,7 @@ export const ChatInterface = () => {
                           <div
                             className={`absolute top-0.5 ${
                               isMe ? "right-1" : "right-1"
-                            } opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger`}
+                            } opacity-0 group-hover:opacity-100 transition-opacity`}
                           >
                             <button
                               onClick={(e) => {
@@ -607,7 +591,7 @@ export const ChatInterface = () => {
                               <div
                                 className={`absolute top-9 ${
                                   !!isMe && "right-0"
-                                } z-50 w-32 rounded-lg bg-black/20 shadow-xl backdrop-blur-xl text-gray-50 p-1 text-[16px] font-medium animate-in fade-in zoom-in-95 origin-top-left`}
+                                } z-99999 w-32 rounded-lg bg-white/20 shadow-xl backdrop-blur-xl text-gray-50 p-1 text-[16px] font-medium animate-in fade-in zoom-in-95 origin-top-left`}
                               >
                                 <button
                                   onClick={() => {
@@ -615,7 +599,7 @@ export const ChatInterface = () => {
                                     setActiveMenuId(null);
                                     textInputRef.current?.focus();
                                   }}
-                                  className="w-full text-left px-4 py-2 hover:bg-indigo-50/40 rounded-md flex items-center gap-2"
+                                  className="w-full text-left px-4 py-2 hover:bg-indigo-300/40 backdrop-blur-md rounded-md flex items-center gap-2"
                                 >
                                   <CornerUpLeft className="h-3.5 w-3.5" /> Reply
                                 </button>
@@ -705,13 +689,10 @@ export const ChatInterface = () => {
 
                     {/* Popup Attachment Menu */}
                     {isAttachMenuOpen && (
-                      <div className="attachment-menu absolute bottom-14 left-0 w-48 p-2 rounded-2xl bg-[#1c1c1c]/50 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col gap-1 animate-in slide-in-from-bottom-2 fade-in zoom-in-95 origin-bottom-left z-50">
+                      <div className="attachment-menu absolute bottom-14 left-0 w-48 p-2 rounded-2xl bg-[#1c1c1c]/90 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col gap-1 animate-in slide-in-from-bottom-2 fade-in zoom-in-95 origin-bottom-left z-50">
                         {/* Option 1: Location */}
                         <button
-                          onClick={() => {
-                            handleSendLocation();
-                            setIsAttachMenuOpen(false);
-                          }}
+                          onClick={() => handleSendLocation()}
                           className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 text-white/90 transition-colors group text-left w-full"
                         >
                           <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 group-hover:bg-green-500 group-hover:text-white transition-all">
@@ -786,7 +767,6 @@ export const ChatInterface = () => {
                     onChange={handleFileUpload}
                   />
 
-                  {/* Text Input */}
                   <input
                     type="text"
                     className="flex-1 bg-transparent px-2 py-2 text-white placeholder-white/40 focus:outline-none text-sm md:text-base"
@@ -801,7 +781,6 @@ export const ChatInterface = () => {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
 
-                  {/* Send/Loading/Location Loading */}
                   {isUploading || isSendingLocation ? (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                       <Loader2 className="h-5 w-5 animate-spin text-white" />

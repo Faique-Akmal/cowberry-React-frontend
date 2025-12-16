@@ -258,11 +258,13 @@ const CreateAnnouncement = () => {
   };
 
   return (
-<div className="min-h-screen p-4 md:p-6 relative overflow-hidden  dark:bg-gray-900">
+<div className="min-h-screen p-4 md:p-6 relative overflow-hidden    bg-gradient-to-br from-white/10 via-white/5 to-white/2
+  dark:from-gray-900/20 dark:via-gray-900/10 dark:to-gray-900/5
+  backdrop-blur-2xl">
   <div className="relative max-w-4xl mx-auto ">
     {/* Header with Glassmorphism */}
-    <div className="mb-8 bg-gray-25 rounded-xl">
-      <div className="glass-card rounded-2xl border border-white/20 shadow-lg p-3 md:p-8">
+    <div className="mb-8 bg-white/5 rounded-xl ">
+      <div className="glass-card rounded-2xl border border-white/20 shadow-lg p-3 md:p-8 bg-gray-100/50">
         <div className="flex items-center gap-4 mb-2 ">
           <div className="w-14 h-8 rounded-xl glass-icon flex items-center justify-center">
             <span className="text-3xl">📢</span>
@@ -355,16 +357,16 @@ const CreateAnnouncement = () => {
     )}
 
     {/* Main Form Container */}
-    <div className="glass-card rounded-2xl border border-white/20 shadow-xl overflow-hidden bg-gray-25 ">
+    <div className="glass-card rounded-2xl border border-white/20 shadow-xl overflow-hidden bg-white/5 ">
       {/* Form Header */}
-      <div className="glass-header p-6 border-b border-white/20">
+      <div className="glass-header p-6 border-b border-white/20 bg-gray-100/50">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl glass-icon flex items-center justify-center">
               <span className="text-2xl">📝</span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white ">
                 Announcement Details
               </h2>
               <p className="text-gray-600 dark:text-gray-300">
@@ -378,8 +380,8 @@ const CreateAnnouncement = () => {
 
       <form onSubmit={handleSubmit} className="p-6 md:p-8">
         {/* Basic Information Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="mb-8 bg-gray-100/50">
+          <div className="flex items-center gap-3 mb-6 bg-gray-100/50">
             <div className="w-10 h-10 rounded-lg glass-icon flex items-center justify-center">
               <span className="text-xl">📄</span>
             </div>
@@ -390,7 +392,7 @@ const CreateAnnouncement = () => {
           
           <div className="space-y-6">
             {/* Title */}
-            <div className="glass-input p-4 rounded-xl">
+            <div className="glass-input p-4 rounded-xl bg-gray-100/50">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                 Announcement Title *
               </label>
@@ -407,7 +409,7 @@ const CreateAnnouncement = () => {
             </div>
 
             {/* Description */}
-            <div className="glass-input p-4 rounded-xl">
+            <div className="glass-input p-4 rounded-xl bg-gray-100/50">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                 Short Description *
               </label>
@@ -424,8 +426,8 @@ const CreateAnnouncement = () => {
             </div>
 
             {/* Full Content */}
-            <div className="glass-input p-4 rounded-xl">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+            <div className="glass-input p-4 rounded-xl bg-gray-100/50">
+              <label className="block text-sm font-medium text-black dark:text-gray-200 mb-3">
                 Full Content *
               </label>
              <input
@@ -451,7 +453,7 @@ const CreateAnnouncement = () => {
         </div>
 
         {/* Settings Section */}
-        <div className="mb-8">
+        <div className="mb-8 bg-gray-100/50">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg glass-icon flex items-center justify-center">
               <span className="text-xl">⚙️</span>
@@ -463,7 +465,7 @@ const CreateAnnouncement = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Priority Selection */}
-            <div className="glass-card-inner p-5 rounded-xl">
+            <div className="glass-card-inner p-5 rounded-xl bg-gray-100/50">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
                 Priority Level
               </label>
@@ -500,7 +502,7 @@ const CreateAnnouncement = () => {
             </div>
 
             {/* Category Selection */}
-            <div className="glass-card-inner p-5 rounded-xl">
+            <div className="glass-card-inner p-5 rounded-xl bg-gray-100/50">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
                 Category
               </label>
@@ -533,7 +535,7 @@ const CreateAnnouncement = () => {
         </div>
 
         {/* Schedule Section */}
-        <div className="mb-8">
+        <div className="mb-8 bg-gray-100/50">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg glass-icon flex items-center justify-center">
               <span className="text-xl">📅</span>
@@ -543,7 +545,7 @@ const CreateAnnouncement = () => {
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-gray-100/50">
             <div className="glass-card-inner p-5 rounded-xl">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
                 Start Date & Time *
@@ -643,8 +645,8 @@ const CreateAnnouncement = () => {
 
         {/* Submit Button Section */}
         <div className="pt-8 border-t border-white/20">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 bg-gray-100/50">
+            <div className="flex items-center gap-4 ">
               <div className="w-12 h-12 rounded-lg glass-icon-success flex items-center justify-center">
                 <span className="text-xl">🚀</span>
               </div>

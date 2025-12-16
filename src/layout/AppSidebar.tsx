@@ -290,7 +290,7 @@ const othersItems: NavItem[] = [
  <aside
   style={{
     backgroundColor: themeConfig.sidebar.background 
-      ? `${themeConfig.sidebar.background}80` // Add transparency
+      ? `${themeConfig.sidebar.background}80` 
       : 'rgba(255, 255, 255, 0.15)',
     color: themeConfig.sidebar.text || undefined,
     backdropFilter: 'blur(12px) saturate(180%)',

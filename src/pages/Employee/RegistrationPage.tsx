@@ -445,9 +445,9 @@ export default function RegisterUserForm() {
                   </option>
                 )}
               </select>
-              <p className="text-xs mt-1 px-2 py-1 text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-lg inline-block">
+              {/* <p className="text-xs mt-1 px-2 py-1 text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-lg inline-block">
                 {filteredRoles.length} role(s) available
-              </p>
+              </p> */}
             </div>
 
             <div>
@@ -472,10 +472,12 @@ export default function RegisterUserForm() {
                 <option value="2">Marketing</option>
                 <option value="3">Sales</option>
                 <option value="4">Production</option>
+                <option value="4">Production</option>
+                <option value="5">HR</option>
               </select>
-              <p className="text-xs mt-1 px-2 py-1 text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-lg inline-block">
+              {/* <p className="text-xs mt-1 px-2 py-1 text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-lg inline-block">
                 4 department(s) available
-              </p>
+              </p> */}
             </div>
           </div>
         </div>
@@ -644,7 +646,7 @@ export default function RegisterUserForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-500/90 to-indigo-600/90 hover:from-blue-600 hover:to-indigo-700 dark:from-blue-500/80 dark:to-indigo-600/80 dark:hover:from-blue-600 dark:hover:to-indigo-700 backdrop-blur-lg text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-blue-400/50 dark:border-indigo-500/50 shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_25px_rgba(59,130,246,0.4)]"
+            className="w-full bg-gradient-to-r from-green-700/90 to-green-500/90 hover:from-blue-600 hover:to-indigo-700 dark:from-blue-500/80 dark:to-indigo-600/80 dark:hover:from-blue-600 dark:hover:to-indigo-700 backdrop-blur-lg text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-blue-400/50 dark:border-indigo-500/50 shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_25px_rgba(59,130,246,0.4)]"
           >
             {isLoading ? (
               <>
@@ -661,10 +663,10 @@ export default function RegisterUserForm() {
         </div>
 
         {/* Form Notes */}
-        <div className="text-sm text-center text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4">
+        {/* <div className="text-sm text-center text-gray-600 dark:text-gray-400 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4">
           <p>Fields marked with * are required</p>
           <p className="mt-1">Make sure to assign appropriate roles and departments based on user permissions</p>
-        </div>
+        </div> */}
       </form>
     </div>
   );

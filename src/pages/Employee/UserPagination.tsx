@@ -133,9 +133,9 @@ const UserList: React.FC = () => {
   <div className="relative z-10">
     <h2 className="
       text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-center
-      text-white
-      dark:from-blue-400 dark:via-purple-400 dark:to-pink-400
-      bg-clip-text text-transparent
+      text-dark
+      
+      bg-clip-text 
       px-2
     ">
       Users Directory

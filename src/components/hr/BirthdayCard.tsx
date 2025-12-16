@@ -219,7 +219,7 @@ const BirthdayCardList: React.FC = () => {
           </div>
           
           {birthdayUsers.length > 0 && (
-            <div className="px-4 py-2 rounded-full inline-flex items-center gap-2 backdrop-blur-sm"
+            <div className="px-4 py-2 rounded-full inline-flex items-center ml-3 gap-2 backdrop-blur-sm "
               style={{
                 background: isDarkMode 
                   ? 'rgba(139, 92, 246, 0.2)' 

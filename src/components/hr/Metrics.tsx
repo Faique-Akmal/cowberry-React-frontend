@@ -137,7 +137,7 @@ export default function Metrics() {
     ];
 
     return (
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6 p-4">
+        <div className="grid grid-cols- gap-3 md:grid-cols-3 lg:grid-cols-5 p-4 w-full">
             {cards.map((card, index) => (
                 <div
                     key={index}

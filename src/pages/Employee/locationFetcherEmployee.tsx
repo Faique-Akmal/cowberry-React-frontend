@@ -171,7 +171,8 @@ export default function AttendanceList() {
   const [travelSessions, setTravelSessions] = useState<TravelSession[]>([]);
   const [sessionsMap, setSessionsMap] = useState<Record<string, TravelSession>>({});
   const [selectedUser, setSelectedUser] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [mapView, setMapView] = useState<TravelSession | null>(null);
   const [users, setUsers] = useState<{ userId: number; username: string; employeeCode: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -582,13 +583,42 @@ export default function AttendanceList() {
     fetchTravelSessions();
   };
   
+  // Clear date filter function
+  const clearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+  
+  // Check if date filter is active
+  const isDateFilterActive = startDate || endDate;
+  
+  // Filter sessions with date range
   const filterSessions = useCallback((sessions: TravelSession[] = travelSessions) => {
     let filtered = [...sessions];
     
-    if (selectedDate) {
-      filtered = filtered.filter(session => 
-        formatDateOnly(session.startTime) === selectedDate
-      );
+    // Filter by date range
+    if (startDate || endDate) {
+      filtered = filtered.filter(session => {
+        const sessionDate = new Date(session.startTime);
+        const sessionDateOnly = sessionDate.toISOString().split('T')[0];
+        
+        // If only start date is provided, filter sessions on or after start date
+        if (startDate && !endDate) {
+          return sessionDateOnly >= startDate;
+        }
+        
+        // If only end date is provided, filter sessions on or before end date
+        if (!startDate && endDate) {
+          return sessionDateOnly <= endDate;
+        }
+        
+        // If both dates are provided, filter sessions between start and end dates (inclusive)
+        if (startDate && endDate) {
+          return sessionDateOnly >= startDate && sessionDateOnly <= endDate;
+        }
+        
+        return true;
+      });
     }
     
     if (selectedUser) {
@@ -608,7 +638,7 @@ export default function AttendanceList() {
     return filtered.sort((a, b) => 
       new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
-  }, [selectedDate, selectedUser, searchQuery, formatDateOnly, travelSessions]);
+  }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
   
   const filteredSessions = useMemo(() => filterSessions(), [filterSessions]);
   
@@ -1018,18 +1048,63 @@ export default function AttendanceList() {
               </select>
             </div>
             
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <FaCalendarAlt className="inline mr-2" />
-                Filter by Date
-              </label>
-              <input
-                type="date"
-                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                max={new Date().toISOString().split("T")[0]}
-              />
+            {/* Date Range Filter */}
+            <div className="flex-[2]">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <FaCalendarAlt className="inline mr-2" />
+                  Filter by Date Range
+                </label>
+                {isDateFilterActive && (
+                  <button
+                    onClick={clearDateFilter}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                  >
+                    Clear Date Filter
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    max={endDate || new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+                
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+              </div>
+              
+              {/* Date range display */}
+              {isDateFilterActive && (
+                <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <FaCalendarAlt className="text-xs" />
+                  <span>
+                    Showing sessions {startDate && `from ${new Date(startDate).toLocaleDateString()}`}
+                    {startDate && endDate && ' to '}
+                    {endDate && `${!startDate ? 'until ' : ''}${new Date(endDate).toLocaleDateString()}`}
+                  </span>
+                </div>
+              )}
             </div>
             
             <div className="flex-1">
@@ -1055,11 +1130,19 @@ export default function AttendanceList() {
         <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
           <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            {selectedDate || selectedUser || searchQuery 
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            {isDateFilterActive || selectedUser || searchQuery 
               ? "Try adjusting your filters to see more results." 
               : "No travel sessions recorded yet."}
           </p>
+          {isDateFilterActive && (
+            <button
+              onClick={clearDateFilter}
+              className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
+            >
+              Clear Date Filter
+            </button>
+          )}
         </div>
       ) : viewMode === 'grouped' ? (
         <div className="space-y-6">

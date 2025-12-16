@@ -56,7 +56,7 @@ API.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Safety check: Avoid loop if refresh endpoint itself fails
       if (originalRequest.url?.includes("/auth/refresh-token")) {
-         return Promise.reject(error);
+        return Promise.reject(error);
       }
 
       if (isRefreshing) {
@@ -81,30 +81,30 @@ API.interceptors.response.use(
       const refreshToken = localStorage.getItem("refreshToken");
 
       if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = "/signin";
+        // localStorage.clear();
+        // window.location.href = "/signin";
         return Promise.reject(error);
       }
 
       try {
         console.log("Rotating tokens...");
-        
+
         const response = await axios.post(
           `${API_URL}/auth/refresh-token`,
-          { refreshToken: refreshToken }, 
-          { withCredentials: true } 
+          { refreshToken: refreshToken },
+          { withCredentials: true }
         );
 
         const { accessToken, refreshToken: newRefreshToken } = response.data;
 
         if (!accessToken || !newRefreshToken) {
-            throw new Error("Tokens not returned properly");
+          throw new Error("Tokens not returned properly");
         }
 
         // ✅ IMPORTANT: Update BOTH tokens (Rotation Logic)
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", newRefreshToken);
-        
+
         console.log("Tokens rotated successfully");
 
         // Update Axios Defaults
@@ -118,12 +118,11 @@ API.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         }
         return API(originalRequest);
-
       } catch (err) {
         processQueue(err, null);
         console.error("Session expired completely.", err);
-        localStorage.clear();
-        window.location.href = "/signin";
+        // localStorage.clear();
+        // window.location.href = "/signin";
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

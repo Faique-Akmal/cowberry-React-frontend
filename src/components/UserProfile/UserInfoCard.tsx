@@ -303,7 +303,7 @@ export default function UserInfoCard() {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                 <h4 className="
                   text-lg sm:text-xl font-semibold
-                  bg-gradient-to-r from-blue-600 to-purple-600
+                  bg-gradient-to-r from-green-800 to-green-600
                   dark:from-blue-400 dark:to-purple-400
                   bg-clip-text text-transparent
                 ">
@@ -497,8 +497,8 @@ export default function UserInfoCard() {
                 <div>
                   <h4 className="
                     mb-2 text-2xl font-bold
-                    bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600
-                    dark:from-blue-400 dark:via-purple-400 dark:to-pink-400
+                     bg-black dark:bg-white
+                    
                     bg-clip-text text-transparent
                   ">
                     Edit Profile
@@ -553,7 +553,7 @@ export default function UserInfoCard() {
                 </div>
               )}
 
-              <form onSubmit={handleSave} className="space-y-6 pb-2">
+              <form onSubmit={handleSave} className="space-y-6 pb-2 ">
                 <div className="
                   grid grid-cols-1 md:grid-cols-2 gap-4
                   p-5
@@ -731,7 +731,7 @@ export default function UserInfoCard() {
                     className="
                       px-6 py-3 min-w-[140px]
                       rounded-xl
-                      bg-gradient-to-r from-blue-500/90 to-indigo-600/90
+                      bg-gradient-to-r from-green-800/90 to-green-600/90
                       hover:from-blue-600 hover:to-indigo-700
                       dark:from-blue-500/80 dark:to-indigo-600/80
                       dark:hover:from-blue-600 dark:hover:to-indigo-700

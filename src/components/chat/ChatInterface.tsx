@@ -540,8 +540,8 @@ export const ChatInterface = () => {
                           >
                             <p className="font-bold mb-0.5">
                               {msg.replyTo.senderId === currentUser?.id
-                                ? "Someone"
-                                : "You"}
+                                ? "You"
+                                : ""}
                             </p>
                             <p className="truncate">
                               {msg.replyTo.content || "Attachment"}

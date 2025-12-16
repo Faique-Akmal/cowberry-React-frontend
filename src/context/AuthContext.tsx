@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect } from 'react';
-import API from '../api/axios';
-import { startTokenRefreshInterval } from '../utils/tokenRefresher';
-import { axiosGetMe } from '../store/userStore';
+import { createContext, useContext } from "react";
+import API from "../api/axios";
+// import { startTokenRefreshInterval } from "../utils/tokenRefresher";
+import { axiosGetMe } from "../store/userStore";
 
 interface AuthContextType {
   login: (refreshToken: string, accessToken: string) => void;
@@ -11,60 +11,57 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const getMeData = async () => {
     const meData = await axiosGetMe();
 
-    if(meData){
-      localStorage.setItem('meUser', JSON.stringify(meData));
+    if (meData) {
+      localStorage.setItem("meUser", JSON.stringify(meData));
     }
+  };
 
-  }
+  const login = async (refreshToken: string, accessToken: string) => {
+    try {
+      console.log("AuthContext: Storing tokens...");
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("accessToken", accessToken);
 
-const login = async (refreshToken: string, accessToken: string) => {
-  try {
-    console.log("AuthContext: Storing tokens...");
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('accessToken', accessToken);
-    
-    // Optional: Verify tokens are stored
-    console.log("AuthContext: Tokens stored -", {
-      hasAccessToken: !!localStorage.getItem('accessToken'),
-      hasRefreshToken: !!localStorage.getItem('refreshToken')
-    });
-    
-    return Promise.resolve();
-  } catch (error) {
-    console.error("AuthContext: Error storing tokens:", error);
-    return Promise.reject(error);
-  }
-};
-  
+      // Optional: Verify tokens are stored
+      console.log("AuthContext: Tokens stored -", {
+        hasAccessToken: !!localStorage.getItem("accessToken"),
+        hasRefreshToken: !!localStorage.getItem("refreshToken"),
+      });
 
+      return Promise.resolve();
+    } catch (error) {
+      console.error("AuthContext: Error storing tokens:", error);
+      return Promise.reject(error);
+    }
+  };
 
-  const axiosLogout = async () =>{
+  const axiosLogout = async () => {
     try {
       const res = await API.post("/auth/user_logout/")!;
-      console.log(res.data)
+      console.log(res.data);
     } catch (err) {
-      console.error('Failed to logout user', err);
+      console.error("Failed to logout user", err);
     }
-    
+
     logout();
-  } 
+  };
 
   const logout = () => {
     localStorage.clear();
   };
 
-  useEffect(()=>{
+  // useEffect(()=>{
 
-    const intervalId = startTokenRefreshInterval();
-    return () => clearInterval(intervalId);
+  //   const intervalId = startTokenRefreshInterval();
+  //   return () => clearInterval(intervalId);
 
-  },[]);
-
+  // },[]);
 
   return (
     <AuthContext.Provider value={{ login, logout, axiosLogout }}>
@@ -75,6 +72,6 @@ const login = async (refreshToken: string, accessToken: string) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };

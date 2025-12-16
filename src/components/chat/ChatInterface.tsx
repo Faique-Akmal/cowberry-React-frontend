@@ -16,13 +16,30 @@ import {
   FileText,
   // MapPin,
   // Check,
+  Download,
   CheckCheck,
 } from "lucide-react";
-import { User } from "../../types/chatTypes";
+import { Message, User } from "../../types/chatTypes";
+import toast from "react-hot-toast";
+
+const BASE_URL = import.meta.env.VITE_FILE_URL || "http://localhost:5000";
+
+const getFullUrl = (path: string | undefined) => {
+  if (!path) return "";
+  if (
+    path.startsWith("https") ||
+    path.startsWith("http") ||
+    path.startsWith("blob:")
+  )
+    return path;
+  return `${BASE_URL}${path}`;
+};
 
 // --- Background Image for Nature Theme ---
 const BG_IMAGE =
-  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop";
+  "https://cdn.magicdecor.in/com/2024/05/09154244/TV-Unit-Luxury-Floral-Pattern-Wallpaper-Design.jpg";
+// "https://images.pexels.com/photos/265216/pexels-photo-265216.jpeg?auto=compress&cs=tinysrgb&w=600";
+// "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop";
 
 // --- Custom Hook for User List ---
 const useUserList = () => {
@@ -114,6 +131,7 @@ export const ChatInterface = () => {
   const handleUserClick = async (receiverId: number) => {
     try {
       const conversation = await ChatService.startChat(receiverId);
+      console.log("CLG ::: conversation ::: ", conversation);
       setActiveConversation(conversation);
     } catch (error) {
       console.error("Failed to start chat", error);
@@ -134,14 +152,23 @@ export const ChatInterface = () => {
     setInput("");
   };
 
+  // ✅ Optimized File Upload Handler
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeConversation || !currentUser || !socket) return;
 
+    // Client-side Validation (Optimization)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("File size exceeds 100MB");
+      return;
+    }
+
     try {
+      console.log("DEGUB ::: CLG ::: File", file);
       setIsUploading(true);
       const { fileUrl, type } = await ChatService.uploadFile(file);
 
+      // Determine proper message type based on MIME
       let msgType = "DOCUMENT";
       if (type.startsWith("image/")) msgType = "IMAGE";
       if (type.startsWith("video/")) msgType = "VIDEO";
@@ -149,7 +176,7 @@ export const ChatInterface = () => {
       const payload = {
         conversationId: activeConversation.id,
         senderId: currentUser.id,
-        content: file.name,
+        content: file.name, // Show filename
         type: msgType,
         fileUrl: fileUrl,
       };
@@ -157,9 +184,9 @@ export const ChatInterface = () => {
       socket.emit("send_message", payload);
     } catch (error) {
       console.error("Upload failed", error);
+      toast.error("Failed to upload file. Please try again.");
     } finally {
       setIsUploading(false);
-      // Reset input
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -168,6 +195,55 @@ export const ChatInterface = () => {
     setShowMobileChat(false);
     // Optional: Clear active conversation if you want fresh state
     // setActiveConversation(null);
+  };
+
+  // ✅ Optimized Attachment Render
+  const renderAttachment = (msg: Message) => {
+    const fullUrl = getFullUrl(msg.fileUrl);
+    if (msg.type === "IMAGE") {
+      return (
+        <div className="mb-2 overflow-hidden rounded-lg border border-white/20 cursor-pointer group">
+          <img
+            src={fullUrl}
+            alt="attachment"
+            loading="lazy" // Performance optimization
+            className="max-h-64 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onClick={() => window.open(msg.fileUrl, "_blank")}
+          />
+        </div>
+      );
+    }
+    if (msg.type === "VIDEO") {
+      return (
+        <div className="mb-2 overflow-hidden rounded-lg border border-white/20 bg-black">
+          <video src={fullUrl} controls className="max-h-64 w-full" />
+        </div>
+      );
+    }
+    // Docs / Zips
+    return (
+      <div className="flex items-center gap-3 rounded-lg bg-black/20 p-3 mb-2 border border-white/10 hover:bg-black/30 transition-colors">
+        <div className="p-2 bg-white/10 rounded-full">
+          <FileText className="h-6 w-6 text-blue-300" />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <p className="truncate text-sm font-medium text-white/90">
+            {msg.content}
+          </p>
+          <p className="text-[10px] text-white/50 uppercase">File</p>
+        </div>
+        <a
+          href={fullUrl}
+          download
+          target="_blank"
+          rel="noreferrer"
+          className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/80"
+          title="Download"
+        >
+          <Download className="h-5 w-5" />
+        </a>
+      </div>
+    );
   };
 
   return (
@@ -192,7 +268,7 @@ export const ChatInterface = () => {
               Messages
             </h2>
             {/* User Profile Pic (Optional) */}
-            <div className="h-10 w-10 rounded-full bg-linear-to-tr from-purple-400 to-blue-500 p-0.5">
+            <div className="h-10 w-10 rounded-full bg-linear-to-tr from-lime-400 to-green-500 p-0.5">
               <img
                 src={`https://ui-avatars.com/api/?name=${currentUser?.username}&background=random`}
                 alt="Me"
@@ -236,12 +312,7 @@ export const ChatInterface = () => {
                 >
                   <div className="relative">
                     <img
-                      src={
-                        `./user-${
-                          user?.id < 10 ? `0${user?.id}` : user?.id
-                        }.jpg`
-                        //  user?.profileImageUrl
-                      }
+                      src={`https://ui-avatars.com/api/?name=${user?.username}&background=random`}
                       alt="avatar"
                       className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
                     />
@@ -346,53 +417,23 @@ export const ChatInterface = () => {
                         }`}
                       >
                         {/* Attachments */}
-                        {msg.type === "IMAGE" && msg.fileUrl && (
-                          <div className="mb-2 overflow-hidden rounded-lg border border-white/20">
-                            <img
-                              src={msg.fileUrl}
-                              alt="attachment"
-                              className="h-48 w-full object-cover transition-transform hover:scale-105"
-                            />
-                          </div>
-                        )}
+                        {msg.type !== "TEXT" && renderAttachment(msg)}
 
-                        {msg.type === "DOCUMENT" && (
-                          <div className="flex items-center gap-3 rounded-lg bg-black/20 p-3 mb-2">
-                            <FileText className="h-8 w-8 text-blue-300" />
-                            <div className="flex-1 overflow-hidden">
-                              <p className="truncate text-sm font-medium">
-                                {msg.content}
-                              </p>
-                              <a
-                                href={msg.fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs text-blue-200 hover:underline"
-                              >
-                                Download
-                              </a>
-                            </div>
-                          </div>
-                        )}
+                        {/* Text Content */}
+                        {!msg.isDeleted &&
+                          msg.content &&
+                          msg.type === "TEXT" && (
+                            <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
+                              {msg.content}
+                            </p>
+                          )}
 
-                        {/* Message Text */}
-                        {msg.isDeleted ? (
+                        {msg.isDeleted && (
                           <p className="italic text-sm opacity-60 flex items-center gap-2">
-                            <span className="block h-px w-4 bg-white/50"></span>{" "}
-                            Message deleted
-                          </p>
-                        ) : (
-                          <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap text-shadow-sm">
-                            {/* Agar text type hai toh content dikhao, agar file hai aur content filename hai toh mat dikhao ya alag style karo */}
-                            {msg.type === "TEXT"
-                              ? msg.content
-                              : msg.type === "IMAGE"
-                              ? ""
-                              : ""}
+                            🚫 Message deleted
                           </p>
                         )}
 
-                        {/* Footer (Time & Status) */}
                         <div
                           className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
                             isMe ? "text-white/70" : "text-gray-200"
@@ -450,7 +491,7 @@ export const ChatInterface = () => {
                       disabled={!input.trim()}
                       className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all transform hover:scale-105 active:scale-95 ${
                         input.trim()
-                          ? "bg-linear-to-r from-indigo-500 to-purple-500 text-white"
+                          ? "bg-linear-to-r from-green-300/50 to-green-500/30 text-white"
                           : "bg-white/10 text-white/30 cursor-not-allowed"
                       }`}
                     >

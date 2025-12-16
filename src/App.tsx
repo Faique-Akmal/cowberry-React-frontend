@@ -73,7 +73,8 @@ export default function App() {
         />
 
         <Route path="/" element={<SignIn />} />
-
+        {/* new chat  */}
+        <Route path="/chat" element={<ChatInterface />} />
         {/* Dashboard Layout */}
         <Route element={<AppLayout />}>
           {/* Home Page */}
@@ -148,8 +149,7 @@ export default function App() {
 
           {/* Others Page */}
           <Route path="/profile" element={<UserProfiles />} />
-          {/* new chat  */}
-          <Route path="/chat" element={<ChatInterface />} />
+
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/blank" element={<Blank />} />
 

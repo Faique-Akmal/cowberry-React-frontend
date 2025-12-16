@@ -22,7 +22,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket"],
       // Auth token bhej sakte hain handshake me agar backend verify kare
-      // auth: { token: localStorage.getItem("token") }
+      auth: { token: localStorage.getItem("token") },
     });
 
     newSocket.on("connect", () => {

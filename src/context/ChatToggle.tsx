@@ -12,15 +12,15 @@ const ChatToggle = () => {
   return (
     <>
       {/* Floating Toggle Button - only show when modal is closed */}
-      {!isOpen && (
-        <Link
-          onClick={() => setIsOpen(true)}
-          to="/chat"
-          className="fixed z-9999 bottom-2 right-6 bg-brand-500 text-white p-4 rounded-full shadow-lg hover:bg-brand-600 transition"
-        >
-          <MessageCircle size={24} />
-        </Link>
-      )}
+      {/* {!isOpen && ( */}
+      <Link
+        // onClick={() => setIsOpen(true)}
+        to="/chat"
+        className="fixed z-9999 bottom-2 right-6 bg-brand-500 text-white p-4 rounded-full shadow-lg hover:bg-brand-600 transition"
+      >
+        <MessageCircle size={24} />
+      </Link>
+      {/* )} */}
 
       {/* Chat Popup Modal (bottom-right) */}
       {/* {isOpen && ( */}

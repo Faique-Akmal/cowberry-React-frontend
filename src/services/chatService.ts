@@ -20,7 +20,7 @@ export const ChatService = {
     return response.data;
   },
 
-  // File upload karna
+  // Optimized Upload
   uploadFile: async (
     file: File
   ): Promise<{ fileUrl: string; type: string; filename: string }> => {

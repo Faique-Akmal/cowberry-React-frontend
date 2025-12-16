@@ -4,18 +4,16 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 const API_URL = import.meta.env.VITE_BASE_URL;
 
 // --- Types ---
-// Queue item structure to hold pending requests
 interface FailedRequest {
   resolve: (token: string) => void;
   reject: (error: any) => void;
 }
 
 // --- State Variables ---
-let isRefreshing = false; // Flag to prevent multiple refresh calls
-let failedQueue: FailedRequest[] = []; // Queue for requests waiting for new token
+let isRefreshing = false;
+let failedQueue: FailedRequest[] = [];
 
-// --- Helper: Process the Queue ---
-// Retry all queued requests with the new token
+// --- Helper: Queue Process ---
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -24,7 +22,6 @@ const processQueue = (error: any, token: string | null = null) => {
       prom.resolve(token!);
     }
   });
-
   failedQueue = [];
 };
 
@@ -34,11 +31,9 @@ const API = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // withCredentials: true, // Enable if your backend expects cookies
 });
 
 // --- Request Interceptor ---
-// Attaches the Access Token to every request
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -51,7 +46,6 @@ API.interceptors.request.use(
 );
 
 // --- Response Interceptor ---
-// Handles 401 errors and manages the Token Refresh flow
 API.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -59,14 +53,12 @@ API.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // 1. Check if error is 401 (Unauthorized) and request hasn't been retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Safety: Don't retry if the failed URL is the refresh endpoint itself
+      // Safety check: Avoid loop if refresh endpoint itself fails
       if (originalRequest.url?.includes("/auth/refresh-token")) {
         return Promise.reject(error);
       }
 
-      // 2. If Refresh is already in progress, Queue this request
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({
@@ -83,59 +75,54 @@ API.interceptors.response.use(
         });
       }
 
-      // 3. Start Refresh Process
       originalRequest._retry = true;
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem("refreshToken");
 
-      // If no refresh token, logout immediately
       if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = "/signin";
+        // localStorage.clear();
+        // window.location.href = "/signin";
         return Promise.reject(error);
       }
 
       try {
-        console.log("Attempting to refresh token...");
+        console.log("Rotating tokens...");
 
-        // FIX: Changed payload key from 'refresh' to 'refreshToken' to match your backend/Postman
         const response = await axios.post(
           `${API_URL}/auth/refresh-token`,
           { refreshToken: refreshToken },
           { withCredentials: true }
         );
 
-        const newAccessToken = response.data.accessToken;
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
 
-        if (!newAccessToken) {
-          throw new Error("New access token not returned by backend");
+        if (!accessToken || !newRefreshToken) {
+          throw new Error("Tokens not returned properly");
         }
 
-        // A. Update Local Storage
-        localStorage.setItem("accessToken", newAccessToken);
-        console.log("Token Refreshed Successfully");
+        // ✅ IMPORTANT: Update BOTH tokens (Rotation Logic)
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", newRefreshToken);
 
-        // B. Update Axios Defaults
-        API.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccessToken}`;
+        console.log("Tokens rotated successfully");
 
-        // C. Process Queued Requests
-        processQueue(null, newAccessToken);
+        // Update Axios Defaults
+        API.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
-        // D. Retry Original Request
+        // Process Queue
+        processQueue(null, accessToken);
+
+        // Retry Original Request
         if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         }
         return API(originalRequest);
       } catch (err) {
-        // Refresh Failed? Logout User
         processQueue(err, null);
-
-        console.error("Session expired or refresh failed.", err);
-        localStorage.clear();
-        window.location.href = "/signin";
+        console.error("Session expired completely.", err);
+        // localStorage.clear();
+        // window.location.href = "/signin";
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

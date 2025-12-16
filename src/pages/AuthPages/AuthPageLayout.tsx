@@ -22,8 +22,8 @@ export default function AuthLayout({
               muted 
               loop></video> */}
               <img
-                className="object-cover w-full p-3 h-full"
-                src="cowberry-banner.png"
+                className="object-cover w-full p-3 h-screen "
+                src="cowberry_organics_1.png"
                 alt="Cowberry Welcome Banner"
               />
             </div>

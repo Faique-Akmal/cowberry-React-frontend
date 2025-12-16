@@ -42,7 +42,7 @@ import AdminTaskManager from "./pages/Employee/TaskManager";
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
 // import NotificationListener from "./NotificationListener";
-import AnnouncementForm from "./pages/Announcement";
+// import AnnouncementForm from "./pages/Announcement";
 
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceStart from "./pages/Employee/AttandanceStart";
@@ -52,10 +52,12 @@ import ThemeCustomizer from "./themes/themecutomizer";
 import ChatToggle from "./context/ChatToggle";
 // import Testingmap from "./pages/Employee/Testing-map";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
+import AnnouncementModal from "./components/header/NotificationDropdown";
+import CreateAnnouncement from "./components/hr/Announcement";
 export default function App() {
   return (
     <>
-      <Toaster position="bottom-right" reverseOrder={false} />
+      {/* <Toaster position="bottom-right" reverseOrder={false} /> */}
 
       <ScrollToTop />
 
@@ -160,7 +162,8 @@ export default function App() {
           <Route path="/assign-task-page" element={<TaskPage />} />
           <Route path="/admin-task-manager" element={<AdminTaskManager />} />
           <Route path="/attandance-start-admin" element={<AttendanceList />} />
-          <Route path="/announcement" element={<AnnouncementForm />} />
+          <Route path="/announcement" element={<AnnouncementModal/>} />
+          <Route path="/announcementList" element={<CreateAnnouncement/>} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}
 
           {/* Ui Elements */}
@@ -185,7 +188,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatToggle />
-      <Toaster
+      {/* <Toaster
         position="bottom-right"
         reverseOrder={true}
         toastOptions={{
@@ -199,7 +202,7 @@ export default function App() {
             secondary: "#FFFAEE",
           },
         }}
-      />
+      /> */}
     </>
   );
 }

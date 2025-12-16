@@ -27,7 +27,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
     setIsLoading(true);
     try {
-      const response = await API.post("/forgot-password/", {
+      const response = await API.post("/auth/forgot-password/", {
         email: email.trim().toLowerCase(),
       });
 

@@ -13,7 +13,8 @@ import {
   LogOut,
   Download,
   RefreshCw,
-  Eye
+  Eye,
+  Tag
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -219,376 +220,719 @@ const EmployeeCheckin = () => {
   };
 
   return (
-    <div 
-      style={{
-        backgroundColor: themeConfig.content.background,
-        color: themeConfig.content.text,
-      }} 
-      className="min-h-screen p-4 md:p-6"
-    >
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                <Clock className="w-6 h-6 md:w-8 md:h-8 text-blue-500" />
-                Employee Check Logs
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
-                Monitor employee check-in and check-out activities
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={exportToCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm md:text-base"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </button>
-              <button
-                onClick={fetchCheckLogs}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm md:text-base"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-            </div>
-          </div>
+//   <div 
+//   style={{
+//     backgroundColor: themeConfig.content.background,
+//     color: themeConfig.content.text,
+//   }} 
+//   className="
+//     min-h-screen p-4 md:p-6
+//     bg-white/10 dark:bg-black/20
+//     backdrop-blur-2xl
+//     relative
+//   "
+// >
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Logs</p>
-                  <p className="text-2xl font-bold mt-1">{logs.length}</p>
-                </div>
-                <Clock className="w-8 h-8 text-blue-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Unique Employees</p>
-                  <p className="text-2xl font-bold mt-1">{uniqueUsersCount}</p>
-                </div>
-                <User className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Check-ins</p>
-                  <p className="text-2xl font-bold mt-1">
-                    {logs.filter(log => log.logType === 'check_in').length}
-                  </p>
-                </div>
-                <LogIn className="w-8 h-8 text-purple-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Check-outs</p>
-                  <p className="text-2xl font-bold mt-1">
-                    {logs.filter(log => log.logType === 'check_out').length}
-                  </p>
-                </div>
-                <LogOut className="w-8 h-8 text-red-500" />
-              </div>
-            </div>
+<div className="
+  w-full
+  max-w-[100vw] // Prevents horizontal overflow
+  overflow-x-hidden // Ensures no horizontal scroll
+  bg-gradient-to-br from-white/10 via-white/5 to-white/2
+  dark:from-gray-900/20 dark:via-gray-900/10 dark:to-gray-900/5
+  backdrop-blur-2xl
+  border border-white/30 dark:border-white/10
+  shadow-[0_8px_32px_rgba(31,38,135,0.15)]
+  dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]
+  rounded-3xl 
+  p-3 sm:p-4 lg:p-6
+  relative
+">
+  {/* Optional background gradient overlay */}
+  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+  
+  {/* Header */}
+  <div className="mb-6 relative z-10">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div className="flex-1 min-w-0">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold flex items-center gap-2">
+          <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-500 flex-shrink-0" />
+          <span className="truncate">Employee Check Logs</span>
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-1 text-xs sm:text-sm truncate">
+          Monitor employee check-in and check-out activities
+        </p>
+      </div>
+      <div className="flex gap-2 flex-shrink-0">
+        <button
+          onClick={exportToCSV}
+          className="
+            flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3 sm:py-2
+            bg-gradient-to-r from-green-500 to-emerald-600 
+            text-white rounded-lg sm:rounded-xl hover:from-green-600 hover:to-emerald-700 
+            transition-all shadow hover:shadow-lg text-xs sm:text-sm
+            whitespace-nowrap
+          "
+        >
+          <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Export CSV</span>
+          <span className="xs:hidden">Export</span>
+        </button>
+        <button
+          onClick={fetchCheckLogs}
+          className="
+            flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3 sm:py-2
+            bg-gradient-to-r from-blue-500 to-cyan-600 
+            text-white rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-cyan-700 
+            transition-all shadow hover:shadow-lg text-xs sm:text-sm
+            whitespace-nowrap
+          "
+        >
+          <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Refresh</span>
+          <span className="xs:hidden">⟳</span>
+        </button>
+      </div>
+    </div>
+
+    {/* Stats Cards with Glassmorphism - Fixed to 4 columns only on larger screens */}
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-6">
+      <div className="
+        bg-white/30 dark:bg-gray-800/30
+        backdrop-blur-lg
+        border border-white/40 dark:border-gray-700/40
+        rounded-xl sm:rounded-2xl p-3 sm:p-4
+        shadow-[0_4px_20px_rgba(0,0,0,0.1)]
+        hover:shadow-[0_8px_30px_rgba(0,0,0,0.15)]
+        transition-all duration-300
+        min-w-0
+      ">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-600 dark:text-gray-300 truncate">Check-ins</p>
+            <p className="text-base sm:text-lg lg:text-xl font-bold mt-1 truncate">
+              {logs.filter(log => log.logType === 'check_in').length}
+            </p>
+          </div>
+          <div className="
+            p-1.5 sm:p-2 rounded-lg flex-shrink-0
+            bg-gradient-to-br from-purple-500/10 to-pink-500/10
+            border border-purple-500/20
+          ">
+            <LogIn className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
           </div>
         </div>
-
-        {/* Filters Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow border border-gray-200 dark:border-gray-700 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold">Filters</h2>
+      </div>
+      
+      <div className="
+        bg-white/30 dark:bg-gray-800/30
+        backdrop-blur-lg
+        border border-white/40 dark:border-gray-700/40
+        rounded-xl sm:rounded-2xl p-3 sm:p-4
+        shadow-[0_4px_20px_rgba(0,0,0,0.1)]
+        hover:shadow-[0_8px_30px_rgba(0,0,0,0.15)]
+        transition-all duration-300
+        min-w-0
+      ">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-600 dark:text-gray-300 truncate">Check-outs</p>
+            <p className="text-base sm:text-lg lg:text-xl font-bold mt-1 truncate">
+              {logs.filter(log => log.logType === 'check_out').length}
+            </p>
           </div>
+          <div className="
+            p-1.5 sm:p-2 rounded-lg flex-shrink-0
+            bg-gradient-to-br from-red-500/10 to-orange-500/10
+            border border-red-500/20
+          ">
+            <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
+          </div>
+        </div>
+      </div>
+      
+      {/* You can add more stats cards here if needed */}
+    </div>
+  </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Search Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search
-              </label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search by ${searchType === 'username' ? 'username' : 'employee code'}`}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as 'username' | 'employee_code')}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="username">Username</option>
-                  <option value="employee_code">Employee Code</option>
-                </select>
-              </div>
+  {/* Filters Section with Glassmorphism - Improved responsiveness */}
+  <div className="
+    bg-gradient-to-br from-white/40 to-white/20
+    dark:from-gray-800/40 dark:to-gray-900/20
+    backdrop-blur-xl
+    border border-white/40 dark:border-gray-700/40
+    rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5
+    shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+    dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+    mb-6
+    overflow-hidden
+  ">
+    <div className="flex items-center gap-2 mb-3">
+      <div className="
+        p-1.5 rounded-lg flex-shrink-0
+        bg-gradient-to-br from-blue-500/10 to-cyan-500/10
+        border border-blue-500/20
+      ">
+        <Filter className="w-4 h-4 text-blue-500" />
+      </div>
+      <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
+        Filters
+      </h2>
+    </div>
+
+    <div className="grid grid-cols-1 gap-3">
+      {/* Search Input - Improved for mobile */}
+      <div>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Search
+        </label>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="
+              absolute left-2.5 top-1/2 transform -translate-y-1/2
+              p-1 rounded-md
+              bg-white/50 dark:bg-gray-700/50
+              backdrop-blur-sm
+              z-10
+            ">
+              <Search className="w-3.5 h-3.5 text-gray-500" />
             </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search by ${searchType === 'username' ? 'username' : 'employee code'}`}
+              className="
+                w-full pl-9 pr-3 py-2
+                bg-white/50 dark:bg-gray-700/50
+                backdrop-blur-sm
+                border border-white/60 dark:border-gray-600/60
+                rounded-lg sm:rounded-xl
+                focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                focus:outline-none
+                transition-all duration-300
+                text-sm
+              "
+            />
+          </div>
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as 'username' | 'employee_code')}
+            className="
+              px-3 py-2
+              bg-white/50 dark:bg-gray-700/50
+              backdrop-blur-sm
+              border border-white/60 dark:border-gray-600/60
+              rounded-lg sm:rounded-xl
+              focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+              focus:outline-none
+              transition-all duration-300
+              text-sm
+              min-w-[120px]
+            "
+          >
+            <option value="username">Username</option>
+            <option value="employee_code">Employee Code</option>
+          </select>
+        </div>
+      </div>
 
-            {/* Date Range Picker */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date Range
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                <DatePicker
-                  selectsRange={true}
-                  startDate={startDate}
-                  endDate={endDate}
-                  onChange={(update) => {
-                    setDateRange(update);
-                  }}
-                  isClearable={true}
-                  placeholderText="Select date range"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+      {/* Date Range Picker */}
+      <div>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Date Range
+        </label>
+        <div className="relative">
+          <div className="
+            absolute left-2.5 top-1/2 transform -translate-y-1/2 z-10
+            p-1 rounded-md
+            bg-white/50 dark:bg-gray-700/50
+            backdrop-blur-sm
+          ">
+            <Calendar className="w-3.5 h-3.5 text-gray-500" />
+          </div>
+          <DatePicker
+            selectsRange={true}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => {
+              setDateRange(update);
+            }}
+            isClearable={true}
+            placeholderText="Select date range"
+            className="
+              w-full pl-9 pr-3 py-2
+              bg-white/50 dark:bg-gray-700/50
+              backdrop-blur-sm
+              border border-white/60 dark:border-gray-600/60
+              rounded-lg sm:rounded-xl
+              focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+              focus:outline-none
+              transition-all duration-300
+              text-sm
+            "
+          />
+        </div>
+      </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-end gap-2">
+      {/* Action Buttons */}
+      <div className="flex items-end">
+        <button
+          onClick={clearFilters}
+          className="
+            w-full px-4 py-2
+            bg-gradient-to-r from-gray-200/50 to-gray-300/30
+            dark:from-gray-700/50 dark:to-gray-800/30
+            backdrop-blur-sm
+            border border-gray-300/60 dark:border-gray-600/60
+            text-gray-700 dark:text-gray-300
+            rounded-lg sm:rounded-xl
+            hover:from-gray-300/60 hover:to-gray-400/40
+            dark:hover:from-gray-600/60 dark:hover:to-gray-700/40
+            transition-all duration-300
+            shadow-sm hover:shadow
+            text-sm
+          "
+        >
+          Clear Filters
+        </button>
+      </div>
+    </div>
+
+    {/* Active Filters - Improved for mobile */}
+    {(searchQuery || startDate || endDate) && (
+      <div className="mt-3 p-3 rounded-lg bg-white/30 dark:bg-gray-800/30 backdrop-blur-md border border-white/40 dark:border-gray-700/40">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Tag className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+            Active Filters
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {searchQuery && (
+            <span className="
+              inline-flex items-center gap-1 px-2 py-1
+              bg-gradient-to-r from-blue-100/80 to-cyan-100/60
+              dark:from-blue-900/40 dark:to-cyan-900/30
+              backdrop-blur-sm
+              border border-blue-200/60 dark:border-blue-700/40
+              text-blue-800 dark:text-blue-300
+              rounded-lg text-xs
+              max-w-full
+              truncate
+            ">
+              <span className="truncate max-w-[100px] sm:max-w-none">
+                {searchType === 'username' ? '👤' : '🔢'}: {searchQuery}
+              </span>
               <button
-                onClick={clearFilters}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => setSearchQuery('')}
+                className="
+                  ml-1 p-0.5 rounded-md flex-shrink-0
+                  hover:bg-blue-200/50 dark:hover:bg-blue-700/50
+                  transition-colors
+                "
               >
-                Clear Filters
+                ×
               </button>
-            </div>
-          </div>
-
-          {/* Active Filters */}
-          {(searchQuery || startDate || endDate) && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {searchQuery && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                  {searchType === 'username' ? 'Username' : 'Employee Code'}: {searchQuery}
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {startDate && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
-                  From: {startDate.toLocaleDateString()}
-                  <button
-                    onClick={() => setDateRange([null, endDate])}
-                    className="ml-1 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {endDate && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">
-                  To: {endDate.toLocaleDateString()}
-                  <button
-                    onClick={() => setDateRange([startDate, null])}
-                    className="ml-1 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-            </div>
+            </span>
           )}
-        </div>
-
-        {/* Table Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Employee Logs</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing {filteredLogs.length} of {logs.length} total logs
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-500 dark:text-gray-400">Loading check logs...</p>
-            </div>
-          ) : filteredLogs.length === 0 ? (
-            <div className="p-8 text-center">
-              <Eye className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No logs found</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                Try adjusting your filters or check back later
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-750">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Username
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Employee Code
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Check-in Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Check-out Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedLogs.map((log, index) => (
-                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/30 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                                {log.username.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <span className="font-medium">{log.username}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                            <Hash className="w-4 h-4" />
-                            {log.employee_code}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                            <Calendar className="w-4 h-4" />
-                            {formatDate(log.checkInTimestamp || log.checkOutTimestamp || '')}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {log.checkInTime ? (
-                            <div className="flex items-center gap-2">
-                              <LogIn className="w-4 h-4 text-green-500" />
-                              <span className="font-medium text-green-700 dark:text-green-400">{log.checkInTime}</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-500">N/A</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {log.checkOutTime ? (
-                            <div className="flex items-center gap-2">
-                              <LogOut className="w-4 h-4 text-red-500" />
-                              <span className="font-medium text-red-700 dark:text-red-400">{log.checkOutTime}</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-500">N/A</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            log.checkInTime && log.checkOutTime
-                              ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                              : log.checkInTime
-                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                              : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                          }`}>
-                            {log.checkInTime && log.checkOutTime
-                              ? 'Complete'
-                              : log.checkInTime
-                              ? 'Checked In'
-                              : 'Checked Out Only'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="border-t border-gray-200 dark:border-gray-700 p-4 md:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} logs
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Previous
-                      </button>
-                      {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`px-3 py-1 rounded-lg transition-colors ${
-                              currentPage === pageNum
-                                ? 'bg-blue-500 text-white'
-                                : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
+          {startDate && (
+            <span className="
+              inline-flex items-center gap-1 px-2 py-1
+              bg-gradient-to-r from-green-100/80 to-emerald-100/60
+              dark:from-green-900/40 dark:to-emerald-900/30
+              backdrop-blur-sm
+              border border-green-200/60 dark:border-green-700/40
+              text-green-800 dark:text-green-300
+              rounded-lg text-xs
+              max-w-full
+              truncate
+            ">
+              <span className="truncate max-w-[120px] sm:max-w-none">📅 From: {formatDate(startDate)}</span>
+              <button
+                onClick={() => setDateRange([null, endDate])}
+                className="
+                  ml-1 p-0.5 rounded-md flex-shrink-0
+                  hover:bg-green-200/50 dark:hover:bg-green-700/50
+                  transition-colors
+                "
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {endDate && (
+            <span className="
+              inline-flex items-center gap-1 px-2 py-1
+              bg-gradient-to-r from-purple-100/80 to-pink-100/60
+              dark:from-purple-900/40 dark:to-pink-900/30
+              backdrop-blur-sm
+              border border-purple-200/60 dark:border-purple-700/40
+              text-purple-800 dark:text-purple-300
+              rounded-lg text-xs
+              max-w-full
+              truncate
+            ">
+              <span className="truncate max-w-[100px] sm:max-w-none">📅 To: {formatDate(endDate)}</span>
+              <button
+                onClick={() => setDateRange([startDate, null])}
+                className="
+                  ml-1 p-0.5 rounded-md flex-shrink-0
+                  hover:bg-purple-200/50 dark:hover:bg-purple-700/50
+                  transition-colors
+                "
+              >
+                ×
+              </button>
+            </span>
           )}
         </div>
       </div>
+    )}
+  </div>
+
+  {/* Table Section with Glassmorphism - Improved responsiveness */}
+  <div className="
+    bg-gradient-to-br from-white/40 to-white/20
+    dark:from-gray-800/40 dark:to-gray-900/20
+    backdrop-blur-xl
+    border border-white/40 dark:border-gray-700/40
+    rounded-xl sm:rounded-2xl
+    shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+    dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+    overflow-hidden
+  ">
+    <div className="
+      p-3 sm:p-4
+      border-b border-white/30 dark:border-gray-700/30
+      bg-gradient-to-r from-white/50 to-transparent
+      dark:from-gray-800/50 dark:to-transparent
+    ">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
+            Employee Logs
+          </h2>
+          <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+            Showing {filteredLogs.length} of {logs.length} total logs
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="
+            px-2 py-1
+            bg-white/50 dark:bg-gray-700/50
+            backdrop-blur-sm
+            border border-white/60 dark:border-gray-600/60
+            rounded-md
+            text-xs text-gray-700 dark:text-gray-300
+            whitespace-nowrap
+          ">
+            Page {currentPage} of {totalPages || 1}
+          </span>
+        </div>
+      </div>
     </div>
+
+    {loading ? (
+      <div className="p-6 text-center">
+        <div className="
+          animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2
+          backdrop-blur-sm
+        "></div>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Loading check logs...</p>
+      </div>
+    ) : filteredLogs.length === 0 ? (
+      <div className="p-6 text-center">
+        <div className="
+          w-12 h-12 mx-auto mb-2
+          bg-gradient-to-br from-gray-200/50 to-gray-300/30
+          dark:from-gray-700/50 dark:to-gray-800/30
+          backdrop-blur-sm
+          border border-gray-300/60 dark:border-gray-600/60
+          rounded-xl flex items-center justify-center
+        ">
+          <Eye className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300">No logs found</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Try adjusting your filters or check back later
+        </p>
+      </div>
+    ) : (
+      <>
+        {/* Table - Improved for mobile */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px] sm:min-w-0">
+            <div className="overflow-hidden">
+              <table className="w-full">
+                <thead className="
+                  bg-gradient-to-r from-white/60 to-white/40
+                  dark:from-gray-800/60 dark:to-gray-900/40
+                  backdrop-blur-md
+                ">
+                  <tr>
+                    {[
+                      { key: 'username', label: 'Username', className: 'w-[180px] sm:w-auto' },
+                      { key: 'employee_code', label: 'Employee Code', className: 'w-[120px] sm:w-auto' },
+                      { key: 'date', label: 'Date', className: 'w-[100px] sm:w-auto' },
+                      { key: 'check_in', label: 'Check-in', className: 'w-[80px] sm:w-auto' },
+                      { key: 'check_out', label: 'Check-out', className: 'w-[80px] sm:w-auto' },
+                      { key: 'status', label: 'Status', className: 'w-[100px] sm:w-auto' }
+                    ].map((header, idx) => (
+                      <th
+                        key={`${header.key}-${idx}`}
+                        className={`
+                          px-2 sm:px-3 py-2 text-left text-xs font-semibold
+                          text-gray-600 dark:text-gray-300
+                          uppercase tracking-wider
+                          border-b border-white/30 dark:border-gray-700/30
+                          backdrop-blur-sm
+                          whitespace-nowrap
+                          ${header.className}
+                        `}
+                      >
+                        {header.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
+                  {paginatedLogs.map((log, index) => (
+                    <tr
+                      key={index}
+                      className="
+                        hover:bg-white/30 dark:hover:bg-gray-800/30
+                        transition-all duration-300
+                        backdrop-blur-sm
+                      "
+                    >
+                      {/* Username */}
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="
+                            w-6 h-6 sm:w-8 sm:h-8 rounded-lg
+                            bg-gradient-to-br from-blue-500/20 to-cyan-500/20
+                            border border-blue-500/30
+                            flex items-center justify-center
+                            backdrop-blur-sm
+                            flex-shrink-0
+                          ">
+                            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                              {log.username.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                            {log.username}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      {/* Employee Code */}
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                          <div className="
+                            p-1 rounded-md
+                            bg-gradient-to-br from-gray-100/50 to-gray-200/30
+                            dark:from-gray-700/50 dark:to-gray-800/30
+                            backdrop-blur-sm
+                          ">
+                            <Hash className="w-3 h-3" />
+                          </div>
+                          <span className="text-xs sm:text-sm truncate">{log.employee_code}</span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                          <div className="
+                            p-1 rounded-md
+                            bg-gradient-to-br from-yellow-100/50 to-orange-100/30
+                            dark:from-yellow-900/30 dark:to-orange-900/20
+                            backdrop-blur-sm
+                          ">
+                            <Calendar className="w-3 h-3" />
+                          </div>
+                          <span className="text-xs truncate">
+                            {formatDate(log.checkInTimestamp || log.checkOutTimestamp || '')}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        {log.checkInTime ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="
+                              p-1 rounded-md
+                              bg-gradient-to-br from-green-100/50 to-emerald-100/30
+                              dark:from-green-900/30 dark:to-emerald-900/20
+                              backdrop-blur-sm
+                            ">
+                              <LogIn className="w-3 h-3 text-green-500" />
+                            </div>
+                            <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
+                              {log.checkInTime}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                      
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        {log.checkOutTime ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="
+                              p-1 rounded-md
+                              bg-gradient-to-br from-red-100/50 to-pink-100/30
+                              dark:from-red-900/30 dark:to-pink-900/20
+                              backdrop-blur-sm
+                            ">
+                              <LogOut className="w-3 h-3 text-red-500" />
+                            </div>
+                            <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
+                              {log.checkOutTime}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                      
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        <span className={`
+                          px-2 py-1 rounded-lg text-xs font-medium
+                          backdrop-blur-sm border inline-block truncate
+                          ${log.checkInTime && log.checkOutTime
+                            ? 'bg-gradient-to-r from-blue-100/60 to-cyan-100/40 border-blue-200/60 text-blue-800 dark:from-blue-900/40 dark:to-cyan-900/30 dark:border-blue-700/40 dark:text-blue-300'
+                            : log.checkInTime
+                            ? 'bg-gradient-to-r from-green-100/60 to-emerald-100/40 border-green-200/60 text-green-800 dark:from-green-900/40 dark:to-emerald-900/30 dark:border-green-700/40 dark:text-green-300'
+                            : 'bg-gradient-to-r from-yellow-100/60 to-amber-100/40 border-yellow-200/60 text-yellow-800 dark:from-yellow-900/40 dark:to-amber-900/30 dark:border-yellow-700/40 dark:text-yellow-300'
+                          }
+                        `}>
+                          {log.checkInTime && log.checkOutTime
+                            ? 'Complete'
+                            : log.checkInTime
+                            ? 'Checked In'
+                            : 'Checked Out'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Pagination with Glassmorphism - Improved for mobile */}
+        {totalPages > 1 && (
+          <div className="
+            border-t border-white/30 dark:border-gray-700/30
+            p-3 sm:p-4
+            bg-gradient-to-r from-white/40 to-transparent
+            dark:from-gray-800/40 dark:to-transparent
+            backdrop-blur-lg
+          ">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} logs
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="
+                    px-2 sm:px-3 py-1.5
+                    bg-white/40 dark:bg-gray-700/40
+                    backdrop-blur-sm
+                    border border-white/60 dark:border-gray-600/60
+                    rounded-lg
+                    text-gray-700 dark:text-gray-300
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    hover:bg-white/60 dark:hover:bg-gray-600/60
+                    transition-all duration-300
+                    shadow-sm hover:shadow
+                    text-xs
+                  "
+                >
+                  Prev
+                </button>
+                <div className="flex items-center gap-1">
+                  {[...Array(Math.min(totalPages, 3))].map((_, i) => {
+                    let pageNum;
+                    if (totalPages <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 2) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 1) {
+                      pageNum = totalPages - 2 + i;
+                    } else {
+                      pageNum = currentPage - 1 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`
+                          px-2 sm:px-3 py-1.5 rounded-lg 
+                          transition-all duration-300 text-xs
+                          backdrop-blur-sm border shadow-sm hover:shadow
+                          ${currentPage === pageNum
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-blue-500/60'
+                            : 'bg-white/40 dark:bg-gray-700/40 border-white/60 dark:border-gray-600/60 text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-600/60'
+                          }
+                        `}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <span className="px-1 text-gray-500">...</span>
+                  )}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      className={`
+                        px-2 sm:px-3 py-1.5 rounded-lg 
+                        transition-all duration-300 text-xs
+                        backdrop-blur-sm border shadow-sm hover:shadow
+                        ${currentPage === totalPages
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-blue-500/60'
+                          : 'bg-white/40 dark:bg-gray-700/40 border-white/60 dark:border-gray-600/60 text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-600/60'
+                        }
+                      `}
+                    >
+                      {totalPages}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="
+                    px-2 sm:px-3 py-1.5
+                    bg-white/40 dark:bg-gray-700/40
+                    backdrop-blur-sm
+                    border border-white/60 dark:border-gray-600/60
+                    rounded-lg
+                    text-gray-700 dark:text-gray-300
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    hover:bg-white/60 dark:hover:bg-gray-600/60
+                    transition-all duration-300
+                    shadow-sm hover:shadow
+                    text-xs
+                  "
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</div>
   );
 };
 

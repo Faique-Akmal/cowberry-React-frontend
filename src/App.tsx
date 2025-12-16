@@ -25,7 +25,7 @@ import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import Logout from "./pages/AuthPages/Logout";
 // import CompTestHistorySocket from "./pages/CompTestHistorySocket";
-import SocketChatBox from "./components/chat/SocketChatBox";
+// import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 
 import TaskShowPage from "./pages/Employee/EmployeeTask";
@@ -54,11 +54,11 @@ import ChatToggle from "./context/ChatToggle";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
 import AnnouncementModal from "./components/header/NotificationDropdown";
 import CreateAnnouncement from "./components/hr/Announcement";
+import { ChatInterface } from "./components/chat/ChatInterface";
+
 export default function App() {
   return (
     <>
-      {/* <Toaster position="bottom-right" reverseOrder={false} /> */}
-
       <ScrollToTop />
 
       {/* <NotificationListener/> */}
@@ -75,7 +75,8 @@ export default function App() {
         />
 
         <Route path="/" element={<SignIn />} />
-
+        {/* new chat  */}
+        <Route path="/chat" element={<ChatInterface />} />
         {/* Dashboard Layout */}
         <Route element={<AppLayout />}>
           {/* Home Page */}
@@ -150,7 +151,7 @@ export default function App() {
 
           {/* Others Page */}
           <Route path="/profile" element={<UserProfiles />} />
-          <Route path="/chat" element={<SocketChatBox />} />
+
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/blank" element={<Blank />} />
 
@@ -162,8 +163,8 @@ export default function App() {
           <Route path="/assign-task-page" element={<TaskPage />} />
           <Route path="/admin-task-manager" element={<AdminTaskManager />} />
           <Route path="/attandance-start-admin" element={<AttendanceList />} />
-          <Route path="/announcement" element={<AnnouncementModal/>} />
-          <Route path="/announcementList" element={<CreateAnnouncement/>} />
+          <Route path="/announcement" element={<AnnouncementModal />} />
+          <Route path="/announcementList" element={<CreateAnnouncement />} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}
 
           {/* Ui Elements */}
@@ -188,21 +189,31 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatToggle />
-      {/* <Toaster
-        position="bottom-right"
-        reverseOrder={true}
+      <Toaster
+        position="bottom-right" // Options: 'top-center', 'bottom-right', etc.
+        reverseOrder={false}
         toastOptions={{
+          // Global styling (Optional)
           style: {
-            border: "1px solid #377355",
-            padding: "16px",
-            color: "#377355",
+            borderRadius: "10px",
+            background: "#333",
+            color: "#fff",
+            fontSize: "14px",
           },
-          iconTheme: {
-            primary: "#377355",
-            secondary: "#FFFAEE",
+          // Success specific style
+          success: {
+            style: {
+              background: "green",
+            },
+          },
+          // Error specific style
+          error: {
+            style: {
+              background: "red",
+            },
           },
         }}
-      /> */}
+      />
     </>
   );
 }

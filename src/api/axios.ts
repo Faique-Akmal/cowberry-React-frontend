@@ -81,8 +81,8 @@ API.interceptors.response.use(
       const refreshToken = localStorage.getItem("refreshToken");
 
       if (!refreshToken) {
-        // localStorage.clear();
-        // window.location.href = "/signin";
+        localStorage.clear();
+        window.location.href = "/signin";
         return Promise.reject(error);
       }
 
@@ -121,8 +121,8 @@ API.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         console.error("Session expired completely.", err);
-        // localStorage.clear();
-        // window.location.href = "/signin";
+        localStorage.clear();
+        window.location.href = "/signin";
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

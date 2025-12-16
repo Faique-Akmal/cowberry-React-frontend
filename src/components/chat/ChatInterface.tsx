@@ -14,7 +14,7 @@ import {
   ArrowLeft,
   Loader2,
   FileText,
-  // MapPin,
+  MapPin,
   // Check,
   Download,
   CheckCheck,
@@ -75,6 +75,7 @@ export const ChatInterface = () => {
 
   const [input, setInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSendingLocation, setIsSendingLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false); // Mobile view toggle
 
@@ -182,6 +183,7 @@ export const ChatInterface = () => {
       };
 
       socket.emit("send_message", payload);
+      toast.success("Attachment uploaded!");
     } catch (error) {
       console.error("Upload failed", error);
       toast.error("Failed to upload file. Please try again.");
@@ -189,6 +191,40 @@ export const ChatInterface = () => {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  // ✅ New: Handle Location Sharing
+  const handleSendLocation = () => {
+    if (!activeConversation || !currentUser || !socket) return;
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsSendingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+
+        const payload = {
+          conversationId: activeConversation.id,
+          senderId: currentUser.id,
+          content: `${latitude},${longitude}`, // Store as "lat,long" string
+          type: "LOCATION",
+        };
+
+        socket.emit("send_message", payload);
+        setIsSendingLocation(false);
+        toast.success("Location sent!");
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setIsSendingLocation(false);
+        toast.error("Unable to retrieve your location");
+      },
+      { enableHighAccuracy: true } // Better accuracy for GPS
+    );
   };
 
   const handleBackToSidebar = () => {
@@ -217,6 +253,29 @@ export const ChatInterface = () => {
       return (
         <div className="mb-2 overflow-hidden rounded-lg border border-white/20 bg-black">
           <video src={fullUrl} controls className="max-h-64 w-full" />
+        </div>
+      );
+    }
+    if (msg.type === "LOCATION" && msg.content) {
+      const [lat, lng] = msg.content.split(",");
+      const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      // Static map preview URL (using OpenStreetMap for free preview or Google Static Maps if you have API key)
+      // Using a generic map placeholder or OSM link for optimization without API keys
+      return (
+        <div className="mb-2 overflow-hidden rounded-lg border border-white/20 bg-black/20 p-2">
+          <div className="flex items-center gap-2 mb-2 text-white/90 font-medium">
+            <MapPin className="w-5 h-5 text-red-500" />
+            <span>Current Location</span>
+          </div>
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-xs text-blue-300 hover:underline break-all"
+          >
+            View on Google Maps ({Number(lat).toFixed(4)},{" "}
+            {Number(lng).toFixed(4)})
+          </a>
         </div>
       );
     }
@@ -470,6 +529,18 @@ export const ChatInterface = () => {
                     onChange={handleFileUpload}
                   />
 
+                  {/* Location Button (New) */}
+                  <button
+                    onClick={handleSendLocation}
+                    disabled={isSendingLocation}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white transition-all ${
+                      isSendingLocation ? "animate-pulse text-red-400" : ""
+                    }`}
+                    title="Share Location"
+                  >
+                    <MapPin className="h-5 w-5" />
+                  </button>
+
                   {/* Text Input */}
                   <input
                     type="text"
@@ -481,7 +552,7 @@ export const ChatInterface = () => {
                   />
 
                   {/* Send Button */}
-                  {isUploading ? (
+                  {isUploading || isSendingLocation ? (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                       <Loader2 className="h-5 w-5 animate-spin text-white" />
                     </div>

@@ -4,7 +4,7 @@ import { useSidebar } from "../context/SidebarContext";
 
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
-import LangToggleButton from "../components/common/LangToggleButton";
+// import LangToggleButton from "../components/common/LangToggleButton";
 // import AnnouncementNotification from "../pages/AnnouncementNotification";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { useTheme } from "../context/ThemeContext";
@@ -99,8 +99,8 @@ const AppHeader: React.FC = () => {
             } items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-0`}
         >
           <div className="flex items-center gap-2">
-            <LangToggleButton />
-            <ThemeToggleButton />
+            {/* <LangToggleButton /> */}
+            {/* <ThemeToggleButton /> */}
             {/* <AnnouncementNotification /> */}
             
             {/* ✅ FIXED: NotificationDropdown without props */}

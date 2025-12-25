@@ -191,7 +191,7 @@ const EmployeeStatus = () => {
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-bold text-black bg-clip-text ">
                   Live Status
                 </h2>
                 <div className="flex items-center gap-4 mt-1">
@@ -208,9 +208,9 @@ const EmployeeStatus = () => {
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Active users badge */}
+                      {/* Active users badge */}
+
+          {/* <div className="flex items-center gap-3">
             <div className="px-4 py-2 rounded-xl backdrop-blur-sm flex items-center gap-2 group/online"
               style={{
                 background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))',
@@ -224,28 +224,28 @@ const EmployeeStatus = () => {
                 Live View
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="relative rounded-xl p-4 backdrop-blur-sm group/card transition-all duration-300 hover:scale-[1.02]"
             style={{
-              background: 'rgba(59, 130, 246, 0.1)',
+              // background: 'rgba(59, 130, 246, 0.1)',
               border: '1px solid rgba(59, 130, 246, 0.2)',
             }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Online Now</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{activeUsersCount}</p>
+                <p className="text-2xl font-bold text-black dark:text-white">{activeUsersCount}</p>
               </div>
               <div className="p-2 rounded-lg backdrop-blur-sm"
                 style={{
-                  background: 'rgba(59, 130, 246, 0.2)',
+                  // background: 'rgba(59, 130, 246, 0.2)',
                 }}
               >
-                <Users className="w-5 h-5 text-blue-500" />
+                <Users className="w-5 h-5 text-black dark:text-white" />
               </div>
             </div>
             <div className="mt-2 h-1 bg-blue-200/50 dark:bg-blue-800/30 rounded-full overflow-hidden">
@@ -260,14 +260,14 @@ const EmployeeStatus = () => {
 
           <div className="relative rounded-xl p-4 backdrop-blur-sm group/card transition-all duration-300 hover:scale-[1.02]"
             style={{
-              background: 'rgba(139, 92, 246, 0.1)',
+              // background: 'rgba(139, 92, 246, 0.1)',
               border: '1px solid rgba(139, 92, 246, 0.2)',
             }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Availability</p>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <p className="text-2xl font-bold text-black dark:text-white">
                   {Math.round((activeUsersCount / (totalUsers || 1)) * 100)}%
                 </p>
               </div>
@@ -283,7 +283,7 @@ const EmployeeStatus = () => {
 
           <div className="relative rounded-xl p-4 backdrop-blur-sm group/card transition-all duration-300 hover:scale-[1.02]"
             style={{
-              background: 'rgba(16, 185, 129, 0.1)',
+              // background: 'rgba(16, 185, 129, 0.1)',
               border: '1px solid rgba(16, 185, 129, 0.2)',
             }}
           >

@@ -15,7 +15,6 @@ import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import { 
   FaSync, 
-  FaMapMarkerAlt, 
   FaUser, 
   FaRoute, 
   FaCalendarAlt,
@@ -26,18 +25,13 @@ import {
   FaTimes,
   FaPlayCircle,
   FaStopCircle,
-  FaPauseCircle,
   FaMapPin,
   FaSearch,
   FaCar,
   FaEye,
   FaListAlt,
-  FaExpand,
   FaLayerGroup,
   FaChartLine,
-  FaSortAmountDown,
-  FaChevronRight,
-  FaLocationArrow
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
@@ -123,6 +117,8 @@ interface GroupedSession {
   sessions: TravelSession[];
   totalSessions: number;
   totalDistance: number;
+  firstSessionDistance: number;
+  originalTotalDistance: number;
   activeSessions: number;
   startTime: string;
   endTime: string;
@@ -177,7 +173,7 @@ export default function AttendanceList() {
   const [users, setUsers] = useState<{ userId: number; username: string; employeeCode: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
@@ -201,6 +197,39 @@ export default function AttendanceList() {
     return date.toISOString().split('T')[0];
   }, []);
   
+  // Calculate distance minus first session distance
+  const calculateAdjustedGroupDistance = useCallback((sessions: TravelSession[]): {
+    totalDistance: number;
+    firstSessionDistance: number;
+    originalTotalDistance: number;
+  } => {
+    if (sessions.length === 0) {
+      return { totalDistance: 0, firstSessionDistance: 0, originalTotalDistance: 0 };
+    }
+    
+    // Sort sessions by start time to identify the first session
+    const sortedSessions = [...sessions].sort((a, b) => 
+      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+    
+    const firstSession = sortedSessions[0];
+    const firstSessionDistance = firstSession.totalDistance || 0;
+    
+    // Calculate total of all sessions
+    const originalTotalDistance = sortedSessions.reduce((sum, session) => 
+      sum + (session.totalDistance || 0), 0
+    );
+    
+    // Subtract first session's distance
+    const adjustedDistance = Math.max(0, originalTotalDistance - firstSessionDistance);
+    
+    return {
+      totalDistance: adjustedDistance,
+      firstSessionDistance: firstSessionDistance,
+      originalTotalDistance: originalTotalDistance
+    };
+  }, []);
+  
   // Group sessions by user and date
   const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
     const groupedMap = new Map<string, GroupedSession>();
@@ -217,7 +246,9 @@ export default function AttendanceList() {
           date: dateKey,
           sessions: [session],
           totalSessions: 1,
-          totalDistance: session.totalDistance || 0,
+          totalDistance: 0,
+          firstSessionDistance: 0,
+          originalTotalDistance: 0,
           activeSessions: session.endTime ? 0 : 1,
           startTime: session.startTime,
           endTime: session.endTime || session.startTime,
@@ -227,7 +258,6 @@ export default function AttendanceList() {
         const existingGroup = groupedMap.get(groupKey)!;
         existingGroup.sessions.push(session);
         existingGroup.totalSessions += 1;
-        existingGroup.totalDistance += session.totalDistance || 0;
         existingGroup.activeSessions += session.endTime ? 0 : 1;
         existingGroup.totalPoints += session.logs?.length || 0;
         
@@ -246,12 +276,22 @@ export default function AttendanceList() {
       }
     });
     
-    return Array.from(groupedMap.values()).sort((a, b) => {
+    // Calculate adjusted distances for each group
+    return Array.from(groupedMap.values()).map(group => {
+      const distanceData = calculateAdjustedGroupDistance(group.sessions);
+      
+      return {
+        ...group,
+        totalDistance: distanceData.totalDistance,
+        firstSessionDistance: distanceData.firstSessionDistance,
+        originalTotalDistance: distanceData.originalTotalDistance
+      };
+    }).sort((a, b) => {
       const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateCompare !== 0) return dateCompare;
       return b.userId - a.userId;
     });
-  }, [formatDateOnly]);
+  }, [formatDateOnly, calculateAdjustedGroupDistance]);
   
   // Calculate duration in hours and minutes
   const calculateDuration = useCallback((startTime: string, endTime: string) => {
@@ -672,6 +712,7 @@ export default function AttendanceList() {
           'End Latitude': parseCoordinate(session.endLatitude),
           'End Longitude': parseCoordinate(session.endLongitude),
           'Total Distance (km)': (session.totalDistance / 1000).toFixed(2),
+          'Riembursement Amount': ((session.totalDistance / 1000) * 3.5).toFixed(2),  
           'Duration (minutes)': duration,
           'Log Points Count': session.logs?.length || 0,
           'Pauses Count': pauses.length,
@@ -694,7 +735,7 @@ export default function AttendanceList() {
         'End Longitude',
         'Total Distance (km)',
         'Duration (minutes)',
-        'Log Points Count',
+        'Riembursement Amount',
         'Pauses Count',
         'Status',
         'Start Odometer Image URL',
@@ -1202,6 +1243,17 @@ export default function AttendanceList() {
                           <div className="text-center">
                             <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
                             <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
+                            {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-600 dark:text-gray-300">reimbursed amount</p>
+                            <p className="text-lg font-bold text-gray-800 dark:text-white">
+                              ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
+                            </p>
                           </div>
                           <div className="text-center">
                             <button
@@ -1247,14 +1299,11 @@ export default function AttendanceList() {
                         <span className="text-xs font-medium">Total Distance</span>
                       </div>
                       <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
-                    </div>
-                    
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaMapPin className="text-sm" />
-                        <span className="text-xs font-medium">Log Points</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                      {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1270,6 +1319,7 @@ export default function AttendanceList() {
                       {group.sessions.map((session, sessionIndex) => {
                         const sessionDuration = calculateDuration(session.startTime, session.endTime);
                         const isActive = !session.endTime;
+                        const isFirstSession = sessionIndex === 0;
                         
                         return (
                           <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
@@ -1283,6 +1333,11 @@ export default function AttendanceList() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-800 dark:text-white">
                                       Session #{session.sessionId}
+                                      {isFirstSession && (
+                                        <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                          First Session (Excluded)
+                                        </span>
+                                      )}
                                     </span>
                                     {isActive && (
                                       <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
@@ -1297,6 +1352,14 @@ export default function AttendanceList() {
                                     <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
                                     <span>•</span>
                                     <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+                                    {isFirstSession && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                          Distance excluded from total
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>

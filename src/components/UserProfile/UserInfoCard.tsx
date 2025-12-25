@@ -4,8 +4,8 @@ import Alert from "../ui/alert/Alert";
 import { Modal } from "../ui/modal";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import { useTheme } from "../../context/ThemeContext";
+// import { useTranslation } from "react-i18next";
+// import { useTheme } from "../../context/ThemeContext";
 
 interface UserProfile {
   id: number;
@@ -39,8 +39,8 @@ interface UserProfile {
 }
 
 export default function UserInfoCard() {
-  const { themeConfig } = useTheme();
-  const { t } = useTranslation();
+  // const { themeConfig } = useTheme();
+  // const { t } = useTranslation();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [userDepartment, setUserDepartment] = useState<string>("");
   const [address, setAddress] = useState<string>("");
@@ -472,300 +472,348 @@ export default function UserInfoCard() {
       </div>
 
       {/* Edit Modal */}
-      <Modal 
-        isOpen={isOpen} 
-        onClose={handleModalClose}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      >
+    <Modal 
+  isOpen={isOpen} 
+  onClose={handleModalClose}
+  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+>
+  <div className="
+    relative w-full max-w-2xl max-h-[90vh]
+    rounded-2xl
+    bg-white dark:bg-gray-900
+    border border-gray-200 dark:border-gray-700
+    shadow-2xl
+    overflow-hidden
+  ">
+    {/* Header with gradient background */}
+    <div className="
+      relative
+   
+      px-6 py-5
+      border-b border-blue-500/30 dark:border-blue-700/30
+    ">
+      <div className="flex justify-between items-center">
+        <div>
+          <h4 className="
+            text-xl font-bold text-black
+            flex items-center gap-3
+          ">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Edit Profile
+          </h4>
+          <p className="text-black-100 text-sm mt-1">
+            Update your personal information
+          </p>
+        </div>
+        <button
+          onClick={handleModalClose}
+          className="
+            p-2 rounded-lg
+            bg-white/10 hover:bg-white/20
+            text-white
+            transition-colors duration-200
+          "
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    {/* Scrollable content */}
+    <div className="relative z-10 h-full max-h-[calc(90vh-80px)] overflow-y-auto">
+      <div className="p-6 space-y-6">
+        {/* User ID Badge */}
         <div className="
-          relative w-full max-w-2xl max-h-[90vh]
-          rounded-3xl
-          bg-gradient-to-br from-white/90 to-white/80
-          dark:from-gray-900/95 dark:to-gray-800/90
-          backdrop-blur-xl
-          border border-white/40 dark:border-gray-700/40
-          shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]
-          overflow-hidden
+          inline-flex items-center gap-2
+          px-3 py-2
+          rounded-lg
+          bg-blue-50 dark:bg-blue-900/20
+          border border-blue-200 dark:border-blue-700/50
+          text-sm
         ">
-          {/* Background gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 rounded-3xl pointer-events-none"></div>
-          
-          {/* Scrollable container */}
-          <div className="relative z-10 h-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 sm:p-8 lg:p-10 space-y-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                <div>
-                  <h4 className="
-                    mb-2 text-2xl font-bold
-                     bg-black dark:bg-white
-                    
-                    bg-clip-text text-transparent
-                  ">
-                    Edit Profile
-                  </h4>
-                  <p className="
-                    mb-6 text-sm
-                    text-gray-600 dark:text-gray-400
-                    bg-white/30 dark:bg-gray-800/30
-                    backdrop-blur-sm
-                    rounded-xl px-3 py-2 inline-block
-                  ">
-                    Update your profile information below.
-                  </p>
-                </div>
-                <div className="
-                  text-sm
-                  px-3 py-2
-                  rounded-xl
-                  bg-gradient-to-r from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-sm
-                  border border-white/40 dark:border-gray-700/40
+          <span className="text-blue-700 dark:text-blue-300 font-medium">User ID:</span>
+          <span className="font-mono text-blue-900 dark:text-blue-200 bg-white/50 dark:bg-blue-800/30 px-2 py-0.5 rounded">
+            {userId}
+          </span>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="
+            p-4
+            rounded-lg
+            bg-red-50 dark:bg-red-900/20
+            border border-red-200 dark:border-red-700/50
+            flex items-start gap-3
+          ">
+            <div className="
+              p-2 rounded-full
+              bg-red-100 dark:bg-red-800/30
+            ">
+              <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* Name Fields Card */}
+          <div className="
+            bg-gray-50 dark:bg-gray-800/50
+            border border-gray-200 dark:border-gray-700
+            rounded-xl
+            p-5
+            space-y-4
+          ">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h5 className="font-semibold text-gray-900 dark:text-gray-100">Personal Information</h5>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="firstName" className="
+                  block text-sm font-medium
                   text-gray-700 dark:text-gray-300
-                  shrink-0
                 ">
-                  User ID: <span className="font-mono font-medium">{userId}</span>
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                    disabled={isSaving}
+                    required
+                    className="
+                      w-full px-4 py-3
+                      bg-white dark:bg-gray-800
+                      border border-gray-300 dark:border-gray-600
+                      rounded-lg
+                      text-gray-900 dark:text-gray-100
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      placeholder:text-gray-400 dark:placeholder:text-gray-500
+                      transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      hover:border-gray-400 dark:hover:border-gray-500
+                    "
+                  />
+                  <div className="absolute inset-0 border border-transparent rounded-lg pointer-events-none"></div>
                 </div>
               </div>
-
-              {error && (
-                <div className="
-                  p-4
-                  rounded-2xl
-                  bg-gradient-to-br from-red-100/40 to-red-50/30
-                  dark:from-red-900/30 dark:to-red-800/20
-                  backdrop-blur-xl
-                  border border-red-200/60 dark:border-red-700/40
+              
+              <div className="space-y-2">
+                <label htmlFor="lastName" className="
+                  block text-sm font-medium
+                  text-gray-700 dark:text-gray-300
                 ">
-                  <div className="flex items-center gap-3">
-                    <div className="
-                      p-2 rounded-xl
-                      bg-red-500/20
-                      backdrop-blur-sm
-                      border border-red-400/30
-                    ">
-                      <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
-                  </div>
+                  Last Name
+                </label>
+                <div className="relative">
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                    disabled={isSaving}
+                    className="
+                      w-full px-4 py-3
+                      bg-white dark:bg-gray-800
+                      border border-gray-300 dark:border-gray-600
+                      rounded-lg
+                      text-gray-900 dark:text-gray-100
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      placeholder:text-gray-400 dark:placeholder:text-gray-500
+                      transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      hover:border-gray-400 dark:hover:border-gray-500
+                    "
+                  />
+                  <div className="absolute inset-0 border border-transparent rounded-lg pointer-events-none"></div>
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
 
-              <form onSubmit={handleSave} className="space-y-6 pb-2 ">
-                <div className="
-                  grid grid-cols-1 md:grid-cols-2 gap-4
-                  p-5
-                  rounded-2xl
-                  bg-gradient-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
+          {/* Contact Information Card */}
+          <div className="
+            bg-gray-50 dark:bg-gray-800/50
+            border border-gray-200 dark:border-gray-700
+            rounded-xl
+            p-5
+            space-y-4
+          ">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <h5 className="font-semibold text-gray-900 dark:text-gray-100">Contact Information</h5>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="mobileNo" className="
+                  block text-sm font-medium
+                  text-gray-700 dark:text-gray-300
                 ">
-                  <div>
-                    <label htmlFor="firstName" className="
-                      block text-sm font-medium mb-2
-                      text-gray-700 dark:text-gray-300
-                    ">
-                      First Name
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Enter first name"
-                      disabled={isSaving}
-                      required
-                      className="
-                        w-full px-4 py-3
-                        bg-white/50 dark:bg-gray-700/50
-                        backdrop-blur-sm
-                        border border-white/60 dark:border-gray-600/60
-                        rounded-xl
-                        text-gray-900 dark:text-gray-100
-                        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                        placeholder-gray-500 dark:placeholder-gray-400
-                        transition-all duration-300
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                      "
-                    />
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    +91
                   </div>
-                  
-                  <div>
-                    <label htmlFor="lastName" className="
-                      block text-sm font-medium mb-2
-                      text-gray-700 dark:text-gray-300
-                    ">
-                      Last Name
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Enter last name"
-                      disabled={isSaving}
-                      className="
-                        w-full px-4 py-3
-                        bg-white/50 dark:bg-gray-700/50
-                        backdrop-blur-sm
-                        border border-white/60 dark:border-gray-600/60
-                        rounded-xl
-                        text-gray-900 dark:text-gray-100
-                        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                        placeholder-gray-500 dark:placeholder-gray-400
-                        transition-all duration-300
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                      "
-                    />
-                  </div>
-                </div>
-                
-                <div className="
-                  p-5
-                  rounded-2xl
-                  bg-gradient-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
-                ">
-                  <label htmlFor="mobileNo" className="
-                    block text-sm font-medium mb-2
-                    text-gray-700 dark:text-gray-300
-                  ">
-                    Mobile Number
-                  </label>
                   <input
                     id="mobileNo"
                     type="tel"
                     value={mobileNo}
                     onChange={(e) => setMobileNo(e.target.value)}
-                    placeholder="Enter mobile number"
+                    placeholder="9876543210"
                     disabled={isSaving}
                     required
                     className="
-                      w-full px-4 py-3
-                      bg-white/50 dark:bg-gray-700/50
-                      backdrop-blur-sm
-                      border border-white/60 dark:border-gray-600/60
-                      rounded-xl
+                      w-full pl-12 pr-4 py-3
+                      bg-white dark:bg-gray-800
+                      border border-gray-300 dark:border-gray-600
+                      rounded-lg
                       text-gray-900 dark:text-gray-100
-                      focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                      placeholder-gray-500 dark:placeholder-gray-400
-                      transition-all duration-300
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      placeholder:text-gray-400 dark:placeholder:text-gray-500
+                      transition-all duration-200
                       disabled:opacity-50 disabled:cursor-not-allowed
+                      hover:border-gray-400 dark:hover:border-gray-500
                     "
                   />
+                  <div className="absolute inset-0 border border-transparent rounded-lg pointer-events-none"></div>
                 </div>
-                
-                <div className="
-                  p-5
-                  rounded-2xl
-                  bg-gradient-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="address" className="
+                  block text-sm font-medium
+                  text-gray-700 dark:text-gray-300
                 ">
-                  <label htmlFor="address" className="
-                    block text-sm font-medium mb-2
-                    text-gray-700 dark:text-gray-300
-                  ">
-                    Address
-                  </label>
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
                   <input
                     id="address"
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter your address"
+                    placeholder="Enter your complete address"
                     disabled={isSaving}
                     required
                     className="
                       w-full px-4 py-3
-                      bg-white/50 dark:bg-gray-700/50
-                      backdrop-blur-sm
-                      border border-white/60 dark:border-gray-600/60
-                      rounded-xl
+                      bg-white dark:bg-gray-800
+                      border border-gray-300 dark:border-gray-600
+                      rounded-lg
                       text-gray-900 dark:text-gray-100
-                      focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                      placeholder-gray-500 dark:placeholder-gray-400
-                      transition-all duration-300
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      placeholder:text-gray-400 dark:placeholder:text-gray-500
+                      transition-all duration-200
                       disabled:opacity-50 disabled:cursor-not-allowed
+                      hover:border-gray-400 dark:hover:border-gray-500
                     "
                   />
+                  <div className="absolute inset-0 border border-transparent rounded-lg pointer-events-none"></div>
                 </div>
-
-                <div className="
-                  flex flex-col sm:flex-row items-center gap-3 justify-end pt-6
-                  border-t border-white/30 dark:border-gray-700/30
-                  sticky bottom-0 bg-gradient-to-b from-transparent to-white/80 dark:to-gray-900/80 backdrop-blur-sm -mx-2 px-2
-                ">
-                  <button 
-                    type="button"
-                    onClick={handleModalClose}
-                    disabled={isSaving}
-                    className="
-                      px-6 py-3
-                      rounded-xl
-                      bg-gradient-to-r from-white/40 to-white/20
-                      dark:from-gray-800/40 dark:to-gray-900/20
-                      hover:from-white/60 hover:to-white/40
-                      dark:hover:from-gray-700/60 dark:hover:to-gray-800/40
-                      backdrop-blur-lg
-                      border border-white/40 dark:border-gray-700/40
-                      text-gray-700 dark:text-gray-300
-                      font-medium
-                      shadow-sm hover:shadow
-                      transition-all duration-300
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      w-full sm:w-auto
-                    "
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isSaving}
-                    className="
-                      px-6 py-3 min-w-[140px]
-                      rounded-xl
-                      bg-gradient-to-r from-green-800/90 to-green-600/90
-                      hover:from-blue-600 hover:to-indigo-700
-                      dark:from-blue-500/80 dark:to-indigo-600/80
-                      dark:hover:from-blue-600 dark:hover:to-indigo-700
-                      backdrop-blur-lg
-                      text-white
-                      font-medium
-                      shadow-[0_4px_20px_rgba(59,130,246,0.3)]
-                      hover:shadow-[0_6px_25px_rgba(59,130,246,0.4)]
-                      transition-all duration-300
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      w-full sm:w-auto
-                      flex items-center justify-center gap-2
-                    "
-                  >
-                    {isSaving ? (
-                      <>
-                        <span className="
-                          animate-spin
-                          w-4 h-4
-                          border-2 border-white border-t-transparent
-                          rounded-full
-                        "></span>
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
-        </div>
-      </Modal>
+
+          {/* Footer Actions */}
+          <div className="
+            pt-6
+            border-t border-gray-200 dark:border-gray-700
+            flex flex-col sm:flex-row items-center gap-3 justify-end
+            sticky bottom-0 bg-white dark:bg-gray-900
+          ">
+            <button 
+              type="button"
+              onClick={handleModalClose}
+              disabled={isSaving}
+              className="
+                px-6 py-3
+                rounded-lg
+                bg-gray-100 dark:bg-gray-800
+                hover:bg-gray-200 dark:hover:bg-gray-700
+                border border-gray-300 dark:border-gray-600
+                text-gray-700 dark:text-gray-300
+                font-medium
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                w-full sm:w-auto
+                flex items-center justify-center gap-2
+              "
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={isSaving}
+              className="
+                px-8 py-3
+                rounded-lg
+                bg-gradient-to-r from-green-600 to-green-700
+                hover:from-green-700 hover:to-green-800
+                dark:from-blue-700 dark:to-blue-800
+                dark:hover:from-blue-600 dark:hover:to-blue-700
+                text-white
+                font-medium
+                shadow-lg hover:shadow-xl
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                w-full sm:w-auto
+                flex items-center justify-center gap-3
+                min-w-[160px]
+              "
+            >
+              {isSaving ? (
+                <>
+                  <span className="
+                    animate-spin
+                    w-5 h-5
+                    border-2 border-white border-t-transparent
+                    rounded-full
+                  "></span>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Save Changes</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Modal>  
     </>
   );
 }

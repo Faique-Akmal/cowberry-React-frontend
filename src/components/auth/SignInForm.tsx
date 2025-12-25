@@ -11,16 +11,60 @@ import ForgotPasswordModal from "./ForgotPasswordModal";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
+// Field Employee Restriction Modal Component
+const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md mx-4">
+        <div className="text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
+            <svg className="h-6 w-6 text-red-600 dark:text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Access Restricted
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Field employees cannot login through the web portal. Please use the mobile app to access your account.
+          </p>
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Okay, Got it
+            </button>
+            <button
+              onClick={() => {
+                // You can add logic to redirect to app store or show download links
+                window.open('https://your-mobile-app-download-link.com', '_blank');
+                onClose();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Download Mobile App
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState(""); // Changed variable name for consistency
+  const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(true);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showFieldEmployeeModal, setShowFieldEmployeeModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -29,6 +73,23 @@ export default function SignInForm() {
 
   const openForgotModal = () => setIsForgotModalOpen(true);
   const closeForgotModal = () => setIsForgotModalOpen(false);
+
+  // Function to check if user is a field employee
+  const isFieldEmployee = (role: string): boolean => {
+    if (!role) return false;
+    
+    const normalizedRole = role.toLowerCase().trim();
+    
+    // Check for various possible field employee role names
+    return (
+      normalizedRole === "fieldemployee" ||
+      normalizedRole === "field employee" ||
+      normalizedRole === "field_employee" ||
+      normalizedRole.includes("field") && normalizedRole.includes("employee") ||
+      normalizedRole === "fieldstaff" ||
+      normalizedRole === "field staff"
+    );
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,26 +112,40 @@ export default function SignInForm() {
     }
 
     try {
-      // console.log("Sending login request with:", { email: email.trim(), password: "***" });
-
       const response = await API.post("/auth/login", {
         email: email.trim(),
         password: password.trim(),
         deviceType: isMobileDevice ? "mobile" : "desktop",
       });
 
-      // console.log("Login API Response:", response);
-      // console.log("Full response data:", response.data);
-
-      // Check for successful login based on status code
       if (response.status === 200 || response.status === 201) {
         const { user, tokens, message } = response.data;
 
-        // console.log("User data:", user);
-        // console.log("Tokens:", tokens);
-        // console.log("Server message:", message);
+        // Check if user is a field employee BEFORE storing anything
+        const userRole = user?.role || "";
+        
+        if (isFieldEmployee(userRole)) {
+          // Show field employee restriction modal
+          setShowFieldEmployeeModal(true);
+          
+          // Clear any tokens that might have been set
+          if (tokens?.access) {
+            localStorage.removeItem("accessToken");
+          }
+          if (tokens?.refresh) {
+            localStorage.removeItem("refreshToken");
+          }
+          
+          // Show error toast
+          toast.error("Field employees must use the mobile app to login", {
+            id: loadingToast,
+          });
+          
+          setIsLoading(false);
+          return; // Stop further execution
+        }
 
-        // Store user data in localStorage
+        // Store user data in localStorage (only if not field employee)
         localStorage.setItem("userRole", user?.role || "employee");
         localStorage.setItem("userId", user?.id || "");
         localStorage.setItem("profileimg", user?.profileimg || "");
@@ -85,24 +160,14 @@ export default function SignInForm() {
           user?.isActiveEmployee ? "true" : "false"
         );
 
-        // console.log("LocalStorage after saving user data:");
-        // console.log("userRole:", localStorage.getItem("userRole"));
-        // console.log("userId:", localStorage.getItem("userId"));
-        // console.log("email:", localStorage.getItem("email"));
-
-        // Set tokens in auth context and WAIT for it to complete
+        // Set tokens in auth context
         if (tokens?.access && tokens?.refresh) {
           try {
-            // console.log("Calling login function with tokens...");
-
-            // WAIT for login to complete (this should store tokens in context)
             await login(tokens.refresh, tokens.access);
-            // console.log("Login function completed successfully");
 
             // Store "Keep me logged in" preference
             if (isChecked) {
               localStorage.setItem("rememberMe", "true");
-              // console.log("Remember me enabled");
             } else {
               localStorage.removeItem("rememberMe");
             }
@@ -111,39 +176,36 @@ export default function SignInForm() {
             const successMessage = message || t("toast.Logged in successfully");
             setMessage(successMessage);
             toast.success(`Welcome back, ${user.username} 🍁`, {
-              id: loadingToast, // Ye ID use karne se loading wala toast replace ho jata hai
+              id: loadingToast,
             });
 
-            // Debug: Check if tokens are stored
-            // console.log("Access token in localStorage:", localStorage.getItem("accessToken") ? "Yes" : "No");
-            // console.log("Refresh token in localStorage:", localStorage.getItem("refreshToken") ? "Yes" : "No");
+            // Get user role and normalize it
+            const userRole = user?.role ;
+            const normalizedRole = userRole.toLowerCase().trim();
 
-            // Get user role and normalize it (handle case sensitivity)
-            const userRole = user?.role || "employee";
-            const normalizedRole = userRole.toLowerCase();
-            // console.log("User role for navigation:", userRole, "(normalized:", normalizedRole, ")");
-
-            // Role-based navigation logic
+            // Role-based navigation logic (excluding field employees)
             let targetRoute = "/home";
 
-            if (normalizedRole === "employee") {
-              targetRoute = "/employee-dashboard";
-            } else if (normalizedRole === "hr" || normalizedRole === "admin") {
+            if (normalizedRole === "admin") {
               targetRoute = "/home";
+            } else if (normalizedRole === "hr" || normalizedRole === "manager") {
+              targetRoute = "/home";
+            } else {
+              targetRoute = "/";
             }
 
+            // Navigate after a short delay
             setTimeout(() => {
               navigate(targetRoute, { replace: true });
             }, 100);
           } catch (loginError) {
-            // console.error("Error in login function:", loginError);
+            console.error("Error in login function:", loginError);
             setMessage("Authentication context error. Please try again.");
             toast.error("Authentication context error. Please try again.", {
               id: loadingToast,
             });
           }
         } else {
-          // console.error("No tokens in response:", response.data);
           setMessage("No authentication tokens received from server.");
           toast.error("No authentication tokens received from server.");
         }
@@ -161,15 +223,12 @@ export default function SignInForm() {
         }
       }
     } catch (error: any) {
-      // console.error("Login error:", error);
+      console.error("Login error:", error);
 
       if (error.response) {
         // Server responded with error status
         const status = error.response.status;
         const data = error.response.data;
-
-        // console.log("Error response status:", status);
-        // console.log("Error response data:", data);
 
         if (status === 400 || status === 401) {
           const errorMsg =
@@ -203,7 +262,6 @@ export default function SignInForm() {
         }
       } else if (error.request) {
         // Request was made but no response received
-        // console.log("No response received:", error.request);
         const errorMsg = t(
           "message.Cannot connect to server. Please check your connection."
         );
@@ -211,7 +269,6 @@ export default function SignInForm() {
         toast.error(errorMsg);
       } else {
         // Something else happened
-        // console.log("Request setup error:", error.message);
         const errorMsg = t(
           "message.An unexpected error occurred. Please try again."
         );
@@ -224,145 +281,131 @@ export default function SignInForm() {
       setIsLoading(false);
     }
   };
+
   return (
-    <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
-      <div className="w-30 h-30 mx-auto mb-6 mt-2">
-        <img
-          src="cowberry_organics_1.png"
-          alt="cowberry-logo"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-        />
-      </div>
-      <div className="flex items-center justify-center w-full h-20">
-        <h1 className="text-xl font-bold">{t("WELCOME ")} </h1>
-        <br></br>
-      </div>
-      <div className="flex items-center justify-center w-full h-20">
-        <h1 className="text-xl font-bold">{t("TO ")} </h1>
-        <br></br>
-      </div>
-
-      <div className="flex items-center justify-center w-full h-20">
-        <h2 className="text-xl font-bold text-brand-500 ml-2">
-          {t("COWBERRY ORGANICS")}
-        </h2>
-      </div>
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <form onSubmit={handleLogin}>
-          <div className="space-y-6">
-            <div className="capitalize">
-              <Label>
-                {t("email")} <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder={t("Enter your email")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                autoComplete="email"
-                type="email"
-              />
-            </div>
-
-            <div className="capitalize">
-              <Label>
-                {t("register.Password")} <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
+    <>
+      <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
+        <div className="w-50 h-50 mx-auto mb-6 mt-2">
+          <img
+            src="cowberry_organics_1.png"
+            alt="cowberry-logo"
+            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+          />
+        </div>
+        {/* <div className="flex items-center justify-center w-full h-10">
+          <h1 className="text-2xl font-bold">{t("Welcome")} </h1>
+          <br></br>
+        </div> */}
+        
+        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+          <form onSubmit={handleLogin}>
+            <div className="space-y-6">
+              <div className="capitalize">
+                <Label>
+                  {t("email")} <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t("register.Enter your password")}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={t("Enter your email")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  autoComplete="current-password"
+                  autoComplete="email"
+                  type="email"
                 />
-                <span
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                >
-                  {showPassword ? (
-                    <EyeIcon className="size-5 fill-gray-500" />
-                  ) : (
-                    <EyeCloseIcon className="size-5 fill-gray-500" />
-                  )}
-                </span>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Checkbox checked={isChecked} onChange={setIsChecked} />
-                <span className="text-sm text-gray-700">
-                  {t("Keep me logged in")}
-                </span>
+              <div className="capitalize">
+                <Label>
+                  {t("register.Password")} <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={t("register.Enter your password")}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                  />
+                  <span
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeIcon className="size-5 fill-gray-500" />
+                    ) : (
+                      <EyeCloseIcon className="size-5 fill-gray-500" />
+                    )}
+                  </span>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={openForgotModal}
-                className="text-sm text-brand-500 hover:underline"
-                disabled={isLoading}
-              >
-                {t("Forgot Password?")}
-              </button>
-            </div>
 
-            <div>
-              <Button
-                type="submit"
-                className="w-full"
-                size="sm"
-                disabled={isLoading}
-              >
-                {isLoading ? t("button.Signing in...") : t("button.Sign in")}
-              </Button>
-            </div>
-
-            <ForgotPasswordModal
-              isOpen={isForgotModalOpen}
-              onClose={closeForgotModal}
-            />
-
-            {message && (
-              <p
-                className={`text-sm text-center font-medium ${
-                  message.toLowerCase().includes("success")
-                    ? "text-green-500"
-                    : "text-red-500"
-                }`}
-              >
-                {message}
-              </p>
-            )}
-
-            {/* Debug info - Remove in production */}
-            {/* {process.env.NODE_ENV === 'development' && (
-              <div className="p-2 mt-4 text-xs text-gray-500 border border-gray-200 rounded">
-                <p className="font-semibold">Debug Info:</p>
-                <p>Email: {email}</p>
-                <p>Access Token: {localStorage.getItem('accessToken') ? '✅ Present' : '❌ Missing'}</p>
-                <p>Refresh Token: {localStorage.getItem('refreshToken') ? '✅ Present' : '❌ Missing'}</p>
-                <p>User Role: {localStorage.getItem('userRole') || 'Not set'}</p>
-                <p>User ID: {localStorage.getItem('userId') || 'Not set'}</p>
-                <button 
-                  onClick={() => {
-                    console.log("LocalStorage dump:", {
-                      accessToken: localStorage.getItem('accessToken'),
-                      refreshToken: localStorage.getItem('refreshToken'),
-                      userRole: localStorage.getItem('userRole'),
-                      userId: localStorage.getItem('userId'),
-                      email: localStorage.getItem('email')
-                    });
-                  }}
-                  className="mt-1 p-1 bg-gray-200 rounded"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Checkbox checked={isChecked} onChange={setIsChecked} />
+                  <span className="text-sm text-gray-700">
+                    {t("Keep me logged in")}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={openForgotModal}
+                  className="text-sm text-brand-500 hover:underline"
+                  disabled={isLoading}
                 >
-                  Log Storage
+                  {t("Forgot Password?")}
                 </button>
               </div>
-            )} */}
-          </div>
-        </form>
+
+              <div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="sm"
+                  disabled={isLoading}
+                >
+                  {isLoading ? t("button.Signing in...") : t("button.Sign in")}
+                </Button>
+              </div>
+
+              {message && (
+                <p
+                  className={`text-sm text-center font-medium ${
+                    message.toLowerCase().includes("success")
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {message}
+                </p>
+              )}
+
+              {/* Field Employee Notice */}
+              {/* <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    <span className="font-semibold">Note for Field Employees:</span> If you're a field employee, please use the mobile app to login. Web portal access is restricted for field roles.
+                  </p>
+                </div>
+              </div> */}
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      {/* Modals */}
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={closeForgotModal}
+      />
+      
+      <FieldEmployeeRestrictionModal
+        isOpen={showFieldEmployeeModal}
+        onClose={() => setShowFieldEmployeeModal(false)}
+      />
+    </>
   );
 }

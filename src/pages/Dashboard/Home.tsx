@@ -57,9 +57,9 @@ export default function Home() {
     </div>
 
     {/* Map */}
-    <div className="col-span-1 md:col-span-2 xl:col-span-12">
+    {/* <div className="col-span-1 md:col-span-2 xl:col-span-12">
       <MapComponent />
-    </div>
+    </div> */}
 
   </div>
 </>

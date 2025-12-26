@@ -311,24 +311,21 @@ export default function AttendanceList() {
     fetchTravelSessions();
   }, []);
   
-  useEffect(() => {
-    if (mapView && autoRefresh) {
-      const isOngoing = !mapView.endTime || mapView.endTime === mapView.startTime;
-      
-      if (isOngoing) {
-        locationIntervalRef.current = setInterval(() => {
-          fetchTravelSessions();
-        }, 10000);
-      }
+useEffect(() => {
+  // Auto-refresh should work regardless of map view
+  if (autoRefresh) {
+    locationIntervalRef.current = setInterval(() => {
+      fetchTravelSessions();
+    }, 30000); // Refresh every 30 seconds (adjust as needed)
+  }
+  
+  return () => {
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
     }
-    
-    return () => {
-      if (locationIntervalRef.current) {
-        clearInterval(locationIntervalRef.current);
-        locationIntervalRef.current = null;
-      }
-    };
-  }, [mapView, autoRefresh]);
+  };
+}, [autoRefresh]); 
   
   const fetchTravelSessions = async () => {
     setIsLoading(true);
@@ -991,14 +988,27 @@ export default function AttendanceList() {
               </button>
             )}
             
-            <button
-              onClick={manualRefresh}
-              disabled={isLoading}
-              className={`flex items-center gap-2 px-4 py-2  rounded-xl disabled:opacity-50 bg-blue-700`}
-            >
-              <FaSync className={isLoading ? "animate-spin" : ""} />
-              Refresh
-            </button>
+             <button
+    onClick={() => setAutoRefresh(!autoRefresh)}
+    className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+      autoRefresh 
+        ? 'bg-green-600 hover:bg-green-700 text-white' 
+        : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+    } transition-all`}
+    title={autoRefresh ? "Auto-refresh is ON" : "Auto-refresh is OFF"}
+  >
+    {autoRefresh ? (
+      <>
+        <FaSync className="animate-spin" />
+        Auto Refresh (ON)
+      </>
+    ) : (
+      <>
+        <FaSync />
+        Auto Refresh (OFF)
+      </>
+    )}
+  </button>
           </div>
         </div>
 

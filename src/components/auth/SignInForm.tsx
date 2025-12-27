@@ -188,7 +188,7 @@ export default function SignInForm() {
 
             if (normalizedRole === "admin") {
               targetRoute = "/home";
-            } else if (normalizedRole === "hr" || normalizedRole === "manager") {
+            } else if (normalizedRole === "hr" || normalizedRole === "manager" || normalizedRole === "zonalmanager") {
               targetRoute = "/home";
             } else {
               targetRoute = "/";

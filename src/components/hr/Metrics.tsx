@@ -15,9 +15,9 @@ export default function Metrics() {
     const [roleStats, setRoleStats] = useState({
         employee: 0,
         department_head: 0,
-        hod: 0,
+        manager: 0,
         hr: 0,
-        admin: 0,
+        ZonalManager: 0,
     });
     const [totalUsers, setTotalUsers] = useState(0);
 
@@ -42,14 +42,14 @@ export default function Metrics() {
                         department_head: users.filter(user => 
                             user.role?.toLowerCase() === 'department_head'
                         ).length,
-                        hod: users.filter(user => 
-                            user.role?.toLowerCase() === 'hod'
+                        manager: users.filter(user => 
+                            user.role?.toLowerCase() === 'manager'
                         ).length,
                         hr: users.filter(user => 
                             user.role?.toLowerCase() === 'hr'
                         ).length,
-                        admin: users.filter(user => 
-                            user.role?.toLowerCase() === 'admin'
+                        ZonalManager: users.filter(user => 
+                            user.role?.toLowerCase() === 'ZonalManager'
                         ).length,
                     };
                     
@@ -95,7 +95,7 @@ export default function Metrics() {
             gradient: "from-indigo-50/50 to-transparent dark:from-indigo-950/20 dark:to-transparent"
         },
         {
-            title: t("home.Field Employees"),
+            title: t("Field Employees"),
             value: loading ? "..." : roleStats.employee.toLocaleString(),
             icon: <GroupIcon className="h-3 w-3" />,
             iconColor: "text-blue-600 dark:text-blue-400",
@@ -104,7 +104,7 @@ export default function Metrics() {
         },
         {
             title: t("home.Total Managers"),
-            value: loading ? "..." : roleStats.department_head.toLocaleString(),
+            value: loading ? "..." : roleStats.manager.toLocaleString(),
             icon: <FcDepartment className="h-3 w-3" />,
             iconColor: "text-yellow-600 dark:text-yellow-400",
             iconBg: "bg-yellow-100/80 dark:bg-yellow-900/30",
@@ -127,8 +127,8 @@ export default function Metrics() {
             gradient: "from-orange-50/50 to-transparent dark:from-orange-950/20 dark:to-transparent"
         },
         {
-            title: t("home.Total Admin"),
-            value: loading ? "..." : roleStats.admin.toLocaleString(),
+            title: t("Total Zonal Manager"),
+            value: loading ? "..." : roleStats.ZonalManager.toLocaleString(),
             icon: <GrUserManager className="h-3 w-3" />,
             iconColor: "text-purple-600 dark:text-purple-400",
             iconBg: "bg-purple-100/80 dark:bg-purple-900/30",

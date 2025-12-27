@@ -93,29 +93,16 @@ const AppSidebar: React.FC = () => {
     icon: <UserCircleIcon />,
     name: t("menu.EmployeeCheckin"),
     path: "/employeecheckin",
-    role: ["admin","department_head","manager","HR","employee"],
+    role: ["admin","department_head","manager","HR"],
   },
-  // {
-  //   icon: <ChatIcon />,
-  //   name: t("menu.chat"),
-  //   path: "/chat",
-  //   role: ["admin","employee","department_head","manager","hr"],
-  // },
+ 
   {
-    icon: <ListIcon />,
-    name: t("menu.attendance"),
-    subItems: [
-      { name: t("menu.attendanceStart"), path: "/attandanceStart-page", role: ["employee"] },
-      { name: t("menu.attendanceEnd"), path: "/attandanceEnd-page", role: ["employee"] },
-    ],
+    icon: <UserCircleIcon />,
+    name: t("Admin Panel"),
+    path: "/",
+    role: ["admin","HR"],
   },
-  // {
-  //   icon: <TbTableShare />,
-  //   name: t("menu.forms"),
-  //   subItems: [
-  //     { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","HR"] },
-  //   ],
-  // },
+ 
   {
     icon: <MdListAlt />,
     name: t("menu.TravelSessions"),
@@ -142,18 +129,7 @@ const AppSidebar: React.FC = () => {
     role: ["admin","department_head","manager","HR","executive"],
   },
  
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: t("menu.taskCalendar"),
-  //   path: "/task-calendar",
-  //   role: ["employee"],
-  // },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.myTasks"),
-    path: "/task-show-page",
-    role: ["employee"],
-  },
+ 
  
 ];
 

@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
-import { role } from "../../store/store";
-import { useTranslation } from "react-i18next";
-import { useTheme } from "../../context/ThemeContext.tsx";
+import React, { useEffect, useState, useRef } from "react";
+// import { useTranslation } from "react-i18next";
+// import { useTheme } from "../../context/ThemeContext.tsx";
 import { useData } from "../../context/DataProvider";
 import API from "../../api/axios.ts";
 
@@ -12,12 +11,12 @@ interface User {
   employee_code: string;
   email: string;
   role: number;
+  roleId: number;
   is_checkin: boolean;
   department: string;
   profile_image?: string;
   date: string;
   is_online: boolean;
-  // New fields for editing
   fullName?: string;
   mobileNo?: string;
   address?: string;
@@ -36,7 +35,7 @@ interface PaginationParams {
 
 // Department interface
 interface Department {
-  id: number;
+  departmentId: number;
   name: string;
 }
 
@@ -44,6 +43,7 @@ interface Department {
 interface Role {
   id: number;
   name: string;
+  description: string;
 }
 
 // Edit User Form interface
@@ -60,8 +60,8 @@ interface EditUserForm {
 }
 
 const UserList: React.FC = () => {
-  const { themeConfig } = useTheme();
-  const { t } = useTranslation();
+  // const { themeConfig } = useTheme();
+  // const { t } = useTranslation();
   const { fetchUsers } = useData();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -89,6 +89,8 @@ const UserList: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingRoles, setLoadingRoles] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,34 +103,85 @@ const UserList: React.FC = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Fetch departments from API
+  const fetchDepartments = async () => {
+    try {
+      setLoadingDepartments(true);
+      const token = localStorage.getItem("accessToken");
+      
+      if (!token) {
+        console.warn("No token found for departments API");
+        return;
+      }
+      
+      const response = await API.get('/departments/static_departments', {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      console.log("Departments API response:", response.data);
+      
+      if (response.data?.departments) {
+        setDepartments(response.data.departments);
+      } else {
+        console.error("Unexpected departments response structure:", response.data);
+        // Fallback to empty array
+        setDepartments([]);
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch departments:", error);
+      if (error.response) {
+        console.error("Departments API error response:", error.response.data);
+      }
+      setDepartments([]); // Fallback to empty array
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
+  // Fetch roles from API
+  const fetchRoles = async () => {
+    try {
+      setLoadingRoles(true);
+      const token = localStorage.getItem("accessToken");
+      
+      if (!token) {
+        console.warn("No token found for roles API");
+        return;
+      }
+      
+      const response = await API.get('/roles/static_roles', {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      console.log("Roles API response:", response.data);
+      
+      if (response.data?.roles) {
+        setRoles(response.data.roles);
+      } else {
+        console.error("Unexpected roles response structure:", response.data);
+        setRoles([]);
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch roles:", error);
+      if (error.response) {
+        console.error("Roles API error response:", error.response.data);
+      }
+      setRoles([]); // Fallback to empty array
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
+
   // Fetch departments and roles for edit form
   useEffect(() => {
-    const fetchDepartmentsAndRoles = async () => {
-      try {
-        // Replace with your actual API endpoints
-        // const departmentsRes = await fetch('http://localhost:5000/api/departments');
-        // const rolesRes = await fetch('http://localhost:5000/api/roles');
-        
-        // For now, using mock data based on your response structure
-        setDepartments([
-          { id: 1, name: "IT" },
-          { id: 2, name: "HR" },
-          { id: 3, name: "Sales" },
-          { id: 4, name: "Marketing" }
-        ]);
-        
-        setRoles([
-          { id: 1, name: "Admin" },
-          { id: 2, name: "HR" },
-          { id: 3, name: "Employee" },
-          { id: 4, name: "Manager" }
-        ]);
-      } catch (error) {
-        console.error("Failed to fetch departments/roles:", error);
-      }
-    };
-    
-    fetchDepartmentsAndRoles();
+    fetchDepartments();
+    fetchRoles();
   }, []);
 
   const fetchPageUsers = async (page: number = 1, isLoadMore: boolean = false) => {
@@ -188,25 +241,28 @@ const UserList: React.FC = () => {
   // Handle edit button click
   const handleEditClick = (user: User) => {
     console.log("Editing user:", user);
-    console.log("User ID:", user.id);
-    console.log("User userId:", user.userId);
     
     setSelectedUser(user);
     
     // Get the correct user ID
     const userId = user.id || user.userId;
     
+    // Find the department ID from department name
+    const department = departments.find(dept => 
+      dept.name.toLowerCase() === user.department?.toLowerCase()
+    );
+    
     // Populate edit form with user data
     setEditForm({
       username: user.employee_code || `user_${userId}`,
-      fullName: user.name || "",
+      fullName: user.name || user.fullName || "",
       email: user.email || "",
       mobileNo: user.mobileNo || "",
       address: user.address || "",
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
       profileImageUrl: user.profile_image || user.profileImageUrl || "",
-      departmentId: getDepartmentId(user.department) || 0,
-      roleId: user.role || 0
+      departmentId: department?.departmentId || 0,
+      roleId: user.role || 0 // This should be the numeric role ID
     });
     
     setIsEditModalOpen(true);
@@ -217,7 +273,7 @@ const UserList: React.FC = () => {
     const { name, value } = e.target;
     setEditForm(prev => ({
       ...prev,
-      [name]: name === 'departmentId' || name === 'roleId' ? parseInt(value) : value
+      [name]: name === 'departmentId' || name === 'roleId' ? parseInt(value) || 0 : value
     }));
   };
 
@@ -242,6 +298,43 @@ const UserList: React.FC = () => {
     
     console.log("Updating user with ID:", userId);
     console.log("Edit form data:", editForm);
+    console.log("Available departments:", departments);
+    console.log("Available roles:", roles);
+    
+    // Validate required fields
+    if (!editForm.fullName.trim()) {
+      alert("Full name is required");
+      return;
+    }
+    
+    if (!editForm.email.trim()) {
+      alert("Email is required");
+      return;
+    }
+    
+    if (!editForm.departmentId || editForm.departmentId === 0) {
+      alert("Please select a department");
+      return;
+    }
+    
+    if (!editForm.roleId || editForm.roleId === 0) {
+      alert("Please select a role");
+      return;
+    }
+    
+    // Validate that selected department exists
+    const selectedDepartment = departments.find(d => d.departmentId === editForm.departmentId);
+    if (!selectedDepartment) {
+      alert("Selected department is invalid. Please refresh and try again.");
+      return;
+    }
+    
+    // Validate that selected role exists
+    const selectedRole = roles.find(r => r.id === editForm.roleId);
+    if (!selectedRole) {
+      alert("Selected role is invalid. Please refresh and try again.");
+      return;
+    }
     
     setIsEditing(true);
     
@@ -253,12 +346,26 @@ const UserList: React.FC = () => {
         return;
       }
       
+      // Prepare data for API - ensure all numbers are integers
+      const updateData = {
+        username: editForm.username?.trim(),
+        fullName: editForm.fullName.trim(),
+        email: editForm.email.trim(),
+        mobileNo: editForm.mobileNo.trim(),
+        address: editForm.address.trim(),
+        birthDate: editForm.birthDate || null,
+        profileImageUrl: editForm.profileImageUrl.trim() || null,
+        departmentId: Number(editForm.departmentId), // Ensure integer
+        roleId: Number(editForm.roleId) // Ensure integer
+      };
+      
+      console.log("Sending update data:", updateData);
       console.log("Making PUT request to:", `/admin/users/${userId}`);
       
       // Make the API call
       const response = await API.put(
         `/admin/users/${userId}`,
-        editForm,
+        updateData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -272,6 +379,10 @@ const UserList: React.FC = () => {
       console.log("Update response:", result);
 
       if (result.success) {
+        // Find the updated department and role names
+        const updatedDepartment = departments.find(d => d.departmentId === editForm.departmentId);
+        const updatedRole = roles.find(r => r.id === editForm.roleId);
+        
         // Update the user in the local state
         setUsers(prev => prev.map(user => {
           const currentUserId = user.id || user.userId;
@@ -284,8 +395,8 @@ const UserList: React.FC = () => {
               address: result.data.address || user.address,
               birthDate: result.data.birthDate || user.birthDate,
               profile_image: result.data.profileImageUrl || user.profile_image,
-              department: result.data.department?.name || user.department,
-              role: result.data.role?.id || user.role
+              department: updatedDepartment?.name || user.department,
+              role: result.data.role?.id || editForm.roleId || user.role
             };
           }
           return user;
@@ -301,8 +412,8 @@ const UserList: React.FC = () => {
             address: result.data.address || selectedUser.address,
             birthDate: result.data.birthDate || selectedUser.birthDate,
             profile_image: result.data.profileImageUrl || selectedUser.profile_image,
-            department: result.data.department?.name || selectedUser.department,
-            role: result.data.role?.id || selectedUser.role
+            department: updatedDepartment?.name || selectedUser.department,
+            role: result.data.role?.id || editForm.roleId || selectedUser.role
           };
           setSelectedUser(updatedSelectedUser);
         }
@@ -322,7 +433,16 @@ const UserList: React.FC = () => {
         console.error("Error response status:", error.response.status);
         console.error("Error response headers:", error.response.headers);
         
-        alert(`Error: ${error.response.data?.message || "Failed to update user. Please check the console for details."}`);
+        let errorMessage = error.response.data?.message || "Failed to update user";
+        
+        // Add more specific error handling
+        if (error.response.data?.error?.includes('roleId')) {
+          errorMessage += "\n\nPossible issue: Role ID format is incorrect. Please ensure you're sending a numeric role ID.";
+        } else if (error.response.data?.error?.includes('departmentId')) {
+          errorMessage += "\n\nPossible issue: Department ID format is incorrect.";
+        }
+        
+        alert(`Error: ${errorMessage}`);
       } else if (error.request) {
         // The request was made but no response was received
         console.error("No response received:", error.request);
@@ -337,17 +457,25 @@ const UserList: React.FC = () => {
     }
   };
 
-  // Helper function to get department ID from name
-  const getDepartmentId = (departmentName: string): number => {
-    if (!departmentName) return 0;
-    const dept = departments.find(d => d.name === departmentName);
-    return dept ? dept.id : 0;
+  // Helper function to get department name from ID
+  const getDepartmentName = (departmentId: number): string => {
+    if (!departmentId) return "Unknown";
+    const dept = departments.find(d => d.departmentId === departmentId);
+    return dept ? dept.name : "Unknown";
   };
 
   // Helper function to get role name from ID
   const getRoleName = (roleId: number): string => {
-    const r = roles.find((r) => r.id === roleId) || role.find((r) => r.id === roleId);
-    return r ? r.name : "Unknown";
+    if (!roleId) return "Unknown";
+    const role = roles.find(r => r.id === roleId);
+    return role ? role.name : "Unknown";
+  };
+
+  // Helper function to get department ID from name
+  const getDepartmentIdFromName = (departmentName: string): number => {
+    if (!departmentName) return 0;
+    const dept = departments.find(d => d.name.toLowerCase() === departmentName.toLowerCase());
+    return dept ? dept.departmentId : 0;
   };
 
   useEffect(() => {
@@ -639,6 +767,7 @@ const UserList: React.FC = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value === "" ? "" : Number(e.target.value))}
+                disabled={loadingRoles}
                 className="
                   w-full py-2 sm:py-3 px-3 sm:px-4
                   bg-white/50 dark:bg-gray-700/50
@@ -652,17 +781,22 @@ const UserList: React.FC = () => {
                   transition-all duration-300
                   appearance-none
                   bg-no-repeat bg-[right_0.75rem_center] sm:bg-[right_1rem_center] bg-[length:0.75em] sm:bg-[length:1em]
+                  disabled:opacity-50 disabled:cursor-not-allowed
                 "
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`
                 }}
               >
                 <option value="">All Roles</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
+                {loadingRoles ? (
+                  <option value="" disabled>Loading roles...</option>
+                ) : (
+                  roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -952,18 +1086,17 @@ const UserList: React.FC = () => {
                                     bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
                                     backdrop-blur-sm
                                   ">
-                                    {user.email || 'N/A'}
+                                    {user.email || "N/A"}
                                   </div>
                                 </td>
                                 <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                                   <span className="
-                                    inline-flex items-center  rounded-lg sm:rounded-xl
-                                    text-xs font-medium
-                                    
-                                    backdrop-blur-sm
+                                    inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
+                                    text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
+                                    text-blue-800 dark:text-blue-300 backdrop-blur-sm
                                     uppercase truncate max-w-[80px] sm:max-w-[100px]
                                   ">
-                                    {user.role}
+                                    {user.role || "N/A"}
                                   </span>
                                 </td>
                                 <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
@@ -1077,439 +1210,456 @@ const UserList: React.FC = () => {
         </div>
       </div>
 
-      {/* User Details Modal with Glassmorphism */}
-{isModalOpen && selectedUser && (
-  <div className="fixed inset-0 z-50 bg-black/70">
-    {/* Header */}
-    <div className="flex items-center justify-between bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          User Details
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          ID: {selectedUser.id || selectedUser.userId || 'N/A'}
-        </p>
-      </div>
-      <button
-        onClick={closeModal}
-        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-      >
-        <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-
-    {/* Content - Scrollable (shorter height to make room for footer) */}
-    <div className="h-[calc(100vh-160px)] overflow-y-auto bg-gray-50 dark:bg-gray-800">
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Profile Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4">
-            {selectedUser.profile_image || selectedUser.profileImageUrl ? (
-              <img
-                src={selectedUser.profile_image || selectedUser.profileImageUrl}
-                alt={selectedUser.name || selectedUser.fullName}
-                className="w-20 h-20 rounded-xl object-cover border-2 border-gray-300 dark:border-gray-700"
-              />
-            ) : (
-              <div className="
-                w-20 h-20 rounded-xl
-                bg-gradient-to-r from-blue-500 to-purple-600
-                flex items-center justify-center text-white text-2xl font-bold
-              ">
-                {(selectedUser.name?.charAt(0) || selectedUser.fullName?.charAt(0) || '?').toUpperCase()}
-              </div>
-            )}
+      {/* User Details Modal */}
+      {isModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/70">
+          {/* Header */}
+          <div className="flex items-center justify-between bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedUser.name || selectedUser.fullName || 'N/A'}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {selectedUser.employee_code || 'No employee code'}
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                User Details
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                ID: {selectedUser.id || selectedUser.userId || 'N/A'}
               </p>
             </div>
+            <button
+              onClick={closeModal}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        </div>
 
-        {/* Basic Information Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Basic Information
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Full Name
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.name || selectedUser.fullName || 'N/A'}
-                </p>
+          {/* Content - Scrollable */}
+          <div className="h-[calc(100vh-160px)] overflow-y-auto bg-gray-50 dark:bg-gray-800">
+            <div className="max-w-4xl mx-auto p-6">
+              {/* Profile Header */}
+              <div className="mb-8">
+                <div className="flex items-center space-x-4">
+                  {selectedUser.profile_image || selectedUser.profileImageUrl ? (
+                    <img
+                      src={selectedUser.profile_image || selectedUser.profileImageUrl}
+                      alt={selectedUser.name || selectedUser.fullName}
+                      className="w-20 h-20 rounded-xl object-cover border-2 border-gray-300 dark:border-gray-700"
+                    />
+                  ) : (
+                    <div className="
+                      w-20 h-20 rounded-xl
+                      bg-gradient-to-r from-blue-500 to-purple-600
+                      flex items-center justify-center text-white text-2xl font-bold
+                    ">
+                      {(selectedUser.name?.charAt(0) || selectedUser.fullName?.charAt(0) || '?').toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {selectedUser.name || selectedUser.fullName || 'N/A'}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {selectedUser.employee_code || 'No employee code'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.email || 'N/A'}
-                </p>
+              {/* Basic Information Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Full Name
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.name || selectedUser.fullName || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.email || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Mobile Number
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.mobileNo || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Birth Date
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.birthDate ? new Date(selectedUser.birthDate).toLocaleDateString() : 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Mobile Number
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.mobileNo || 'Not specified'}
-                </p>
+              {/* Address Section */}
+              {selectedUser.address && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                    Address
+                  </h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Address
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                        {selectedUser.address}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Role & Department Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Role & Department
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Department
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.department ||'NA'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Role
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.role || 'NA'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Birth Date
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.birthDate ? new Date(selectedUser.birthDate).toLocaleDateString() : 'Not specified'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+              {/* Status & Date Section */}
+              <div className="mb-12 p-15">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Status & Employment
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Status
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <div className="flex items-center">
+                        <span className={`w-2 h-2 rounded-full mr-2 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}></span>
+                        <p className={`font-medium ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                          {selectedUser.is_checkin ? "Online" : "Offline"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Address Section */}
-        {selectedUser.address && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-              Address
-            </h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Address
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                  {selectedUser.address}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Role & Department Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Role & Department
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Department
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.department ||'NA'}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Role
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.role ||  'NA'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Status & Date Section */}
-        <div className="mb-12 p-15"> {/* Increased margin-bottom to create space */}
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Status & Employment
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <div className="flex items-center">
-                  <span className={`w-2 h-2 rounded-full mr-2 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}></span>
-                  <p className={`font-medium ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                    {selectedUser.is_checkin ? "Online" : "Offline"}
-                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Date Joined
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.date ? new Date(selectedUser.date).toLocaleDateString() : 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date Joined
-              </label>
-              <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <p className="text-gray-900 dark:text-white">
-                  {selectedUser.date ? new Date(selectedUser.date).toLocaleDateString() : 'Not specified'}
-                </p>
+          {/* Fixed Footer with Action Buttons */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="max-w-4xl mx-auto px-6 py-4">
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEditClick(selectedUser)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[120px]"
+                >
+                  Edit User
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    {/* Fixed Footer with Action Buttons - MOVED OUTSIDE scrollable area */}
-    <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-      <div className="max-w-4xl mx-auto px-6 py-4">
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={closeModal}
-            className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={() => handleEditClick(selectedUser)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[120px]"
-          >
-            Edit User
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Edit User Modal */}
-{isEditModalOpen && selectedUser && (
-  <div className="fixed inset-0 z-50 bg-black/70">
-    {/* Header */}
-    <div className="flex items-center justify-between bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Edit User
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          ID: {selectedUser.id || selectedUser.userId || 'N/A'}
-        </p>
-      </div>
-      <button
-        onClick={closeEditModal}
-        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-      >
-        <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-
-    {/* Form Content - Scrollable */}
-    <div className="h-[calc(100vh-160px)] overflow-y-auto bg-gray-50 dark:bg-gray-800">
-      <form onSubmit={handleEditSubmit} className="max-w-4xl mx-auto p-6">
-        {/* Basic Information Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Basic Information
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {isEditModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/70">
+          {/* Header */}
+          <div className="flex items-center justify-between bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                value={editForm.fullName}
-                onChange={handleEditFormChange}
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter full name"
-              />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Edit User
+              </h2>
             </div>
+            <button
+              onClick={closeEditModal}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={editForm.email}
-                onChange={handleEditFormChange}
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter email address"
-              />
-            </div>
+          {/* Form Content - Scrollable */}
+          <div className="h-[calc(100vh-160px)] overflow-y-auto bg-gray-50 dark:bg-gray-800">
+            <form onSubmit={handleEditSubmit} className="max-w-4xl mx-auto p-6">
+              {/* Basic Information Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={editForm.fullName}
+                      onChange={handleEditFormChange}
+                      required
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter full name"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Mobile Number
-              </label>
-              <input
-                type="tel"
-                name="mobileNo"
-                value={editForm.mobileNo}
-                onChange={handleEditFormChange}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter mobile number"
-              />
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editForm.email}
+                      onChange={handleEditFormChange}
+                      required
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter email address"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Birth Date
-              </label>
-              <input
-                type="date"
-                name="birthDate"
-                value={editForm.birthDate}
-                onChange={handleEditFormChange}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Mobile Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="mobileNo"
+                      value={editForm.mobileNo}
+                      onChange={handleEditFormChange}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter mobile number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Birth Date
+                    </label>
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={editForm.birthDate}
+                      onChange={handleEditFormChange}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Address
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Address
+                  </label>
+                  <textarea
+                    name="address"
+                    value={editForm.address}
+                    onChange={handleEditFormChange}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                    placeholder="Enter address"
+                  />
+                </div>
+              </div>
+
+              {/* Profile & Preferences Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Profile & Preferences
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Profile Image URL
+                    </label>
+                    <input
+                      type="url"
+                      name="profileImageUrl"
+                      value={editForm.profileImageUrl}
+                      onChange={handleEditFormChange}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="https://example.com/profile.jpg"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Role & Department Section */}
+              <div className="mb-12 p-9">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  Role & Department
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Department *
+                    </label>
+                    {loadingDepartments ? (
+                      <div className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400">Loading departments...</p>
+                      </div>
+                    ) : departments.length === 0 ? (
+                      <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                        <p className="text-red-600 dark:text-red-400">Failed to load departments. Please refresh.</p>
+                      </div>
+                    ) : (
+                      <select
+                        name="departmentId"
+                        value={editForm.departmentId}
+                        onChange={handleEditFormChange}
+                        required
+                        className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                      >
+                        <option value={0}>Select Department</option>
+                        {departments.map((dept) => (
+                          <option key={dept.departmentId} value={dept.departmentId}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Role *
+                    </label>
+                    {loadingRoles ? (
+                      <div className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400">Loading roles...</p>
+                      </div>
+                    ) : roles.length === 0 ? (
+                      <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                        <p className="text-red-600 dark:text-red-400">Failed to load roles. Please refresh.</p>
+                      </div>
+                    ) : (
+                      <select
+                        name="roleId"
+                        value={editForm.roleId}
+                        onChange={handleEditFormChange}
+                        required
+                        className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                      >
+                        <option value={0}>Select Role</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Fixed Footer with Action Buttons */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="max-w-4xl mx-auto px-6 py-1">
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  disabled={isEditing}
+                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleEditSubmit}
+                  disabled={isEditing || loadingDepartments || loadingRoles || departments.length === 0 || roles.length === 0}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                >
+                  {isEditing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Updating...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Address Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Address
-          </h3>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Address
-            </label>
-            <textarea
-              name="address"
-              value={editForm.address}
-              onChange={handleEditFormChange}
-              rows={3}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
-              placeholder="Enter address"
-            />
-          </div>
-        </div>
-
-        {/* Profile & Preferences Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Profile & Preferences
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Profile Image URL
-              </label>
-              <input
-                type="url"
-                name="profileImageUrl"
-                value={editForm.profileImageUrl}
-                onChange={handleEditFormChange}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="https://example.com/profile.jpg"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Role & Department Section */}
-        <div className="mb-12 p-9"> {/* Increased margin-bottom to create space above buttons */}
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-            Role & Department
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Department *
-              </label>
-              <select
-                name="departmentId"
-                value={editForm.departmentId}
-                onChange={handleEditFormChange}
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
-              >
-                <option value={0}>Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Role *
-              </label>
-              <select
-                name="roleId"
-                value={editForm.roleId}
-                onChange={handleEditFormChange}
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
-              >
-                <option value={0}>Select Role</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
-
-    {/* Fixed Footer with Action Buttons - MOVED OUTSIDE scrollable area */}
-    <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-      <div className="max-w-4xl mx-auto px-6 py-1">
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={closeEditModal}
-            disabled={isEditing}
-            className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            onClick={handleEditSubmit}
-            disabled={isEditing}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
-          >
-            {isEditing ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Updating...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 };

@@ -73,7 +73,7 @@ const AppSidebar: React.FC = () => {
     icon: <GridIcon />,
     name: t("menu.dashboard"),
     subItems: [
-      { name: t("menu.dashboard"), path: "/home", role: ["admin","department_head","manager","HR" ,"employee"] },
+      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ,"employee"] },
       { name: t("menu.employeeDashboard"), path: "/employee-dashboard", role: ["employee"] }
     ],
   },
@@ -81,79 +81,55 @@ const AppSidebar: React.FC = () => {
     icon: <CalenderIcon />,
     name: t("menu.calendar"),
     path: "/calendar",
-    role: ["admin","department_head","manager","HR"],
+    role: ["admin","ZonalManager","Manager","HR"],
   },
   {
     icon: <UserCircleIcon />,
     name: t("menu.profile"),
     path: "/profile",
-    role: ["admin","employee","department_head","manager","HR"],
+    role: ["admin","employee","ZonalManager","Manager","HR"],
   },
    {
     icon: <UserCircleIcon />,
     name: t("menu.EmployeeCheckin"),
     path: "/employeecheckin",
-    role: ["admin","department_head","manager","HR","employee"],
+    role: ["admin","ZonalManager","Manager","HR"],
   },
-  // {
-  //   icon: <ChatIcon />,
-  //   name: t("menu.chat"),
-  //   path: "/chat",
-  //   role: ["admin","employee","department_head","manager","hr"],
-  // },
+ 
   {
-    icon: <ListIcon />,
-    name: t("menu.attendance"),
-    subItems: [
-      { name: t("menu.attendanceStart"), path: "/attandanceStart-page", role: ["employee"] },
-      { name: t("menu.attendanceEnd"), path: "/attandanceEnd-page", role: ["employee"] },
-    ],
+    icon: <UserCircleIcon />,
+    name: t("Admin Panel"),
+    path: "/",
+    role: ["admin","HR"],
   },
-  // {
-  //   icon: <TbTableShare />,
-  //   name: t("menu.forms"),
-  //   subItems: [
-  //     { name: t("menu.assignTaskForm"), path: "/assign-task-page", role: ["admin","department_head","manager","HR"] },
-  //   ],
-  // },
+ 
   {
     icon: <MdListAlt />,
     name: t("menu.TravelSessions"),
     path: "/attandance-start-admin",
-    role: ["admin","department_head","manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR","executive"],
   },
   {
     icon: <MdAppRegistration />,
     name: t("menu.registerUserForm"),
     path: "/user-register",
-    role: ["admin","department_head","manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR","executive"],
   },
   
   {
     icon: <FaTasks />,
     name: t("menu.announcement"),
     path: "/announcementList",
-    role: ["admin","department_head","manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR","executive"],
   },
   {
     icon: <PiUsersThreeBold />,
     name: t("menu.allUsers"),
     path: "/all-users",
-    role: ["admin","department_head","manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR","executive"],
   },
  
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: t("menu.taskCalendar"),
-  //   path: "/task-calendar",
-  //   role: ["employee"],
-  // },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.myTasks"),
-    path: "/task-show-page",
-    role: ["employee"],
-  },
+ 
  
 ];
 

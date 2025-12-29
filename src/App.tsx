@@ -49,7 +49,7 @@ import AttendanceStart from "./pages/Employee/AttandanceStart";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";
-import ChatToggle from "./context/ChatToggle";
+// import ChatToggle from "./context/ChatToggle";
 // import Testingmap from "./pages/Employee/Testing-map";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
 import AnnouncementModal from "./components/header/NotificationDropdown";
@@ -188,7 +188,7 @@ export default function App() {
         {/* Fallback Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <ChatToggle />
+      {/* <ChatToggle /> */}
       <Toaster
         position="bottom-right" // Options: 'top-center', 'bottom-right', etc.
         reverseOrder={false}

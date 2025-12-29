@@ -7,7 +7,6 @@ import { PiUsersThreeBold } from "react-icons/pi";
 
 // Assume these icons are imported from an icon library
 import {
-  
   CalenderIcon,
   // ChatIcon,
   ChevronDownIcon,
@@ -41,20 +40,25 @@ type NavItem = {
   subItems?: SubItem[];
 };
 
-
-
 const AppSidebar: React.FC = () => {
-
-    const { themeConfig } = useTheme();
+  const { themeConfig } = useTheme();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
-  const [openSubmenu, setOpenSubmenu] = useState<{ type: "main" | "others"; index: number } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
+  const [openSubmenu, setOpenSubmenu] = useState<{
+    type: "main" | "others";
+    index: number;
+  } | null>(null);
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
+    {}
+  );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
-  const userRole = localStorage.getItem("userRole" );
+  const isActive = useCallback(
+    (path: string) => location.pathname === path,
+    [location.pathname]
+  );
+  const userRole = localStorage.getItem("userRole");
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
@@ -162,20 +166,26 @@ const othersItems: NavItem[] = [
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prev) =>
-      prev?.type === menuType && prev.index === index ? null : { type: menuType, index }
+      prev?.type === menuType && prev.index === index
+        ? null
+        : { type: menuType, index }
     );
   };
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-4">
       {items
-        .filter(nav => !nav.role || nav.role.includes(userRole!)) // Main item role check
+        .filter((nav) => !nav.role || nav.role.includes(userRole!)) // Main item role check
         .map((nav, index) => {
           const visibleSubItems = nav.subItems?.filter(
-            sub => !sub.role || sub.role.includes(userRole!)
+            (sub) => !sub.role || sub.role.includes(userRole!)
           );
 
-          if (nav.subItems && (!visibleSubItems || visibleSubItems.length === 0)) return null;
+          if (
+            nav.subItems &&
+            (!visibleSubItems || visibleSubItems.length === 0)
+          )
+            return null;
 
           return (
             <li key={nav.name}>
@@ -185,11 +195,14 @@ const othersItems: NavItem[] = [
                   className="menu-item group"
                 >
                   <span className="menu-item-icon-size">{nav.icon}</span>
-                  {(isExpanded || isHovered || isMobileOpen) && <span className="menu-item-text">{nav.name}</span>}
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="menu-item-text">{nav.name}</span>
+                  )}
                   {(isExpanded || isHovered || isMobileOpen) && (
                     <ChevronDownIcon
                       className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                        openSubmenu?.type === menuType && openSubmenu?.index === index
+                        openSubmenu?.type === menuType &&
+                        openSubmenu?.index === index
                           ? "rotate-180 text-brand-500"
                           : ""
                       }`}
@@ -215,7 +228,8 @@ const othersItems: NavItem[] = [
                   className="overflow-hidden transition-all duration-300"
                   style={{
                     height:
-                      openSubmenu?.type === menuType && openSubmenu?.index === index
+                      openSubmenu?.type === menuType &&
+                      openSubmenu?.index === index
                         ? `${subMenuHeight[`${menuType}-${index}`]}px`
                         : "0px",
                   }}
@@ -245,54 +259,64 @@ const othersItems: NavItem[] = [
   );
 
   return (
-  
- <aside
-  style={{
-    backgroundColor: themeConfig.sidebar.background 
-      ? `${themeConfig.sidebar.background}80` 
-      : 'rgba(255, 255, 255, 0.15)',
-    color: themeConfig.sidebar.text || undefined,
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-    border: '1px solid rgba(255, 255, 255, 0.18)',
-  }}
-  className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
+    <aside
+      style={{
+        backgroundColor: themeConfig.sidebar.background
+          ? `${themeConfig.sidebar.background}80`
+          : "rgba(255, 255, 255, 0.15)",
+        color: themeConfig.sidebar.text || undefined,
+        backdropFilter: "blur(12px) saturate(180%)",
+        WebkitBackdropFilter: "blur(12px) saturate(180%)",
+        border: "1px solid rgba(255, 255, 255, 0.18)",
+      }}
+      className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
     text-gray-900 dark:text-blue-light-25
     shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
     ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
     ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-  onMouseEnter={() => !isExpanded && setIsHovered(true)}
-  onMouseLeave={() => setIsHovered(false)}
->
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"} px-5`}>
-        {/* <Link to="/"> */}
-          <img src="cowberry_organics_2.png" alt="Logo" width={170} height={0} />
-        {/* </Link> */}
-      </div>
+      onMouseEnter={() => !isExpanded && setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex flex-col h-full">
+        {/* Logo */}
+        <div
+          className={`py-8 flex ${
+            !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+          } px-5`}
+        >
+          {/* <Link to="/"> */}
+          <img
+            src="cowberry_organics_2.png"
+            alt="Logo"
+            width={170}
+            height={0}
+          />
+          {/* </Link> */}
+        </div>
 
-      {/* Scrollable Area */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-5">
-        <nav className="mb-6">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-xs text-gray-600 uppercase mb-4">{t("Menu")}</h2>
-              {renderMenuItems(navItems, "main")}
+        {/* Scrollable Area */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-5">
+          <nav className="mb-6">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-xs text-gray-600 uppercase mb-4">
+                  {t("Menu")}
+                </h2>
+                {renderMenuItems(navItems, "main")}
+              </div>
+              <div>
+                <h2 className="text-xs text-gray-600 uppercase mb-4">
+                  {t("Others")}
+                </h2>
+                {renderMenuItems(othersItems, "others")}
+              </div>
             </div>
-            <div>
-              <h2 className="text-xs text-gray-600 uppercase mb-4">{t("Others")}</h2>
-              {renderMenuItems(othersItems, "others")}
-            </div>
-          </div>
-        </nav>
-        {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
+          </nav>
+          {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
+        </div>
       </div>
-    </div>
-  </aside>
-);
-
-
+    </aside>
+  );
 };
 
 export default AppSidebar;

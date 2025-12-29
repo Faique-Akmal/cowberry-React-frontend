@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { useLocationTracker } from "../../hooks/LocationTrackerProvider";
 
-const Logout: React.FC = () => {
+const  Logout: React.FC = () => {
   const navigate = useNavigate();
   const { axiosLogout } = useAuth();
   const tracker = useLocationTracker();

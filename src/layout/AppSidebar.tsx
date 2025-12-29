@@ -8,6 +8,7 @@ import { PiUsersThreeBold } from "react-icons/pi";
 // Assume these icons are imported from an icon library
 import {
   CalenderIcon,
+  ChatIcon,
   // ChatIcon,
   ChevronDownIcon,
   GridIcon, PlugInIcon,
@@ -70,6 +71,20 @@ const AppSidebar: React.FC = () => {
       { name: t("menu.employeeDashboard"), path: "/employee-dashboard", role: ["employee"] }
     ],
   },
+  {
+      icon: <ChatIcon />,
+      name: t("menu.chat"),
+      path: "/chat",
+      role: [
+        "admin",
+        "department_head",
+        "ZonalManager",
+        "manager",
+        "HR",
+        "employee",
+        "Fieldemployee",
+      ],
+    },
   {
     icon: <CalenderIcon />,
     name: t("menu.calendar"),

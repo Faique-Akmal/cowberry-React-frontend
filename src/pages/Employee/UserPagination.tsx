@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 // import { useTranslation } from "react-i18next";
 // import { useTheme } from "../../context/ThemeContext.tsx";
 import { useData } from "../../context/DataProvider";
@@ -17,7 +17,7 @@ interface User {
   profile_image?: string;
   date: string;
   is_online: boolean;
-  allocatedArea:string;
+  allocatedArea: string;
   fullName?: string;
   mobileNo?: string;
   address?: string;
@@ -57,7 +57,7 @@ interface EditUserForm {
   birthDate: string;
   profileImageUrl: string;
   departmentId: number;
-  allocatedArea:string;
+  allocatedArea: string;
   roleId: number;
 }
 
@@ -105,6 +105,7 @@ const UserList: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch departments from API
   const fetchDepartments = async () => {
@@ -130,7 +131,6 @@ const UserList: React.FC = () => {
         setDepartments(response.data.departments);
       } else {
         console.error("Unexpected departments response structure:", response.data);
-        // Fallback to empty array
         setDepartments([]);
       }
     } catch (error: any) {
@@ -138,7 +138,7 @@ const UserList: React.FC = () => {
       if (error.response) {
         console.error("Departments API error response:", error.response.data);
       }
-      setDepartments([]); // Fallback to empty array
+      setDepartments([]);
     } finally {
       setLoadingDepartments(false);
     }
@@ -175,7 +175,7 @@ const UserList: React.FC = () => {
       if (error.response) {
         console.error("Roles API error response:", error.response.data);
       }
-      setRoles([]); // Fallback to empty array
+      setRoles([]);
     } finally {
       setLoadingRoles(false);
     }
@@ -187,7 +187,8 @@ const UserList: React.FC = () => {
     fetchRoles();
   }, []);
 
-  const fetchPageUsers = async (page: number = 1, isLoadMore: boolean = false) => {
+  // Main fetch function with proper filtering
+  const fetchPageUsers = useCallback(async (page: number = 1, isLoadMore: boolean = false) => {
     if (loading || (isLoadMore && !hasMore)) return;
     
     if (isLoadMore) {
@@ -203,15 +204,22 @@ const UserList: React.FC = () => {
         sort_order: sortOrder
       };
       
-      if (searchTerm) {
-        params.search = searchTerm;
+      // Add search term if it exists
+      if (searchTerm && searchTerm.trim() !== "") {
+        params.search = searchTerm.trim();
       }
-      if (roleFilter !== "") {
-        params.role = roleFilter;
+      
+      // Add role filter if selected
+      if (roleFilter !== "" && roleFilter !== null) {
+        params.role = roleFilter as number;
       }
-      if (statusFilter !== "") {
+      
+      // Add status filter if selected
+      if (statusFilter !== "" && statusFilter !== null) {
         params.status = statusFilter;
       }
+      
+      console.log("Fetching users with params:", params);
       
       const res = await fetchUsers(params);
       
@@ -239,6 +247,57 @@ const UserList: React.FC = () => {
       setLoading(false);
       setLoadingMore(false);
     }
+  }, [searchTerm, sortOrder, roleFilter, statusFilter, loading, hasMore, fetchUsers, limit]);
+
+  // Handle search with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounce
+    searchTimeoutRef.current = setTimeout(() => {
+      setCurrentPage(1);
+      fetchPageUsers(1);
+    }, 500);
+  };
+
+  // Handle role filter change
+  const handleRoleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value === "" ? "" : Number(e.target.value);
+    setRoleFilter(value);
+    setCurrentPage(1);
+    fetchPageUsers(1);
+  };
+
+  // Handle status filter change
+  const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as "" | "online" | "offline";
+    setStatusFilter(value);
+    setCurrentPage(1);
+    fetchPageUsers(1);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setRoleFilter("");
+    setStatusFilter("");
+    setCurrentPage(1);
+    fetchPageUsers(1);
+  };
+
+  // Handle sort order change
+  const toggleSortOrder = () => {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
+    setSortOrder(newOrder);
+    setCurrentPage(1);
+    // Re-fetch with new sort order
+    setTimeout(() => fetchPageUsers(1), 0);
   };
 
   // Handle edit button click
@@ -262,11 +321,11 @@ const UserList: React.FC = () => {
       email: user.email || "",
       mobileNo: user.mobileNo || "",
       address: user.address || "",
-      allocatedArea:user.allocatedArea || "",
+      allocatedArea: user.allocatedArea || "",
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
       profileImageUrl: user.profile_image || user.profileImageUrl || "",
       departmentId: department?.departmentId || 0,
-      roleId: user.role || 0 // This should be the numeric role ID
+      roleId: user.role || 0
     });
     
     setIsEditModalOpen(true);
@@ -302,8 +361,6 @@ const UserList: React.FC = () => {
     
     console.log("Updating user with ID:", userId);
     console.log("Edit form data:", editForm);
-    console.log("Available departments:", departments);
-    console.log("Available roles:", roles);
     
     // Validate required fields
     if (!editForm.fullName.trim()) {
@@ -350,7 +407,7 @@ const UserList: React.FC = () => {
         return;
       }
       
-      // Prepare data for API - ensure all numbers are integers
+      // Prepare data for API
       const updateData = {
         username: editForm.username?.trim(),
         fullName: editForm.fullName.trim(),
@@ -358,14 +415,13 @@ const UserList: React.FC = () => {
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
         birthDate: editForm.birthDate || null,
-        allocatedArea:editForm.allocatedArea || null,
+        allocatedArea: editForm.allocatedArea || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
-        departmentId: Number(editForm.departmentId), // Ensure integer
-        roleId: Number(editForm.roleId) // Ensure integer
+        departmentId: Number(editForm.departmentId),
+        roleId: Number(editForm.roleId)
       };
       
       console.log("Sending update data:", updateData);
-      console.log("Making PUT request to:", `/admin/users/${userId}`);
       
       // Make the API call
       const response = await API.put(
@@ -398,7 +454,7 @@ const UserList: React.FC = () => {
               email: result.data.email || user.email,
               mobileNo: result.data.mobileNo || user.mobileNo,
               address: result.data.address || user.address,
-              allocatedArea:result.data.allocatedArea || user.allocatedArea,
+              allocatedArea: result.data.allocatedArea || user.allocatedArea,
               birthDate: result.data.birthDate || user.birthDate,
               profile_image: result.data.profileImageUrl || user.profile_image,
               department: updatedDepartment?.name || user.department,
@@ -417,8 +473,7 @@ const UserList: React.FC = () => {
             mobileNo: result.data.mobileNo || selectedUser.mobileNo,
             address: result.data.address || selectedUser.address,
             birthDate: result.data.birthDate || selectedUser.birthDate,
-              allocatedArea:result.data.allocatedArea ||  selectedUser.allocatedArea,
-            
+            allocatedArea: result.data.allocatedArea || selectedUser.allocatedArea,
             profile_image: result.data.profileImageUrl || selectedUser.profile_image,
             department: updatedDepartment?.name || selectedUser.department,
             role: result.data.role?.id || editForm.roleId || selectedUser.role
@@ -434,29 +489,23 @@ const UserList: React.FC = () => {
     } catch (error: any) {
       console.error("Error updating user:", error);
       
-      // Detailed error logging
       if (error.response) {
-        // The request was made and the server responded with a status code
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
-        console.error("Error response headers:", error.response.headers);
         
         let errorMessage = error.response.data?.message || "Failed to update user";
         
-        // Add more specific error handling
         if (error.response.data?.error?.includes('roleId')) {
-          errorMessage += "\n\nPossible issue: Role ID format is incorrect. Please ensure you're sending a numeric role ID.";
+          errorMessage += "\n\nPossible issue: Role ID format is incorrect.";
         } else if (error.response.data?.error?.includes('departmentId')) {
           errorMessage += "\n\nPossible issue: Department ID format is incorrect.";
         }
         
         alert(`Error: ${errorMessage}`);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error("No response received:", error.request);
         alert("No response from server. Please check if your backend server is running.");
       } else {
-        // Something happened in setting up the request
         console.error("Request setup error:", error.message);
         alert(`Error: ${error.message}`);
       }
@@ -465,27 +514,7 @@ const UserList: React.FC = () => {
     }
   };
 
-  // Helper function to get department name from ID
-  const getDepartmentName = (departmentId: number): string => {
-    if (!departmentId) return "Unknown";
-    const dept = departments.find(d => d.departmentId === departmentId);
-    return dept ? dept.name : "Unknown";
-  };
-
-  // Helper function to get role name from ID
-  const getRoleName = (roleId: number): string => {
-    if (!roleId) return "Unknown";
-    const role = roles.find(r => r.id === roleId);
-    return role ? role.name : "Unknown";
-  };
-
-  // Helper function to get department ID from name
-  const getDepartmentIdFromName = (departmentName: string): number => {
-    if (!departmentName) return 0;
-    const dept = departments.find(d => d.name.toLowerCase() === departmentName.toLowerCase());
-    return dept ? dept.departmentId : 0;
-  };
-
+  // Infinite scroll observer
   useEffect(() => {
     if (!sentinelRef.current || !hasMore || loadingMore) return;
 
@@ -511,36 +540,12 @@ const UserList: React.FC = () => {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [currentPage, hasMore, loadingMore]);
+  }, [currentPage, hasMore, loadingMore, fetchPageUsers]);
 
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      setCurrentPage(1);
-      setHasMore(true);
-      fetchPageUsers(1);
-    }, 300);
-    
-    return () => clearTimeout(debounce);
-  }, [searchTerm, sortOrder, roleFilter, statusFilter]);
-
+  // Initial data fetch
   useEffect(() => {
     fetchPageUsers(1);
   }, []);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const toggleSortOrder = () => {
-    const newOrder = sortOrder === "asc" ? "desc" : "asc";
-    setSortOrder(newOrder);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setRoleFilter("");
-    setStatusFilter("");
-  };
 
   const handleRowClick = (user: User) => {
     console.log("Row clicked, user:", user);
@@ -561,7 +566,7 @@ const UserList: React.FC = () => {
       mobileNo: "",
       address: "",
       birthDate: "",
-      allocatedArea:"",
+      allocatedArea: "",
       profileImageUrl: "",
       departmentId: 0,
       roleId: 0
@@ -750,11 +755,11 @@ const UserList: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Search by name, email, or employee code..."
                   value={searchTerm}
                   onChange={handleSearchChange}
                   className="
-                    w-full pl-9 sm:pl-12 pr-3 py-2 sm:py-3
+                    w-full pl-9 sm:pl-12 pr-10 py-2 sm:py-3
                     bg-white/50 dark:bg-gray-700/50
                     backdrop-blur-sm
                     border border-white/60 dark:border-gray-600/60
@@ -767,6 +772,18 @@ const UserList: React.FC = () => {
                     transition-all duration-300
                   "
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setCurrentPage(1);
+                      fetchPageUsers(1);
+                    }}
+                    className="absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
 
@@ -777,7 +794,7 @@ const UserList: React.FC = () => {
               </label>
               <select
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={handleRoleFilterChange}
                 disabled={loadingRoles}
                 className="
                   w-full py-2 sm:py-3 px-3 sm:px-4
@@ -818,7 +835,7 @@ const UserList: React.FC = () => {
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={handleStatusFilterChange}
                 className="
                   w-full py-2 sm:py-3 px-3 sm:px-4
                   bg-white/50 dark:bg-gray-700/50
@@ -1102,7 +1119,7 @@ const UserList: React.FC = () => {
                                 </td>
                                 <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                                   <span className="
-                                    inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
+                                    inline-flex items-center px-0 py-1 rounded-lg sm:rounded-xl
                                     text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
                                     text-blue-800 dark:text-blue-300 backdrop-blur-sm
                                     uppercase truncate max-w-[80px] sm:max-w-[100px]
@@ -1323,7 +1340,6 @@ const UserList: React.FC = () => {
               {/* Address Section */}
               {selectedUser.address && (
                 <div className="mb-8">
-                 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Address
@@ -1337,13 +1353,12 @@ const UserList: React.FC = () => {
                 </div>
               )}
 
-
-            {selectedUser.address && (
+              {/* Allocated Area */}
+              {selectedUser.allocatedArea && (
                 <div className="mb-8">
-                 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Allocate Area
+                      Allocated Area
                     </label>
                     <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
                       <p className="text-gray-900 dark:text-white whitespace-pre-line">
@@ -1353,6 +1368,7 @@ const UserList: React.FC = () => {
                   </div>
                 </div>
               )}
+
               {/* Role & Department Section */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
@@ -1365,7 +1381,7 @@ const UserList: React.FC = () => {
                     </label>
                     <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
                       <p className="text-gray-900 dark:text-white">
-                        {selectedUser.department ||'NA'}
+                        {selectedUser.department || 'NA'}
                       </p>
                     </div>
                   </div>
@@ -1532,7 +1548,6 @@ const UserList: React.FC = () => {
 
               {/* Address Section */}
               <div className="mb-8">
-              
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Address
@@ -1548,11 +1563,11 @@ const UserList: React.FC = () => {
                 </div>
               </div>
 
-                <div className="mb-8">
-              
+              {/* Allocated Area */}
+              <div className="mb-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Allocated Area
+                    Allocated Area
                   </label>
                   <textarea
                     name="allocatedArea"
@@ -1560,11 +1575,10 @@ const UserList: React.FC = () => {
                     onChange={handleEditFormChange}
                     rows={3}
                     className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
-                    placeholder="Enter address"
+                    placeholder="Enter allocated area"
                   />
                 </div>
               </div>
-
 
               {/* Profile & Preferences Section */}
               <div className="mb-8">
@@ -1589,7 +1603,7 @@ const UserList: React.FC = () => {
               </div>
 
               {/* Role & Department Section */}
-              <div className="mb-12 p-9">
+              <div className="mb-12 pb-9">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                   Role & Department
                 </h3>

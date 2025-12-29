@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { TbTableShare } from "react-icons/tb";
+// import { TbTableShare } from "react-icons/tb";
 // import { RiUserSharedFill } from "react-icons/ri";
 import { PiUsersThreeBold } from "react-icons/pi";
 // import  LogoutIcon from '@mui/icons-material/Logout';
@@ -9,14 +9,9 @@ import { PiUsersThreeBold } from "react-icons/pi";
 import {
   
   CalenderIcon,
-  ChatIcon,
+  // ChatIcon,
   ChevronDownIcon,
-  GridIcon,
- 
-  ListIcon,
-
-  PlugInIcon,
-  TableIcon,
+  GridIcon, PlugInIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -28,12 +23,6 @@ import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 
-
-// interface UserProfile {
-
-//   role: string;
- 
-// }
 
 
 type SubItem = {
@@ -96,13 +85,7 @@ const AppSidebar: React.FC = () => {
     role: ["admin","ZonalManager","Manager","HR"],
   },
  
-  {
-    icon: <UserCircleIcon />,
-    name: t("Admin Panel"),
-    path: "/",
-    role: ["admin","HR"],
-  },
- 
+  
   {
     icon: <MdListAlt />,
     name: t("menu.TravelSessions"),

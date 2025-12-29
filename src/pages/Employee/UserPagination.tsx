@@ -17,6 +17,7 @@ interface User {
   profile_image?: string;
   date: string;
   is_online: boolean;
+  allocatedArea:string;
   fullName?: string;
   mobileNo?: string;
   address?: string;
@@ -56,6 +57,7 @@ interface EditUserForm {
   birthDate: string;
   profileImageUrl: string;
   departmentId: number;
+  allocatedArea:string;
   roleId: number;
 }
 
@@ -84,6 +86,7 @@ const UserList: React.FC = () => {
     birthDate: "",
     profileImageUrl: "",
     departmentId: 0,
+    allocatedArea: "",
     roleId: 0
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -210,7 +213,7 @@ const UserList: React.FC = () => {
         params.status = statusFilter;
       }
       
-      const res = await fetchUsers(params, true);
+      const res = await fetchUsers(params);
       
       const userData = res.data || [];
       const total = res.total || 0;
@@ -259,6 +262,7 @@ const UserList: React.FC = () => {
       email: user.email || "",
       mobileNo: user.mobileNo || "",
       address: user.address || "",
+      allocatedArea:user.allocatedArea || "",
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
       profileImageUrl: user.profile_image || user.profileImageUrl || "",
       departmentId: department?.departmentId || 0,
@@ -354,6 +358,7 @@ const UserList: React.FC = () => {
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
         birthDate: editForm.birthDate || null,
+        allocatedArea:editForm.allocatedArea || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
         departmentId: Number(editForm.departmentId), // Ensure integer
         roleId: Number(editForm.roleId) // Ensure integer
@@ -393,6 +398,7 @@ const UserList: React.FC = () => {
               email: result.data.email || user.email,
               mobileNo: result.data.mobileNo || user.mobileNo,
               address: result.data.address || user.address,
+              allocatedArea:result.data.allocatedArea || user.allocatedArea,
               birthDate: result.data.birthDate || user.birthDate,
               profile_image: result.data.profileImageUrl || user.profile_image,
               department: updatedDepartment?.name || user.department,
@@ -411,6 +417,8 @@ const UserList: React.FC = () => {
             mobileNo: result.data.mobileNo || selectedUser.mobileNo,
             address: result.data.address || selectedUser.address,
             birthDate: result.data.birthDate || selectedUser.birthDate,
+              allocatedArea:result.data.allocatedArea ||  selectedUser.allocatedArea,
+            
             profile_image: result.data.profileImageUrl || selectedUser.profile_image,
             department: updatedDepartment?.name || selectedUser.department,
             role: result.data.role?.id || editForm.roleId || selectedUser.role
@@ -481,7 +489,7 @@ const UserList: React.FC = () => {
   useEffect(() => {
     if (!sentinelRef.current || !hasMore || loadingMore) return;
 
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && hasMore && !loadingMore) {
@@ -495,11 +503,12 @@ const UserList: React.FC = () => {
       }
     );
 
-    observerRef.current.observe(sentinelRef.current);
+    const currentSentinel = sentinelRef.current;
+    observer.observe(currentSentinel);
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
+      if (observer && currentSentinel) {
+        observer.unobserve(currentSentinel);
       }
     };
   }, [currentPage, hasMore, loadingMore]);
@@ -507,6 +516,7 @@ const UserList: React.FC = () => {
   useEffect(() => {
     const debounce = setTimeout(() => {
       setCurrentPage(1);
+      setHasMore(true);
       fetchPageUsers(1);
     }, 300);
     
@@ -551,6 +561,7 @@ const UserList: React.FC = () => {
       mobileNo: "",
       address: "",
       birthDate: "",
+      allocatedArea:"",
       profileImageUrl: "",
       departmentId: 0,
       roleId: 0
@@ -989,10 +1000,10 @@ const UserList: React.FC = () => {
                               backdrop-blur-sm
                               whitespace-nowrap
                             ">
-                              Status
+                             Allocated Area
                             </th>
                             <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                              px-3 sm:px-3 py-3 sm:py-3 text-left text-xs font-semibold
                               text-gray-600 dark:text-gray-300
                               uppercase tracking-wider hidden md:table-cell
                               border-b border-white/30 dark:border-gray-700/30
@@ -1059,7 +1070,7 @@ const UserList: React.FC = () => {
                                       <div className="
                                         text-xs text-gray-600 dark:text-gray-400 lg:hidden
                                         truncate bg-white/30 dark:bg-gray-800/30
-                                        rounded px-1 py-0.5 mt-0.5
+                                        rounded px-1  py-0.5 mt-0.5
                                       ">
                                         {user.email || 'N/A'}
                                       </div>
@@ -1100,21 +1111,13 @@ const UserList: React.FC = () => {
                                   </span>
                                 </td>
                                 <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                                  <span className={`
-                                    inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl text-xs font-medium
-                                    backdrop-blur-sm border truncate max-w-[80px] sm:max-w-[100px]
-                                    ${user.is_checkin 
-                                      ? "bg-gradient-to-r from-green-100/60 to-emerald-100/40 border-green-200/60 text-green-800 dark:from-green-900/40 dark:to-emerald-900/30 dark:border-green-700/40 dark:text-green-300" 
-                                      : "bg-gradient-to-r from-red-100/60 to-pink-100/40 border-red-200/60 text-red-800 dark:from-red-900/40 dark:to-pink-900/30 dark:border-red-700/40 dark:text-red-300"
-                                    }
-                                  `}>
-                                    <span className={`
-                                      w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1.5 flex-shrink-0
-                                      ${user.is_checkin ? "bg-green-400" : "bg-red-400"}
-                                    `}></span>
-                                    <span className="truncate">
-                                      {user.is_checkin ? "Online" : "Offline"}
-                                    </span>
+                                  <span className="
+                                    inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
+                                    text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
+                                    text-blue-800 dark:text-blue-300 backdrop-blur-sm
+                                    uppercase truncate max-w-[80px] sm:max-w-[100px]
+                                  ">
+                                    {user.allocatedArea || "N/A"}
                                   </span>
                                 </td>
                                 <td className="
@@ -1320,9 +1323,7 @@ const UserList: React.FC = () => {
               {/* Address Section */}
               {selectedUser.address && (
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Address
-                  </h3>
+                 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Address
@@ -1336,6 +1337,22 @@ const UserList: React.FC = () => {
                 </div>
               )}
 
+
+            {selectedUser.address && (
+                <div className="mb-8">
+                 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Allocate Area
+                    </label>
+                    <div className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                        {selectedUser.allocatedArea || 'NA'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Role & Department Section */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
@@ -1515,9 +1532,7 @@ const UserList: React.FC = () => {
 
               {/* Address Section */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                  Address
-                </h3>
+              
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Address
@@ -1532,6 +1547,24 @@ const UserList: React.FC = () => {
                   />
                 </div>
               </div>
+
+                <div className="mb-8">
+              
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Allocated Area
+                  </label>
+                  <textarea
+                    name="allocatedArea"
+                    value={editForm.allocatedArea}
+                    onChange={handleEditFormChange}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                    placeholder="Enter address"
+                  />
+                </div>
+              </div>
+
 
               {/* Profile & Preferences Section */}
               <div className="mb-8">

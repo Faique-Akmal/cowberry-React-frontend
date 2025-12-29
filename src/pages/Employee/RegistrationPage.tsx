@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import toast from "react-hot-toast";
 
 import { FaUserPlus, FaBuilding, FaUserTag, FaSpinner } from "react-icons/fa";
+import PageMeta from "../../components/common/PageMeta";
 
 interface Department {
   departmentId: number;
@@ -27,6 +28,7 @@ export default function RegisterUserForm() {
     mobileNo: "",
     departmentId: "",
     address: "",
+    allocatedArea:"",
     birthDate: "",
     profileImageUrl: "",
   });
@@ -258,6 +260,7 @@ export default function RegisterUserForm() {
         mobileNo: formData.mobileNo || null,
         departmentId: parseInt(formData.departmentId),
         address: formData.address || null,
+        allocatedArea: formData.allocatedArea || null,
         birthDate: formData.birthDate || null,
         profileImageUrl: formData.profileImageUrl || null,
       };
@@ -290,6 +293,7 @@ export default function RegisterUserForm() {
           role: "",
           mobileNo: "",
           departmentId: "",
+          allocatedArea:"",
           address: "",
           birthDate: "",
           profileImageUrl: "",
@@ -324,14 +328,13 @@ export default function RegisterUserForm() {
 
   return (
    <div className="w-full max-w-3xl mx-auto px-4 py-8">
+   <PageMeta title="Employee Registration" description="Register a new employee" />
   {/* Header */}
   <div className="text-center mb-10">
     <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800 dark:text-gray-200">
       User Registration
     </h2>
-    <p className="text-gray-600 dark:text-gray-400">
-      Register new users with appropriate roles and departments
-    </p>
+   
   </div>
 
   <form onSubmit={handleSubmit} className="space-y-8">
@@ -550,6 +553,18 @@ export default function RegisterUserForm() {
             name="address"
             placeholder="Enter complete address"
             value={formData.address}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          />
+
+          <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+           Allocated Area
+          </label>
+          <input
+            type="text"
+            name="allocatedArea"
+            placeholder="Enter allocatedArea"
+            value={formData.allocatedArea}
             onChange={handleChange}
             className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
           />

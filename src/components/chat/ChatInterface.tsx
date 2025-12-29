@@ -221,6 +221,7 @@ export const ChatInterface = () => {
     const file = e.target.files?.[0];
     if (!file || !activeConversation || !currentUser || !socket) return;
 
+    // Frontend validation: 100MB
     if (file.size > 100 * 1024 * 1024) {
       toast.error("File size exceeds 100MB");
       return;
@@ -228,8 +229,18 @@ export const ChatInterface = () => {
 
     try {
       setIsUploading(true);
+      if (file.type.startsWith("video/")) {
+        toast.loading("Compressing & Uploading Video...", {
+          id: "videoUpload",
+        });
+      }
+
       const { fileUrl, type } = await ChatService.uploadFile(file);
 
+      // Dismiss loading toast
+      toast.dismiss("videoUpload");
+
+      // Determine proper message type based on MIME
       let msgType = "DOCUMENT";
       if (type.startsWith("image/")) msgType = "IMAGE";
       if (type.startsWith("video/")) msgType = "VIDEO";
@@ -245,14 +256,14 @@ export const ChatInterface = () => {
 
       socket.emit("send_message", payload);
       setReplyingTo(null);
-      setIsAttachMenuOpen(false); // Close menu after selection
-      toast.success("Attachment sent!");
+      setIsAttachMenuOpen(false);
+      toast.success("Sent!");
     } catch (error) {
       console.error("Upload failed", error);
+      toast.dismiss("videoUpload");
       toast.error("Failed to upload file");
     } finally {
       setIsUploading(false);
-      // Reset inputs
       if (mediaInputRef.current) mediaInputRef.current.value = "";
       if (docInputRef.current) docInputRef.current.value = "";
     }
@@ -382,7 +393,7 @@ export const ChatInterface = () => {
     >
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
-      <div className="relative z-10 flex h-full w-full max-w-[1600px] overflow-hidden bg-white/10 shadow-2xl backdrop-blur-xl border-white/20 md:h-[90vh] md:w-[95%] md:rounded-3xl md:border">
+      <div className="relative z-10 flex h-full w-full max-w-[1600px] overflow-hidden bg-white/10 shadow-2xl backdrop-blur-xl border-white/20 md:h-[96vh] md:w-[98%] md:rounded-3xl md:border">
         {/* Sidebar */}
         <div
           className={`absolute inset-y-0 left-0 z-20 w-full flex-col border-r border-white/20 bg-white/20 backdrop-blur-lg transition-transform duration-300 md:relative md:w-80 md:translate-x-0 ${
@@ -582,9 +593,9 @@ export const ChatInterface = () => {
                         {/* Dropdown Menu (Only for valid messages) */}
                         {!isDeleted && (
                           <div
-                            className={`absolute top-0.5 ${
+                            className={`absolute top-0 ${
                               isMe ? "right-1" : "right-1"
-                            } opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger`}
+                            } opacity-90 lg:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger`}
                           >
                             <button
                               onClick={(e) => {

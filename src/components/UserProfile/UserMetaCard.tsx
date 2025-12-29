@@ -4,8 +4,8 @@ import { Modal } from "../ui/modal";
 import Alert from "../ui/alert/Alert";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import { useTheme } from "../../context/ThemeContext";
+// import { useTranslation } from "react-i18next";
+// import { useTheme } from "../../context/ThemeContext";
 
 interface UserData {
   id: number;
@@ -38,8 +38,8 @@ interface UserData {
 }
 
 export default function UserMetaCard() {
-  const { themeConfig } = useTheme();
-  const { t } = useTranslation();
+  // const { themeConfig } = useTheme();
+  // const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
   
   // State for user data
@@ -304,8 +304,7 @@ export default function UserMetaCard() {
   <div className="
     p-4 sm:p-5 lg:p-6
     rounded-3xl
-    bg-gradient-to-br from-white/20 via-white/10 to-white/5
-    dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/10
+    
     backdrop-blur-2xl
     border border-white/40 dark:border-gray-700/40
     shadow-[0_8px_32px_rgba(31,38,135,0.15)]
@@ -342,7 +341,7 @@ export default function UserMetaCard() {
                 const parent = target.parentElement;
                 if (parent) {
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white text-xl sm:text-2xl font-medium backdrop-blur-sm';
+                  fallback.className = 'w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-black text-xl sm:text-2xl font-medium backdrop-blur-sm';
                   fallback.textContent = meUserData.username?.charAt(0).toUpperCase() || '?';
                   parent.appendChild(fallback);
                 }
@@ -353,7 +352,7 @@ export default function UserMetaCard() {
               w-full h-full
               flex items-center justify-center
               bg-gradient-to-r from-green-500/80 to-green-600/80
-              text-white text-xl sm:text-2xl font-medium
+              text-black text-xl sm:text-2xl font-medium
               backdrop-blur-sm
             ">
               {meUserData.username?.charAt(0).toUpperCase() || '?'}
@@ -365,7 +364,7 @@ export default function UserMetaCard() {
         <div className="text-center lg:text-left">
           <h4 className="
             mb-2 text-lg sm:text-xl font-semibold capitalize
-           text-white dark:text-gray-100
+           text-black dark:text-gray-100
             
             bg-clip-text 
           ">

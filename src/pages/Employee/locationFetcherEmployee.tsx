@@ -1,5 +1,5 @@
 // src/components/admin/TravelSessions.tsx
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
 import {
   MapContainer,
@@ -15,7 +15,6 @@ import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import { 
   FaSync, 
-  FaMapMarkerAlt, 
   FaUser, 
   FaRoute, 
   FaCalendarAlt,
@@ -26,18 +25,13 @@ import {
   FaTimes,
   FaPlayCircle,
   FaStopCircle,
-  FaPauseCircle,
   FaMapPin,
   FaSearch,
   FaCar,
   FaEye,
   FaListAlt,
-  FaExpand,
   FaLayerGroup,
   FaChartLine,
-  FaSortAmountDown,
-  FaChevronRight,
-  FaLocationArrow
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
@@ -123,6 +117,8 @@ interface GroupedSession {
   sessions: TravelSession[];
   totalSessions: number;
   totalDistance: number;
+  firstSessionDistance: number;
+  originalTotalDistance: number;
   activeSessions: number;
   startTime: string;
   endTime: string;
@@ -177,7 +173,7 @@ export default function AttendanceList() {
   const [users, setUsers] = useState<{ userId: number; username: string; employeeCode: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
@@ -194,11 +190,48 @@ export default function AttendanceList() {
   const [isLoadingFarmerData, setIsLoadingFarmerData] = useState(false);
   const [farmerDataError, setFarmerDataError] = useState<string | null>(null);
   
+  // Map marker states
+  const [showLogMarkers, setShowLogMarkers] = useState(true);
+  const [showLogMarkersMulti, setShowLogMarkersMulti] = useState(true);
+  
   // Format date without time (YYYY-MM-DD)
   const formatDateOnly = useCallback((dateTimeStr: string): string => {
     if (!dateTimeStr) return "";
     const date = new Date(dateTimeStr);
     return date.toISOString().split('T')[0];
+  }, []);
+  
+  // Calculate distance minus first session distance
+  const calculateAdjustedGroupDistance = useCallback((sessions: TravelSession[]): {
+    totalDistance: number;
+    firstSessionDistance: number;
+    originalTotalDistance: number;
+  } => {
+    if (sessions.length === 0) {
+      return { totalDistance: 0, firstSessionDistance: 0, originalTotalDistance: 0 };
+    }
+    
+    // Sort sessions by start time to identify the first session
+    const sortedSessions = [...sessions].sort((a, b) => 
+      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+    
+    const firstSession = sortedSessions[0];
+    const firstSessionDistance = firstSession.totalDistance || 0;
+    
+    // Calculate total of all sessions
+    const originalTotalDistance = sortedSessions.reduce((sum, session) => 
+      sum + (session.totalDistance || 0), 0
+    );
+    
+    // Subtract first session's distance
+    const adjustedDistance = Math.max(0, originalTotalDistance - firstSessionDistance);
+    
+    return {
+      totalDistance: adjustedDistance,
+      firstSessionDistance: firstSessionDistance,
+      originalTotalDistance: originalTotalDistance
+    };
   }, []);
   
   // Group sessions by user and date
@@ -217,7 +250,9 @@ export default function AttendanceList() {
           date: dateKey,
           sessions: [session],
           totalSessions: 1,
-          totalDistance: session.totalDistance || 0,
+          totalDistance: 0,
+          firstSessionDistance: 0,
+          originalTotalDistance: 0,
           activeSessions: session.endTime ? 0 : 1,
           startTime: session.startTime,
           endTime: session.endTime || session.startTime,
@@ -227,7 +262,6 @@ export default function AttendanceList() {
         const existingGroup = groupedMap.get(groupKey)!;
         existingGroup.sessions.push(session);
         existingGroup.totalSessions += 1;
-        existingGroup.totalDistance += session.totalDistance || 0;
         existingGroup.activeSessions += session.endTime ? 0 : 1;
         existingGroup.totalPoints += session.logs?.length || 0;
         
@@ -246,12 +280,22 @@ export default function AttendanceList() {
       }
     });
     
-    return Array.from(groupedMap.values()).sort((a, b) => {
+    // Calculate adjusted distances for each group
+    return Array.from(groupedMap.values()).map(group => {
+      const distanceData = calculateAdjustedGroupDistance(group.sessions);
+      
+      return {
+        ...group,
+        totalDistance: distanceData.totalDistance,
+        firstSessionDistance: distanceData.firstSessionDistance,
+        originalTotalDistance: distanceData.originalTotalDistance
+      };
+    }).sort((a, b) => {
       const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateCompare !== 0) return dateCompare;
       return b.userId - a.userId;
     });
-  }, [formatDateOnly]);
+  }, [formatDateOnly, calculateAdjustedGroupDistance]);
   
   // Calculate duration in hours and minutes
   const calculateDuration = useCallback((startTime: string, endTime: string) => {
@@ -272,14 +316,11 @@ export default function AttendanceList() {
   }, []);
   
   useEffect(() => {
-    if (mapView && autoRefresh) {
-      const isOngoing = !mapView.endTime || mapView.endTime === mapView.startTime;
-      
-      if (isOngoing) {
-        locationIntervalRef.current = setInterval(() => {
-          fetchTravelSessions();
-        }, 10000);
-      }
+    // Auto-refresh should work regardless of map view
+    if (autoRefresh) {
+      locationIntervalRef.current = setInterval(() => {
+        fetchTravelSessions();
+      }, 30000); // Refresh every 30 seconds (adjust as needed)
     }
     
     return () => {
@@ -288,7 +329,7 @@ export default function AttendanceList() {
         locationIntervalRef.current = null;
       }
     };
-  }, [mapView, autoRefresh]);
+  }, [autoRefresh]); 
   
   const fetchTravelSessions = async () => {
     setIsLoading(true);
@@ -651,64 +692,222 @@ export default function AttendanceList() {
   const activeSessions = filteredSessions.filter(s => !s.endTime).length;
   const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
   
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     try {
-      const csvData = filteredSessions.map(session => {
-        const duration = session.endTime 
-          ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
-          : Math.round((new Date().getTime() - new Date(session.startTime).getTime()) / 60000);
-        
-        const pauses = detectPauses(session.logs || []);
-        
-        return {
-          'Session ID': session.sessionId,
-          'User ID': session.userId,
-          'Username': session.username,
-          'Employee Code': session.employeeCode,
-          'Start Time': formatDateTime(session.startTime),
-          'Start Latitude': parseCoordinate(session.startLatitude),
-          'Start Longitude': parseCoordinate(session.startLongitude),
-          'End Time': session.endTime ? formatDateTime(session.endTime) : 'Active',
-          'End Latitude': parseCoordinate(session.endLatitude),
-          'End Longitude': parseCoordinate(session.endLongitude),
-          'Total Distance (km)': (session.totalDistance / 1000).toFixed(2),
-          'Duration (minutes)': duration,
-          'Log Points Count': session.logs?.length || 0,
-          'Pauses Count': pauses.length,
-          'Status': session.endTime ? 'Completed' : 'Active',
-          'Start Odometer Image URL': session.startOdometer,
-          'End Odometer Image URL': session.endOdometer
-        };
+      setIsLoading(true);
+      
+      // We need to fetch farmer data for all sessions first
+      const groupedDataWithFarmerInfo = await Promise.all(
+        groupedView.map(async (group) => {
+          try {
+            // Fetch farmer data for this user on this date
+            const response = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+              params: { userId: group.userId }
+            });
+            
+            const data = response.data;
+            let sessionFarmerData = [];
+            
+            if (data.success && data.sessions && data.sessions.data) {
+              const allSessions = data.sessions.data.map((session: any) => ({
+                sessionId: session.sessionId,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                totalDistance: session.totalDistance,
+                startOdometerImage: session.startOdometerImage || '',
+                endOdometerImage: session.endOdometerImage || '',
+                farmerData: session.farmerData || { count: 0, data: [] }
+              }));
+              
+              // Filter sessions for this specific date
+              sessionFarmerData = allSessions.filter(session => {
+                const sessionDate = formatDateOnly(session.startTime);
+                return sessionDate === group.date;
+              });
+            }
+            
+            // Calculate totals
+            const firstSessionStart = new Date(group.startTime);
+            const lastSessionEnd = new Date(group.endTime);
+            const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
+            const totalDistanceExcludingFirst = group.totalDistance;
+            const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
+            
+            const totalPauses = group.sessions.reduce((sum, session) => {
+              const pauses = detectPauses(session.logs || []);
+              return sum + pauses.length;
+            }, 0);
+            
+            // Count total farmers met
+            const totalFarmersMet = sessionFarmerData.reduce((sum, session) => 
+              sum + (session.farmerData?.count || 0), 0
+            );
+            
+            // Build session details with farmer information
+            const sessionDetails = group.sessions.map((session, index) => {
+              const matchingFarmerData = sessionFarmerData.find(f => f.sessionId === session.sessionId);
+              const farmerCount = matchingFarmerData?.farmerData?.count || 0;
+              const farmers = matchingFarmerData?.farmerData?.data || [];
+              
+              // Format farmer descriptions
+              const farmerDescriptions = farmers.map((farmer, farmerIndex) => 
+                `Farmer ${farmerIndex + 1}: ${farmer.farmerName || 'Unknown'} - ${farmer.farmerDescription || 'No description'}`
+              ).join('; ');
+              
+              // Format farmer image URLs
+              const farmerImageUrls = farmers.map((farmer, farmerIndex) => 
+                farmer.farmerImage || ''
+              ).filter(url => url).join('; ');
+              
+              return {
+                sessionNumber: index + 1,
+                sessionId: session.sessionId,
+                sessionStartTime: formatTimeOnly(session.startTime),
+                sessionEndTime: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
+                sessionDistance: (session.totalDistance / 1000).toFixed(2),
+                sessionStatus: session.endTime ? 'Completed' : 'Active',
+                farmersCount: farmerCount,
+                farmerDescriptions: farmerDescriptions || 'None',
+                farmerImageUrls: farmerImageUrls || 'None',
+                startOdometerImage: matchingFarmerData?.startOdometerImage || '',
+                endOdometerImage: matchingFarmerData?.endOdometerImage || ''
+              };
+            });
+            
+            return {
+              // Group info
+              'User ID': group.userId,
+              'Username': group.username,
+              'Employee Code': group.employeeCode,
+              'Date': group.date,
+              'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }),
+              'Start Time': formatDateTime(group.startTime),
+              'End Time': formatDateTime(group.endTime),
+              'Total Sessions': group.totalSessions,
+              'Active Sessions': group.activeSessions,
+              'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+              'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
+              'Total Distance (km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+              'Total Farmers Met': totalFarmersMet,
+              'Duration (minutes)': totalDuration,
+              'Riembursement Amount (₹)': reimbursementAmount,
+              'Total Pauses Count': totalPauses,
+              'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
+              'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
+              
+              // Individual session columns (flattened)
+              ...sessionDetails.reduce((acc, session, idx) => {
+                const prefix = `Session ${session.sessionNumber}`;
+                return {
+                  ...acc,
+                  [`${prefix} ID`]: session.sessionId,
+                  [`${prefix} Start Time`]: session.sessionStartTime,
+                  [`${prefix} End Time`]: session.sessionEndTime,
+                  [`${prefix} Distance (km)`]: session.sessionDistance,
+                  [`${prefix} Status`]: session.sessionStatus,
+                  [`${prefix} Farmers Count`]: session.farmersCount,
+                  [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
+                  [`${prefix} Farmer Image URLs`]: session.farmerImageUrls,
+                  [`${prefix} Start Odometer Image`]: session.startOdometerImage,
+                  [`${prefix} End Odometer Image`]: session.endOdometerImage,
+                  [`${prefix} Notes`]: idx === 0 ? 'First session (excluded from total)' : ''
+                };
+              }, {}),
+              
+              // For reference
+              sessionDetails: sessionDetails // Keep this for debugging if needed
+            };
+            
+          } catch (error) {
+            console.error(`Error fetching data for user ${group.userId} on ${group.date}:`, error);
+            // Return basic data without farmer info if API fails
+            return {
+              'User ID': group.userId,
+              'Username': group.username,
+              'Employee Code': group.employeeCode,
+              'Date': group.date,
+              'Error': 'Failed to fetch farmer data',
+              ...group.sessions.reduce((acc, session, idx) => {
+                const prefix = `Session ${idx + 1}`;
+                return {
+                  ...acc,
+                  [`${prefix} ID`]: session.sessionId,
+                  [`${prefix} Distance (km)`]: (session.totalDistance / 1000).toFixed(2),
+                  [`${prefix} Status`]: session.endTime ? 'Completed' : 'Active'
+                };
+              }, {})
+            };
+          }
+        })
+      );
+      
+      // Sort by date (newest first) and then by user ID
+      const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
+        const dateCompare = new Date(b.Date).getTime() - new Date(a.Date).getTime();
+        if (dateCompare !== 0) return dateCompare;
+        return b['User ID'] - a['User ID'];
       });
       
-      const headers = [
-        'Session ID',
+      // Determine maximum number of sessions in any group to create dynamic headers
+      const maxSessions = Math.max(...groupedView.map(group => group.sessions.length));
+      
+      // Build dynamic headers
+      const baseHeaders = [
         'User ID',
         'Username',
         'Employee Code',
+        'Date',
+        'Formatted Date',
         'Start Time',
-        'Start Latitude',
-        'Start Longitude',
         'End Time',
-        'End Latitude',
-        'End Longitude',
+        'Total Sessions',
+        'Active Sessions',
+        'Original Total Distance (km)',
+        'First Session Distance (km)',
         'Total Distance (km)',
+        'Total Farmers Met',
         'Duration (minutes)',
-        'Log Points Count',
-        'Pauses Count',
+        'Riembursement Amount (₹)',
+        'Total Pauses Count',
         'Status',
-        'Start Odometer Image URL',
-        'End Odometer Image URL'
+        'Notes'
       ];
       
+      // Add session-specific headers for each session
+      const sessionHeaders = [];
+      for (let i = 1; i <= maxSessions; i++) {
+        sessionHeaders.push(
+          `Session ${i} ID`,
+          `Session ${i} Start Time`,
+          `Session ${i} End Time`,
+          `Session ${i} Distance (km)`,
+          `Session ${i} Status`,
+          `Session ${i} Farmers Count`,
+          `Session ${i} Farmer Descriptions`,
+          `Session ${i} Farmer Image URLs`,
+          `Session ${i} Start Odometer Image`,
+          `Session ${i} End Odometer Image`,
+          `Session ${i} Notes`
+        );
+      }
+      
+      const allHeaders = [...baseHeaders, ...sessionHeaders];
+      
+      // Build CSV content
       const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => 
-          headers.map(header => {
-            const value = row[header as keyof typeof row];
+        allHeaders.join(','),
+        ...sortedData.map(row => 
+          allHeaders.map(header => {
+            const value = row[header];
             if (value === null || value === undefined) return '""';
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            // Handle CSV escaping - especially important for descriptions with commas
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -720,7 +919,7 @@ export default function AttendanceList() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10);
-      const filename = `travel_sessions_${dateStr}.csv`;
+      const filename = `travel_sessions_detailed_${dateStr}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
@@ -731,9 +930,12 @@ export default function AttendanceList() {
       document.body.removeChild(link);
       
       setTimeout(() => URL.revokeObjectURL(url), 100);
+      
     } catch (error) {
       console.error('Error exporting CSV:', error);
       alert('Failed to export data. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -939,24 +1141,45 @@ export default function AttendanceList() {
               )}
             </div>
             
-            {filteredSessions.length > 0 && (
-              <button
-                onClick={exportToCSV}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600`}
-                title="Export all sessions to CSV"
-              >
-                <FaFileCsv />
-                Export CSV
-              </button>
-            )}
+            <button
+              onClick={exportToCSV}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isLoading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white transition-all`}
+              title="Export grouped sessions with detailed farmer data"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <FaSync className="animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <FaFileCsv />
+                  Export To CSV
+                </>
+              )}
+            </button>
             
             <button
-              onClick={manualRefresh}
-              disabled={isLoading}
-              className={`flex items-center gap-2 px-4 py-2  rounded-xl disabled:opacity-50 bg-blue-700`}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                autoRefresh 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+              } transition-all`}
+              title={autoRefresh ? "Auto-refresh is ON" : "Auto-refresh is OFF"}
             >
-              <FaSync className={isLoading ? "animate-spin" : ""} />
-              Refresh
+              {autoRefresh ? (
+                <>
+                  <FaSync className="animate-spin" />
+                  Auto Refresh (ON)
+                </>
+              ) : (
+                <>
+                  <FaSync />
+                  Auto Refresh (OFF)
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -1202,6 +1425,17 @@ export default function AttendanceList() {
                           <div className="text-center">
                             <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
                             <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
+                            {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-600 dark:text-gray-300">reimbursed amount</p>
+                            <p className="text-lg font-bold text-gray-800 dark:text-white">
+                              ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
+                            </p>
                           </div>
                           <div className="text-center">
                             <button
@@ -1247,14 +1481,11 @@ export default function AttendanceList() {
                         <span className="text-xs font-medium">Total Distance</span>
                       </div>
                       <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
-                    </div>
-                    
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaMapPin className="text-sm" />
-                        <span className="text-xs font-medium">Log Points</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                      {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1270,6 +1501,7 @@ export default function AttendanceList() {
                       {group.sessions.map((session, sessionIndex) => {
                         const sessionDuration = calculateDuration(session.startTime, session.endTime);
                         const isActive = !session.endTime;
+                        const isFirstSession = sessionIndex === 0;
                         
                         return (
                           <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
@@ -1283,6 +1515,11 @@ export default function AttendanceList() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-800 dark:text-white">
                                       Session #{session.sessionId}
+                                      {isFirstSession && (
+                                        <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                          First Session (Excluded)
+                                        </span>
+                                      )}
                                     </span>
                                     {isActive && (
                                       <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
@@ -1297,6 +1534,14 @@ export default function AttendanceList() {
                                     <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
                                     <span>•</span>
                                     <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+                                    {isFirstSession && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                          Distance excluded from total
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1667,12 +1912,21 @@ export default function AttendanceList() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={closeMultiSessionMap}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
-                >
-                  <span className="text-2xl">✕</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowLogMarkersMulti(!showLogMarkersMulti)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showLogMarkersMulti ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  >
+                    <FaMapPin />
+                    {showLogMarkersMulti ? 'Hide Log Points' : 'Show Log Points'}
+                  </button>
+                  <button
+                    onClick={closeMultiSessionMap}
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
+                  >
+                    <span className="text-2xl">✕</span>
+                  </button>
+                </div>
               </div>
               
               {/* Session Legend */}
@@ -1798,6 +2052,60 @@ export default function AttendanceList() {
                   }
                   return null;
                 })}
+
+                {/* Log points markers for each session */}
+                {showLogMarkersMulti && multiSessionMapView.sessions.map((session, sessionIndex) => (
+                  session.logs && session.logs.slice(0, 50).map((log, logIndex) => { // Limit to 50 points per session for performance
+                    if (isValidCoordinate(log.latitude, log.longitude)) {
+                      const isPausePoint = log.pause;
+                      
+                      return (
+                        <Marker
+                          key={`log-${session.sessionId}-${log.id || logIndex}`}
+                          position={[
+                            parseCoordinate(log.latitude), 
+                            parseCoordinate(log.longitude)
+                          ]}
+                          icon={L.divIcon({
+                            className: 'custom-marker',
+                            html: `
+                              <div style="
+                                width: 8px;
+                                height: 8px;
+                                background-color: ${getSessionColor(sessionIndex)};
+                                border: 1px solid white;
+                                border-radius: 50%;
+                                opacity: 0.7;
+                                cursor: pointer;
+                              "></div>
+                            `,
+                            iconSize: [8, 8],
+                            iconAnchor: [4, 4]
+                          })}
+                        >
+                          <Popup>
+                            <div className="text-sm min-w-[200px]">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                                ></div>
+                                <strong>Session #{session.sessionId} - Point #{logIndex + 1}</strong>
+                              </div>
+                              <div className="space-y-1">
+                                <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
+                                <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
+                                <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
+                                <div><strong>Status:</strong> {isPausePoint ? '⏸️ Pause' : 'Moving'}</div>
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    return null;
+                  })
+                ))}
               </MapContainer>
             </div>
           </div>
@@ -1819,12 +2127,21 @@ export default function AttendanceList() {
                     <p className="text-blue-100">Employee Code: {mapView.employeeCode} • Session ID: #{mapView.sessionId}</p>
                   </div>
                 </div>
-                <button
-                  onClick={closeMap}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
-                >
-                  <span className="text-2xl">✕</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowLogMarkers(!showLogMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showLogMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  >
+                    <FaMapPin />
+                    {showLogMarkers ? 'Hide Log Points' : 'Show Log Points'}
+                  </button>
+                  <button
+                    onClick={closeMap}
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
+                  >
+                    <span className="text-2xl">✕</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1912,6 +2229,65 @@ export default function AttendanceList() {
                     </Popup>
                   </Marker>
                 )}
+
+                {/* Log points markers - NEWLY ADDED */}
+                {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {
+                  if (isValidCoordinate(log.latitude, log.longitude)) {
+                    const logDate = new Date(log.timestamp);
+                    const isPausePoint = log.pause || 
+                      (logIndex > 0 && 
+                       (new Date(log.timestamp).getTime() - 
+                        new Date(mapView.logs[logIndex - 1].timestamp).getTime()) > 
+                        2 * 60 * 1000); // 2 minute threshold
+                    
+                    return (
+                      <Marker
+                        key={`log-${log.id || logIndex}`}
+                        position={[
+                          parseCoordinate(log.latitude), 
+                          parseCoordinate(log.longitude)
+                        ]}
+                        icon={L.divIcon({
+                          className: 'custom-marker',
+                          html: `
+                            <div style="
+                              width: 12px;
+                              height: 12px;
+                              background-color: ${isPausePoint ? '#FFA500' : '#6366F1'};
+                              border: 2px solid white;
+                              border-radius: 50%;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                              cursor: pointer;
+                            "></div>
+                          `,
+                          iconSize: [12, 12],
+                          iconAnchor: [6, 6]
+                        })}
+                      >
+                        <Popup>
+                          <div className="text-sm min-w-[200px]">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: isPausePoint ? '#FFA500' : '#6366F1' }}
+                              ></div>
+                              <strong>{isPausePoint ? '⏸️ Pause Point' : '📍 Log Point'}</strong>
+                            </div>
+                            <div className="space-y-1">
+                              <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
+                              <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
+                              <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
+                              <div><strong>Battery:</strong> {log.battery ? `${log.battery}%` : 'N/A'}</div>
+                              <div><strong>Point #:</strong> {logIndex + 1} of {mapView.logs.length}</div>
+                              {log.pause && <div className="text-amber-600 font-medium">⏸️ Pause detected</div>}
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })}
               </MapContainer>
             </div>
           </div>

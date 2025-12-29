@@ -8,12 +8,9 @@ import { PiUsersThreeBold } from "react-icons/pi";
 // Assume these icons are imported from an icon library
 import {
   CalenderIcon,
-  ChatIcon,
+  // ChatIcon,
   ChevronDownIcon,
-  GridIcon,
-  ListIcon,
-  PlugInIcon,
-  // TableIcon,
+  GridIcon, PlugInIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -25,11 +22,7 @@ import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 
-// interface UserProfile {
 
-//   role: string;
-
-// }
 
 type SubItem = {
   name: string;
@@ -69,100 +62,78 @@ const AppSidebar: React.FC = () => {
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-    {
-      icon: <GridIcon />,
-      name: t("menu.dashboard"),
-      subItems: [
-        {
-          name: t("menu.dashboard"),
-          path: "/home",
-          role: ["admin", "ZonalManager", "Manager", "HR", "employee"],
-        },
-        {
-          name: t("menu.employeeDashboard"),
-          path: "/employee-dashboard",
-          role: ["employee"],
-        },
-      ],
-    },
-    {
-      icon: <ChatIcon />,
-      name: t("menu.chat"),
-      path: "/chat",
-      role: [
-        "admin",
-        "department_head",
-        "ZonalManager",
-        "manager",
-        "HR",
-        "employee",
-        "Fieldemployee",
-      ],
-    },
-    {
-      icon: <CalenderIcon />,
-      name: t("menu.calendar"),
-      path: "/calendar",
-      role: ["admin", "ZonalManager", "Manager", "HR"],
-    },
-    {
-      icon: <UserCircleIcon />,
-      name: t("menu.profile"),
-      path: "/profile",
-      role: ["admin", "employee", "ZonalManager", "Manager", "HR"],
-    },
-    {
-      icon: <UserCircleIcon />,
-      name: t("menu.EmployeeCheckin"),
-      path: "/employeecheckin",
-      role: ["admin", "ZonalManager", "Manager", "HR"],
-    },
+  {
+    icon: <GridIcon />,
+    name: t("menu.dashboard"),
+    subItems: [
+      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ,"employee"] },
+      { name: t("menu.employeeDashboard"), path: "/employee-dashboard", role: ["employee"] }
+    ],
+  },
+  {
+    icon: <CalenderIcon />,
+    name: t("menu.calendar"),
+    path: "/calendar",
+    role: ["admin","ZonalManager","Manager","HR"],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: t("menu.profile"),
+    path: "/profile",
+    role: ["admin","employee","ZonalManager","Manager","HR"],
+  },
+   {
+    icon: <UserCircleIcon />,
+    name: t("menu.EmployeeCheckin"),
+    path: "/employeecheckin",
+    role: ["admin","ZonalManager","Manager","HR"],
+  },
+ 
+  
+  {
+    icon: <MdListAlt />,
+    name: t("menu.TravelSessions"),
+    path: "/attandance-start-admin",
+    role: ["admin","ZonalManager","Manager","HR","executive"],
+  },
+  {
+    icon: <MdAppRegistration />,
+    name: t("menu.registerUserForm"),
+    path: "/user-register",
+    role: ["admin","ZonalManager","Manager","HR","executive"],
+  },
+  
+  {
+    icon: <FaTasks />,
+    name: t("menu.announcement"),
+    path: "/announcementList",
+    role: ["admin","ZonalManager","Manager","HR","executive"],
+  },
+  {
+    icon: <PiUsersThreeBold />,
+    name: t("menu.allUsers"),
+    path: "/all-users",
+    role: ["admin","ZonalManager","Manager","HR","executive"],
+  },
+ 
+ 
+ 
+];
 
-    {
-      icon: <UserCircleIcon />,
-      name: t("Admin Panel"),
-      path: "/",
-      role: ["admin", "HR"],
-    },
 
-    {
-      icon: <MdListAlt />,
-      name: t("menu.TravelSessions"),
-      path: "/attandance-start-admin",
-      role: ["admin", "ZonalManager", "Manager", "HR", "executive"],
-    },
-    {
-      icon: <MdAppRegistration />,
-      name: t("menu.registerUserForm"),
-      path: "/user-register",
-      role: ["admin", "ZonalManager", "Manager", "HR", "executive"],
-    },
+const othersItems: NavItem[] = [
 
-    {
-      icon: <FaTasks />,
-      name: t("menu.announcement"),
-      path: "/announcementList",
-      role: ["admin", "ZonalManager", "Manager", "HR", "executive"],
-    },
-    {
-      icon: <PiUsersThreeBold />,
-      name: t("menu.allUsers"),
-      path: "/all-users",
-      role: ["admin", "ZonalManager", "Manager", "HR", "executive"],
-    },
-  ];
+  {
+    icon: <PlugInIcon />,
+    name: t("menu.Authentication"),
+    subItems: [
+      { name: t("menu.signIn"), path: "/signin",  },
+      // { name: "Sign Up", path: "/signup",  },
+      { name: t("logout"), path: "/logout",  },
+    ],
+  },
+];
 
-  const othersItems: NavItem[] = [
-    {
-      icon: <PlugInIcon />,
-      name: t("menu.Authentication"),
-      subItems: [
-        { name: t("menu.signIn"), path: "/signin" },
-        // { name: "Sign Up", path: "/signup",  },
-        { name: t("logout"), path: "/logout" },
-      ],
-    },
-  ];
 
   useEffect(() => {
     let submenuMatched = false;

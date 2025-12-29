@@ -10,7 +10,7 @@ interface User {
   name: string;
   employee_code: string;
   email: string;
-  role: number;
+  role: string;
   roleId: number;
   is_checkin: boolean;
   department: string;
@@ -87,6 +87,7 @@ const UserList: React.FC = () => {
     profileImageUrl: "",
     departmentId: 0,
     allocatedArea: "",
+    
     roleId: 0
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -405,7 +406,7 @@ const UserList: React.FC = () => {
               birthDate: result.data.birthDate || user.birthDate,
               profile_image: result.data.profileImageUrl || user.profile_image,
               department: updatedDepartment?.name || user.department,
-              role: result.data.role?.id || editForm.roleId || user.role,
+              role: result.data.role || editForm.roleId || user.role,
               roleId: editForm.roleId
             };
           }
@@ -1032,7 +1033,7 @@ const UserList: React.FC = () => {
                         <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
                           {users.length > 0 ? (
                             users.map((user, index) => {
-                              const roleName = getRoleName(user.roleId || user.role);
+                            
                               
                               return (
                                 <tr 
@@ -1119,7 +1120,7 @@ const UserList: React.FC = () => {
                                       text-blue-800 dark:text-blue-300 backdrop-blur-sm
                                       truncate max-w-[80px] sm:max-w-[100px]
                                     ">
-                                      {roleName}
+                                      {user.role}
                                     </span>
                                   </td>
                                   <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">

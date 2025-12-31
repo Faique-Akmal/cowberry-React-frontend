@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-// import { useTranslation } from "react-i18next";
-// import { useTheme } from "../../context/ThemeContext.tsx";
 import { useData } from "../../context/DataProvider";
 import API from "../../api/axios.ts";
+import * as XLSX from "xlsx"; // Install with: npm install xlsx
 
 interface User {
   id: string;
@@ -18,7 +17,7 @@ interface User {
   date: string;
   is_online: boolean;
   allocatedArea: string;
-  fullName?: string;
+  full_name?: string;
   mobileNo?: string;
   address?: string;
   birthDate?: string;
@@ -50,7 +49,7 @@ interface Role {
 // Edit User Form interface
 interface EditUserForm {
   username?: string;
-  fullName: string;
+  full_name: string;
   email: string;
   mobileNo: string;
   address: string;
@@ -62,8 +61,6 @@ interface EditUserForm {
 }
 
 const UserList: React.FC = () => {
-  // const { themeConfig } = useTheme();
-  // const { t } = useTranslation();
   const { fetchUsers } = useData();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -76,10 +73,11 @@ const UserList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [roleFilter, setRoleFilter] = useState<number | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">("");
+  const [exporting, setExporting] = useState(false);
   
   // Edit form states
   const [editForm, setEditForm] = useState<EditUserForm>({
-    fullName: "",
+    full_name: "",
     email: "",
     mobileNo: "",
     address: "",
@@ -87,7 +85,6 @@ const UserList: React.FC = () => {
     profileImageUrl: "",
     departmentId: 0,
     allocatedArea: "",
-    
     roleId: 0
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -181,6 +178,77 @@ const UserList: React.FC = () => {
     }
   }, []);
 
+  // Function to export users to Excel
+  const exportToExcel = async () => {
+    try {
+      setExporting(true);
+      
+      // First, fetch all users (not just current page)
+      const params: PaginationParams = {
+        page: 1,
+        limit: 10000, // Large number to get all users
+        sort_order: sortOrder
+      };
+      
+      if (searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+      if (roleFilter !== "") {
+        params.role = roleFilter;
+      }
+      if (statusFilter !== "") {
+        params.status = statusFilter;
+      }
+      
+      const res = await fetchUsers(params);
+      const allUsers = res.data || [];
+      
+      if (allUsers.length === 0) {
+        alert("No users to export");
+        return;
+      }
+      
+      // Prepare data for Excel
+      const excelData = allUsers.map((user: User, index: number) => ({
+        "Sr. No": index + 1,
+        "Employee Code": user.employee_code || "N/A",
+        "Full Name": user.full_name || user.name || "N/A",
+        "Email": user.email || "N/A",
+        "Role": user.role || "N/A",
+        "Department": user.department || "N/A",
+        "Allocated Area": user.allocatedArea || "N/A",
+        "Mobile Number": user.mobileNo || "N/A",
+        "Status": user.is_checkin ? "Online" : "Offline",
+        "Date Joined": user.date ? new Date(user.date).toLocaleDateString() : "N/A",
+        "Address": user.address || "N/A",
+        "Birth Date": user.birthDate ? new Date(user.birthDate).toLocaleDateString() : "N/A"
+      }));
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+      
+      // Auto-size columns
+      const maxWidth = excelData.reduce((w, r) => Math.max(w, Object.values(r).join("").length), 10);
+      worksheet["!cols"] = [{ wch: maxWidth }];
+      
+      // Generate Excel file
+      const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      
+      alert(`Exported ${allUsers.length} users to ${fileName}`);
+      
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Failed to export users. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Fetch departments and roles for edit form
   useEffect(() => {
     fetchDepartments();
@@ -256,13 +324,16 @@ const UserList: React.FC = () => {
       dept.name.toLowerCase() === user.department?.toLowerCase()
     );
     
-    // Get role ID - use roleId if available, otherwise fall back to role
-    const userRoleId = user.roleId || user.role;
+    // Find the role ID from role name or use existing roleId
+    const role = roles.find(r => 
+      r.name.toLowerCase() === user.role?.toLowerCase() || 
+      r.id === user.roleId
+    );
     
     // Populate edit form with user data
     setEditForm({
       username: user.employee_code || `user_${userId}`,
-      fullName: user.name || user.fullName || "",
+      full_name: user.full_name || user.name || "",
       email: user.email || "",
       mobileNo: user.mobileNo || "",
       address: user.address || "",
@@ -270,7 +341,7 @@ const UserList: React.FC = () => {
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
       profileImageUrl: user.profile_image || user.profileImageUrl || "",
       departmentId: department?.departmentId || 0,
-      roleId: userRoleId || 0
+      roleId: role?.id || user.roleId || 0
     });
     
     setIsEditModalOpen(true);
@@ -310,7 +381,7 @@ const UserList: React.FC = () => {
     console.log("Available roles:", roles);
     
     // Validate required fields
-    if (!editForm.fullName.trim()) {
+    if (!editForm.full_name.trim()) {
       alert("Full name is required");
       return;
     }
@@ -357,7 +428,7 @@ const UserList: React.FC = () => {
       // Prepare data for API - ensure all numbers are integers
       const updateData = {
         username: editForm.username?.trim(),
-        fullName: editForm.fullName.trim(),
+        fullName: editForm.full_name.trim(),
         email: editForm.email.trim(),
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
@@ -399,6 +470,7 @@ const UserList: React.FC = () => {
             return { 
               ...user, 
               name: result.data.fullName || result.data.username || user.name,
+              full_name: result.data.fullName || editForm.full_name || user.full_name,
               email: result.data.email || user.email,
               mobileNo: result.data.mobileNo || user.mobileNo,
               address: result.data.address || user.address,
@@ -406,7 +478,7 @@ const UserList: React.FC = () => {
               birthDate: result.data.birthDate || user.birthDate,
               profile_image: result.data.profileImageUrl || user.profile_image,
               department: updatedDepartment?.name || user.department,
-              role: result.data.role || editForm.roleId || user.role,
+              role: updatedRole?.name || result.data.role || user.role,
               roleId: editForm.roleId
             };
           }
@@ -418,6 +490,7 @@ const UserList: React.FC = () => {
           const updatedSelectedUser = {
             ...selectedUser,
             name: result.data.fullName || result.data.username || selectedUser.name,
+            full_name: result.data.fullName || editForm.full_name || selectedUser.full_name,
             email: result.data.email || selectedUser.email,
             mobileNo: result.data.mobileNo || selectedUser.mobileNo,
             address: result.data.address || selectedUser.address,
@@ -425,7 +498,7 @@ const UserList: React.FC = () => {
             allocatedArea: result.data.allocatedArea || selectedUser.allocatedArea,
             profile_image: result.data.profileImageUrl || selectedUser.profile_image,
             department: updatedDepartment?.name || selectedUser.department,
-            role: result.data.role?.id || editForm.roleId || selectedUser.role,
+            role: updatedRole?.name || result.data.role || selectedUser.role,
             roleId: editForm.roleId
           };
           setSelectedUser(updatedSelectedUser);
@@ -551,7 +624,7 @@ const UserList: React.FC = () => {
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditForm({
-      fullName: "",
+      full_name: "",
       email: "",
       mobileNo: "",
       address: "",
@@ -583,7 +656,7 @@ const UserList: React.FC = () => {
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <button
-          key={i}
+          key={`page-${i}`}
           onClick={() => handleGoToPage(i)}
           className={`
             min-w-[32px] h-8 px-2 mx-1 rounded-lg sm:rounded-xl
@@ -675,6 +748,14 @@ const UserList: React.FC = () => {
     );
   };
 
+  // Generate a unique key for each user row
+  const getUserKey = (user: User, index: number): string => {
+    const userId = user.id || user.userId;
+    const baseKey = userId || `user-${index}`;
+    const pageIndex = (currentPage - 1) * limit + index;
+    return `${baseKey}-${pageIndex}`;
+  };
+
   return (
     <div className="
       w-full
@@ -699,6 +780,7 @@ const UserList: React.FC = () => {
       flex flex-col
       h-[calc(100vh-100px)] sm:h-[calc(100vh-120px)]
       box-border
+      max-w-full
     ">
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
@@ -806,7 +888,7 @@ const UserList: React.FC = () => {
                   <option value="" disabled>Loading roles...</option>
                 ) : (
                   roles.map((r) => (
-                    <option key={r.id} value={r.id}>
+                    <option key={`role-${r.id}`} value={r.id}>
                       {r.name}
                     </option>
                   ))
@@ -849,8 +931,8 @@ const UserList: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter Actions */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          {/* Filter Actions - Updated with Export Button */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="
               text-xs sm:text-sm text-gray-600 dark:text-gray-300
               px-2 sm:px-3 py-1.5 sm:py-2 rounded
@@ -860,25 +942,69 @@ const UserList: React.FC = () => {
             ">
               Showing {users.length} of {totalUsers} users • Page {currentPage} of {totalPages}
             </div>
-            <button
-              onClick={clearFilters}
-              className="
-                px-3 sm:px-4 py-2
-                bg-gradient-to-r from-white/40 to-white/20
-                dark:from-gray-700/40 dark:to-gray-800/20
-                backdrop-blur-sm
-                border border-white/60 dark:border-gray-600/60
-                text-gray-700 dark:text-gray-300 
-                rounded-lg sm:rounded-xl hover:from-white/60 hover:to-white/40
-                dark:hover:from-gray-600/60 dark:hover:to-gray-700/40
-                transition-all duration-300
-                w-full sm:w-auto
-                shadow-sm hover:shadow
-                text-sm
-              "
-            >
-              Clear Filters
-            </button>
+            
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                onClick={clearFilters}
+                className="
+                  px-3 sm:px-4 py-2
+                  bg-gradient-to-r from-white/40 to-white/20
+                  dark:from-gray-700/40 dark:to-gray-800/20
+                  backdrop-blur-sm
+                  border border-white/60 dark:border-gray-600/60
+                  text-gray-700 dark:text-gray-300 
+                  rounded-lg sm:rounded-xl hover:from-white/60 hover:to-white/40
+                  dark:hover:from-gray-600/60 dark:hover:to-gray-700/40
+                  transition-all duration-300
+                  w-full sm:w-auto
+                  shadow-sm hover:shadow
+                  text-sm
+                  flex items-center justify-center
+                "
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Filters
+              </button>
+              
+              <button
+                onClick={exportToExcel}
+                disabled={exporting || users.length === 0}
+                className="
+                  px-3 sm:px-4 py-2
+                  bg-gradient-to-r from-green-500/80 to-green-600/80
+                  hover:from-green-600/80 hover:to-green-700/80
+                  backdrop-blur-sm
+                  border border-green-400/60 dark:border-green-600/60
+                  text-white
+                  rounded-lg sm:rounded-xl
+                  transition-all duration-300
+                  w-full sm:w-auto
+                  shadow-sm hover:shadow
+                  text-sm
+                  flex items-center justify-center
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
+              >
+                {exporting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export to Excel
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -918,13 +1044,14 @@ const UserList: React.FC = () => {
                   flex-1
                   relative
                   overflow-y-auto
+                  overflow-x-hidden
                 "
               >
-                <div className="min-w-0 h-full">
+                <div className="min-w-full h-full">
                   <div className="h-full flex flex-col">
                     {/* Table Header - Fixed */}
                     <div className="flex-shrink-0 sticky top-0 z-10">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
                         <thead className="
                           bg-gradient-to-r from-white/60 to-white/40
                           dark:from-gray-800/60 dark:to-gray-900/40
@@ -952,16 +1079,16 @@ const UserList: React.FC = () => {
                                 border-b border-white/30 dark:border-gray-700/30
                                 backdrop-blur-sm
                                 whitespace-nowrap
-                                min-w-[150px]
+                                w-1/5
                               "
                               onClick={toggleSortOrder}
                             >
-                              <div className="flex items-center space-x-1">
-                                <span>Name</span>
+                              <div className="flex items-center space-x-4">
+                                <span  className="ml-4">Name</span>
                                 <span className="
                                   text-blue-600 dark:text-blue-400 text-xs
                                   bg-blue-100/50 dark:bg-blue-900/30
-                                  rounded-full p-0.5
+                                  rounded-full 
                                 ">
                                   {sortOrder === "asc" ? "↑" : "↓"}
                                 </span>
@@ -974,7 +1101,7 @@ const UserList: React.FC = () => {
                               border-b border-white/30 dark:border-gray-700/30
                               backdrop-blur-sm
                               whitespace-nowrap
-                              min-w-[120px]
+                              w-1/6
                             ">
                               Employee Code
                             </th>
@@ -985,7 +1112,7 @@ const UserList: React.FC = () => {
                               border-b border-white/30 dark:border-gray-700/30
                               backdrop-blur-sm
                               whitespace-nowrap
-                              min-w-[180px]
+                              w-1/4
                             ">
                               Email
                             </th>
@@ -996,7 +1123,7 @@ const UserList: React.FC = () => {
                               border-b border-white/30 dark:border-gray-700/30
                               backdrop-blur-sm
                               whitespace-nowrap
-                              min-w-[100px]
+                              w-1/8
                             ">
                               Role
                             </th>
@@ -1007,7 +1134,7 @@ const UserList: React.FC = () => {
                               border-b border-white/30 dark:border-gray-700/30
                               backdrop-blur-sm
                               whitespace-nowrap
-                              min-w-[120px]
+                              w-1/6
                             ">
                              Allocated Area
                             </th>
@@ -1018,7 +1145,7 @@ const UserList: React.FC = () => {
                               border-b border-white/30 dark:border-gray-700/30
                               backdrop-blur-sm
                               whitespace-nowrap
-                              min-w-[120px]
+                              w-1/6
                             ">
                               Department
                             </th>
@@ -1029,16 +1156,15 @@ const UserList: React.FC = () => {
 
                     {/* Table Body - Scrollable */}
                     <div className="flex-1 overflow-y-auto">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
                         <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
                           {users.length > 0 ? (
                             users.map((user, index) => {
-                            
-                              
+                              const userKey = getUserKey(user, index);
                               return (
                                 <tr 
                                   onClick={() => handleRowClick(user)}
-                                  key={user.userId || user.id}
+                                  key={userKey}
                                   className="
                                     hover:bg-white/30 dark:hover:bg-gray-800/30
                                     transition-all duration-300
@@ -1053,42 +1179,40 @@ const UserList: React.FC = () => {
                                     {(currentPage - 1) * limit + index + 1}
                                   </td>
                                   <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                                    <div className="flex items-center min-w-0">
-                                      <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10">
-                                        <div className="
-                                          h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 rounded-lg sm:rounded-xl
-                                          bg-gradient-to-r from-green-500/80 to-green-600/80
-                                          border border-blue-400/50 dark:border-purple-500/50
-                                          flex items-center justify-center text-white text-xs sm:text-sm md:text-base font-medium
-                                          shadow
-                                        ">
-                                          {user.name?.charAt(0).toUpperCase() || '?'}
-                                        </div>
-                                      </div>
-                                      <div className="ml-2 min-w-0 flex-1">
-                                        <div className="
-                                          text-xs sm:text-sm md:text-base font-medium
-                                          text-gray-900 dark:text-gray-100
-                                          truncate
-                                        ">
-                                          {user.name || 'N/A'}
-                                        </div>
-                                        <div className="
-                                          text-xs text-gray-600 dark:text-gray-400 sm:hidden
-                                          bg-white/30 dark:bg-gray-800/30 rounded px-1 py-0.5 mt-0.5
-                                          truncate
-                                        ">
-                                          {user.employee_code || 'N/A'}
-                                        </div>
-                                        <div className="
-                                          text-xs text-gray-600 dark:text-gray-400 lg:hidden
-                                          truncate bg-white/30 dark:bg-gray-800/30
-                                          rounded px-1 py-0.5 mt-0.5
-                                        ">
-                                          {user.email || 'N/A'}
-                                        </div>
-                                      </div>
-                                    </div>
+                                   <div className="flex items-center min-w-0">
+  <div className="min-w-0 flex-1">
+  <div className="text-xs sm:text-sm md:text-base font-medium truncate leading-tight m-0 p-0 flex items-center capitalize">
+  {user.full_name ? (
+    <span className="flex items-center">
+      <span className="
+        inline-block
+        bg-gradient-to-r from-blue-600 to-purple-600
+        dark:from-blue-400 dark:to-purple-400
+        bg-clip-text text-transparent
+        font-bold
+      ">
+        {user.full_name.charAt(0)}
+      </span>
+      <span className="text-gray-900 dark:text-gray-100 ml-0">
+        {user.full_name.slice(1)}
+      </span>
+    </span>
+  ) : 'N/A'}
+</div>
+    <div 
+      className="text-xs text-gray-600 dark:text-gray-400 sm:hidden bg-white/30 dark:bg-gray-800/30 rounded px-1 py-0.5 truncate mt-0.5"
+      style={{ lineHeight: 1.2, margin: 0 }}
+    >
+      {user.employee_code || 'N/A'}
+    </div>
+    <div 
+      className="text-xs text-gray-600 dark:text-gray-400 lg:hidden truncate bg-white/30 dark:bg-gray-800/30 rounded px-1 py-0.5 mt-0.5"
+      style={{ lineHeight: 1.2, margin: 0 }}
+    >
+      {user.email || 'N/A'}
+    </div>
+  </div>
+</div>
                                   </td>
                                   <td className="
                                     px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
@@ -1096,7 +1220,7 @@ const UserList: React.FC = () => {
                                   ">
                                     <div className="
                                       bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                      backdrop-blur-sm truncate max-w-[100px] md:max-w-[120px]
+                                      backdrop-blur-sm truncate
                                     ">
                                       {user.employee_code || 'N/A'}
                                     </div>
@@ -1106,7 +1230,7 @@ const UserList: React.FC = () => {
                                     text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell
                                   ">
                                     <div className="
-                                      truncate max-w-[120px] md:max-w-[150px] xl:max-w-[200px]
+                                      truncate
                                       bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
                                       backdrop-blur-sm
                                     ">
@@ -1118,7 +1242,7 @@ const UserList: React.FC = () => {
                                       inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
                                       text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
                                       text-blue-800 dark:text-blue-300 backdrop-blur-sm
-                                      truncate max-w-[80px] sm:max-w-[100px]
+                                      truncate
                                     ">
                                       {user.role}
                                     </span>
@@ -1128,7 +1252,7 @@ const UserList: React.FC = () => {
                                       inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
                                       text-xs font-medium bg-green-100/50 dark:bg-green-900/30
                                       text-green-800 dark:text-green-300 backdrop-blur-sm
-                                      truncate max-w-[80px] sm:max-w-[100px]
+                                      truncate
                                     ">
                                       {user.allocatedArea || "N/A"}
                                     </span>
@@ -1138,7 +1262,7 @@ const UserList: React.FC = () => {
                                     text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell
                                   ">
                                     <div className="
-                                      truncate max-w-[80px] md:max-w-[100px] lg:max-w-[150px]
+                                      truncate
                                       bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
                                       backdrop-blur-sm
                                     ">
@@ -1228,250 +1352,248 @@ const UserList: React.FC = () => {
       </div>
 
       {/* User Details Modal */}
-      {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="
-            bg-white dark:bg-gray-900
-            rounded-xl sm:rounded-2xl
-            w-full max-w-4xl max-h-[90vh]
-            flex flex-col
-            shadow-2xl
-          ">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+    {isModalOpen && selectedUser && (
+  <div className="fixed inset-0 z-50 bg-black/70">
+    <div className="
+      bg-white dark:bg-gray-900
+      w-full h-full
+      flex flex-col
+      overflow-hidden
+    ">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            User Details
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            ID: {selectedUser.id || selectedUser.userId || 'N/A'}
+          </p>
+        </div>
+        <button
+          onClick={closeModal}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        >
+          <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6">
+          {/* Profile Header */}
+          <div className="mb-8">
+            <div className="flex items-center space-x-4">
+              {selectedUser.profile_image || selectedUser.profileImageUrl ? (
+                <img
+                  src={selectedUser.profile_image || selectedUser.profileImageUrl}
+                  alt={selectedUser.name || selectedUser.full_name}
+                  className="w-24 h-24 rounded-xl object-cover border-2 border-gray-300 dark:border-gray-700"
+                />
+              ) : (
+                <div className="
+                  w-24 h-24 rounded-xl
+                  bg-gradient-to-r from-blue-500 to-purple-600
+                  flex items-center justify-center text-white text-3xl font-bold
+                ">
+                  {(selectedUser.name?.charAt(0) || selectedUser.full_name?.charAt(0) || '?').toUpperCase()}
+                </div>
+              )}
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  User Details
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  ID: {selectedUser.id || selectedUser.userId || 'N/A'}
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {selectedUser.full_name || selectedUser.name || 'N/A'}
+                </h3>
+                <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
+                  {selectedUser.employee_code || 'No employee code'}
                 </p>
               </div>
-              <button
-                onClick={closeModal}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
+          </div>
 
-            {/* Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6">
-                {/* Profile Header */}
-                <div className="mb-8">
-                  <div className="flex items-center space-x-4">
-                    {selectedUser.profile_image || selectedUser.profileImageUrl ? (
-                      <img
-                        src={selectedUser.profile_image || selectedUser.profileImageUrl}
-                        alt={selectedUser.name || selectedUser.fullName}
-                        className="w-20 h-20 rounded-xl object-cover border-2 border-gray-300 dark:border-gray-700"
-                      />
-                    ) : (
-                      <div className="
-                        w-20 h-20 rounded-xl
-                        bg-gradient-to-r from-blue-500 to-purple-600
-                        flex items-center justify-center text-white text-2xl font-bold
-                      ">
-                        {(selectedUser.name?.charAt(0) || selectedUser.fullName?.charAt(0) || '?').toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {selectedUser.name || selectedUser.fullName || 'N/A'}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {selectedUser.employee_code || 'No employee code'}
-                      </p>
-                    </div>
-                  </div>
+          {/* Basic Information Section */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Full Name
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.full_name || selectedUser.name || 'N/A'}
+                  </p>
                 </div>
+              </div>
 
-                {/* Basic Information Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Basic Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Full Name
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.name || selectedUser.fullName || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email Address
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.email || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Mobile Number
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.mobileNo || 'Not specified'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Birth Date
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.birthDate ? new Date(selectedUser.birthDate).toLocaleDateString() : 'Not specified'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.email || 'N/A'}
+                  </p>
                 </div>
+              </div>
 
-                {/* Address Section */}
-                {selectedUser.address && (
-                  <div className="mb-8">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Address
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                          {selectedUser.address}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedUser.allocatedArea && (
-                  <div className="mb-8">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Allocated Area
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                          {selectedUser.allocatedArea || 'NA'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Role & Department Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Role & Department
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Department
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.department || 'NA'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Role
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {getRoleName(selectedUser.roleId || selectedUser.role) || 'NA'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Mobile Number
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.mobileNo || 'Not specified'}
+                  </p>
                 </div>
+              </div>
 
-                {/* Status & Date Section */}
-                <div className="mb-12">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Status & Employment
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Status
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <div className="flex items-center">
-                          <span className={`w-2 h-2 rounded-full mr-2 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}></span>
-                          <p className={`font-medium ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                            {selectedUser.is_checkin ? "Online" : "Offline"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Date Joined
-                      </label>
-                      <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.date ? new Date(selectedUser.date).toLocaleDateString() : 'Not specified'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Birth Date
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.birthDate ? new Date(selectedUser.birthDate).toLocaleDateString() : 'Not specified'}
+                  </p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Footer with Action Buttons */}
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleEditClick(selectedUser)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[120px]"
-                >
-                  Edit User
-                </button>
+          {/* Address Section */}
+          {selectedUser.address && (
+            <div className="mb-8">
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Address
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white whitespace-pre-line text-base">
+                    {selectedUser.address}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedUser.allocatedArea && (
+            <div className="mb-8">
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Allocated Area
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white whitespace-pre-line text-base">
+                    {selectedUser.allocatedArea || 'NA'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Role & Department Section */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+              Role & Department
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Department
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.department || 'NA'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Role
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status & Date Section */}
+          <div className="mb-12">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+              Status & Employment
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-center">
+                    <span className={`w-3 h-3 rounded-full mr-3 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}></span>
+                    <p className={`font-medium text-base ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                      {selectedUser.is_checkin ? "Online" : "Offline"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date Joined
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-gray-900 dark:text-white text-base">
+                    {selectedUser.date ? new Date(selectedUser.date).toLocaleDateString() : 'Not specified'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Footer with Action Buttons */}
+      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+        <div className="flex justify-end space-x-4">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="px-8 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-base"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={() => handleEditClick(selectedUser)}
+            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[140px] text-base"
+          >
+            Edit User
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Edit User Modal */}
       {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="
-            bg-white dark:bg-gray-900
-            rounded-xl sm:rounded-2xl
-            w-full max-w-4xl max-h-[90vh]
-            flex flex-col
-            shadow-2xl
-          ">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+      <div className="fixed inset-0 z-50 bg-black/70">
+    <div className="
+      bg-white dark:bg-gray-900
+      w-full h-full
+      flex flex-col
+      overflow-hidden
+    ">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Edit User
@@ -1502,8 +1624,8 @@ const UserList: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        name="fullName"
-                        value={editForm.fullName}
+                        name="full_name"
+                        value={editForm.full_name}
                         onChange={handleEditFormChange}
                         required
                         className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -1638,7 +1760,7 @@ const UserList: React.FC = () => {
                         >
                           <option value={0}>Select Department</option>
                           {departments.map((dept) => (
-                            <option key={dept.departmentId} value={dept.departmentId}>
+                            <option key={`dept-${dept.departmentId}`} value={dept.departmentId}>
                               {dept.name}
                             </option>
                           ))}
@@ -1668,7 +1790,7 @@ const UserList: React.FC = () => {
                         >
                           <option value={0}>Select Role</option>
                           {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
+                            <option key={`role-${role.id}`} value={role.id}>
                               {role.name}
                             </option>
                           ))}

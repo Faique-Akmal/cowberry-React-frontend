@@ -487,8 +487,9 @@ export const ChatInterface = () => {
                   </button>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-green-500 to-lime-700 text-white font-bold shadow-lg ring-2 ring-white/20">
                     {activeConversation.type === "PERSONAL"
-                      ? activeConversation.participants[0].user.username
-                          .slice(0, 2)
+                      ? activeConversation.participants
+                          .find((p) => p.user.id !== currentUser?.id)
+                          ?.user.username.slice(0, 2)
                           .toUpperCase()
                       : "G"}
                   </div>

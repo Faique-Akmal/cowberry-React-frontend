@@ -288,7 +288,7 @@ layer(base);
 }
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
-    @apply size-0.5;
+    @apply size-1.5;
   }
 
   &::-webkit-scrollbar-track {

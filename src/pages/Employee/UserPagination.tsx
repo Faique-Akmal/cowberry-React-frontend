@@ -1009,346 +1009,354 @@ const UserList: React.FC = () => {
         </div>
 
         {/* Main content area with scroll */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {loading && users.length === 0 ? (
-            <div className="
-              flex flex-col justify-center items-center py-8 sm:py-12
-              bg-gradient-to-br from-white/30 to-white/10
-              dark:from-gray-800/30 dark:to-gray-900/10
-              backdrop-blur-lg
-              rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
-              text-center
-              flex-1
-            ">
-              <div className="
-                animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
-                backdrop-blur-sm mb-2 sm:mb-3
-              "></div>
-              <span className="text-gray-600 dark:text-gray-300 text-sm">
-                Loading users...
-              </span>
-            </div>
-          ) : (
-            <>
-              {/* Users Table Container with Scroll - Fixed horizontal scroll */}
-              <div
-                ref={scrollContainerRef}
-                className="
-                  overflow-hidden rounded-xl sm:rounded-2xl
-                  bg-gradient-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
-                  shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-                  dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-                  flex-1
-                  relative
-                  overflow-y-auto
-                  overflow-x-hidden
-                "
-              >
-                <div className="min-w-full h-full">
-                  <div className="h-full flex flex-col">
-                    {/* Table Header - Fixed */}
-                    <div className="flex-shrink-0 sticky top-0 z-10">
-                      <table className="w-full table-fixed">
-                        <thead className="
-                          bg-gradient-to-r from-white/60 to-white/40
-                          dark:from-gray-800/60 dark:to-gray-900/40
-                          backdrop-blur-lg
+     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+  {loading && users.length === 0 ? (
+    <div className="
+      flex flex-col justify-center items-center py-8 sm:py-12
+      bg-gradient-to-br from-white/30 to-white/10
+      dark:from-gray-800/30 dark:to-gray-900/10
+      backdrop-blur-lg
+      rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
+      text-center
+      flex-1
+    ">
+      <div className="
+        animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
+        backdrop-blur-sm mb-2 sm:mb-3
+      "></div>
+      <span className="text-gray-600 dark:text-gray-300 text-sm">
+        Loading users...
+      </span>
+    </div>
+  ) : (
+    <>
+      {/* Users Table Container with Scroll */}
+      <div
+        ref={scrollContainerRef}
+        className="
+          overflow-hidden rounded-xl sm:rounded-2xl
+          bg-gradient-to-br from-white/40 to-white/20
+          dark:from-gray-800/40 dark:to-gray-900/20
+          backdrop-blur-xl
+          border border-white/40 dark:border-gray-700/40
+          shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+          dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+          flex-1
+          relative
+          overflow-y-auto
+          overflow-x-hidden
+        "
+      >
+        <div className="min-w-full h-full">
+          <div className="h-full flex flex-col">
+            {/* Table Header - Fixed */}
+            <div className="flex-shrink-0 sticky top-0 z-10">
+              <table className="w-full table-fixed">
+                <thead className="
+                  bg-gradient-to-r from-white/60 to-white/40
+                  dark:from-gray-800/60 dark:to-gray-900/40
+                  backdrop-blur-lg
+                ">
+                  <tr>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-12
+                    ">
+                      Sr.no
+                    </th>
+                    <th 
+                      className="
+                        px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                        text-gray-600 dark:text-gray-300
+                        uppercase tracking-wider cursor-pointer
+                        hover:bg-white/30 dark:hover:bg-gray-800/30
+                        transition-colors duration-300
+                        border-b border-white/30 dark:border-gray-700/30
+                        backdrop-blur-sm
+                        whitespace-nowrap
+                        w-1/5
+                      "
+                      onClick={toggleSortOrder}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Name</span>
+                        <span className="
+                          text-blue-600 dark:text-blue-400 text-xs
+                          bg-blue-100/50 dark:bg-blue-900/30
+                          rounded-full p-0.5
                         ">
-                          <tr>
-                            <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-12
-                            ">
-                              Sr.no
-                            </th>
-                            <th 
-                              className="
-                                px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                                text-gray-600 dark:text-gray-300
-                                uppercase tracking-wider cursor-pointer
-                                hover:bg-white/30 dark:hover:bg-gray-800/30
-                                transition-colors duration-300
-                                border-b border-white/30 dark:border-gray-700/30
-                                backdrop-blur-sm
-                                whitespace-nowrap
-                                w-1/5
-                              "
-                              onClick={toggleSortOrder}
-                            >
-                              <div className="flex items-center space-x-4">
-                                <span  className="ml-4">Name</span>
-                                <span className="
-                                  text-blue-600 dark:text-blue-400 text-xs
-                                  bg-blue-100/50 dark:bg-blue-900/30
-                                  rounded-full 
-                                ">
-                                  {sortOrder === "asc" ? "↑" : "↓"}
-                                </span>
-                              </div>
-                            </th>
-                            <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider hidden sm:table-cell
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-1/6
-                            ">
-                              Employee Code
-                            </th>
-                            <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider hidden lg:table-cell
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-1/4
-                            ">
-                              Email
-                            </th>
-                            <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-1/8
-                            ">
-                              Role
-                            </th>
-                            <th className="
-                              px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-1/6
-                            ">
-                             Allocated Area
-                            </th>
-                            <th className="
-                              px-3 sm:px-3 py-3 sm:py-3 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider hidden md:table-cell
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              w-1/6
-                            ">
-                              Department
-                            </th>
-                          </tr>
-                        </thead>
-                      </table>
-                    </div>
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      </div>
+                    </th>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider hidden sm:table-cell
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-1/6
+                    ">
+                      Employee Code
+                    </th>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider hidden lg:table-cell
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-1/4
+                    ">
+                      Email
+                    </th>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-1/8
+                    ">
+                      Role
+                    </th>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-1/6
+                    ">
+                     Allocated Area
+                    </th>
+                    <th className="
+                      px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-semibold
+                      text-gray-600 dark:text-gray-300
+                      uppercase tracking-wider hidden md:table-cell
+                      border-b border-white/30 dark:border-gray-700/30
+                      backdrop-blur-sm
+                      whitespace-nowrap
+                      w-1/6
+                    ">
+                      Department
+                    </th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
 
-                    {/* Table Body - Scrollable */}
-                    <div className="flex-1 overflow-y-auto">
-                      <table className="w-full table-fixed">
-                        <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
-                          {users.length > 0 ? (
-                            users.map((user, index) => {
-                              const userKey = getUserKey(user, index);
-                              return (
-                                <tr 
-                                  onClick={() => handleRowClick(user)}
-                                  key={userKey}
-                                  className="
-                                    hover:bg-white/30 dark:hover:bg-gray-800/30
-                                    transition-all duration-300
-                                    cursor-pointer
-                                    backdrop-blur-sm
-                                  "
-                                >
-                                  <td className="
-                                    px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
-                                    text-xs sm:text-sm text-gray-900 dark:text-gray-100
-                                  ">
-                                    {(currentPage - 1) * limit + index + 1}
-                                  </td>
-                                  <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                                   <div className="flex items-center min-w-0">
-  <div className="min-w-0 flex-1">
-  <div className="text-xs sm:text-sm md:text-base font-medium truncate leading-tight m-0 p-0 flex items-center capitalize">
-  {user.full_name ? (
-    <span className="flex items-center">
-      <span className="
-        inline-block
-        bg-gradient-to-r from-blue-600 to-purple-600
-        dark:from-blue-400 dark:to-purple-400
-        bg-clip-text text-transparent
-        font-bold
-      ">
-        {user.full_name.charAt(0)}
-      </span>
-      <span className="text-gray-900 dark:text-gray-100 ml-0">
-        {user.full_name.slice(1)}
-      </span>
-    </span>
-  ) : 'N/A'}
-</div>
-    <div 
-      className="text-xs text-gray-600 dark:text-gray-400 sm:hidden bg-white/30 dark:bg-gray-800/30 rounded px-1 py-0.5 truncate mt-0.5"
-      style={{ lineHeight: 1.2, margin: 0 }}
-    >
-      {user.employee_code || 'N/A'}
-    </div>
-    <div 
-      className="text-xs text-gray-600 dark:text-gray-400 lg:hidden truncate bg-white/30 dark:bg-gray-800/30 rounded px-1 py-0.5 mt-0.5"
-      style={{ lineHeight: 1.2, margin: 0 }}
-    >
-      {user.email || 'N/A'}
-    </div>
-  </div>
-</div>
-                                  </td>
-                                  <td className="
-                                    px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
-                                    text-xs sm:text-sm text-gray-900 dark:text-gray-100 hidden sm:table-cell
-                                  ">
-                                    <div className="
-                                      bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                      backdrop-blur-sm truncate
-                                    ">
-                                      {user.employee_code || 'N/A'}
-                                    </div>
-                                  </td>
-                                  <td className="
-                                    px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
-                                    text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell
-                                  ">
-                                    <div className="
-                                      truncate
-                                      bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                      backdrop-blur-sm
-                                    ">
-                                      {user.email || "N/A"}
-                                    </div>
-                                  </td>
-                                  <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                                    <span className="
-                                      inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
-                                      text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
-                                      text-blue-800 dark:text-blue-300 backdrop-blur-sm
-                                      truncate
-                                    ">
-                                      {user.role}
-                                    </span>
-                                  </td>
-                                  <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                                    <span className="
-                                      inline-flex items-center px-2 py-1 rounded-lg sm:rounded-xl
-                                      text-xs font-medium bg-green-100/50 dark:bg-green-900/30
-                                      text-green-800 dark:text-green-300 backdrop-blur-sm
-                                      truncate
-                                    ">
-                                      {user.allocatedArea || "N/A"}
-                                    </span>
-                                  </td>
-                                  <td className="
-                                    px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
-                                    text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell
-                                  ">
-                                    <div className="
-                                      truncate
-                                      bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                      backdrop-blur-sm
-                                    ">
-                                      {user.department || 'N/A'}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                            <tr>
-                              <td colSpan={7} className="
-                                px-2 sm:px-4 py-6 sm:py-8 md:py-12 text-center
-                                bg-gradient-to-br from-white/30 to-white/10
-                                dark:from-gray-800/30 dark:to-gray-900/10
-                              ">
+            {/* Table Body - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full table-fixed">
+                <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
+                  {users.length > 0 ? (
+                    users.map((user, index) => {
+                      const userKey = getUserKey(user, index);
+                      return (
+                        <tr 
+                          onClick={() => handleRowClick(user)}
+                          key={userKey}
+                          className="
+                            hover:bg-white/30 dark:hover:bg-gray-800/30
+                            transition-all duration-300
+                            cursor-pointer
+                            backdrop-blur-sm
+                          "
+                        >
+                          <td className="
+                         sm:px-3 py-2 sm:py-3 whitespace-nowrap
+                            text-xs sm:text-sm text-gray-900 dark:text-gray-100
+                          ">
+                            {(currentPage - 1) * limit + index + 1}
+                          </td>
+                          <td className=" py-2 sm:py-3 whitespace-nowrap">
+                            <div className="flex items-center mr-2">
+                              <div className="flex-shrink-0 ">
                                 <div className="
-                                  p-4 sm:p-6 rounded-xl sm:rounded-2xl
-                                  bg-gradient-to-br from-white/40 to-white/20
-                                  dark:from-gray-800/40 dark:to-gray-900/20
-                                  backdrop-blur-xl
-                                  border border-white/40 dark:border-gray-700/40
-                                  inline-block max-w-[90%] sm:max-w-none
+                                  h-8 w-8 rounded-lg
+                                  bg-gradient-to-r from-blue-500 to-black-900
+                                  dark:from-blue-400 dark:to-black-900
+                                  flex items-center justify-center text-white
+                                  text-sm font-bold
                                 ">
-                                  <div className="
-                                    w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4
-                                    bg-gradient-to-br from-gray-200/50 to-gray-300/30
-                                    dark:from-gray-700/50 dark:to-gray-800/30
-                                    backdrop-blur-sm
-                                    border border-gray-300/60 dark:border-gray-600/60
-                                    rounded-xl sm:rounded-2xl flex items-center justify-center
-                                  ">
-                                    <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                  </div>
-                                  <p className="
-                                    text-sm sm:text-base md:text-lg font-medium
-                                    bg-gradient-to-r from-blue-600 to-purple-600
-                                    dark:from-blue-400 dark:to-purple-400
-                                    bg-clip-text text-transparent
-                                  ">
-                                    No users found
-                                  </p>
-                                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    Try adjusting your search or filter criteria
-                                  </p>
+                                  {user.full_name?.charAt(0).toUpperCase() || user.name?.charAt(0).toUpperCase() || '?'}
                                 </div>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                      
-                      {/* Infinite scroll sentinel */}
-                      <div ref={sentinelRef} className="h-1"></div>
-                      
-                      {/* Loading more indicator */}
-                      {loadingMore && (
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                                  <span className="inline-flex items-center">
+                                    <span className="
+                                      bg-gradient-to-r from-blue-600 to-purple-600
+                                      dark:from-blue-400 dark:to-purple-400
+                                      bg-clip-text text-transparent
+                                      font-bold
+                                    ">
+                                      {user.full_name?.charAt(0) || user.name?.charAt(0) || ''}
+                                    </span>
+                                    <span className="text-gray-900 dark:text-gray-100 ml-0">
+                                      {user.full_name?.slice(1) || user.name?.slice(1) || 'N/A'}
+                                    </span>
+                                  </span>
+                                </div>
+                                <div className="
+                                  text-xs text-gray-600 dark:text-gray-400 sm:hidden
+                                  truncate leading-tight mt-0.5
+                                ">
+                                  {user.employee_code || 'N/A'}
+                                </div>
+                                <div className="
+                                  text-xs text-gray-600 dark:text-gray-400 lg:hidden
+                                  truncate leading-tight mt-0.5
+                                ">
+                                  {user.email || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="
+                            px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
+                            text-xs sm:text-sm text-gray-900 dark:text-gray-100 hidden sm:table-cell
+                          ">
+                            <div className="
+                              bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
+                              backdrop-blur-sm truncate
+                            ">
+                              {user.employee_code || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="
+                            px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
+                            text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell
+                          ">
+                            <div className="
+                              truncate
+                              bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
+                              backdrop-blur-sm
+                            ">
+                              {user.email || "N/A"}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                            <span className="
+                              inline-flex items-center px-2 py-1 rounded-lg
+                              text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
+                              text-blue-800 dark:text-blue-300 backdrop-blur-sm
+                              truncate
+                            ">
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                            <span className="
+                              inline-flex items-center px-2 py-1 rounded-lg
+                              text-xs font-medium bg-green-100/50 dark:bg-green-900/30
+                              text-green-800 dark:text-green-300 backdrop-blur-sm
+                              truncate
+                            ">
+                              {user.allocatedArea || "N/A"}
+                            </span>
+                          </td>
+                          <td className="
+                            px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap
+                            text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell
+                          ">
+                            <div className="
+                              truncate
+                              bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
+                              backdrop-blur-sm
+                            ">
+                              {user.department || 'N/A'}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="
+                        px-2 sm:px-4 py-6 sm:py-8 md:py-12 text-center
+                        bg-gradient-to-br from-white/30 to-white/10
+                        dark:from-gray-800/30 dark:to-gray-900/10
+                      ">
                         <div className="
-                          flex justify-center items-center py-4
-                          bg-gradient-to-br from-white/30 to-white/10
-                          dark:from-gray-800/30 dark:to-gray-900/10
-                          backdrop-blur-lg
-                          rounded-xl border border-white/40 dark:border-gray-700/40
-                          my-2 mx-4
+                          p-4 sm:p-6 rounded-xl sm:rounded-2xl
+                          bg-gradient-to-br from-white/40 to-white/20
+                          dark:from-gray-800/40 dark:to-gray-900/20
+                          backdrop-blur-xl
+                          border border-white/40 dark:border-gray-700/40
+                          inline-block max-w-[90%] sm:max-w-none
                         ">
                           <div className="
-                            animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500
-                            backdrop-blur-sm mr-2
-                          "></div>
-                          <span className="text-gray-600 dark:text-gray-300 text-xs">
-                            Loading more users...
-                          </span>
+                            w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4
+                            bg-gradient-to-br from-gray-200/50 to-gray-300/30
+                            dark:from-gray-700/50 dark:to-gray-800/30
+                            backdrop-blur-sm
+                            border border-gray-300/60 dark:border-gray-600/60
+                            rounded-xl sm:rounded-2xl flex items-center justify-center
+                          ">
+                            <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                          <p className="
+                            text-sm sm:text-base md:text-lg font-medium
+                            bg-gradient-to-r from-blue-600 to-purple-600
+                            dark:from-blue-400 dark:to-purple-400
+                            bg-clip-text text-transparent
+                          ">
+                            No users found
+                          </p>
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Try adjusting your search or filter criteria
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-1"></div>
+              
+              {/* Loading more indicator */}
+              {loadingMore && (
+                <div className="
+                  flex justify-center items-center py-4
+                  bg-gradient-to-br from-white/30 to-white/10
+                  dark:from-gray-800/30 dark:to-gray-900/10
+                  backdrop-blur-lg
+                  rounded-xl border border-white/40 dark:border-gray-700/40
+                  my-2 mx-4
+                ">
+                  <div className="
+                    animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500
+                    backdrop-blur-sm mr-2
+                  "></div>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Loading more users...
+                  </span>
                 </div>
-              </div>
-
-              {/* Pagination Controls */}
-              {renderPagination()}
-            </>
-          )}
+              )}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {renderPagination()}
+    </>
+  )}
+</div>
       </div>
 
       {/* User Details Modal */}

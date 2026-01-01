@@ -4,7 +4,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 import ChangePasswordModal from "../auth/ChangePasswordModal";
 import { useTranslation } from 'react-i18next';
-import { IoIosColorPalette } from "react-icons/io";
+// import { IoIosColorPalette } from "react-icons/io";
 
 export default function UserDropdown() {
   const { t } = useTranslation(); 
@@ -115,7 +115,7 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
 
-          <li>
+          {/* <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
@@ -125,7 +125,7 @@ export default function UserDropdown() {
               <IoIosColorPalette />
               {t("menu.themeCustomizer")}
             </DropdownItem>
-          </li>
+          </li> */}
           
           <li>
             <DropdownItem

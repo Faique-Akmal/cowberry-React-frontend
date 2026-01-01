@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useData } from "../../context/DataProvider";
 import API from "../../api/axios.ts";
 import * as XLSX from "xlsx"; 
@@ -65,6 +65,7 @@ const UserList: React.FC = () => {
   const { fetchUsers } = useData();
 
   const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]); // Store all fetched users
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,6 +106,72 @@ const UserList: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Filter users based on search term, role, and status
+  const filteredUsers = useMemo(() => {
+    if (!allUsers.length) return [];
+    
+    let filtered = [...allUsers];
+    
+    // Filter by search term (full_name OR employee_code)
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(user => 
+        (user.full_name?.toLowerCase().includes(searchLower) || 
+         user.name?.toLowerCase().includes(searchLower) ||
+         user.employee_code?.toLowerCase().includes(searchLower) ||
+         user.employee_code?.includes(searchTerm.trim()))
+      );
+    }
+    
+    // Filter by role
+    if (roleFilter !== "") {
+      filtered = filtered.filter(user => user.roleId === roleFilter);
+    }
+    
+    // Filter by status
+    if (statusFilter !== "") {
+      filtered = filtered.filter(user => {
+        if (statusFilter === "online") return user.is_checkin;
+        if (statusFilter === "offline") return !user.is_checkin;
+        return true;
+      });
+    }
+    
+    // Sort by name
+    filtered.sort((a, b) => {
+      const nameA = (a.full_name || a.name || "").toLowerCase();
+      const nameB = (b.full_name || b.name || "").toLowerCase();
+      
+      if (sortOrder === "asc") {
+        return nameA.localeCompare(nameB);
+      } else {
+        return nameB.localeCompare(nameA);
+      }
+    });
+    
+    return filtered;
+  }, [allUsers, searchTerm, roleFilter, statusFilter, sortOrder]);
+
+  // Calculate paginated users
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    return filteredUsers.slice(startIndex, endIndex);
+  }, [filteredUsers, currentPage, limit]);
+
+  // Update total pages when filtered users change
+  useEffect(() => {
+    const totalFiltered = filteredUsers.length;
+    setTotalUsers(totalFiltered);
+    setTotalPages(Math.ceil(totalFiltered / limit));
+    setHasMore(currentPage < Math.ceil(totalFiltered / limit));
+    
+    // Reset to page 1 if current page exceeds total pages
+    if (currentPage > Math.ceil(totalFiltered / limit)) {
+      setCurrentPage(1);
+    }
+  }, [filteredUsers, currentPage, limit]);
 
   // Fetch departments from API
   const fetchDepartments = useCallback(async () => {
@@ -185,33 +252,16 @@ const UserList: React.FC = () => {
     try {
       setExporting(true);
       
-      // First, fetch all users (not just current page)
-      const params: PaginationParams = {
-        page: 1,
-        limit: 10000, // Large number to get all users
-        sort_order: sortOrder
-      };
+      // Use filtered users for export
+      const usersToExport = filteredUsers;
       
-      if (searchTerm.trim()) {
-        params.search = searchTerm.trim();
-      }
-      if (roleFilter !== "") {
-        params.role = roleFilter;
-      }
-      if (statusFilter !== "") {
-        params.status = statusFilter;
-      }
-      
-      const res = await fetchUsers(params);
-      const allUsers = res.data || [];
-      
-      if (allUsers.length === 0) {
+      if (usersToExport.length === 0) {
         alert("No users to export");
         return;
       }
       
       // Prepare data for Excel
-      const excelData = allUsers.map((user: User, index: number) => ({
+      const excelData = usersToExport.map((user: User, index: number) => ({
         "Sr. No": index + 1,
         "Employee Code": user.employee_code || "N/A",
         "Full Name": user.full_name || user.name || "N/A",
@@ -242,7 +292,7 @@ const UserList: React.FC = () => {
       const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       
-      alert(`Exported ${allUsers.length} users to ${fileName}`);
+      alert(`Exported ${usersToExport.length} users to ${fileName}`);
       
     } catch (error) {
       console.error("Error exporting to Excel:", error);
@@ -258,68 +308,43 @@ const UserList: React.FC = () => {
     fetchRoles();
   }, [fetchDepartments, fetchRoles]);
 
-  // Fixed search implementation
-  const fetchPageUsers = useCallback(async (page: number = 1, isLoadMore: boolean = false) => {
-    if (loading || (isLoadMore && !hasMore)) return;
-    
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+  // Fetch all users once
+  const fetchAllUsers = useCallback(async () => {
+    setLoading(true);
     
     try {
       const params: PaginationParams = {
-        page,
-        limit,
+        page: 1,
+        limit: 1000, // Fetch all users at once
         sort_order: sortOrder
       };
       
-      // Fixed: Search by full_name
-      if (searchTerm.trim()) {
-        params.search = searchTerm.trim();
-      }
-      
-      // Fixed: Filter by role
-      if (roleFilter !== "") {
-        params.role = roleFilter;
-      }
-      
-      if (statusFilter !== "") {
-        params.status = statusFilter;
-      }
-      
-      console.log("Fetching users with params:", params); // Debug log
+      console.log("Fetching all users with params:", params);
       
       const res = await fetchUsers(params);
       
       const userData = res.data || [];
       const total = res.total || 0;
       
+      console.log(`Fetched ${userData.length} users out of ${total} total`);
+      
+      setAllUsers(userData);
       setTotalUsers(total);
-      setTotalPages(Math.ceil(total / limit));
-      setHasMore(page < Math.ceil(total / limit));
+      setCurrentPage(1); // Reset to first page
       
-      if (isLoadMore) {
-        setUsers(prev => [...prev, ...userData]);
-      } else {
-        setUsers(userData);
-        
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = 0;
-        }
-      }
-      
-      setCurrentPage(page);
     } catch (err) {
       console.error("❌ Failed to fetch users:", err);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [loading, hasMore, searchTerm, sortOrder, roleFilter, statusFilter, fetchUsers]);
+  }, [fetchUsers, sortOrder]);
 
-  // Handle edit button click - FIXED: Auto fetch details
+  // Initial fetch
+  useEffect(() => {
+    fetchAllUsers();
+  }, [fetchAllUsers]);
+
+  // Handle edit button click
   const handleEditClick = async (user: User) => {
     console.log("Editing user:", user);
     
@@ -543,8 +568,8 @@ const UserList: React.FC = () => {
         const updatedRole = roles.find(r => r.id === editForm.roleId);
         const updatedFullName = result.data.fullName || editForm.full_name;
         
-        // Update the user in the local state
-        setUsers(prev => prev.map(user => {
+        // Update the user in the allUsers state
+        setAllUsers(prev => prev.map(user => {
           const currentUserId = user.id || user.userId;
           if (currentUserId === userId) {
             return { 
@@ -639,7 +664,7 @@ const UserList: React.FC = () => {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && hasMore && !loadingMore) {
-          fetchPageUsers(currentPage + 1, true);
+          setCurrentPage(prev => prev + 1);
         }
       },
       {
@@ -657,32 +682,23 @@ const UserList: React.FC = () => {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [currentPage, hasMore, loadingMore, fetchPageUsers]);
+  }, [hasMore, loadingMore]);
 
-  // Fixed search debounce - Now searches by full_name
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      setCurrentPage(1);
-      setHasMore(true);
-      fetchPageUsers(1);
-    }, 500);
-    
-    return () => clearTimeout(debounce);
-  }, [searchTerm, sortOrder, roleFilter, statusFilter, fetchPageUsers]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchPageUsers(1);
-  }, [fetchPageUsers]);
-
-  // Fixed: Search by full_name
+  // Handle search change with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter]);
+
   const toggleSortOrder = () => {
     const newOrder = sortOrder === "asc" ? "desc" : "asc";
     setSortOrder(newOrder);
+    // Re-fetch users with new sort order
+    fetchAllUsers();
   };
 
   const clearFilters = () => {
@@ -720,7 +736,12 @@ const UserList: React.FC = () => {
 
   const handleGoToPage = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
-    fetchPageUsers(page);
+    setCurrentPage(page);
+    
+    // Scroll to top
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
   };
 
   const renderPagination = () => {
@@ -880,10 +901,10 @@ const UserList: React.FC = () => {
           flex-shrink-0
         ">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
-            {/* Search Input - Fixed to search by full_name */}
+            {/* Search Input - Search by full_name OR employee_code */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Search Users by Full Name
+                Search Users (Name or Employee Code)
               </label>
               <div className="relative">
                 <div className="
@@ -898,7 +919,7 @@ const UserList: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search by full name..."
+                  placeholder="Search by name or employee code..."
                   value={searchTerm}
                   onChange={handleSearchChange}
                   className="
@@ -1014,7 +1035,7 @@ const UserList: React.FC = () => {
               backdrop-blur-sm
               whitespace-nowrap
             ">
-              Showing {users.length} of {totalUsers} users • Page {currentPage} of {totalPages}
+              Showing {paginatedUsers.length} of {filteredUsers.length} filtered users • Page {currentPage} of {totalPages}
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1044,7 +1065,7 @@ const UserList: React.FC = () => {
               
               <button
                 onClick={exportToExcel}
-                disabled={exporting || users.length === 0}
+                disabled={exporting || filteredUsers.length === 0}
                 className="
                   px-3 py-1.5
                   bg-gradient-to-r from-green-500/80 to-green-600/80
@@ -1084,7 +1105,7 @@ const UserList: React.FC = () => {
 
         {/* Main content area with scroll - Increased Height */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {loading && users.length === 0 ? (
+          {loading && allUsers.length === 0 ? (
             <div className="
               flex flex-col justify-center items-center py-8 sm:py-12
               bg-gradient-to-br from-white/30 to-white/10
@@ -1143,7 +1164,7 @@ const UserList: React.FC = () => {
                         </div>
                         <div 
                           className="
-                            px-1 text-left text-xs font-semibold
+                            px-6 text-left text-xs font-semibold
                             text-gray-600 dark:text-gray-300
                             uppercase tracking-wider cursor-pointer
                             hover:bg-white/30 dark:hover:bg-gray-800/30
@@ -1209,8 +1230,8 @@ const UserList: React.FC = () => {
                     {/* Table Body - Scrollable with corrected spacing */}
                     <div className="flex-1 overflow-y-auto">
                       <div className="divide-y divide-white/20 dark:divide-gray-700/20">
-                        {users.length > 0 ? (
-                          users.map((user, index) => {
+                        {paginatedUsers.length > 0 ? (
+                          paginatedUsers.map((user, index) => {
                             const userKey = getUserKey(user, index);
                             return (
                               <div 

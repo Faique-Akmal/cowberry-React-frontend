@@ -199,18 +199,18 @@ layer(base);
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  body {
-    @apply relative font-normal font-outfit z-1 bg-repeat;
-
-    /* Apply fake opacity via semi-transparent gradient layer */
-    background-image: linear-gradient(
-        rgba(255, 255, 255, 0.5),
-        rgba(255, 255, 255, 0.5)
-      ),
-      url("/"), url("/");
-
-    background-size: cover, contain, cover;
-  }
+ body {
+  @apply relative font-normal font-outfit z-1;
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.2)
+    ),
+    url("/logo-cowberry.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover, 500px; 
+  background-attachment: fixed;
+}
 }
 
 @utility menu-item {

@@ -252,7 +252,7 @@ export default function UserInfoCard() {
       <div className="
         p-6
         rounded-2xl
-        bg-white/70 dark:bg-gray-900/70
+        bg-white/40 dark:bg-gray-900/70
         backdrop-blur-md
         border border-gray-200/80 dark:border-gray-700/80
         shadow-sm

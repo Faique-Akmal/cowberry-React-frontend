@@ -6,6 +6,7 @@ import { useData } from '../../context/DataProvider';
 
 interface User {
   userId: number;
+  full_name: string;
   name: string;
   employee_code: string;
   email: string;
@@ -342,7 +343,7 @@ const BirthdayCardList: React.FC = () => {
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold text-gray-800 dark:text-white truncate group-hover/card:text-transparent group-hover/card:bg-clip-text group-hover/card:bg-gradient-to-r group-hover/card:from-purple-600 group-hover/card:to-pink-600 transition-all duration-300">
-                        {user.name}
+                        {user.full_name}
                       </h3>
                       
                       <div className="flex flex-wrap gap-2 mt-2 mb-3">
@@ -387,20 +388,7 @@ const BirthdayCardList: React.FC = () => {
                           <span className="font-medium">{formattedDate}</span>
                         </span>
                         
-                        <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm"
-                          style={{
-                            background: isDarkMode 
-                              ? 'rgba(245, 158, 11, 0.2)' 
-                              : 'rgba(245, 158, 11, 0.1)',
-                            border: isDarkMode 
-                              ? '1px solid rgba(245, 158, 11, 0.3)' 
-                              : '1px solid rgba(245, 158, 11, 0.2)',
-                          }}
-                        >
-                          <span className="font-medium">
-                            {age} year{age !== 1 ? 's' : ''} old
-                          </span>
-                        </span>
+                        
                         
                         <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm truncate max-w-[120px]"
                           style={{

@@ -31,7 +31,7 @@ const fetchUsers = async (
     // Use the correct parameter name for search
     // From your screenshot, it seems to search by name
     if (search) {
-      params.name = search; // Changed from username to name
+      params.full_name = search; 
     }
     
     if (sort_order) {
@@ -152,10 +152,10 @@ const fetchMyTasks = async (force = false) => {
     <DataContext.Provider
       value={{
         users,
-        tasks,
-        attendance,
+       
+       
         locations,
-        myTasks,
+      
         fetchUsers,
         fetchTasks,
         fetchMyTasks,

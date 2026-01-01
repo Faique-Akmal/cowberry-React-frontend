@@ -789,8 +789,11 @@ export default function AttendanceList() {
               'Start Time': formatDateTime(group.startTime),
               'End Time': formatDateTime(group.endTime),
               'Total Sessions': group.totalSessions,
+              
               'Active Sessions': group.activeSessions,
               'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+              'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
+
               'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
               'Total Distance (km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
               'Total Farmers Met': totalFarmersMet,
@@ -868,6 +871,7 @@ export default function AttendanceList() {
         'Total Sessions',
         'Active Sessions',
         'Original Total Distance (km)',
+        'Original Total Reimbursement(km)',
         'First Session Distance (km)',
         'Total Distance (km)',
         'Total Farmers Met',
@@ -886,7 +890,7 @@ export default function AttendanceList() {
           `Session ${i} Start Time`,
           `Session ${i} End Time`,
           `Session ${i} Distance (km)`,
-          `Session ${i} Status`,
+         
           `Session ${i} Farmers Count`,
           `Session ${i} Farmer Descriptions`,
           `Session ${i} Farmer Image URLs`,

@@ -293,7 +293,7 @@ export default function SignInForm() {
           />
         </div>
         <div className="flex items-center justify-center w-full h-10 ">
-          <h1 className="text-2xl font-bold">{t("Welcome to Lantern ")} <span className="text-xs text-black">365</span> </h1>
+          <h1 className="text-2xl font-bold">{t("Welcome to Lantern ")} <sub className="text-xs text-black">365</sub> </h1>
           <br></br>
         </div>
         

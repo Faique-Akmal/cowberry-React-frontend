@@ -327,10 +327,10 @@ export default function RegisterUserForm() {
   }
 
   return (
-   <div className="w-full max-w-3xl mx-auto px-4 py-8">
+   <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg">
    <PageMeta title="Employee Registration" description="Register a new employee" />
   {/* Header */}
-  <div className="text-center mb-10">
+  <div className="text-center mb-10  border-2xl white">
     <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800 dark:text-gray-200">
       User Registration
     </h2>

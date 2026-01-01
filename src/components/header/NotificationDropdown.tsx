@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Link } from "react-router";
+// import { Link } from "react-router";
 import AnnouncementModal from "./AnnouncementModal";
 import axios from 'axios';
 import API from "../../api/axios";
@@ -89,69 +89,14 @@ export default function NotificationDropdown() {
       }
       
       // For demo purposes, set some mock data
-      setAnnouncements(getMockAnnouncements());
+      setAnnouncements();
     } finally {
       setLoading(false);
     }
   };
 
   // Mock data for demo purposes
-  const getMockAnnouncements = (): Announcement[] => [
-    {
-      id: 1,
-      title: "System Maintenance",
-      description: "Planned maintenance this weekend",
-      content: "Dear all, we will be performing system maintenance on Saturday from 10 PM to Sunday 2 AM. The system will be unavailable during this period. Please save all your work before the maintenance window.",
-      isActive: true,
-      priority: "high",
-      category: "maintenance",
-      startDate: "2024-12-15T22:00:00.000Z",
-      endDate: "2024-12-18T02:00:00.000Z",
-      createdAt: "2025-12-15T09:04:39.016Z",
-      updatedAt: "2025-12-15T09:04:39.016Z",
-      createdBy: {
-        id: 1,
-        username: "Parthiv",
-        email: "parthiv@gmail.com"
-      }
-    },
-    {
-      id: 2,
-      title: "New Feature Release",
-      description: "Dashboard analytics update",
-      content: "We're excited to announce the release of enhanced dashboard analytics features. You can now track real-time metrics and generate custom reports. Check out our documentation for more details.",
-      isActive: true,
-      priority: "medium",
-      category: "update",
-      startDate: "2024-12-14T00:00:00.000Z",
-      endDate: "2024-12-31T23:59:59.000Z",
-      createdAt: "2025-12-14T10:30:00.000Z",
-      updatedAt: "2025-12-14T10:30:00.000Z",
-      createdBy: {
-        id: 1,
-        username: "Admin",
-        email: "admin@example.com"
-      }
-    },
-    {
-      id: 3,
-      title: "Holiday Schedule",
-      description: "Office closure dates",
-      content: "Please note that our offices will be closed from December 24th to December 26th for the holiday season. Support will be available on limited hours during this period.",
-      isActive: true,
-      priority: "low",
-      category: "general",
-      startDate: "2024-12-24T00:00:00.000Z",
-      endDate: "2024-12-26T23:59:59.000Z",
-      createdAt: "2025-12-13T15:45:00.000Z",
-      updatedAt: "2025-12-13T15:45:00.000Z",
-      createdBy: {
-        id: 2,
-        username: "HR",
-        email: "hr@example.com"
-      }
-    }
-  ];
+ 
 
   function toggleDropdown() {
     setIsOpen(!isOpen);

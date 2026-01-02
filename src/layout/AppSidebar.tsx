@@ -67,8 +67,8 @@ const AppSidebar: React.FC = () => {
     icon: <GridIcon />,
     name: t("menu.dashboard"),
     subItems: [
-      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ,"employee"] },
-      { name: t("menu.employeeDashboard"), path: "/employee-dashboard", role: ["employee"] }
+      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ] },
+      
     ],
   },
   {
@@ -81,8 +81,7 @@ const AppSidebar: React.FC = () => {
         "ZonalManager",
         "manager",
         "HR",
-        "employee",
-        "Fieldemployee",
+       
       ],
     },
   {
@@ -101,7 +100,7 @@ const AppSidebar: React.FC = () => {
     icon: <UserCircleIcon />,
     name: t("menu.EmployeeCheckin"),
     path: "/employeecheckin",
-    role: ["admin","ZonalManager","Manager","HR"],
+    role: ["admin","Manager","HR"],
   },
  
   
@@ -109,26 +108,26 @@ const AppSidebar: React.FC = () => {
     icon: <MdListAlt />,
     name: t("menu.TravelSessions"),
     path: "/attandance-start-admin",
-    role: ["admin","ZonalManager","Manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR"],
   },
   {
     icon: <MdAppRegistration />,
     name: t("menu.registerUserForm"),
     path: "/user-register",
-    role: ["admin","ZonalManager","Manager","HR","executive"],
+    role: ["admin","HR"],
   },
   
   {
     icon: <FaTasks />,
     name: t("menu.announcement"),
     path: "/announcementList",
-    role: ["admin","ZonalManager","Manager","HR","executive"],
+    role: ["admin","Manager","HR"],
   },
   {
     icon: <PiUsersThreeBold />,
     name: t("menu.allUsers"),
     path: "/all-users",
-    role: ["admin","ZonalManager","Manager","HR","executive"],
+    role: ["admin","ZonalManager","Manager","HR"],
   },
  
  

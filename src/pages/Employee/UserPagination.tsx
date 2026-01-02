@@ -19,7 +19,7 @@ interface User {
   date: string;
   is_online: boolean;
   allocatedArea: string;
-  mobileNo?: string;
+  mobileNo: string;
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
@@ -388,7 +388,7 @@ const UserList: React.FC = () => {
         // Populate edit form with fetched user data
         setEditForm({
           full_name: userDetails.full_name || userDetails.name || user.full_name || "",
-          username: userDetails.username || user.username || "",
+          username: userDetails.username || user.username || user.name ||  "",
           email: userDetails.email || user.email || "",
           mobileNo: userDetails.mobileNo || user.mobileNo || "",
           address: userDetails.address || user.address || "",
@@ -411,7 +411,7 @@ const UserList: React.FC = () => {
         
         setEditForm({
           full_name: user.full_name || "",
-          username: user.username || "",
+          username: user.username ||user.name || "",
           email: user.email || "",
           mobileNo: user.mobileNo || "",
           address: user.address || "",
@@ -436,7 +436,7 @@ const UserList: React.FC = () => {
       
       setEditForm({
         full_name: user.full_name || "",
-        username: user.username || "",
+        username: user.username || user.name || "",
         email: user.email || "",
         mobileNo: user.mobileNo || "",
         address: user.address || "",

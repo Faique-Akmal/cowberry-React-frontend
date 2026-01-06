@@ -1101,37 +1101,37 @@ const UserList: React.FC = () => {
   const renderUserRoleInfo = () => {
     if (!currentUser) return null;
     
-    return (
-      <div className="
-        mb-3 p-2 rounded-lg
-        bg-gradient-to-r from-blue-50 to-blue-100
-        dark:from-blue-900/20 dark:to-blue-800/20
-        border border-blue-200 dark:border-blue-700/30
-        text-sm
-      ">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="font-medium text-blue-700 dark:text-blue-300">
-              Logged in as:
-            </span>
-            <span className="ml-2 px-2 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-bold">
-              {currentUser.role}
-            </span>
-          </div>
-          <div className="text-xs text-blue-600 dark:text-blue-400">
-            {currentUser.role === "HR" && "Viewing all users"}
-            {currentUser.role === "Manager" && `Viewing ${currentUser.departmentName || currentUser.department || "your"} department`}
-            {currentUser.role === "ZonalManager" && `Viewing ${currentUser.allocatedArea || "your"} zone`}
-          </div>
-        </div>
-        {/* Debug info */}
-        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-          <div>User ID: {currentUser.id}</div>
-          <div>Department: {currentUser.departmentName || currentUser.department || "Not set"}</div>
-          <div>Zone: {currentUser.allocatedArea || "Not set"}</div>
-        </div>
-      </div>
-    );
+    // return (
+    //   <div className="
+    //     mb-3 p-2 rounded-lg
+    //     bg-gradient-to-r from-blue-50 to-blue-100
+    //     dark:from-blue-900/20 dark:to-blue-800/20
+    //     border border-blue-200 dark:border-blue-700/30
+    //     text-sm
+    //   ">
+    //     <div className="flex items-center justify-between">
+    //       <div className="flex items-center">
+    //         <span className="font-medium text-blue-700 dark:text-blue-300">
+    //           Logged in as:
+    //         </span>
+    //         <span className="ml-2 px-2 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-bold">
+    //           {currentUser.role}
+    //         </span>
+    //       </div>
+    //       <div className="text-xs text-blue-600 dark:text-blue-400">
+    //         {currentUser.role === "HR" && "Viewing all users"}
+    //         {currentUser.role === "Manager" && `Viewing ${currentUser.departmentName || currentUser.department || "your"} department`}
+    //         {currentUser.role === "ZonalManager" && `Viewing ${currentUser.allocatedArea || "your"} zone`}
+    //       </div>
+    //     </div>
+      
+    //     <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+    //       <div>User ID: {currentUser.id}</div>
+    //       <div>Department: {currentUser.departmentName || currentUser.department || "Not set"}</div>
+    //       <div>Zone: {currentUser.allocatedArea || "Not set"}</div>
+    //     </div>
+    //   </div>
+    // );
   };
 
   // Show loading for current user

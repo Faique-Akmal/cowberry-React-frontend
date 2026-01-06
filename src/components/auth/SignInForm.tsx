@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
@@ -57,7 +57,7 @@ const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; o
 export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
-
+  
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -65,6 +65,7 @@ export default function SignInForm() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showFieldEmployeeModal, setShowFieldEmployeeModal] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const navigate = useNavigate();
 
@@ -73,6 +74,11 @@ export default function SignInForm() {
 
   const openForgotModal = () => setIsForgotModalOpen(true);
   const closeForgotModal = () => setIsForgotModalOpen(false);
+
+  useEffect(() => {
+    // Trigger animation after component mounts
+    setIsMounted(true);
+  }, []);
 
   // Function to check if user is a field employee
   const isFieldEmployee = (role: string): boolean => {
@@ -286,116 +292,288 @@ export default function SignInForm() {
   return (
     <>
       <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg p-6">
-        <div className="w-50 h-50 mx-auto mb-8 mt-1">
-          <img
-            src="cowberry_organics_1.png"
-            alt="cowberry-logo"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-          />
-        </div>
-        <div className="flex items-center justify-center w-full h-10 ">
-          <h1 className="text-2xl font-bold">{t("Welcome to Lantern ")} <sub className="text-xs text-black">360</sub> </h1>
-          <br></br>
-        </div>
-        
-        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-          <form onSubmit={handleLogin}>
-            <div className="space-y-6">
-              <div className="capitalize">
-                <Label>
-                  {t("email")} <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder={t("Enter your email")}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="email"
-                  type="email"
-                />
-              </div>
-
-              <div className="capitalize">
-                <Label>
-                  {t("register.Password")} <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
+        {/* Main animated container with dropping effect */}
+        <div 
+          className={`
+            transition-all duration-700 ease-out
+            ${isMounted 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 -translate-y-8'
+            }
+          `}
+        >
+          {/* Logo with bounce animation */}
+          <div className="w-50 h-50 mx-auto mb-2 mt-1">
+            <img
+              src="cowberry_organics_1.png"
+              alt="cowberry-logo"
+              className={`
+                inline-flex items-center text-sm text-gray-500 hover:text-gray-700
+                transition-all duration-800 ease-out
+                ${isMounted 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 -translate-y-10'
+                }
+                hover:scale-105 transition-transform duration-300
+              `}
+              style={{
+                animation: isMounted ? 'logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+              }}
+            />
+          </div>
+          
+          {/* Welcome text with enhanced dropping effect */}
+          <div className="flex items-center justify-center w-full h-10 mb-8">
+            <h1 
+              className={`
+                text-2xl font-bold relative
+                transition-all duration-900 ease-out
+                ${isMounted 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 -translate-y-12'
+                }
+              `}
+              style={{
+                animation: isMounted ? 'welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+              }}
+            >
+              {t("Welcome to Lantern ")} 
+              <sub 
+                className={`
+                  text-xs text-black dark:text-white
+                  transition-all duration-1000 ease-out
+                  ${isMounted 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 -translate-y-6'
+                  }
+                `}
+                style={{
+                  animationDelay: isMounted ? '0.2s' : '0s'
+                }}
+              >
+                360
+              </sub>
+            </h1>
+          </div>
+          
+          {/* Form container with staggered animation */}
+          <div 
+            className={`
+              flex flex-col justify-center flex-1 w-full max-w-md mx-auto
+              transition-all duration-700 ease-out
+              ${isMounted 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-6'
+              }
+            `}
+            style={{
+              animationDelay: isMounted ? '0.3s' : '0s'
+            }}
+          >
+            <form onSubmit={handleLogin}>
+              <div className="space-y-6">
+                {/* Email Input with animation */}
+                <div 
+                  className="capitalize space-y-2"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.4s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Label>
+                    {t("email")} <span className="text-red-500">*</span>
+                  </Label>
                   <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder={t("register.Enter your password")}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t("Enter your email")}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                    autoComplete="current-password"
+                    autoComplete="email"
+                    type="email"
+                    className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
                   />
-                  <span
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                </div>
+
+                {/* Password Input with animation */}
+                <div 
+                  className="capitalize space-y-2"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.5s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Label>
+                    {t("register.Password")} <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t("register.Enter your password")}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      autoComplete="current-password"
+                      className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2 hover:scale-110 transition-transform duration-300"
+                    >
+                      {showPassword ? (
+                        <EyeIcon className="size-5 fill-gray-500" />
+                      ) : (
+                        <EyeCloseIcon className="size-5 fill-gray-500" />
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Checkbox and Forgot Password with animation */}
+                <div 
+                  className="flex items-center justify-between"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.6s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      checked={isChecked} 
+                      onChange={setIsChecked}
+                      className="hover:scale-110 transition-transform duration-300"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {t("Keep me logged in")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openForgotModal}
+                    className="text-sm text-brand-500 hover:underline hover:scale-105 transition-all duration-300"
+                    disabled={isLoading}
                   >
-                    {showPassword ? (
-                      <EyeIcon className="size-5 fill-gray-500" />
-                    ) : (
-                      <EyeCloseIcon className="size-5 fill-gray-500" />
-                    )}
-                  </span>
+                    {t("Forgot Password?")}
+                  </button>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Checkbox checked={isChecked} onChange={setIsChecked} />
-                  <span className="text-sm text-gray-700">
-                    {t("Keep me logged in")}
-                  </span>
+                {/* Submit Button with animation */}
+                <div
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.7s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Button
+                    type="submit"
+                    className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
+                    size="sm"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? t("button.Signing in...") : t("button.Sign in")}
+                  </Button>
                 </div>
-                <button
-                  type="button"
-                  onClick={openForgotModal}
-                  className="text-sm text-brand-500 hover:underline"
-                  disabled={isLoading}
-                >
-                  {t("Forgot Password?")}
-                </button>
-              </div>
 
-              <div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="sm"
-                  disabled={isLoading}
-                >
-                  {isLoading ? t("button.Signing in...") : t("button.Sign in")}
-                </Button>
-              </div>
-
-              {message && (
-                <p
-                  className={`text-sm text-center font-medium ${
-                    message.toLowerCase().includes("success")
-                      ? "text-green-500"
-                      : "text-red-500"
-                  }`}
-                >
-                  {message}
-                </p>
-              )}
-
-              {/* Field Employee Notice */}
-              {/* <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    <span className="font-semibold">Note for Field Employees:</span> If you're a field employee, please use the mobile app to login. Web portal access is restricted for field roles.
+                {/* Message animation */}
+                {message && (
+                  <p
+                    className={`text-sm text-center font-medium transition-all duration-500 animate-pulse-once ${
+                      message.toLowerCase().includes("success")
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                    style={{
+                      animation: 'messageFadeIn 0.5s ease-out'
+                    }}
+                  >
+                    {message}
                   </p>
-                </div>
-              </div> */}
-            </div>
-          </form>
+                )}
+              </div>
+            </form>
+          </div>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes logoDrop {
+          0% {
+            opacity: 0;
+            transform: translateY(-40px) scale(0.9);
+          }
+          60% {
+            opacity: 1;
+            transform: translateY(10px) scale(1.05);
+          }
+          80% {
+            transform: translateY(-2px) scale(1.02);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes welcomeDrop {
+          0% {
+            opacity: 0;
+            transform: translateY(-60px) scale(0.85) rotateX(-90deg);
+            text-shadow: 0 10px 20px rgba(0,0,0,0.3);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(15px) scale(1.08) rotateX(10deg);
+            text-shadow: 0 15px 30px rgba(0,0,0,0.4);
+          }
+          70% {
+            transform: translateY(-5px) scale(1.03) rotateX(-5deg);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotateX(0);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+        }
+        
+        @keyframes formElementDrop {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes messageFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-pulse-once {
+          animation: pulse 2s ease-in-out;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+      `}</style>
 
       {/* Modals */}
       <ForgotPasswordModal

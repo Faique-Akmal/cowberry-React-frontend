@@ -28,16 +28,16 @@ import Logout from "./pages/AuthPages/Logout";
 // import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 
-import TaskShowPage from "./pages/Employee/EmployeeTask";
+
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 // import AttendanceForm from "./pages/Employee/AttandanceStart";
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import ProtectedRoute from "./components/ProtectedRoutes";
-import TaskCalendar from "./pages/Employee/TaskCalendar";
-import EmployeeDashboard from "./pages/Dashboard/EmployeeDashboard";
 
-import AdminTaskManager from "./pages/Employee/TaskManager";
+
+
+
 
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
@@ -45,7 +45,7 @@ import AttendanceList from "./pages/Employee/locationFetcherEmployee";
 // import AnnouncementForm from "./pages/Announcement";
 
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
-import AttendanceStart from "./pages/Employee/AttandanceStart";
+
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";
@@ -93,7 +93,7 @@ export default function App() {
 
           {/* Employee Pages */}
 
-          <Route path="/attandanceStart-page" element={<AttendanceStart />} />
+     
           {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
           <Route
             path="/attandanceEnd-page"
@@ -104,32 +104,9 @@ export default function App() {
               </AttendanceGuard>
             }
           ></Route>
-          <Route
-            path="/task-show-page"
-            element={
-              <AttendanceGuard>
-                {" "}
-                <TaskShowPage />{" "}
-              </AttendanceGuard>
-            }
-          ></Route>
-          <Route
-            path="/task-calendar"
-            element={
-              <AttendanceGuard>
-                <TaskCalendar />
-              </AttendanceGuard>
-            }
-          ></Route>
-          <Route
-            path="/employee-dashboard"
-            element={
-              <AttendanceGuard>
-                {" "}
-                <EmployeeDashboard />{" "}
-              </AttendanceGuard>
-            }
-          ></Route>
+         
+          
+        
           <Route
             path="/user-register"
             element={
@@ -161,8 +138,8 @@ export default function App() {
           {/* Tables */}
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/assign-task-page" element={<TaskPage />} />
-          <Route path="/admin-task-manager" element={<AdminTaskManager />} />
-          <Route path="/attandance-start-admin" element={<AttendanceList />} />
+        
+          <Route path="/tracking-admin" element={<AttendanceList />} />
           <Route path="/announcement" element={<AnnouncementModal />} />
           <Route path="/announcementList" element={<CreateAnnouncement />} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}

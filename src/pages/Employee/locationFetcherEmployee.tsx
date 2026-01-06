@@ -994,10 +994,11 @@ export default function AttendanceList() {
               'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
               'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
               'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
-              'Total Distance (km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+              'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+              'Payable Amount (₹)': reimbursementAmount,
               'Total Farmers Met': totalFarmersMet,
               'Duration (minutes)': totalDuration,
-              'Reimbursement Amount (₹)': reimbursementAmount,
+              
               'Total Pauses Count': totalPauses,
               'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
               'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
@@ -1068,10 +1069,11 @@ export default function AttendanceList() {
         'Original Total Distance (km)',
         'Original Total Reimbursement(km)',
         'First Session Distance (km)',
-        'Total Distance (km)',
+        'Payable Distance excluding first session(km)',
+        'Payable Amount (₹)',
         'Total Farmers Met',
         'Duration (minutes)',
-        'Reimbursement Amount (₹)',
+        
         'Total Pauses Count',
         'Status',
         'Notes'

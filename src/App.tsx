@@ -162,7 +162,7 @@ export default function App() {
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/assign-task-page" element={<TaskPage />} />
           <Route path="/admin-task-manager" element={<AdminTaskManager />} />
-          <Route path="/attandance-start-admin" element={<AttendanceList />} />
+          <Route path="/tracking-admin" element={<AttendanceList />} />
           <Route path="/announcement" element={<AnnouncementModal />} />
           <Route path="/announcementList" element={<CreateAnnouncement />} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}

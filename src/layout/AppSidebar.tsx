@@ -107,7 +107,7 @@ const AppSidebar: React.FC = () => {
   {
     icon: <MdListAlt />,
     name: t("menu.TravelSessions"),
-    path: "/attandance-start-admin",
+    path: "/tracking-admin",
     role: ["admin","ZonalManager","Manager","HR"],
   },
   {

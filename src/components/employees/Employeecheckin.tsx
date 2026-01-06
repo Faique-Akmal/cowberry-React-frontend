@@ -353,7 +353,7 @@ const EmployeeCheckin = () => {
 </div>
 
   {/* Filters Section with Glassmorphism - Improved responsiveness */}
- <div className="
+<div className="
   bg-gradient-to-br from-white/40 to-white/20
   dark:from-gray-800/40 dark:to-gray-900/20
   backdrop-blur-xl
@@ -362,7 +362,7 @@ const EmployeeCheckin = () => {
   shadow-[0_8px_32px_rgba(31,38,135,0.1)]
   dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
   mb-6
-  overflow-hidden
+  // REMOVED: overflow-hidden
 ">
   {/* Header */}
   <div className="flex items-center justify-between mb-3">
@@ -455,14 +455,16 @@ const EmployeeCheckin = () => {
       </div>
     </div>
 
-    {/* Date Range Picker */}
-    <div className="flex-1 min-w-0">
+    {/* Date Range Picker - FIXED VERSION */}
+    <div className="flex-1 min-w-0 relative">
       <div className="relative">
         <div className="
-          absolute left-2.5 top-1/2 transform -translate-y-1/2 z-10
+          absolute left-2.5 top-1/2 transform -translate-y-1/2
           p-1 rounded-md
           bg-white/50 dark:bg-gray-700/50
           backdrop-blur-sm
+          z-30
+          pointer-events-none
         ">
           <Calendar className="w-3.5 h-3.5 text-gray-500" />
         </div>
@@ -485,7 +487,31 @@ const EmployeeCheckin = () => {
             focus:outline-none
             transition-all duration-300
             text-sm
+            relative
+            z-20
           "
+          // Use portal to render outside the container
+          withPortal
+          portalId="datepicker-portal"
+          popperClassName="z-[9999]"
+          calendarClassName="z-[9999]"
+          // Adjust calendar position
+          popperPlacement="bottom-start"
+          popperModifiers={[
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 10],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                boundary: 'viewport',
+                padding: 10,
+              },
+            },
+          ]}
         />
       </div>
     </div>
@@ -538,7 +564,7 @@ const EmployeeCheckin = () => {
             rounded text-xs
             truncate max-w-[120px]
           ">
-            <span className="truncate">📅 {formatDate(startDate)}</span>
+            <span className="truncate">📅 {formatDate(startDate.toISOString())}</span>
             <button
               onClick={() => setDateRange([null, endDate])}
               className="
@@ -562,7 +588,7 @@ const EmployeeCheckin = () => {
             rounded text-xs
             truncate max-w-[100px]
           ">
-            <span className="truncate">→ {formatDate(endDate)}</span>
+            <span className="truncate">→ {formatDate(endDate.toISOString())}</span>
             <button
               onClick={() => setDateRange([startDate, null])}
               className="

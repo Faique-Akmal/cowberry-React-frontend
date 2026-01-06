@@ -32,12 +32,21 @@ import {
   FaListAlt,
   FaLayerGroup,
   FaChartLine,
+  FaFilter,
+  FaSatellite,
+  FaStreetView,
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import ImageZoom from "../../components/ImageZoom";
 
-L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
+// Fix Leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: iconRetinaUrl,
+  iconUrl: iconUrl,
+  shadowUrl: shadowUrl
+});
 
 // Interface for Travel Sessions API response
 interface TravelSession {
@@ -174,6 +183,7 @@ export default function AttendanceList() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
@@ -194,6 +204,34 @@ export default function AttendanceList() {
   const [showLogMarkers, setShowLogMarkers] = useState(true);
   const [showLogMarkersMulti, setShowLogMarkersMulti] = useState(true);
   
+  // Custom icons for markers
+  const customIcons = {
+    startIcon: new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    }),
+    endIcon: new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    }),
+    activeIcon: new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    })
+  };
+
   // Format date without time (YYYY-MM-DD)
   const formatDateOnly = useCallback((dateTimeStr: string): string => {
     if (!dateTimeStr) return "";
@@ -234,11 +272,18 @@ export default function AttendanceList() {
     };
   }, []);
   
-  // Group sessions by user and date
+  // Group sessions by user and date with correct sorting
   const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
     const groupedMap = new Map<string, GroupedSession>();
     
-    sessions.forEach(session => {
+    // First sort sessions by date (newest first)
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const dateA = new Date(a.startTime);
+      const dateB = new Date(b.startTime);
+      return dateB.getTime() - dateA.getTime(); // Newest first
+    });
+    
+    sortedSessions.forEach(session => {
       const dateKey = formatDateOnly(session.startTime);
       const groupKey = `${session.userId}-${dateKey}`;
       
@@ -260,14 +305,21 @@ export default function AttendanceList() {
         });
       } else {
         const existingGroup = groupedMap.get(groupKey)!;
-        existingGroup.sessions.push(session);
+        
+        // Add session to the group while maintaining chronological order
+        const insertIndex = existingGroup.sessions.findIndex(s => 
+          new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
+        );
+        
+        if (insertIndex === -1) {
+          existingGroup.sessions.push(session);
+        } else {
+          existingGroup.sessions.splice(insertIndex, 0, session);
+        }
+        
         existingGroup.totalSessions += 1;
         existingGroup.activeSessions += session.endTime ? 0 : 1;
         existingGroup.totalPoints += session.logs?.length || 0;
-        
-        existingGroup.sessions.sort((a, b) => 
-          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-        );
         
         if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
           existingGroup.startTime = session.startTime;
@@ -280,8 +332,8 @@ export default function AttendanceList() {
       }
     });
     
-    // Calculate adjusted distances for each group
-    return Array.from(groupedMap.values()).map(group => {
+    // Calculate adjusted distances for each group and sort groups
+    const groups = Array.from(groupedMap.values()).map(group => {
       const distanceData = calculateAdjustedGroupDistance(group.sessions);
       
       return {
@@ -290,7 +342,10 @@ export default function AttendanceList() {
         firstSessionDistance: distanceData.firstSessionDistance,
         originalTotalDistance: distanceData.originalTotalDistance
       };
-    }).sort((a, b) => {
+    });
+    
+    // Sort groups by date (newest first), then by user ID
+    return groups.sort((a, b) => {
       const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateCompare !== 0) return dateCompare;
       return b.userId - a.userId;
@@ -315,12 +370,18 @@ export default function AttendanceList() {
     fetchTravelSessions();
   }, []);
   
+  // Auto-refresh logic
   useEffect(() => {
-    // Auto-refresh should work regardless of map view
     if (autoRefresh) {
+      const refreshInterval = activeSessionsOnly ? 10000 : 30000; // 10s for active, 30s for all
+      
       locationIntervalRef.current = setInterval(() => {
-        fetchTravelSessions();
-      }, 30000); // Refresh every 30 seconds (adjust as needed)
+        if (activeSessionsOnly) {
+          fetchActiveSessionsOnly();
+        } else {
+          fetchTravelSessions();
+        }
+      }, refreshInterval);
     }
     
     return () => {
@@ -329,8 +390,9 @@ export default function AttendanceList() {
         locationIntervalRef.current = null;
       }
     };
-  }, [autoRefresh]); 
+  }, [autoRefresh, activeSessionsOnly]);
   
+  // Fetch all travel sessions
   const fetchTravelSessions = async () => {
     setIsLoading(true);
     try {
@@ -354,7 +416,7 @@ export default function AttendanceList() {
           const key = `${session.userId}-${session.sessionId}`;
           newCache[key] = session;
         });
-        setSessionsMap(prev => ({ ...prev, ...newCache }));
+        setSessionsMap(newCache);
         
         const filtered = filterSessions(sessions);
         const grouped = groupSessionsByUserAndDate(filtered);
@@ -366,6 +428,66 @@ export default function AttendanceList() {
       console.error("Failed to fetch travel sessions", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Fetch only active sessions
+  const fetchActiveSessionsOnly = async () => {
+    try {
+      const res = await API.get("/admin/travel-sessions");
+      if (res.data.success) {
+        const allSessions = res.data.data || [];
+        
+        // Update only active sessions
+        setTravelSessions(prevSessions => {
+          const updatedSessions = [...prevSessions];
+          const activeSessionMap = new Map<number, TravelSession>();
+          
+          // Create map of active sessions from new data
+          allSessions.forEach((session: TravelSession) => {
+            if (!session.endTime) {
+              activeSessionMap.set(session.sessionId, session);
+            }
+          });
+          
+          // Update existing active sessions
+          updatedSessions.forEach((session, index) => {
+            if (!session.endTime && activeSessionMap.has(session.sessionId)) {
+              updatedSessions[index] = activeSessionMap.get(session.sessionId)!;
+              activeSessionMap.delete(session.sessionId);
+            }
+          });
+          
+          // Add new active sessions
+          activeSessionMap.forEach(session => {
+            updatedSessions.push(session);
+          });
+          
+          // Sort with newest dates first
+          return updatedSessions.sort((a, b) => {
+            const dateA = new Date(a.startTime);
+            const dateB = new Date(b.startTime);
+            return dateB.getTime() - dateA.getTime();
+          });
+        });
+        
+        // Update sessions map
+        allSessions.forEach((session: TravelSession) => {
+          if (!session.endTime) {
+            const key = `${session.userId}-${session.sessionId}`;
+            setSessionsMap(prev => ({ ...prev, [key]: session }));
+          }
+        });
+        
+        // Update grouped view
+        const filtered = filterSessions(travelSessions);
+        const grouped = groupSessionsByUserAndDate(filtered);
+        setGroupedView(grouped);
+        
+        setLastUpdateTime(new Date());
+      }
+    } catch (err) {
+      console.error("Failed to fetch active sessions", err);
     }
   };
   
@@ -471,15 +593,33 @@ export default function AttendanceList() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }, []);
   
+  // Improved coordinate parsing
   const parseCoordinate = useCallback((coord: string | number): number => {
-    if (typeof coord === "number") return coord;
-    const parsed = parseFloat(String(coord));
+    if (coord === null || coord === undefined) return 0;
+    
+    if (typeof coord === "number") {
+      return Math.abs(coord) > 180 ? 0 : coord;
+    }
+    
+    const str = String(coord).trim();
+    if (!str) return 0;
+    
+    // Remove any non-numeric characters except decimal point and minus sign
+    const cleaned = str.replace(/[^\d.-]/g, '');
+    if (!cleaned) return 0;
+    
+    const parsed = parseFloat(cleaned);
+    
+    // Validate latitude range
+    if (Math.abs(parsed) > 90) return 0;
+    
     return isNaN(parsed) ? 0 : parsed;
   }, []);
   
   const isValidCoordinate = useCallback((lat: string | number, lng: string | number): boolean => {
     const latNum = parseCoordinate(lat);
     const lngNum = parseCoordinate(lng);
+    
     return latNum !== 0 && lngNum !== 0 &&
       Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180 &&
       !isNaN(latNum) && !isNaN(lngNum);
@@ -500,33 +640,58 @@ export default function AttendanceList() {
   }, [isValidCoordinate, parseCoordinate]);
   
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
-    if (!session || !session.logs || session.logs.length === 0) {
-      return [21.1702, 72.8311];
+    if (!session) return [21.1702, 72.8311];
+    
+    // Try to use start coordinates first
+    if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
+      return [parseCoordinate(session.startLatitude), parseCoordinate(session.startLongitude)];
     }
     
-    const validLogs = session.logs.filter(log => 
-      isValidCoordinate(log.latitude, log.longitude)
-    );
+    // Fallback to logs if available
+    if (session.logs && session.logs.length > 0) {
+      const validLogs = session.logs.filter(log => 
+        isValidCoordinate(log.latitude, log.longitude)
+      );
+      
+      if (validLogs.length > 0) {
+        const sumLat = validLogs.reduce((sum, log) => sum + parseCoordinate(log.latitude), 0);
+        const sumLng = validLogs.reduce((sum, log) => sum + parseCoordinate(log.longitude), 0);
+        return [sumLat / validLogs.length, sumLng / validLogs.length];
+      }
+    }
     
-    if (validLogs.length === 0) return [21.1702, 72.8311];
-    
-    const sumLat = validLogs.reduce((sum, log) => sum + parseCoordinate(log.latitude), 0);
-    const sumLng = validLogs.reduce((sum, log) => sum + parseCoordinate(log.longitude), 0);
-    
-    return [sumLat / validLogs.length, sumLng / validLogs.length];
+    // Default fallback
+    return [21.1702, 72.8311];
   }, [isValidCoordinate, parseCoordinate]);
   
   const getMapZoom = useCallback((session: TravelSession): number => {
-    if (!session || !session.logs || session.logs.length < 2) return 15;
+    if (!session) return 13;
     
-    const validLogs = session.logs.filter(log => 
-      isValidCoordinate(log.latitude, log.longitude)
-    );
+    const validPoints: [number, number][] = [];
     
-    if (validLogs.length < 2) return 15;
+    // Add start point if valid
+    if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
+      validPoints.push([parseCoordinate(session.startLatitude), parseCoordinate(session.startLongitude)]);
+    }
     
-    const lats = validLogs.map(log => parseCoordinate(log.latitude));
-    const lngs = validLogs.map(log => parseCoordinate(log.longitude));
+    // Add end point if valid
+    if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+      validPoints.push([parseCoordinate(session.endLatitude), parseCoordinate(session.endLongitude)]);
+    }
+    
+    // Add log points
+    if (session.logs) {
+      session.logs.forEach(log => {
+        if (isValidCoordinate(log.latitude, log.longitude)) {
+          validPoints.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        }
+      });
+    }
+    
+    if (validPoints.length < 2) return 13;
+    
+    const lats = validPoints.map(p => p[0]);
+    const lngs = validPoints.map(p => p[1]);
     
     const latRange = Math.max(...lats) - Math.min(...lats);
     const lngRange = Math.max(...lngs) - Math.min(...lngs);
@@ -575,21 +740,46 @@ export default function AttendanceList() {
   };
   
   const openMultiSessionMap = useCallback((group: GroupedSession) => {
-    const allLogs = group.sessions.flatMap(s => s.logs || []);
-    const validLogs = allLogs.filter(log => 
-      isValidCoordinate(log.latitude, log.longitude)
-    );
+    const allPoints: [number, number][] = [];
+    
+    // Collect all valid coordinates from all sessions
+    group.sessions.forEach(session => {
+      // Add start point
+      if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
+        allPoints.push([
+          parseCoordinate(session.startLatitude), 
+          parseCoordinate(session.startLongitude)
+        ]);
+      }
+      
+      // Add end point
+      if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+        allPoints.push([
+          parseCoordinate(session.endLatitude), 
+          parseCoordinate(session.endLongitude)
+        ]);
+      }
+      
+      // Add log points
+      if (session.logs) {
+        session.logs.forEach(log => {
+          if (isValidCoordinate(log.latitude, log.longitude)) {
+            allPoints.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+          }
+        });
+      }
+    });
     
     let center: [number, number] = [21.1702, 72.8311];
     let zoom = 13;
     
-    if (validLogs.length > 0) {
-      const sumLat = validLogs.reduce((sum, log) => sum + parseCoordinate(log.latitude), 0);
-      const sumLng = validLogs.reduce((sum, log) => sum + parseCoordinate(log.longitude), 0);
-      center = [sumLat / validLogs.length, sumLng / validLogs.length];
+    if (allPoints.length > 0) {
+      const sumLat = allPoints.reduce((sum, point) => sum + point[0], 0);
+      const sumLng = allPoints.reduce((sum, point) => sum + point[1], 0);
+      center = [sumLat / allPoints.length, sumLng / allPoints.length];
       
-      const lats = validLogs.map(log => parseCoordinate(log.latitude));
-      const lngs = validLogs.map(log => parseCoordinate(log.longitude));
+      const lats = allPoints.map(p => p[0]);
+      const lngs = allPoints.map(p => p[1]);
       const latRange = Math.max(...lats) - Math.min(...lats);
       const lngRange = Math.max(...lngs) - Math.min(...lngs);
       const maxRange = Math.max(latRange, lngRange);
@@ -621,7 +811,11 @@ export default function AttendanceList() {
   };
   
   const manualRefresh = () => {
-    fetchTravelSessions();
+    if (activeSessionsOnly && autoRefresh) {
+      fetchActiveSessionsOnly();
+    } else {
+      fetchTravelSessions();
+    }
   };
   
   // Clear date filter function
@@ -633,7 +827,7 @@ export default function AttendanceList() {
   // Check if date filter is active
   const isDateFilterActive = startDate || endDate;
   
-  // Filter sessions with date range
+  // Filter sessions with date range and sorting
   const filterSessions = useCallback((sessions: TravelSession[] = travelSessions) => {
     let filtered = [...sessions];
     
@@ -643,17 +837,14 @@ export default function AttendanceList() {
         const sessionDate = new Date(session.startTime);
         const sessionDateOnly = sessionDate.toISOString().split('T')[0];
         
-        // If only start date is provided, filter sessions on or after start date
         if (startDate && !endDate) {
           return sessionDateOnly >= startDate;
         }
         
-        // If only end date is provided, filter sessions on or before end date
         if (!startDate && endDate) {
           return sessionDateOnly <= endDate;
         }
         
-        // If both dates are provided, filter sessions between start and end dates (inclusive)
         if (startDate && endDate) {
           return sessionDateOnly >= startDate && sessionDateOnly <= endDate;
         }
@@ -676,9 +867,19 @@ export default function AttendanceList() {
       );
     }
     
-    return filtered.sort((a, b) => 
-      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-    );
+    // Sort by date descending (newest first) but keep natural order within same date
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.startTime).getTime();
+      const dateB = new Date(b.startTime).getTime();
+      
+      // Sort by date descending
+      if (Math.abs(dateA - dateB) > 86400000) { // More than 1 day difference
+        return dateB - dateA; // Newer dates first
+      }
+      
+      // If same date, keep original order (by sessionId)
+      return a.sessionId - b.sessionId;
+    });
   }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
   
   const filteredSessions = useMemo(() => filterSessions(), [filterSessions]);
@@ -789,16 +990,14 @@ export default function AttendanceList() {
               'Start Time': formatDateTime(group.startTime),
               'End Time': formatDateTime(group.endTime),
               'Total Sessions': group.totalSessions,
-              
               'Active Sessions': group.activeSessions,
               'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
               'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
-
               'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
               'Total Distance (km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
               'Total Farmers Met': totalFarmersMet,
               'Duration (minutes)': totalDuration,
-              'Riembursement Amount (₹)': reimbursementAmount,
+              'Reimbursement Amount (₹)': reimbursementAmount,
               'Total Pauses Count': totalPauses,
               'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
               'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
@@ -815,10 +1014,6 @@ export default function AttendanceList() {
                   [`${prefix} Status`]: session.sessionStatus,
                   [`${prefix} Farmers Count`]: session.farmersCount,
                   [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
-                  [`${prefix} Farmer Image URLs`]: session.farmerImageUrls,
-                  [`${prefix} Start Odometer Image`]: session.startOdometerImage,
-                  [`${prefix} End Odometer Image`]: session.endOdometerImage,
-                  [`${prefix} Notes`]: idx === 0 ? 'First session (excluded from total)' : ''
                 };
               }, {}),
               
@@ -876,7 +1071,7 @@ export default function AttendanceList() {
         'Total Distance (km)',
         'Total Farmers Met',
         'Duration (minutes)',
-        'Riembursement Amount (₹)',
+        'Reimbursement Amount (₹)',
         'Total Pauses Count',
         'Status',
         'Notes'
@@ -890,7 +1085,6 @@ export default function AttendanceList() {
           `Session ${i} Start Time`,
           `Session ${i} End Time`,
           `Session ${i} Distance (km)`,
-         
           `Session ${i} Farmers Count`,
           `Session ${i} Farmer Descriptions`,
           `Session ${i} Farmer Image URLs`,
@@ -910,7 +1104,7 @@ export default function AttendanceList() {
             const value = row[header];
             if (value === null || value === undefined) return '""';
             const stringValue = String(value);
-            // Handle CSV escaping - especially important for descriptions with commas
+            // Handle CSV escaping
             if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
@@ -1241,8 +1435,8 @@ export default function AttendanceList() {
 
         {/* Filters */}
         <div className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaSearch className="inline mr-2" />
                 Search Employee
@@ -1256,7 +1450,7 @@ export default function AttendanceList() {
               />
             </div>
             
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaUser className="inline mr-2" />
                 Filter by User
@@ -1276,7 +1470,7 @@ export default function AttendanceList() {
             </div>
             
             {/* Date Range Filter */}
-            <div className="flex-[2]">
+            <div className="lg:col-span-2">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <FaCalendarAlt className="inline mr-2" />
@@ -1292,7 +1486,7 @@ export default function AttendanceList() {
                 )}
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                     Start Date
@@ -1321,7 +1515,6 @@ export default function AttendanceList() {
                 </div>
               </div>
               
-              {/* Date range display */}
               {isDateFilterActive && (
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
                   <FaCalendarAlt className="text-xs" />
@@ -1334,7 +1527,7 @@ export default function AttendanceList() {
               )}
             </div>
             
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaChartLine className="inline mr-2" />
                 View Mode
@@ -1349,6 +1542,60 @@ export default function AttendanceList() {
               </select>
             </div>
           </div>
+          
+          {/* Auto-refresh controls */}
+          {/* <div className="mt-4 pt-4 border-t border-white/10 dark:border-gray-700/50">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FaSync className="inline mr-2" />
+              Auto-refresh Options
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
+                  autoRefresh 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <FaSync className={autoRefresh ? "animate-spin" : ""} />
+                {autoRefresh ? "Auto ON" : "Auto OFF"}
+              </button>
+              
+              <button
+                onClick={() => setActiveSessionsOnly(!activeSessionsOnly)}
+                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
+                  activeSessionsOnly 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}
+                disabled={!autoRefresh}
+              >
+                <FaPlayCircle />
+                {activeSessionsOnly ? "Active Only" : "All Sessions"}
+              </button>
+              
+              <button
+                onClick={manualRefresh}
+                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${glassmorphismClasses.button.primary}`}
+              >
+                <FaSync />
+                Refresh Now
+              </button>
+            </div>
+            
+            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              {autoRefresh ? (
+                activeSessionsOnly ? (
+                  <span>Auto-refreshing active sessions every 10 seconds</span>
+                ) : (
+                  <span>Auto-refreshing all sessions every 30 seconds</span>
+                )
+              ) : (
+                <span>Auto-refresh is disabled</span>
+              )}
+            </div>
+          </div> */}
         </div>
       </div>
 
@@ -1436,7 +1683,7 @@ export default function AttendanceList() {
                             )}
                           </div>
                           <div className="text-center">
-                            <p className="text-xs text-gray-600 dark:text-gray-300">reimbursed amount</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300">Reimbursement</p>
                             <p className="text-lg font-bold text-gray-800 dark:text-white">
                               ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
                             </p>
@@ -1491,6 +1738,14 @@ export default function AttendanceList() {
                         </p>
                       )}
                     </div>
+                    
+                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                        <FaMapPin className="text-sm" />
+                        <span className="text-xs font-medium">Total Points</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                    </div>
                   </div>
 
                   {/* Session List */}
@@ -1527,8 +1782,8 @@ export default function AttendanceList() {
                                     </span>
                                     {isActive && (
                                       <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                        Active
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                                        LIVE - Updating
                                       </span>
                                     )}
                                   </div>
@@ -1789,6 +2044,16 @@ export default function AttendanceList() {
                                 {farmerCount}
                               </p>
                             </div>
+                            
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaMapPin />
+                                <span className="text-sm font-medium">Location Logs</span>
+                              </div>
+                              <p className="text-lg font-bold text-blue-500">
+                                {session.locationLogs?.count || 0}
+                              </p>
+                            </div>
                           </div>
                           
                           {/* Odometer Images Section */}
@@ -1998,17 +2263,13 @@ export default function AttendanceList() {
                           parseCoordinate(session.startLatitude), 
                           parseCoordinate(session.startLongitude)
                         ]}
-                        icon={L.icon({
-                          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-                          shadowUrl,
-                          iconAnchor: [12, 41],
-                          iconSize: [25, 41],
-                        })}
+                        icon={customIcons.startIcon}
                       >
                         <Popup>
                           <div className="text-sm">
                             <strong>🟢 Start (Session #{session.sessionId})</strong><br />
                             <strong>Time:</strong> {formatDateTime(session.startTime)}<br />
+                            <strong>Coordinates:</strong> {parseCoordinate(session.startLatitude).toFixed(6)}, {parseCoordinate(session.startLongitude).toFixed(6)}<br />
                             <div 
                               className="inline-block w-3 h-3 rounded-full mr-1"
                               style={{ backgroundColor: getSessionColor(index) }}
@@ -2025,6 +2286,7 @@ export default function AttendanceList() {
                 {/* End markers for each session */}
                 {multiSessionMapView.sessions.map((session, index) => {
                   if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+                    const isActive = !session.endTime;
                     return (
                       <Marker
                         key={`end-${session.sessionId}`}
@@ -2032,17 +2294,13 @@ export default function AttendanceList() {
                           parseCoordinate(session.endLatitude), 
                           parseCoordinate(session.endLongitude)
                         ]}
-                        icon={L.icon({
-                          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-                          shadowUrl,
-                          iconAnchor: [12, 41],
-                          iconSize: [25, 41],
-                        })}
+                        icon={isActive ? customIcons.activeIcon : customIcons.endIcon}
                       >
                         <Popup>
                           <div className="text-sm">
-                            <strong>🔴 End (Session #{session.sessionId})</strong><br />
-                            <strong>Time:</strong> {formatDateTime(session.endTime)}<br />
+                            <strong>{isActive ? '🟡 Active' : '🔴 End'} (Session #{session.sessionId})</strong><br />
+                            <strong>Time:</strong> {isActive ? 'Active' : formatDateTime(session.endTime)}<br />
+                            <strong>Coordinates:</strong> {parseCoordinate(session.endLatitude).toFixed(6)}, {parseCoordinate(session.endLongitude).toFixed(6)}<br />
                             <strong>Distance:</strong> {(session.totalDistance / 1000).toFixed(2)} km<br />
                             <div 
                               className="inline-block w-3 h-3 rounded-full mr-1"
@@ -2155,7 +2413,7 @@ export default function AttendanceList() {
                 zoom={getMapZoom(mapView)}
                 scrollWheelZoom
                 style={{ height: "100%", width: "100%" }}
-                key={`map-${mapView.sessionId}`}
+                key={`map-${mapView.sessionId}-${lastUpdateTime?.getTime()}`}
               >
                 <TileLayer
                   attribution="Google Maps"
@@ -2166,16 +2424,17 @@ export default function AttendanceList() {
                 {(() => {
                   const path = buildPolylinePath(mapView);
                   if (path.length >= 2) {
+                    const isActive = !mapView.endTime;
                     return (
                       <Polyline
                         positions={path}
                         pathOptions={{
-                          color: mapView.endTime ? "#3B82F6" : "#10B981",
+                          color: isActive ? "#10B981" : "#3B82F6",
                           weight: 6,
                           opacity: 0.8,
                           lineCap: "round",
                           lineJoin: "round",
-                          dashArray: mapView.endTime ? undefined : "10, 5"
+                          dashArray: isActive ? "10, 5" : undefined
                         }}
                       />
                     );
@@ -2190,12 +2449,7 @@ export default function AttendanceList() {
                       parseCoordinate(mapView.startLatitude), 
                       parseCoordinate(mapView.startLongitude)
                     ]}
-                    icon={L.icon({
-                      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-                      shadowUrl,
-                      iconAnchor: [12, 41],
-                      iconSize: [25, 41],
-                    })}
+                    icon={customIcons.startIcon}
                   >
                     <Popup>
                       <div className="text-sm">
@@ -2215,26 +2469,21 @@ export default function AttendanceList() {
                       parseCoordinate(mapView.endLatitude), 
                       parseCoordinate(mapView.endLongitude)
                     ]}
-                    icon={L.icon({
-                      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-                      shadowUrl,
-                      iconAnchor: [12, 41],
-                      iconSize: [25, 41],
-                    })}
+                    icon={!mapView.endTime ? customIcons.activeIcon : customIcons.endIcon}
                   >
                     <Popup>
                       <div className="text-sm">
-                        <strong>🔴 End Point</strong><br />
+                        <strong>{!mapView.endTime ? '🟡 Active Point' : '🔴 End Point'}</strong><br />
                         <strong>User:</strong> {mapView.username}<br />
-                        <strong>Time:</strong> {formatDateTime(mapView.endTime)}<br />
+                        <strong>Time:</strong> {!mapView.endTime ? 'Active' : formatDateTime(mapView.endTime)}<br />
                         <strong>Coordinates:</strong> {parseCoordinate(mapView.endLatitude).toFixed(6)}, {parseCoordinate(mapView.endLongitude).toFixed(6)}<br />
-                        <strong>Total Distance:</strong> {mapView.totalDistance?.toFixed(2)} meters
+                        <strong>Total Distance:</strong> {(mapView.totalDistance / 1000).toFixed(2)} km
                       </div>
                     </Popup>
                   </Marker>
                 )}
 
-                {/* Log points markers - NEWLY ADDED */}
+                {/* Log points markers */}
                 {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {
                   if (isValidCoordinate(log.latitude, log.longitude)) {
                     const logDate = new Date(log.timestamp);

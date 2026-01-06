@@ -155,6 +155,7 @@ export default function SignInForm() {
         localStorage.setItem("email", user?.email || "");
         localStorage.setItem("mobileNo", user?.mobileNo || "");
         localStorage.setItem("token", user?.accesstoken || "");
+        localStorage.setItem("allocatedarea", user?.allocatedArea || "");
         localStorage.setItem(
           "isActiveEmployee",
           user?.isActiveEmployee ? "true" : "false"
@@ -186,9 +187,9 @@ export default function SignInForm() {
             // Role-based navigation logic (excluding field employees)
             let targetRoute = "/home";
 
-            if (normalizedRole === "admin") {
+            if (userRole=== "ZonalManager" ) {
               targetRoute = "/home";
-            } else if (normalizedRole === "hr" || normalizedRole === "manager" || normalizedRole === "zonalmanager") {
+            } else if (normalizedRole === "hr" || normalizedRole === "manager" ) {
               targetRoute = "/home";
             } else {
               targetRoute = "/";
@@ -293,7 +294,7 @@ export default function SignInForm() {
           />
         </div>
         <div className="flex items-center justify-center w-full h-10 ">
-          <h1 className="text-2xl font-bold">{t("Welcome to Lantern ")} <sub className="text-xs text-black">365</sub> </h1>
+          <h1 className="text-2xl font-bold">{t("Welcome to Lantern ")} <sub className="text-xs text-black">360</sub> </h1>
           <br></br>
         </div>
         

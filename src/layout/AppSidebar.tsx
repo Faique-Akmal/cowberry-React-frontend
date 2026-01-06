@@ -127,7 +127,7 @@ const AppSidebar: React.FC = () => {
     icon: <PiUsersThreeBold />,
     name: t("menu.allUsers"),
     path: "/all-users",
-    role: ["admin","Manager","HR"],
+    role: ["admin","Manager","HR","ZonalManager"],
   },
  
  

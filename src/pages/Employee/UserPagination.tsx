@@ -3,6 +3,9 @@ import { useData } from "../../context/DataProvider";
 import API from "../../api/axios.ts";
 import * as XLSX from "xlsx"; 
 
+// Add UserRole type
+type UserRole = "HR" | "Manager" | "ZonalManager" | string;
+
 interface User {
   id: string;
   userId: string;
@@ -25,6 +28,15 @@ interface User {
   profileImageUrl?: string;
 }
 
+// Add current user interface
+interface CurrentUser {
+  id: string;
+  role: UserRole;
+  department?: string;
+  departmentName?: string;
+  allocatedArea?: string;
+}
+
 interface PaginationParams {
   page: number;
   limit: number;
@@ -34,20 +46,17 @@ interface PaginationParams {
   status?: "online" | "offline";
 }
 
-// Department interface
 interface Department {
   departmentId: number;
   name: string;
 }
 
-// Role interface
 interface Role {
   id: number;
   name: string;
   description: string;
 }
 
-// Edit User Form interface
 interface EditUserForm {
   username: string;
   full_name: string;
@@ -65,7 +74,7 @@ const UserList: React.FC = () => {
   const { fetchUsers } = useData();
 
   const [users, setUsers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]); // Store all fetched users
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,6 +85,10 @@ const UserList: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<number | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">("");
   const [exporting, setExporting] = useState(false);
+  
+  // Add current user state
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [loadingCurrentUser, setLoadingCurrentUser] = useState(true);
   
   // Edit form states
   const [editForm, setEditForm] = useState<EditUserForm>({
@@ -107,35 +120,232 @@ const UserList: React.FC = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Filter users based on search term, role, and status
+  // Fetch current user info from token or API
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      setLoadingCurrentUser(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.warn("No token found");
+        setLoadingCurrentUser(false);
+        return;
+      }
+      
+      // Try to decode JWT token first
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log("🔑 Token payload decoded:", payload);
+          
+          setCurrentUser({
+            id: payload.userId || payload.id || payload.sub || "",
+            role: payload.role || payload.userRole || payload.roles?.[0] || "",
+            department: payload.departmentId || payload.department || localStorage.getItem("department") || "",
+            departmentName: payload.departmentName || payload.department || "",
+            allocatedArea: payload.allocatedArea || payload.zone || localStorage.getItem("allocatedarea") || ""
+          });
+        }
+      } catch (decodeError) {
+        console.warn("Could not decode token:", decodeError);
+      }
+      
+      // ALSO try to fetch from API endpoint for more accurate data
+      try {
+        const response = await API.get('/auth/me', {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        console.log("👤 Current user API response:", response.data);
+        
+        const userData = response.data?.data || response.data;
+        if (userData) {
+          setCurrentUser({
+            id: userData.id || userData.userId || "",
+            role: userData.role || userData.userRole || "",
+            department: userData.departmentId || userData.department || "",
+            departmentName: userData.departmentName || userData.department || "",
+            allocatedArea: userData.allocatedArea || userData.zone || ""
+          });
+        }
+      } catch (apiError) {
+        console.warn("Could not fetch from /auth/me endpoint:", apiError);
+        // Continue with token data if API fails
+      }
+      
+    } catch (error) {
+      console.error("Failed to fetch current user:", error);
+    } finally {
+      setLoadingCurrentUser(false);
+    }
+  }, []);
+
+  // Helper function to normalize strings for comparison
+  const normalizeString = (str: string | undefined): string => {
+    if (!str) return "";
+    return str.trim().toLowerCase().replace(/\s+/g, ' ');
+  };
+
+  // Check if current user can edit a specific user
+  const canEditUser = useCallback((user: User): boolean => {
+    if (!currentUser) return false;
+    
+    const userRole = currentUser.role;
+    console.log(`🔍 Checking edit permission for user ${user.full_name}:`);
+    console.log(`   Current user role: ${userRole}`);
+    
+    switch(userRole) {
+      case "HR":
+        console.log("   ✅ HR can edit all users");
+        return true;
+        
+      case "Manager":
+        if (!currentUser.departmentName && !currentUser.department) {
+          console.log("   ❌ Manager has no department info");
+          return false;
+        }
+        
+        const managerDept = normalizeString(currentUser.departmentName || currentUser.department);
+        const userDept = normalizeString(user.department);
+        
+        console.log(`   Manager department: ${managerDept}`);
+        console.log(`   User department: ${userDept}`);
+        console.log(`   Match: ${managerDept === userDept}`);
+        
+        return managerDept === userDept;
+        
+      case "ZonalManager":
+        console.log("   ❌ ZonalManager cannot edit any users");
+        return false;
+        
+      default:
+        console.log(`   ❌ Unknown role: ${userRole}`);
+        return false;
+    }
+  }, [currentUser]);
+
+  // Check if current user can view a specific user
+  const canViewUser = useCallback((user: User): boolean => {
+    if (!currentUser) {
+      console.log("❌ No current user");
+      return false;
+    }
+    
+    const userRole = currentUser.role;
+    
+    // For debugging
+    if (userRole === "Manager") {
+      console.log(`👁️ Checking view permission for Manager:`);
+      console.log(`   Manager department: ${currentUser.departmentName || currentUser.department}`);
+      console.log(`   User department: ${user.department}`);
+      console.log(`   User name: ${user.full_name || user.name}`);
+    }
+    
+    switch(userRole) {
+      case "HR":
+        // HR can view all users
+        return true;
+        
+      case "Manager":
+        // Manager can only view users in their department
+        if (!currentUser.departmentName && !currentUser.department) {
+          console.log("   ❌ Manager has no department info");
+          return false;
+        }
+        
+        const managerDept = normalizeString(currentUser.departmentName || currentUser.department);
+        const userDept = normalizeString(user.department);
+        const canView = managerDept === userDept;
+        
+        console.log(`   Manager dept (normalized): ${managerDept}`);
+        console.log(`   User dept (normalized): ${userDept}`);
+        console.log(`   Can view: ${canView}`);
+        
+        return canView;
+        
+      case "ZonalManager":
+        // ZonalManager can only view users in their allocated area
+        if (!currentUser.allocatedArea) {
+          console.log("   ❌ ZonalManager has no allocated area info");
+          return false;
+        }
+        
+        const managerZone = normalizeString(currentUser.allocatedArea);
+        const userZone = normalizeString(user.allocatedArea);
+        const canViewZone = managerZone === userZone;
+        
+        console.log(`   ZonalManager zone: ${managerZone}`);
+        console.log(`   User zone: ${userZone}`);
+        console.log(`   Can view: ${canViewZone}`);
+        
+        return canViewZone;
+        
+      default:
+        // Default: allow view for other roles or if no specific role
+        console.log(`   ⚠️ Default role ${userRole}, allowing view`);
+        return true;
+    }
+  }, [currentUser]);
+
+  // Filter users based on search term, role, status, AND user permissions
   const filteredUsers = useMemo(() => {
     if (!allUsers.length) return [];
     
     let filtered = [...allUsers];
     
+    console.log(`📊 Total users fetched: ${filtered.length}`);
+    
+    // Apply role-based view filtering
+    if (currentUser) {
+      console.log(`🔐 Current user role: ${currentUser.role}`);
+      console.log(`   Department: ${currentUser.departmentName || currentUser.department}`);
+      console.log(`   Allocated Area: ${currentUser.allocatedArea}`);
+      
+      const beforeFilter = filtered.length;
+      filtered = filtered.filter(user => {
+        const canView = canViewUser(user);
+        if (!canView && currentUser.role === "Manager") {
+          console.log(`   ❌ Cannot view ${user.full_name || user.name} - Dept: ${user.department}`);
+        }
+        return canView;
+      });
+      console.log(`   Filtered from ${beforeFilter} to ${filtered.length} users`);
+    } else {
+      console.log("⚠️ No current user info, showing all users");
+    }
+    
     // Filter by search term (full_name OR employee_code)
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
+      const beforeSearch = filtered.length;
       filtered = filtered.filter(user => 
         (user.full_name?.toLowerCase().includes(searchLower) || 
          user.name?.toLowerCase().includes(searchLower) ||
          user.employee_code?.toLowerCase().includes(searchLower) ||
          user.employee_code?.includes(searchTerm.trim()))
       );
+      console.log(`🔍 Search filtered from ${beforeSearch} to ${filtered.length} users`);
     }
     
     // Filter by role
     if (roleFilter !== "") {
+      const beforeRoleFilter = filtered.length;
       filtered = filtered.filter(user => user.roleId === roleFilter);
+      console.log(`🎭 Role filter filtered from ${beforeRoleFilter} to ${filtered.length} users`);
     }
     
     // Filter by status
     if (statusFilter !== "") {
+      const beforeStatusFilter = filtered.length;
       filtered = filtered.filter(user => {
         if (statusFilter === "online") return user.is_checkin;
         if (statusFilter === "offline") return !user.is_checkin;
         return true;
       });
+      console.log(`🔋 Status filter filtered from ${beforeStatusFilter} to ${filtered.length} users`);
     }
     
     // Sort by name
@@ -150,8 +360,9 @@ const UserList: React.FC = () => {
       }
     });
     
+    console.log(`✅ Final filtered users: ${filtered.length}`);
     return filtered;
-  }, [allUsers, searchTerm, roleFilter, statusFilter, sortOrder]);
+  }, [allUsers, currentUser, canViewUser, searchTerm, roleFilter, statusFilter, sortOrder]);
 
   // Calculate paginated users
   const paginatedUsers = useMemo(() => {
@@ -167,7 +378,6 @@ const UserList: React.FC = () => {
     setTotalPages(Math.ceil(totalFiltered / limit));
     setHasMore(currentPage < Math.ceil(totalFiltered / limit));
     
-    // Reset to page 1 if current page exceeds total pages
     if (currentPage > Math.ceil(totalFiltered / limit)) {
       setCurrentPage(1);
     }
@@ -302,11 +512,12 @@ const UserList: React.FC = () => {
     }
   };
 
-  // Fetch departments and roles for edit form
+  // Fetch current user, departments and roles for edit form
   useEffect(() => {
+    fetchCurrentUser();
     fetchDepartments();
     fetchRoles();
-  }, [fetchDepartments, fetchRoles]);
+  }, [fetchCurrentUser, fetchDepartments, fetchRoles]);
 
   // Fetch all users once
   const fetchAllUsers = useCallback(async () => {
@@ -326,7 +537,15 @@ const UserList: React.FC = () => {
       const userData = res.data || [];
       const total = res.total || 0;
       
-      console.log(`Fetched ${userData.length} users out of ${total} total`);
+      console.log(`📥 Fetched ${userData.length} users out of ${total} total`);
+      
+      // Debug: Log first few users' departments
+      if (userData.length > 0) {
+        console.log("Sample user departments:");
+        userData.slice(0, 5).forEach((user: User, index: number) => {
+          console.log(`  ${index + 1}. ${user.full_name || user.name} - Dept: "${user.department}"`);
+        });
+      }
       
       setAllUsers(userData);
       setTotalUsers(total);
@@ -344,9 +563,15 @@ const UserList: React.FC = () => {
     fetchAllUsers();
   }, [fetchAllUsers]);
 
-  // Handle edit button click
+  // Handle edit button click with permission check
   const handleEditClick = async (user: User) => {
     console.log("Editing user:", user);
+    
+    // Check if user can edit
+    if (!canEditUser(user)) {
+      alert("You don't have permission to edit this user.");
+      return;
+    }
     
     setSelectedUser(user);
     
@@ -460,13 +685,19 @@ const UserList: React.FC = () => {
     }));
   };
 
-  // Handle edit form submission
+  // Handle edit form submission with permission check
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedUser) {
       console.error("No user selected");
       alert("No user selected");
+      return;
+    }
+    
+    // Double-check permission before submitting
+    if (!canEditUser(selectedUser)) {
+      alert("You don't have permission to edit this user.");
       return;
     }
     
@@ -709,6 +940,13 @@ const UserList: React.FC = () => {
 
   const handleRowClick = (user: User) => {
     console.log("Row clicked, user:", user);
+    
+    // Check if user can view this user
+    if (!canViewUser(user)) {
+      alert("You don't have permission to view this user.");
+      return;
+    }
+    
     setSelectedUser(user);
     setIsModalOpen(true);
   };
@@ -859,6 +1097,53 @@ const UserList: React.FC = () => {
     return `${baseKey}-${pageIndex}`;
   };
 
+  // Display current user role info
+  const renderUserRoleInfo = () => {
+    if (!currentUser) return null;
+    
+    return (
+      <div className="
+        mb-3 p-2 rounded-lg
+        bg-gradient-to-r from-blue-50 to-blue-100
+        dark:from-blue-900/20 dark:to-blue-800/20
+        border border-blue-200 dark:border-blue-700/30
+        text-sm
+      ">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="font-medium text-blue-700 dark:text-blue-300">
+              Logged in as:
+            </span>
+            <span className="ml-2 px-2 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-bold">
+              {currentUser.role}
+            </span>
+          </div>
+          <div className="text-xs text-blue-600 dark:text-blue-400">
+            {currentUser.role === "HR" && "Viewing all users"}
+            {currentUser.role === "Manager" && `Viewing ${currentUser.departmentName || currentUser.department || "your"} department`}
+            {currentUser.role === "ZonalManager" && `Viewing ${currentUser.allocatedArea || "your"} zone`}
+          </div>
+        </div>
+        {/* Debug info */}
+        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+          <div>User ID: {currentUser.id}</div>
+          <div>Department: {currentUser.departmentName || currentUser.department || "Not set"}</div>
+          <div>Zone: {currentUser.allocatedArea || "Not set"}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Show loading for current user
+  if (loadingCurrentUser) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-600 dark:text-gray-300">Loading user info...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="
       w-[100%] max-w-[100%] mx-auto
@@ -888,6 +1173,9 @@ const UserList: React.FC = () => {
         ">
           Users Directory
         </h2>
+
+        {/* Display current user role info */}
+        {renderUserRoleInfo()}
 
         {/* Enhanced Filter Section - Reduced Height */}
         <div className="
@@ -1125,6 +1413,21 @@ const UserList: React.FC = () => {
             </div>
           ) : (
             <>
+              {/* Debug info for Manager */}
+              {currentUser?.role === "Manager" && filteredUsers.length === 0 && allUsers.length > 0 && (
+                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                  <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                    ⚠️ No users found in your department. 
+                  </p>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                    Your department: <strong>{currentUser.departmentName || currentUser.department || "Not set"}</strong>
+                  </p>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+                    Total users in system: {allUsers.length}
+                  </p>
+                </div>
+              )}
+              
               {/* Users Table Container with Scroll */}
               <div
                 ref={scrollContainerRef}
@@ -1147,7 +1450,7 @@ const UserList: React.FC = () => {
                     {/* Table Header - Fixed with corrected spacing */}
                     <div className="flex-shrink-0 sticky top-0 z-10">
                       <div className="
-                        grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px]
+                        grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
                         px-2 py-2
                         bg-gradient-to-r from-white/60 to-white/40
                         dark:from-gray-800/60 dark:to-gray-900/40
@@ -1224,6 +1527,14 @@ const UserList: React.FC = () => {
                         ">
                           Department
                         </div>
+                        <div className="
+                          px-1 text-left text-xs font-semibold
+                          text-gray-600 dark:text-gray-300
+                          uppercase tracking-wider
+                          whitespace-nowrap
+                        ">
+                          Actions
+                        </div>
                       </div>
                     </div>
 
@@ -1233,26 +1544,33 @@ const UserList: React.FC = () => {
                         {paginatedUsers.length > 0 ? (
                           paginatedUsers.map((user, index) => {
                             const userKey = getUserKey(user, index);
+                            const canEdit = canEditUser(user);
+                            
                             return (
                               <div 
-                                onClick={() => handleRowClick(user)}
                                 key={userKey}
                                 className="
-                                  grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px]
+                                  grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
                                   px-2 py-2
                                   hover:bg-white/30 dark:hover:bg-gray-800/30
                                   transition-all duration-300
-                                  cursor-pointer
                                   backdrop-blur-sm
                                 "
                               >
-                                <div className="
-                                  px-1 py-2 whitespace-nowrap
-                                  text-xs text-gray-900 dark:text-gray-100
-                                ">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="
+                                    px-1 py-2 whitespace-nowrap
+                                    text-xs text-gray-900 dark:text-gray-100
+                                    cursor-pointer
+                                  "
+                                >
                                   {(currentPage - 1) * limit + index + 1}
                                 </div>
-                                <div className="py-2 whitespace-nowrap">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="py-2 whitespace-nowrap cursor-pointer"
+                                >
                                   <div className="flex items-center">
                                     <div className="flex-shrink-0">
                                       <div className="
@@ -1296,10 +1614,14 @@ const UserList: React.FC = () => {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="
-                                  px-1 py-2 whitespace-nowrap
-                                  text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell
-                                ">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="
+                                    px-1 py-2 whitespace-nowrap
+                                    text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell
+                                    cursor-pointer
+                                  "
+                                >
                                   <div className="
                                     bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
                                     backdrop-blur-sm truncate
@@ -1307,10 +1629,14 @@ const UserList: React.FC = () => {
                                     {user.employee_code || 'N/A'}
                                   </div>
                                 </div>
-                                <div className="
-                                  px-1 py-2 whitespace-nowrap
-                                  text-xs text-gray-600 dark:text-gray-400 hidden lg:table-cell
-                                ">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="
+                                    px-1 py-2 whitespace-nowrap
+                                    text-xs text-gray-600 dark:text-gray-400 hidden lg:table-cell
+                                    cursor-pointer
+                                  "
+                                >
                                   <div className="
                                     truncate
                                     bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
@@ -1319,7 +1645,10 @@ const UserList: React.FC = () => {
                                     {user.email || "N/A"}
                                   </div>
                                 </div>
-                                <div className="px-1 py-2 whitespace-nowrap">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="px-1 py-2 whitespace-nowrap cursor-pointer"
+                                >
                                   <span className="
                                     inline-flex items-center px-2 py-1 rounded-lg
                                     text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
@@ -1329,7 +1658,10 @@ const UserList: React.FC = () => {
                                     {user.role}
                                   </span>
                                 </div>
-                                <div className="px-1 py-2 whitespace-nowrap">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="px-1 py-2 whitespace-nowrap cursor-pointer"
+                                >
                                   <span className="
                                     inline-flex items-center px-2 py-1 rounded-lg
                                     text-xs font-medium bg-green-100/50 dark:bg-green-900/30
@@ -1339,10 +1671,14 @@ const UserList: React.FC = () => {
                                     {user.allocatedArea || "N/A"}
                                   </span>
                                 </div>
-                                <div className="
-                                  px-1 py-2 whitespace-nowrap
-                                  text-xs text-gray-600 dark:text-gray-400 hidden md:table-cell
-                                ">
+                                <div 
+                                  onClick={() => handleRowClick(user)}
+                                  className="
+                                    px-1 py-2 whitespace-nowrap
+                                    text-xs text-gray-600 dark:text-gray-400 hidden md:table-cell
+                                    cursor-pointer
+                                  "
+                                >
                                   <div className="
                                     truncate
                                     bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
@@ -1351,12 +1687,30 @@ const UserList: React.FC = () => {
                                     {user.department || 'N/A'}
                                   </div>
                                 </div>
+                                <div className="px-1 py-2 whitespace-nowrap flex items-center">
+                                  <button
+                                    onClick={() => handleEditClick(user)}
+                                    disabled={!canEdit}
+                                    className={`
+                                      px-3 py-1.5 rounded-lg text-xs font-medium
+                                      transition-all duration-300
+                                      ${canEdit 
+                                        ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
+                                        : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                                      }
+                                      flex items-center justify-center
+                                    `}
+                                    title={canEdit ? "Edit user" : "No permission to edit"}
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
                               </div>
                             );
                           })
                         ) : (
                           <div className="
-                            col-span-7 px-2 py-6 text-center
+                            col-span-8 px-2 py-6 text-center
                             bg-gradient-to-br from-white/30 to-white/10
                             dark:from-gray-800/30 dark:to-gray-900/10
                           ">
@@ -1389,7 +1743,11 @@ const UserList: React.FC = () => {
                                 No users found
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Try adjusting your search or filter criteria
+                                {currentUser?.role === "Manager" 
+                                  ? `No users found in your department (${currentUser.departmentName || currentUser.department || "Not set"})`
+                                  : currentUser?.role === "ZonalManager"
+                                  ? `No users found in your zone (${currentUser.allocatedArea || "Not set"})`
+                                  : "Try adjusting your search or filter criteria"}
                               </p>
                             </div>
                           </div>
@@ -1650,21 +2008,27 @@ const UserList: React.FC = () => {
                 >
                   Close
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleEditClick(selectedUser)}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[140px] text-base"
-                >
-                  Edit User
-                </button>
+                {canEditUser(selectedUser) ? (
+                  <button
+                    type="button"
+                    onClick={() => handleEditClick(selectedUser)}
+                    className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[140px] text-base"
+                  >
+                    Edit User
+                  </button>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 px-4 py-2 italic">
+                    No permission to edit this user
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit User Modal */}
-      {isEditModalOpen && selectedUser && (
+      {/* Edit User Modal - Only show if user has permission */}
+      {isEditModalOpen && selectedUser && canEditUser(selectedUser) && (
         <div className="fixed inset-0 z-50 bg-black/70">
           <div className="
             bg-white dark:bg-gray-900

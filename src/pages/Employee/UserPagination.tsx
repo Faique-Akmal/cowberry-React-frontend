@@ -9,6 +9,7 @@ import React, {
 import { useUserStore } from "../../store/useUserStore";
 import API from "../../api/axios";
 import * as XLSX from "xlsx";
+// import { department } from "../../store/store";
 
 // Add UserRole type
 type UserRole = "HR" | "Manager" | "ZonalManager" | string;
@@ -35,7 +36,6 @@ interface User {
   profileImageUrl?: string;
 }
 
-// Add current user interface
 interface CurrentUser {
   id: string;
   role: UserRole;
@@ -90,7 +90,7 @@ const UserList: React.FC = () => {
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [roleFilter, setRoleFilter] = useState<number | "">("");
+  const [roleFilter, setRoleFilter] = useState<string | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">(
     ""
   );
@@ -139,55 +139,19 @@ const UserList: React.FC = () => {
   const fetchCurrentUser = useCallback(async () => {
     try {
       setLoadingCurrentUser(true);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.warn("No token found");
-        setLoadingCurrentUser(false);
-        return;
-      }
+      const localId = localStorage.getItem("userId");
+      const localRole = localStorage.getItem("userRole");
+      const localDepartment = localStorage.getItem("department");
+      const localAllocatedArea = localStorage.getItem("allocatedarea");
 
-      // Try to decode JWT token first
-      try {
-        const tokenParts = token.split(".");
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-
-          setCurrentUser({
-            id: payload.userId || payload.id || payload.sub || "",
-            role: payload.role || payload.userRole || payload.roles?.[0] || "",
-            department:
-              payload.departmentId ||
-              payload.department ||
-              localStorage.getItem("department") ||
-              "",
-            departmentName: payload.departmentName || payload.department || "",
-            allocatedArea:
-              payload.allocatedArea ||
-              payload.zone ||
-              localStorage.getItem("allocatedarea") ||
-              "",
-          });
-        }
-      } catch (decodeError) {
-        console.warn("Could not decode token:", decodeError);
-      }
-
-      // ALSO try to fetch from API endpoint for more accurate data
-      try {
-        const response = await API.get("/auth/me");
-        const userData = response.data?.data || response.data;
-        if (userData) {
-          setCurrentUser({
-            id: userData.id || userData.userId || "",
-            role: userData.role || userData.userRole || "",
-            department: userData.departmentId || userData.department || "",
-            departmentName:
-              userData.departmentName || userData.department || "",
-            allocatedArea: userData.allocatedArea || userData.zone || "",
-          });
-        }
-      } catch (apiError) {
-        console.warn("Could not fetch from /auth/me endpoint:", apiError);
+      if (localId && localRole && localDepartment && localAllocatedArea) {
+        setCurrentUser({
+          id: localId,
+          role: localRole,
+          department: localDepartment,
+          departmentName: localDepartment,
+          allocatedArea: localAllocatedArea,
+        });
       }
     } catch (error) {
       console.error("Failed to fetch current user:", error);
@@ -213,7 +177,7 @@ const UserList: React.FC = () => {
         case "HR":
           return true;
 
-        case "Manager":
+        case "Manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
 
@@ -223,7 +187,7 @@ const UserList: React.FC = () => {
           const userDept = normalizeString(user.department);
 
           return managerDept === userDept;
-
+        }
         case "ZonalManager":
           return false;
 
@@ -244,7 +208,7 @@ const UserList: React.FC = () => {
         case "HR":
           return true;
 
-        case "Manager":
+        case "Manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
           const managerDept = normalizeString(
@@ -252,13 +216,14 @@ const UserList: React.FC = () => {
           );
           const userDept = normalizeString(user.department);
           return managerDept === userDept;
+        }
 
-        case "ZonalManager":
+        case "ZonalManager": {
           if (!currentUser.allocatedArea) return false;
           const managerZone = normalizeString(currentUser.allocatedArea);
           const userZone = normalizeString(user.allocatedArea);
           return managerZone === userZone;
-
+        }
         default:
           return true;
       }
@@ -294,7 +259,7 @@ const UserList: React.FC = () => {
 
     // 4. Role Filtering
     if (roleFilter !== "") {
-      result = result.filter((user) => user.roleId === roleFilter);
+      result = result.filter((user) => user.role === roleFilter);
     }
 
     // 5. Status Filtering
@@ -685,7 +650,7 @@ const UserList: React.FC = () => {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -809,7 +774,7 @@ const UserList: React.FC = () => {
       </div>
     );
   }
-
+  console.log(":::::::::: DEBUG :::::::::");
   return (
     <div
       className="
@@ -925,7 +890,7 @@ const UserList: React.FC = () => {
                 value={roleFilter}
                 onChange={(e) => {
                   const value =
-                    e.target.value === "" ? "" : Number(e.target.value);
+                    e.target.value === "" ? "" : String(e.target.value);
                   setRoleFilter(value);
                 }}
                 disabled={loadingRoles}
@@ -955,7 +920,7 @@ const UserList: React.FC = () => {
                   </option>
                 ) : (
                   roles.map((r) => (
-                    <option key={`role-${r.id}`} value={r.id}>
+                    <option key={`role-${r.id}`} value={r.name}>
                       {r.name}
                     </option>
                   ))

@@ -1,7 +1,15 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { useData } from "../../context/DataProvider";
-import API from "../../api/axios.ts";
-import * as XLSX from "xlsx"; 
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+// ✅ Import Zustand Store
+import { useUserStore } from "../../store/useUserStore";
+import API from "../../api/axios";
+import * as XLSX from "xlsx";
+// import { department } from "../../store/store";
 
 // Add UserRole type
 type UserRole = "HR" | "Manager" | "ZonalManager" | string;
@@ -28,7 +36,6 @@ interface User {
   profileImageUrl?: string;
 }
 
-// Add current user interface
 interface CurrentUser {
   id: string;
   role: UserRole;
@@ -37,14 +44,14 @@ interface CurrentUser {
   allocatedArea?: string;
 }
 
-interface PaginationParams {
-  page: number;
-  limit: number;
-  search?: string;
-  sort_order?: "asc" | "desc";
-  role?: number;
-  status?: "online" | "offline";
-}
+// interface PaginationParams {
+//   page: number;
+//   limit: number;
+//   search?: string;
+//   sort_order?: "asc" | "desc";
+//   role?: number;
+//   status?: "online" | "offline";
+// }
 
 interface Department {
   departmentId: number;
@@ -71,25 +78,28 @@ interface EditUserForm {
 }
 
 const UserList: React.FC = () => {
-  const { fetchUsers } = useData();
+  // ✅ Access Store State & Actions
+  const { users, fetchUsers, isLoading, resetStore } = useUserStore();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Local UI States
   const [loadingMore, setLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [roleFilter, setRoleFilter] = useState<number | "">("");
-  const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">("");
+  const [roleFilter, setRoleFilter] = useState<string | "">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">(
+    ""
+  );
   const [exporting, setExporting] = useState(false);
-  
-  // Add current user state
+
+  // Current Admin User State
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loadingCurrentUser, setLoadingCurrentUser] = useState(true);
-  
+
   // Edit form states
   const [editForm, setEditForm] = useState<EditUserForm>({
     full_name: "",
@@ -101,81 +111,48 @@ const UserList: React.FC = () => {
     profileImageUrl: "",
     departmentId: 0,
     allocatedArea: "",
-    roleId: 0
+    roleId: 0,
   });
+
   const [isEditing, setIsEditing] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(false);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  
-  const limit = 20; 
+
+  const limit = 20;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Fetch Users on Mount using Store
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   // Fetch current user info from token or API
   const fetchCurrentUser = useCallback(async () => {
     try {
       setLoadingCurrentUser(true);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.warn("No token found");
-        setLoadingCurrentUser(false);
-        return;
-      }
-      
-      // Try to decode JWT token first
-      try {
-        const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-          console.log("🔑 Token payload decoded:", payload);
-          
-          setCurrentUser({
-            id: payload.userId || payload.id || payload.sub || "",
-            role: payload.role || payload.userRole || payload.roles?.[0] || "",
-            department: payload.departmentId || payload.department || localStorage.getItem("department") || "",
-            departmentName: payload.departmentName || payload.department || "",
-            allocatedArea: payload.allocatedArea || payload.zone || localStorage.getItem("allocatedarea") || ""
-          });
-        }
-      } catch (decodeError) {
-        console.warn("Could not decode token:", decodeError);
-      }
-      
-      // ALSO try to fetch from API endpoint for more accurate data
-      try {
-        const response = await API.get('/auth/me', {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+      const localId = localStorage.getItem("userId");
+      const localRole = localStorage.getItem("userRole");
+      const localDepartment = localStorage.getItem("department");
+      const localAllocatedArea = localStorage.getItem("allocatedarea");
+
+      if (localId && localRole && localDepartment && localAllocatedArea) {
+        setCurrentUser({
+          id: localId,
+          role: localRole,
+          department: localDepartment,
+          departmentName: localDepartment,
+          allocatedArea: localAllocatedArea,
         });
-        
-        console.log("👤 Current user API response:", response.data);
-        
-        const userData = response.data?.data || response.data;
-        if (userData) {
-          setCurrentUser({
-            id: userData.id || userData.userId || "",
-            role: userData.role || userData.userRole || "",
-            department: userData.departmentId || userData.department || "",
-            departmentName: userData.departmentName || userData.department || "",
-            allocatedArea: userData.allocatedArea || userData.zone || ""
-          });
-        }
-      } catch (apiError) {
-        console.warn("Could not fetch from /auth/me endpoint:", apiError);
-        // Continue with token data if API fails
       }
-      
     } catch (error) {
       console.error("Failed to fetch current user:", error);
     } finally {
@@ -186,271 +163,186 @@ const UserList: React.FC = () => {
   // Helper function to normalize strings for comparison
   const normalizeString = (str: string | undefined): string => {
     if (!str) return "";
-    return str.trim().toLowerCase().replace(/\s+/g, ' ');
+    return str.trim().toLowerCase().replace(/\s+/g, " ");
   };
 
   // Check if current user can edit a specific user
-  const canEditUser = useCallback((user: User): boolean => {
-    if (!currentUser) return false;
-    
-    const userRole = currentUser.role;
-    console.log(`🔍 Checking edit permission for user ${user.full_name}:`);
-    console.log(`   Current user role: ${userRole}`);
-    
-    switch(userRole) {
-      case "HR":
-        console.log("   ✅ HR can edit all users");
-        return true;
-        
-      case "Manager":
-        if (!currentUser.departmentName && !currentUser.department) {
-          console.log("   ❌ Manager has no department info");
-          return false;
+  const canEditUser = useCallback(
+    (user: User): boolean => {
+      if (!currentUser) return false;
+
+      const userRole = currentUser.role;
+
+      switch (userRole) {
+        case "HR":
+          return true;
+
+        case "Manager": {
+          if (!currentUser.departmentName && !currentUser.department)
+            return false;
+
+          const managerDept = normalizeString(
+            currentUser.departmentName || currentUser.department
+          );
+          const userDept = normalizeString(user.department);
+
+          return managerDept === userDept;
         }
-        
-        const managerDept = normalizeString(currentUser.departmentName || currentUser.department);
-        const userDept = normalizeString(user.department);
-        
-        console.log(`   Manager department: ${managerDept}`);
-        console.log(`   User department: ${userDept}`);
-        console.log(`   Match: ${managerDept === userDept}`);
-        
-        return managerDept === userDept;
-        
-      case "ZonalManager":
-        console.log("   ❌ ZonalManager cannot edit any users");
-        return false;
-        
-      default:
-        console.log(`   ❌ Unknown role: ${userRole}`);
-        return false;
-    }
-  }, [currentUser]);
+        case "ZonalManager":
+          return false;
+
+        default:
+          return false;
+      }
+    },
+    [currentUser]
+  );
 
   // Check if current user can view a specific user
-  const canViewUser = useCallback((user: User): boolean => {
-    if (!currentUser) {
-      console.log("❌ No current user");
-      return false;
-    }
-    
-    const userRole = currentUser.role;
-    
-    // For debugging
-    if (userRole === "Manager") {
-      console.log(`👁️ Checking view permission for Manager:`);
-      console.log(`   Manager department: ${currentUser.departmentName || currentUser.department}`);
-      console.log(`   User department: ${user.department}`);
-      console.log(`   User name: ${user.full_name || user.name}`);
-    }
-    
-    switch(userRole) {
-      case "HR":
-        // HR can view all users
-        return true;
-        
-      case "Manager":
-        // Manager can only view users in their department
-        if (!currentUser.departmentName && !currentUser.department) {
-          console.log("   ❌ Manager has no department info");
-          return false;
-        }
-        
-        const managerDept = normalizeString(currentUser.departmentName || currentUser.department);
-        const userDept = normalizeString(user.department);
-        const canView = managerDept === userDept;
-        
-        console.log(`   Manager dept (normalized): ${managerDept}`);
-        console.log(`   User dept (normalized): ${userDept}`);
-        console.log(`   Can view: ${canView}`);
-        
-        return canView;
-        
-      case "ZonalManager":
-        // ZonalManager can only view users in their allocated area
-        if (!currentUser.allocatedArea) {
-          console.log("   ❌ ZonalManager has no allocated area info");
-          return false;
-        }
-        
-        const managerZone = normalizeString(currentUser.allocatedArea);
-        const userZone = normalizeString(user.allocatedArea);
-        const canViewZone = managerZone === userZone;
-        
-        console.log(`   ZonalManager zone: ${managerZone}`);
-        console.log(`   User zone: ${userZone}`);
-        console.log(`   Can view: ${canViewZone}`);
-        
-        return canViewZone;
-        
-      default:
-        // Default: allow view for other roles or if no specific role
-        console.log(`   ⚠️ Default role ${userRole}, allowing view`);
-        return true;
-    }
-  }, [currentUser]);
+  const canViewUser = useCallback(
+    (user: User): boolean => {
+      if (!currentUser) return false;
+      const userRole = currentUser.role;
 
-  // Filter users based on search term, role, status, AND user permissions
-  const filteredUsers = useMemo(() => {
-    if (!allUsers.length) return [];
-    
-    let filtered = [...allUsers];
-    
-    console.log(`📊 Total users fetched: ${filtered.length}`);
-    
-    // Apply role-based view filtering
-    if (currentUser) {
-      console.log(`🔐 Current user role: ${currentUser.role}`);
-      console.log(`   Department: ${currentUser.departmentName || currentUser.department}`);
-      console.log(`   Allocated Area: ${currentUser.allocatedArea}`);
-      
-      const beforeFilter = filtered.length;
-      filtered = filtered.filter(user => {
-        const canView = canViewUser(user);
-        if (!canView && currentUser.role === "Manager") {
-          console.log(`   ❌ Cannot view ${user.full_name || user.name} - Dept: ${user.department}`);
+      switch (userRole) {
+        case "HR":
+          return true;
+
+        case "Manager": {
+          if (!currentUser.departmentName && !currentUser.department)
+            return false;
+          const managerDept = normalizeString(
+            currentUser.departmentName || currentUser.department
+          );
+          const userDept = normalizeString(user.department);
+          return managerDept === userDept;
         }
-        return canView;
-      });
-      console.log(`   Filtered from ${beforeFilter} to ${filtered.length} users`);
-    } else {
-      console.log("⚠️ No current user info, showing all users");
+
+        case "ZonalManager": {
+          if (!currentUser.allocatedArea) return false;
+          const managerZone = normalizeString(currentUser.allocatedArea);
+          const userZone = normalizeString(user.allocatedArea);
+          return managerZone === userZone;
+        }
+        default:
+          return true;
+      }
+    },
+    [currentUser]
+  );
+
+  // ✅ Filter & Sort Logic (Using Store Data)
+  // This replaces the backend filtering since we fetch all users once
+  const filteredUsers = useMemo(() => {
+    // 1. Cast generic store users to local User type if needed
+    const storeUsers = users as unknown as User[];
+    if (!storeUsers.length) return [];
+
+    let result = [...storeUsers];
+
+    // 2. Permission Filtering
+    if (currentUser) {
+      result = result.filter((user) => canViewUser(user));
     }
-    
-    // Filter by search term (full_name OR employee_code)
+
+    // 3. Search Filtering
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
-      const beforeSearch = filtered.length;
-      filtered = filtered.filter(user => 
-        (user.full_name?.toLowerCase().includes(searchLower) || 
-         user.name?.toLowerCase().includes(searchLower) ||
-         user.employee_code?.toLowerCase().includes(searchLower) ||
-         user.employee_code?.includes(searchTerm.trim()))
+      result = result.filter(
+        (user) =>
+          user.full_name?.toLowerCase().includes(searchLower) ||
+          user.name?.toLowerCase().includes(searchLower) ||
+          user.employee_code?.toLowerCase().includes(searchLower) ||
+          user.employee_code?.includes(searchTerm.trim())
       );
-      console.log(`🔍 Search filtered from ${beforeSearch} to ${filtered.length} users`);
     }
-    
-    // Filter by role
+
+    // 4. Role Filtering
     if (roleFilter !== "") {
-      const beforeRoleFilter = filtered.length;
-      filtered = filtered.filter(user => user.roleId === roleFilter);
-      console.log(`🎭 Role filter filtered from ${beforeRoleFilter} to ${filtered.length} users`);
+      result = result.filter((user) => user.role === roleFilter);
     }
-    
-    // Filter by status
+
+    // 5. Status Filtering
     if (statusFilter !== "") {
-      const beforeStatusFilter = filtered.length;
-      filtered = filtered.filter(user => {
+      result = result.filter((user) => {
         if (statusFilter === "online") return user.is_checkin;
         if (statusFilter === "offline") return !user.is_checkin;
         return true;
       });
-      console.log(`🔋 Status filter filtered from ${beforeStatusFilter} to ${filtered.length} users`);
     }
-    
-    // Sort by name
-    filtered.sort((a, b) => {
+
+    // 6. Sorting
+    result.sort((a, b) => {
       const nameA = (a.full_name || a.name || "").toLowerCase();
       const nameB = (b.full_name || b.name || "").toLowerCase();
-      
+
       if (sortOrder === "asc") {
         return nameA.localeCompare(nameB);
       } else {
         return nameB.localeCompare(nameA);
       }
     });
-    
-    console.log(`✅ Final filtered users: ${filtered.length}`);
-    return filtered;
-  }, [allUsers, currentUser, canViewUser, searchTerm, roleFilter, statusFilter, sortOrder]);
 
-  // Calculate paginated users
+    return result;
+  }, [
+    users,
+    currentUser,
+    canViewUser,
+    searchTerm,
+    roleFilter,
+    statusFilter,
+    sortOrder,
+  ]);
+
+  // ✅ Calculate Pagination from filtered results
   const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * limit;
     const endIndex = startIndex + limit;
     return filteredUsers.slice(startIndex, endIndex);
   }, [filteredUsers, currentPage, limit]);
 
-  // Update total pages when filtered users change
+  // Update total pages when filtered list changes
   useEffect(() => {
     const totalFiltered = filteredUsers.length;
-    setTotalUsers(totalFiltered);
+    setTotalUsersCount(totalFiltered);
     setTotalPages(Math.ceil(totalFiltered / limit));
     setHasMore(currentPage < Math.ceil(totalFiltered / limit));
-    
+
     if (currentPage > Math.ceil(totalFiltered / limit)) {
       setCurrentPage(1);
     }
   }, [filteredUsers, currentPage, limit]);
 
-  // Fetch departments from API
+  // Fetch Departments
   const fetchDepartments = useCallback(async () => {
     try {
       setLoadingDepartments(true);
-      const token = localStorage.getItem("accessToken");
-      
-      if (!token) {
-        console.warn("No token found for departments API");
-        return;
-      }
-      
-      const response = await API.get('/departments/static_departments', {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-      
-      console.log("Departments API response:", response.data);
-      
+      const response = await API.get("/departments/static_departments");
       if (response.data?.departments) {
         setDepartments(response.data.departments);
       } else {
-        console.error("Unexpected departments response structure:", response.data);
         setDepartments([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to fetch departments:", error);
-      if (error.response) {
-        console.error("Departments API error response:", error.response.data);
-      }
       setDepartments([]);
     } finally {
       setLoadingDepartments(false);
     }
   }, []);
 
-  // Fetch roles from API
+  // Fetch Roles
   const fetchRoles = useCallback(async () => {
     try {
       setLoadingRoles(true);
-      const token = localStorage.getItem("accessToken");
-      
-      if (!token) {
-        console.warn("No token found for roles API");
-        return;
-      }
-      
-      const response = await API.get('/roles/static_roles', {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-      
-      console.log("Roles API response:", response.data);
-      
+      const response = await API.get("/roles/static_roles");
       if (response.data?.roles) {
         setRoles(response.data.roles);
       } else {
-        console.error("Unexpected roles response structure:", response.data);
         setRoles([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to fetch roles:", error);
-      if (error.response) {
-        console.error("Roles API error response:", error.response.data);
-      }
       setRoles([]);
     } finally {
       setLoadingRoles(false);
@@ -461,49 +353,49 @@ const UserList: React.FC = () => {
   const exportToExcel = async () => {
     try {
       setExporting(true);
-      
-      // Use filtered users for export
       const usersToExport = filteredUsers;
-      
+
       if (usersToExport.length === 0) {
         alert("No users to export");
         return;
       }
-      
-      // Prepare data for Excel
+
       const excelData = usersToExport.map((user: User, index: number) => ({
         "Sr. No": index + 1,
         "Employee Code": user.employee_code || "N/A",
         "Full Name": user.full_name || user.name || "N/A",
-        "Username": user.username || "N/A",
-        "Email": user.email || "N/A",
-        "Role": user.role || "N/A",
-        "Department": user.department || "N/A",
+        Username: user.username || "N/A",
+        Email: user.email || "N/A",
+        Role: user.role || "N/A",
+        Department: user.department || "N/A",
         "Allocated Area": user.allocatedArea || "N/A",
         "Mobile Number": user.mobileNo || "N/A",
-        "Status": user.is_checkin ? "Online" : "Offline",
-        "Date Joined": user.date ? new Date(user.date).toLocaleDateString() : "N/A",
-        "Address": user.address || "N/A",
-        "Birth Date": user.birthDate ? new Date(user.birthDate).toLocaleDateString() : "N/A"
+        Status: user.is_checkin ? "Online" : "Offline",
+        "Date Joined": user.date
+          ? new Date(user.date).toLocaleDateString()
+          : "N/A",
+        Address: user.address || "N/A",
+        "Birth Date": user.birthDate
+          ? new Date(user.birthDate).toLocaleDateString()
+          : "N/A",
       }));
-      
-      // Create worksheet
+
       const worksheet = XLSX.utils.json_to_sheet(excelData);
-      
-      // Create workbook
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-      
-      // Auto-size columns
-      const maxWidth = excelData.reduce((w, r) => Math.max(w, Object.values(r).join("").length), 10);
+
+      const maxWidth = excelData.reduce(
+        (w, r) => Math.max(w, Object.values(r).join("").length),
+        10
+      );
       worksheet["!cols"] = [{ wch: maxWidth }];
-      
-      // Generate Excel file
-      const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      const fileName = `users_export_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       XLSX.writeFile(workbook, fileName);
-      
+
       alert(`Exported ${usersToExport.length} users to ${fileName}`);
-      
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       alert("Failed to export users. Please try again.");
@@ -512,153 +404,75 @@ const UserList: React.FC = () => {
     }
   };
 
-  // Fetch current user, departments and roles for edit form
+  // Initial Data Load
   useEffect(() => {
     fetchCurrentUser();
     fetchDepartments();
     fetchRoles();
   }, [fetchCurrentUser, fetchDepartments, fetchRoles]);
 
-  // Fetch all users once
-  const fetchAllUsers = useCallback(async () => {
-    setLoading(true);
-    
-    try {
-      const params: PaginationParams = {
-        page: 1,
-        limit: 1000, // Fetch all users at once
-        sort_order: sortOrder
-      };
-      
-      console.log("Fetching all users with params:", params);
-      
-      const res = await fetchUsers(params);
-      
-      const userData = res.data || [];
-      const total = res.total || 0;
-      
-      console.log(`📥 Fetched ${userData.length} users out of ${total} total`);
-      
-      // Debug: Log first few users' departments
-      if (userData.length > 0) {
-        console.log("Sample user departments:");
-        userData.slice(0, 5).forEach((user: User, index: number) => {
-          console.log(`  ${index + 1}. ${user.full_name || user.name} - Dept: "${user.department}"`);
-        });
-      }
-      
-      setAllUsers(userData);
-      setTotalUsers(total);
-      setCurrentPage(1); // Reset to first page
-      
-    } catch (err) {
-      console.error("❌ Failed to fetch users:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchUsers, sortOrder]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchAllUsers();
-  }, [fetchAllUsers]);
-
-  // Handle edit button click with permission check
+  // Handle edit button click
   const handleEditClick = async (user: User) => {
-    console.log("Editing user:", user);
-    
-    // Check if user can edit
     if (!canEditUser(user)) {
       alert("You don't have permission to edit this user.");
       return;
     }
-    
+
     setSelectedUser(user);
-    
-    // Get the correct user ID
     const userId = user.id || user.userId;
-    
+
     try {
-      // Fetch complete user details from API
-      const token = localStorage.getItem("accessToken");
-      if (token && userId) {
-        const response = await API.get(`/admin/users/${userId}`, {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        });
-        
-        const userDetails = response.data?.data || response.data;
-        console.log("Fetched user details:", userDetails);
-        
-        // Find department ID
-        let departmentId = 0;
-        if (userDetails.department) {
-          const dept = departments.find(d => 
-            d.name.toLowerCase() === userDetails.department.toLowerCase()
-          );
-          departmentId = dept?.departmentId || 0;
-        }
-        
-        // Find role ID
-        let roleId = user.roleId || 0;
-        if (userDetails.role) {
-          const role = roles.find(r => 
-            r.name.toLowerCase() === userDetails.role.toLowerCase()
-          );
-          roleId = role?.id || user.roleId || 0;
-        }
-        
-        // Populate edit form with fetched user data
-        setEditForm({
-          full_name: userDetails.full_name || userDetails.name || user.full_name || "",
-          username: userDetails.username || user.username || user.name ||  "",
-          email: userDetails.email || user.email || "",
-          mobileNo: userDetails.mobileNo || user.mobileNo || "",
-          address: userDetails.address || user.address || "",
-          allocatedArea: userDetails.allocatedArea || user.allocatedArea || "",
-          birthDate: userDetails.birthDate ? new Date(userDetails.birthDate).toISOString().split('T')[0] : "",
-          profileImageUrl: userDetails.profileImageUrl || userDetails.profile_image || user.profile_image || "",
-          departmentId: departmentId,
-          roleId: roleId
-        });
-      } else {
-        // Fallback to existing user data if API fails
-        const department = departments.find(dept => 
-          dept.name.toLowerCase() === user.department?.toLowerCase()
+      // Fetch fresh details for editing
+      const response = await API.get(`/admin/users/${userId}`);
+      const userDetails = response.data?.data || response.data;
+
+      let departmentId = 0;
+      if (userDetails.department) {
+        const dept = departments.find(
+          (d) => d.name.toLowerCase() === userDetails.department.toLowerCase()
         );
-        
-        const role = roles.find(r => 
-          r.name.toLowerCase() === user.role?.toLowerCase() || 
-          r.id === user.roleId
-        );
-        
-        setEditForm({
-          full_name: user.full_name || "",
-          username: user.username ||user.name || "",
-          email: user.email || "",
-          mobileNo: user.mobileNo || "",
-          address: user.address || "",
-          allocatedArea: user.allocatedArea || "",
-          birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
-          profileImageUrl: user.profile_image || user.profileImageUrl || "",
-          departmentId: department?.departmentId || 0,
-          roleId: role?.id || user.roleId || 0
-        });
+        departmentId = dept?.departmentId || 0;
       }
+
+      let roleId = user.roleId || 0;
+      if (userDetails.role) {
+        const role = roles.find(
+          (r) => r.name.toLowerCase() === userDetails.role.toLowerCase()
+        );
+        roleId = role?.id || user.roleId || 0;
+      }
+
+      setEditForm({
+        full_name:
+          userDetails.full_name || userDetails.name || user.full_name || "",
+        username: userDetails.username || user.username || user.name || "",
+        email: userDetails.email || user.email || "",
+        mobileNo: userDetails.mobileNo || user.mobileNo || "",
+        address: userDetails.address || user.address || "",
+        allocatedArea: userDetails.allocatedArea || user.allocatedArea || "",
+        birthDate: userDetails.birthDate
+          ? new Date(userDetails.birthDate).toISOString().split("T")[0]
+          : "",
+        profileImageUrl:
+          userDetails.profileImageUrl ||
+          userDetails.profile_image ||
+          user.profile_image ||
+          "",
+        departmentId: departmentId,
+        roleId: roleId,
+      });
     } catch (error) {
-      console.error("Failed to fetch user details:", error);
-      // Fallback to existing user data
-      const department = departments.find(dept => 
-        dept.name.toLowerCase() === user.department?.toLowerCase()
+      console.error("Failed to fetch user details, using list data:", error);
+      // Fallback
+      const department = departments.find(
+        (dept) => dept.name.toLowerCase() === user.department?.toLowerCase()
       );
-      
-      const role = roles.find(r => 
-        r.name.toLowerCase() === user.role?.toLowerCase() || 
-        r.id === user.roleId
+      const role = roles.find(
+        (r) =>
+          r.name.toLowerCase() === user.role?.toLowerCase() ||
+          r.id === user.roleId
       );
-      
+
       setEditForm({
         full_name: user.full_name || "",
         username: user.username || user.name || "",
@@ -666,101 +480,46 @@ const UserList: React.FC = () => {
         mobileNo: user.mobileNo || "",
         address: user.address || "",
         allocatedArea: user.allocatedArea || "",
-        birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
+        birthDate: user.birthDate
+          ? new Date(user.birthDate).toISOString().split("T")[0]
+          : "",
         profileImageUrl: user.profile_image || user.profileImageUrl || "",
         departmentId: department?.departmentId || 0,
-        roleId: role?.id || user.roleId || 0
+        roleId: role?.id || user.roleId || 0,
       });
     }
-    
+
     setIsEditModalOpen(true);
   };
 
-  // Handle edit form input changes
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleEditFormChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({
+    setEditForm((prev) => ({
       ...prev,
-      [name]: name === 'departmentId' || name === 'roleId' ? parseInt(value) || 0 : value
+      [name]:
+        name === "departmentId" || name === "roleId"
+          ? parseInt(value) || 0
+          : value,
     }));
   };
 
-  // Handle edit form submission with permission check
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedUser) {
-      console.error("No user selected");
-      alert("No user selected");
-      return;
-    }
-    
-    // Double-check permission before submitting
+    if (!selectedUser) return;
+
     if (!canEditUser(selectedUser)) {
       alert("You don't have permission to edit this user.");
       return;
     }
-    
-    // Get the correct user ID
+
     const userId = selectedUser.id || selectedUser.userId;
-    
-    if (!userId) {
-      console.error("User ID is undefined. Selected user:", selectedUser);
-      alert("Cannot update user: User ID is missing");
-      return;
-    }
-    
-    console.log("Updating user with ID:", userId);
-    console.log("Edit form data:", editForm);
-    console.log("Available departments:", departments);
-    console.log("Available roles:", roles);
-    
-    // Validate required fields
-    if (!editForm.full_name.trim()) {
-      alert("Full name is required");
-      return;
-    }
-    
-    if (!editForm.email.trim()) {
-      alert("Email is required");
-      return;
-    }
-    
-    if (!editForm.departmentId || editForm.departmentId === 0) {
-      alert("Please select a department");
-      return;
-    }
-    
-    if (!editForm.roleId || editForm.roleId === 0) {
-      alert("Please select a role");
-      return;
-    }
-    
-    // Validate that selected department exists
-    const selectedDepartment = departments.find(d => d.departmentId === editForm.departmentId);
-    if (!selectedDepartment) {
-      alert("Selected department is invalid. Please refresh and try again.");
-      return;
-    }
-    
-    // Validate that selected role exists
-    const selectedRole = roles.find(r => r.id === editForm.roleId);
-    if (!selectedRole) {
-      alert("Selected role is invalid. Please refresh and try again.");
-      return;
-    }
-    
     setIsEditing(true);
-    
+
     try {
-      const token = localStorage.getItem("accessToken");
-      
-      if (!token) {
-        alert("Authentication token not found. Please login again.");
-        return;
-      }
-      
-      // Prepare data for API - ensure all numbers are integers
       const updateData = {
         username: editForm.username?.trim(),
         fullName: editForm.full_name.trim(),
@@ -771,123 +530,35 @@ const UserList: React.FC = () => {
         allocatedArea: editForm.allocatedArea.trim() || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
         departmentId: Number(editForm.departmentId),
-        roleId: Number(editForm.roleId)
+        roleId: Number(editForm.roleId),
       };
-      
-      console.log("Sending update data:", updateData);
-      console.log("Making PUT request to:", `/admin/users/${userId}`);
-      
-      // Make the API call
-      const response = await API.put(
-        `/admin/users/${userId}`,
-        updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
 
+      const response = await API.put(`/admin/users/${userId}`, updateData);
       const result = response.data;
 
-      console.log("Update response:", result);
-
       if (result.success) {
-        // Find the updated department and role names
-        const updatedDepartment = departments.find(d => d.departmentId === editForm.departmentId);
-        const updatedRole = roles.find(r => r.id === editForm.roleId);
-        const updatedFullName = result.data.fullName || editForm.full_name;
-        
-        // Update the user in the allUsers state
-        setAllUsers(prev => prev.map(user => {
-          const currentUserId = user.id || user.userId;
-          if (currentUserId === userId) {
-            return { 
-              ...user, 
-              name: updatedFullName,
-              full_name: updatedFullName,
-              email: result.data.email || user.email,
-              mobileNo: result.data.mobileNo || user.mobileNo,
-              address: result.data.address || user.address,
-              allocatedArea: result.data.allocatedArea || user.allocatedArea,
-              birthDate: result.data.birthDate || user.birthDate,
-              profile_image: result.data.profileImageUrl || user.profile_image,
-              department: updatedDepartment?.name || user.department,
-              role: updatedRole?.name || result.data.role || user.role,
-              roleId: editForm.roleId
-            };
-          }
-          return user;
-        }));
-
-        // Update selected user in modal if it's open
-        if (selectedUser) {
-          const updatedSelectedUser = {
-            ...selectedUser,
-            name: updatedFullName,
-            full_name: updatedFullName,
-            email: result.data.email || selectedUser.email,
-            mobileNo: result.data.mobileNo || selectedUser.mobileNo,
-            address: result.data.address || selectedUser.address,
-            birthDate: result.data.birthDate || selectedUser.birthDate,
-            allocatedArea: result.data.allocatedArea || selectedUser.allocatedArea,
-            profile_image: result.data.profileImageUrl || selectedUser.profile_image,
-            department: updatedDepartment?.name || selectedUser.department,
-            role: updatedRole?.name || result.data.role || selectedUser.role,
-            roleId: editForm.roleId
-          };
-          setSelectedUser(updatedSelectedUser);
-        }
-
         alert("User updated successfully!");
         setIsEditModalOpen(false);
+
+        // ✅ REFRESH STORE: Invalidate cache and re-fetch to show updated data
+        resetStore();
+        fetchUsers();
       } else {
         alert(result.message || "Failed to update user");
       }
     } catch (error: any) {
       console.error("Error updating user:", error);
-      
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-        
-        let errorMessage = error.response.data?.message || "Failed to update user";
-        
-        if (error.response.data?.error?.includes('roleId')) {
-          errorMessage += "\n\nPossible issue: Role ID format is incorrect. Please ensure you're sending a numeric role ID.";
-        } else if (error.response.data?.error?.includes('departmentId')) {
-          errorMessage += "\n\nPossible issue: Department ID format is incorrect.";
-        }
-        
-        alert(`Error: ${errorMessage}`);
-      } else if (error.request) {
-        console.error("No response received:", error.request);
-        alert("No response from server. Please check if your backend server is running.");
-      } else {
-        console.error("Request setup error:", error.message);
-        alert(`Error: ${error.message}`);
-      }
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update user";
+      alert(`Error: ${msg}`);
     } finally {
       setIsEditing(false);
     }
   };
 
-  // Helper function to get department name from ID
-  const getDepartmentName = (departmentId: number): string => {
-    if (!departmentId) return "Unknown";
-    const dept = departments.find(d => d.departmentId === departmentId);
-    return dept ? dept.name : "Unknown";
-  };
-
-  // Helper function to get role name from ID
-  const getRoleName = (roleId: number): string => {
-    if (!roleId) return "Unknown";
-    const role = roles.find(r => r.id === roleId);
-    return role ? role.name : "Unknown";
-  };
-
-  // Fixed intersection observer for infinite scroll
+  // Infinite Scroll Observer
   useEffect(() => {
     if (!sentinelRef.current || !hasMore || loadingMore) return;
 
@@ -895,7 +566,7 @@ const UserList: React.FC = () => {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && hasMore && !loadingMore) {
-          setCurrentPage(prev => prev + 1);
+          setCurrentPage((prev) => prev + 1);
         }
       },
       {
@@ -915,21 +586,17 @@ const UserList: React.FC = () => {
     };
   }, [hasMore, loadingMore]);
 
-  // Handle search change with debounce
+  // Handlers for Filters
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, roleFilter, statusFilter]);
 
   const toggleSortOrder = () => {
-    const newOrder = sortOrder === "asc" ? "desc" : "asc";
-    setSortOrder(newOrder);
-    // Re-fetch users with new sort order
-    fetchAllUsers();
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
   const clearFilters = () => {
@@ -939,14 +606,10 @@ const UserList: React.FC = () => {
   };
 
   const handleRowClick = (user: User) => {
-    console.log("Row clicked, user:", user);
-    
-    // Check if user can view this user
     if (!canViewUser(user)) {
       alert("You don't have permission to view this user.");
       return;
     }
-    
     setSelectedUser(user);
     setIsModalOpen(true);
   };
@@ -958,6 +621,7 @@ const UserList: React.FC = () => {
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
+    // Reset form
     setEditForm({
       full_name: "",
       email: "",
@@ -968,15 +632,13 @@ const UserList: React.FC = () => {
       allocatedArea: "",
       profileImageUrl: "",
       departmentId: 0,
-      roleId: 0
+      roleId: 0,
     });
   };
 
   const handleGoToPage = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
     setCurrentPage(page);
-    
-    // Scroll to top
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
@@ -988,7 +650,7 @@ const UserList: React.FC = () => {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -1000,11 +662,12 @@ const UserList: React.FC = () => {
           key={`page-${i}`}
           onClick={() => handleGoToPage(i)}
           className={`
-            min-w-[32px] h-8 px-2 mx-1 rounded-lg sm:rounded-xl
+            min-w-8 h-8 px-2 mx-1 rounded-lg sm:rounded-xl
             text-xs font-medium transition-all duration-300
-            ${currentPage === i
-              ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md"
-              : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80"
+            ${
+              currentPage === i
+                ? "bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-md"
+                : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80"
             }
             backdrop-blur-sm border border-white/60 dark:border-gray-600/60
           `}
@@ -1022,64 +685,68 @@ const UserList: React.FC = () => {
           className={`
             px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-medium
             backdrop-blur-sm border transition-all duration-300
-            ${currentPage === 1
-              ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
-              : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
+            ${
+              currentPage === 1
+                ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
+                : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
             }
           `}
         >
           « First
         </button>
-        
+
         <button
           onClick={() => handleGoToPage(currentPage - 1)}
           disabled={currentPage === 1}
           className={`
             px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-medium
             backdrop-blur-sm border transition-all duration-300
-            ${currentPage === 1
-              ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
-              : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
+            ${
+              currentPage === 1
+                ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
+                : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
             }
           `}
         >
           ‹ Prev
         </button>
-        
+
         {startPage > 1 && (
           <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
         )}
-        
+
         {pages}
-        
+
         {endPage < totalPages && (
           <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
         )}
-        
+
         <button
           onClick={() => handleGoToPage(currentPage + 1)}
           disabled={currentPage === totalPages}
           className={`
             px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-medium
             backdrop-blur-sm border transition-all duration-300
-            ${currentPage === totalPages
-              ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
-              : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
+            ${
+              currentPage === totalPages
+                ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
+                : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
             }
           `}
         >
           Next ›
         </button>
-        
+
         <button
           onClick={() => handleGoToPage(totalPages)}
           disabled={currentPage === totalPages}
           className={`
             px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-medium
             backdrop-blur-sm border transition-all duration-300
-            ${currentPage === totalPages
-              ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
-              : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
+            ${
+              currentPage === totalPages
+                ? "bg-white/30 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border-white/30 dark:border-gray-700/30 cursor-not-allowed"
+                : "bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 border-white/60 dark:border-gray-600/60"
             }
           `}
         >
@@ -1089,7 +756,6 @@ const UserList: React.FC = () => {
     );
   };
 
-  // Generate a unique key for each user row
   const getUserKey = (user: User, index: number): string => {
     const userId = user.id || user.userId;
     const baseKey = userId || `user-${index}`;
@@ -1097,59 +763,25 @@ const UserList: React.FC = () => {
     return `${baseKey}-${pageIndex}`;
   };
 
-  // Display current user role info
-  const renderUserRoleInfo = () => {
-    if (!currentUser) return null;
-    
-    // return (
-    //   <div className="
-    //     mb-3 p-2 rounded-lg
-    //     bg-gradient-to-r from-blue-50 to-blue-100
-    //     dark:from-blue-900/20 dark:to-blue-800/20
-    //     border border-blue-200 dark:border-blue-700/30
-    //     text-sm
-    //   ">
-    //     <div className="flex items-center justify-between">
-    //       <div className="flex items-center">
-    //         <span className="font-medium text-blue-700 dark:text-blue-300">
-    //           Logged in as:
-    //         </span>
-    //         <span className="ml-2 px-2 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-bold">
-    //           {currentUser.role}
-    //         </span>
-    //       </div>
-    //       <div className="text-xs text-blue-600 dark:text-blue-400">
-    //         {currentUser.role === "HR" && "Viewing all users"}
-    //         {currentUser.role === "Manager" && `Viewing ${currentUser.departmentName || currentUser.department || "your"} department`}
-    //         {currentUser.role === "ZonalManager" && `Viewing ${currentUser.allocatedArea || "your"} zone`}
-    //       </div>
-    //     </div>
-      
-    //     <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-    //       <div>User ID: {currentUser.id}</div>
-    //       <div>Department: {currentUser.departmentName || currentUser.department || "Not set"}</div>
-    //       <div>Zone: {currentUser.allocatedArea || "Not set"}</div>
-    //     </div>
-    //   </div>
-    // );
-  };
-
-  // Show loading for current user
+  // Show loading for current user info
   if (loadingCurrentUser) {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-2 text-gray-600 dark:text-gray-300">Loading user info...</span>
+        <span className="ml-2 text-gray-600 dark:text-gray-300">
+          Loading user info...
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="
-      w-[100%] max-w-[100%] mx-auto
+    <div
+      className="
+      w-full max-w-full mx-auto
       px-2 sm:px-3 md:px-4
       rounded-2xl sm:rounded-3xl
-      bg-gradient-to-br from-white/20 via-white/10 to-white/5
+      bg-linear-to-br from-white/20 via-white/10 to-white/5
       dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/10
       backdrop-blur-2xl
       border border-white/40 dark:border-gray-700/40
@@ -1161,48 +793,62 @@ const UserList: React.FC = () => {
       flex flex-col
       h-[85vh]
       box-border
-    ">
+    "
+    >
       {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
       <div className="relative z-10 flex flex-col h-full">
-        <h2 className="
+        <h2
+          className="
           text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 text-center
           text-dark
           bg-clip-text 
           px-2
-        ">
+        "
+        >
           Users Directory
         </h2>
 
-        {/* Display current user role info */}
-        {renderUserRoleInfo()}
-
-        {/* Enhanced Filter Section - Reduced Height */}
-        <div className="
-          bg-gradient-to-br from-white/40 to-white/20
+        {/* Filter Section */}
+        <div
+          className="
+          bg-linear-to-br from-white/40 to-white/20
           dark:from-gray-800/40 dark:to-gray-900/20
           backdrop-blur-xl
           border border-white/40 dark:border-gray-700/40
           rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4
           shadow-[0_4px_20px_rgba(0,0,0,0.1)]
           dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
-          flex-shrink-0
-        ">
+          shrink-0
+        "
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
-            {/* Search Input - Search by full_name OR employee_code */}
+            {/* Search Input */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Search Users (Name or Employee Code)
               </label>
               <div className="relative">
-                <div className="
+                <div
+                  className="
                   absolute left-2 top-1/2 transform -translate-y-1/2
                   p-1 rounded
                   bg-white/50 dark:bg-gray-700/50
                   backdrop-blur-sm
-                ">
-                  <svg className="h-3 w-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                "
+                >
+                  <svg
+                    className="h-3 w-3 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                 </div>
                 <input
@@ -1235,7 +881,7 @@ const UserList: React.FC = () => {
               </div>
             </div>
 
-            {/* Role Filter - Fixed to use API */}
+            {/* Role Filter */}
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Filter by Role
@@ -1243,7 +889,8 @@ const UserList: React.FC = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => {
-                  const value = e.target.value === "" ? "" : Number(e.target.value);
+                  const value =
+                    e.target.value === "" ? "" : String(e.target.value);
                   setRoleFilter(value);
                 }}
                 disabled={loadingRoles}
@@ -1259,19 +906,21 @@ const UserList: React.FC = () => {
                   text-sm
                   transition-all duration-300
                   appearance-none
-                  bg-no-repeat bg-[right_0.5rem_center] bg-[length:0.75em]
+                  bg-no-repeat bg-position-[right_0.5rem_center] bg-size-[0.75em]
                   disabled:opacity-50 disabled:cursor-not-allowed
                 "
                 style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
                 }}
               >
                 <option value="">All Roles</option>
                 {loadingRoles ? (
-                  <option value="" disabled>Loading roles...</option>
+                  <option value="" disabled>
+                    Loading roles...
+                  </option>
                 ) : (
                   roles.map((r) => (
-                    <option key={`role-${r.id}`} value={r.id}>
+                    <option key={`role-${r.id}`} value={r.name}>
                       {r.name}
                     </option>
                   ))
@@ -1301,10 +950,10 @@ const UserList: React.FC = () => {
                   text-sm
                   transition-all duration-300
                   appearance-none
-                  bg-no-repeat bg-[right_0.5rem_center] bg-[length:0.75em]
+                  bg-no-repeat bg-position-[right_0.5rem_center] bg-size-[0.75em]
                 "
                 style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
                 }}
               >
                 <option value="">All Status</option>
@@ -1314,24 +963,27 @@ const UserList: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter Actions - Updated with Export Button */}
+          {/* Actions: Clear & Export */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div className="
+            <div
+              className="
               text-xs text-gray-600 dark:text-gray-300
               px-2 py-1 rounded
               bg-white/40 dark:bg-gray-700/40
               backdrop-blur-sm
               whitespace-nowrap
-            ">
-              Showing {paginatedUsers.length} of {filteredUsers.length} filtered users • Page {currentPage} of {totalPages}
+            "
+            >
+              Showing {paginatedUsers.length} of {filteredUsers.length} filtered
+              users • Page {currentPage} of {totalPages}
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
                 onClick={clearFilters}
                 className="
                   px-3 py-1.5
-                  bg-gradient-to-r from-white/40 to-white/20
+                  bg-linear-to-r from-white/40 to-white/20
                   dark:from-gray-700/40 dark:to-gray-800/20
                   backdrop-blur-sm
                   border border-white/60 dark:border-gray-600/60
@@ -1345,18 +997,28 @@ const UserList: React.FC = () => {
                   flex items-center justify-center
                 "
               >
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-3 h-3 mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Clear Filters
               </button>
-              
+
               <button
                 onClick={exportToExcel}
                 disabled={exporting || filteredUsers.length === 0}
                 className="
                   px-3 py-1.5
-                  bg-gradient-to-r from-green-500/80 to-green-600/80
+                  bg-linear-to-r from-green-500/80 to-green-600/80
                   hover:from-green-600/80 hover:to-green-700/80
                   backdrop-blur-sm
                   border border-green-400/60 dark:border-green-600/60
@@ -1372,16 +1034,41 @@ const UserList: React.FC = () => {
               >
                 {exporting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg
+                      className="animate-spin -ml-1 mr-1 h-3 w-3 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     Exporting...
                   </>
                 ) : (
                   <>
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <svg
+                      className="w-3 h-3 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
                     </svg>
                     Export to Excel
                   </>
@@ -1391,22 +1078,27 @@ const UserList: React.FC = () => {
           </div>
         </div>
 
-        {/* Main content area with scroll - Increased Height */}
+        {/* Main content area with scroll */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {loading && allUsers.length === 0 ? (
-            <div className="
+          {/* ✅ Check store isLoading instead of local loading */}
+          {isLoading && users.length === 0 ? (
+            <div
+              className="
               flex flex-col justify-center items-center py-8 sm:py-12
-              bg-gradient-to-br from-white/30 to-white/10
+              bg-linear-to-br from-white/30 to-white/10
               dark:from-gray-800/30 dark:to-gray-900/10
               backdrop-blur-lg
               rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
               text-center
               flex-1
-            ">
-              <div className="
+            "
+            >
+              <div
+                className="
                 animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
                 backdrop-blur-sm mb-2 sm:mb-3
-              "></div>
+              "
+              ></div>
               <span className="text-gray-600 dark:text-gray-300 text-sm">
                 Loading users...
               </span>
@@ -1414,26 +1106,33 @@ const UserList: React.FC = () => {
           ) : (
             <>
               {/* Debug info for Manager */}
-              {currentUser?.role === "Manager" && filteredUsers.length === 0 && allUsers.length > 0 && (
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                  <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                    ⚠️ No users found in your department. 
-                  </p>
-                  <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                    Your department: <strong>{currentUser.departmentName || currentUser.department || "Not set"}</strong>
-                  </p>
-                  <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-                    Total users in system: {allUsers.length}
-                  </p>
-                </div>
-              )}
-              
+              {currentUser?.role === "Manager" &&
+                filteredUsers.length === 0 &&
+                users.length > 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                      ⚠️ No users found in your department.
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                      Your department:{" "}
+                      <strong>
+                        {currentUser.departmentName ||
+                          currentUser.department ||
+                          "Not set"}
+                      </strong>
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+                      Total users in system: {users.length}
+                    </p>
+                  </div>
+                )}
+
               {/* Users Table Container with Scroll */}
               <div
                 ref={scrollContainerRef}
                 className="
                   overflow-hidden rounded-xl sm:rounded-2xl
-                  bg-gradient-to-br from-white/40 to-white/20
+                  bg-linear-to-br from-white/40 to-white/20
                   dark:from-gray-800/40 dark:to-gray-900/20
                   backdrop-blur-xl
                   border border-white/40 dark:border-gray-700/40
@@ -1447,107 +1146,63 @@ const UserList: React.FC = () => {
               >
                 <div className="min-w-full h-full">
                   <div className="h-full flex flex-col">
-                    {/* Table Header - Fixed with corrected spacing */}
-                    <div className="flex-shrink-0 sticky top-0 z-10">
-                      <div className="
+                    {/* Table Header */}
+                    <div className="shrink-0 sticky top-0 z-10">
+                      <div
+                        className="
                         grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
                         px-2 py-2
-                        bg-gradient-to-r from-white/60 to-white/40
+                        bg-linear-to-r from-white/60 to-white/40
                         dark:from-gray-800/60 dark:to-gray-900/40
                         backdrop-blur-lg
                         border-b border-white/30 dark:border-gray-700/30
-                      ">
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider
-                          whitespace-nowrap
-                        ">
+                      "
+                      >
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Sr.no
                         </div>
-                        <div 
-                          className="
-                            px-6 text-left text-xs font-semibold
-                            text-gray-600 dark:text-gray-300
-                            uppercase tracking-wider cursor-pointer
-                            hover:bg-white/30 dark:hover:bg-gray-800/30
-                            transition-colors duration-300
-                            whitespace-nowrap
-                          "
+                        <div
+                          className="px-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/30 dark:hover:bg-gray-800/30 transition-colors duration-300 whitespace-nowrap"
                           onClick={toggleSortOrder}
                         >
                           <div className="flex items-center space-x-1">
                             <span>Name</span>
-                            <span className="
-                              text-blue-600 dark:text-blue-400 text-xs
-                              bg-blue-100/50 dark:bg-blue-900/30
-                              rounded-full p-0.5
-                            ">
+                            <span className="text-blue-600 dark:text-blue-400 text-xs bg-blue-100/50 dark:bg-blue-900/30 rounded-full p-0.5">
                               {sortOrder === "asc" ? "↑" : "↓"}
                             </span>
                           </div>
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider hidden sm:table-cell
-                          whitespace-nowrap
-                        ">
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell whitespace-nowrap">
                           Employee Code
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider hidden lg:table-cell
-                          whitespace-nowrap
-                        ">
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell whitespace-nowrap">
                           Email
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider
-                          whitespace-nowrap
-                        ">
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Role
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider
-                          whitespace-nowrap
-                        ">
-                         Allocated Area
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                          Allocated Area
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider hidden md:table-cell
-                          whitespace-nowrap
-                        ">
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell whitespace-nowrap">
                           Department
                         </div>
-                        <div className="
-                          px-1 text-left text-xs font-semibold
-                          text-gray-600 dark:text-gray-300
-                          uppercase tracking-wider
-                          whitespace-nowrap
-                        ">
+                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Actions
                         </div>
                       </div>
                     </div>
 
-                    {/* Table Body - Scrollable with corrected spacing */}
+                    {/* Table Body */}
                     <div className="flex-1 overflow-y-auto">
                       <div className="divide-y divide-white/20 dark:divide-gray-700/20">
                         {paginatedUsers.length > 0 ? (
                           paginatedUsers.map((user, index) => {
                             const userKey = getUserKey(user, index);
                             const canEdit = canEditUser(user);
-                            
+
                             return (
-                              <div 
+                              <div
                                 key={userKey}
                                 className="
                                   grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
@@ -1557,134 +1212,88 @@ const UserList: React.FC = () => {
                                   backdrop-blur-sm
                                 "
                               >
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
-                                  className="
-                                    px-1 py-2 whitespace-nowrap
-                                    text-xs text-gray-900 dark:text-gray-100
-                                    cursor-pointer
-                                  "
+                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-100 cursor-pointer"
                                 >
                                   {(currentPage - 1) * limit + index + 1}
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
                                   className="py-2 whitespace-nowrap cursor-pointer"
                                 >
                                   <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                      <div className="
-                                        h-8 w-8 rounded-lg
-                                        bg-gradient-to-r from-blue-500 to-black-900
-                                        dark:from-blue-400 dark:to-black-900
-                                        flex items-center justify-center text-white
-                                        text-sm font-bold
-                                      ">
-                                        {user.full_name?.charAt(0).toUpperCase() || user.name?.charAt(0).toUpperCase() || '?'}
+                                    <div className="shrink-0">
+                                      <div className="h-8 w-8 rounded-lg bg-linear-to-r from-blue-500 to-black-900 dark:from-blue-400 dark:to-black-900 flex items-center justify-center text-white text-sm font-bold">
+                                        {user.full_name
+                                          ?.charAt(0)
+                                          .toUpperCase() ||
+                                          user.name?.charAt(0).toUpperCase() ||
+                                          "?"}
                                       </div>
                                     </div>
                                     <div className="min-w-0 flex-1 ml-2">
                                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
                                         <span className="inline-flex items-center">
-                                          <span className="
-                                            bg-gradient-to-r from-blue-600 to-purple-600
-                                            dark:from-blue-400 dark:to-purple-400
-                                            bg-clip-text text-transparent
-                                            font-bold
-                                          ">
-                                            {user.full_name?.charAt(0) || user.name?.charAt(0) || ''}
+                                          <span className="bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-bold">
+                                            {user.full_name?.charAt(0) ||
+                                              user.name?.charAt(0) ||
+                                              ""}
                                           </span>
                                           <span className="text-gray-900 dark:text-gray-100 ml-0">
-                                            {user.full_name?.slice(1) || user.name?.slice(1) || 'N/A'}
+                                            {user.full_name?.slice(1) ||
+                                              user.name?.slice(1) ||
+                                              "N/A"}
                                           </span>
                                         </span>
                                       </div>
-                                      <div className="
-                                        text-xs text-gray-600 dark:text-gray-400 sm:hidden
-                                        truncate leading-tight mt-0.5
-                                      ">
-                                        {user.employee_code || 'N/A'}
+                                      <div className="text-xs text-gray-600 dark:text-gray-400 sm:hidden truncate leading-tight mt-0.5">
+                                        {user.employee_code || "N/A"}
                                       </div>
-                                      <div className="
-                                        text-xs text-gray-600 dark:text-gray-400 lg:hidden
-                                        truncate leading-tight mt-0.5
-                                      ">
-                                        {user.email || 'N/A'}
+                                      <div className="text-xs text-gray-600 dark:text-gray-400 lg:hidden truncate leading-tight mt-0.5">
+                                        {user.email || "N/A"}
                                       </div>
                                     </div>
                                   </div>
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
-                                  className="
-                                    px-1 py-2 whitespace-nowrap
-                                    text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell
-                                    cursor-pointer
-                                  "
+                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell cursor-pointer"
                                 >
-                                  <div className="
-                                    bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                    backdrop-blur-sm truncate
-                                  ">
-                                    {user.employee_code || 'N/A'}
+                                  <div className="bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm truncate">
+                                    {user.employee_code || "N/A"}
                                   </div>
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
-                                  className="
-                                    px-1 py-2 whitespace-nowrap
-                                    text-xs text-gray-600 dark:text-gray-400 hidden lg:table-cell
-                                    cursor-pointer
-                                  "
+                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 hidden lg:table-cell cursor-pointer"
                                 >
-                                  <div className="
-                                    truncate
-                                    bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                    backdrop-blur-sm
-                                  ">
+                                  <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm">
                                     {user.email || "N/A"}
                                   </div>
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
                                   className="px-1 py-2 whitespace-nowrap cursor-pointer"
                                 >
-                                  <span className="
-                                    inline-flex items-center px-2 py-1 rounded-lg
-                                    text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30
-                                    text-blue-800 dark:text-blue-300 backdrop-blur-sm
-                                    truncate
-                                  ">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate">
                                     {user.role}
                                   </span>
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
                                   className="px-1 py-2 whitespace-nowrap cursor-pointer"
                                 >
-                                  <span className="
-                                    inline-flex items-center px-2 py-1 rounded-lg
-                                    text-xs font-medium bg-green-100/50 dark:bg-green-900/30
-                                    text-green-800 dark:text-green-300 backdrop-blur-sm
-                                    truncate
-                                  ">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate">
                                     {user.allocatedArea || "N/A"}
                                   </span>
                                 </div>
-                                <div 
+                                <div
                                   onClick={() => handleRowClick(user)}
-                                  className="
-                                    px-1 py-2 whitespace-nowrap
-                                    text-xs text-gray-600 dark:text-gray-400 hidden md:table-cell
-                                    cursor-pointer
-                                  "
+                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 hidden md:table-cell cursor-pointer"
                                 >
-                                  <div className="
-                                    truncate
-                                    bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5
-                                    backdrop-blur-sm
-                                  ">
-                                    {user.department || 'N/A'}
+                                  <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm">
+                                    {user.department || "N/A"}
                                   </div>
                                 </div>
                                 <div className="px-1 py-2 whitespace-nowrap flex items-center">
@@ -1694,13 +1303,18 @@ const UserList: React.FC = () => {
                                     className={`
                                       px-3 py-1.5 rounded-lg text-xs font-medium
                                       transition-all duration-300
-                                      ${canEdit 
-                                        ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
-                                        : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                                      ${
+                                        canEdit
+                                          ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
+                                          : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                                       }
                                       flex items-center justify-center
                                     `}
-                                    title={canEdit ? "Edit user" : "No permission to edit"}
+                                    title={
+                                      canEdit
+                                        ? "Edit user"
+                                        : "No permission to edit"
+                                    }
                                   >
                                     Edit
                                   </button>
@@ -1709,68 +1323,51 @@ const UserList: React.FC = () => {
                             );
                           })
                         ) : (
-                          <div className="
-                            col-span-8 px-2 py-6 text-center
-                            bg-gradient-to-br from-white/30 to-white/10
-                            dark:from-gray-800/30 dark:to-gray-900/10
-                          ">
-                            <div className="
-                              p-4 rounded-xl
-                              bg-gradient-to-br from-white/40 to-white/20
-                              dark:from-gray-800/40 dark:to-gray-900/20
-                              backdrop-blur-xl
-                              border border-white/40 dark:border-gray-700/40
-                              inline-block max-w-[90%]
-                            ">
-                              <div className="
-                                w-12 h-12 mx-auto mb-3
-                                bg-gradient-to-br from-gray-200/50 to-gray-300/30
-                                dark:from-gray-700/50 dark:to-gray-800/30
-                                backdrop-blur-sm
-                                border border-gray-300/60 dark:border-gray-600/60
-                                rounded-xl flex items-center justify-center
-                              ">
-                                <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
+                            <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
+                              <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
+                                <svg
+                                  className="w-6 h-6 text-gray-400 dark:text-gray-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                  />
                                 </svg>
                               </div>
-                              <p className="
-                                text-sm font-medium
-                                bg-gradient-to-r from-blue-600 to-purple-600
-                                dark:from-blue-400 dark:to-purple-400
-                                bg-clip-text text-transparent
-                              ">
+                              <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                                 No users found
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {currentUser?.role === "Manager" 
-                                  ? `No users found in your department (${currentUser.departmentName || currentUser.department || "Not set"})`
+                                {currentUser?.role === "Manager"
+                                  ? `No users found in your department (${
+                                      currentUser.departmentName ||
+                                      currentUser.department ||
+                                      "Not set"
+                                    })`
                                   : currentUser?.role === "ZonalManager"
-                                  ? `No users found in your zone (${currentUser.allocatedArea || "Not set"})`
+                                  ? `No users found in your zone (${
+                                      currentUser.allocatedArea || "Not set"
+                                    })`
                                   : "Try adjusting your search or filter criteria"}
                               </p>
                             </div>
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Infinite scroll sentinel */}
                       <div ref={sentinelRef} className="h-1"></div>
-                      
+
                       {/* Loading more indicator */}
                       {loadingMore && (
-                        <div className="
-                          flex justify-center items-center py-3
-                          bg-gradient-to-br from-white/30 to-white/10
-                          dark:from-gray-800/30 dark:to-gray-900/10
-                          backdrop-blur-lg
-                          rounded-xl border border-white/40 dark:border-gray-700/40
-                          my-2 mx-2
-                        ">
-                          <div className="
-                            animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500
-                            backdrop-blur-sm mr-2
-                          "></div>
+                        <div className="flex justify-center items-center py-3 bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10 backdrop-blur-lg rounded-xl border border-white/40 dark:border-gray-700/40 my-2 mx-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 backdrop-blur-sm mr-2"></div>
                           <span className="text-gray-600 dark:text-gray-300 text-xs">
                             Loading more users...
                           </span>
@@ -1791,65 +1388,74 @@ const UserList: React.FC = () => {
       {/* User Details Modal */}
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 bg-black/70">
-          <div className="
-            bg-white dark:bg-gray-900
-            w-full h-full
-            flex flex-col
-            overflow-hidden
-          ">
+          <div className="bg-white dark:bg-gray-900 w-full h-full flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   User Details
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  ID: {selectedUser.id || selectedUser.userId || 'N/A'}
+                  ID: {selectedUser.id || selectedUser.userId || "N/A"}
                 </p>
               </div>
               <button
                 onClick={closeModal}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
 
-            {/* Content - Scrollable */}
+            {/* Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-6">
-                {/* Profile Header */}
                 <div className="mb-8">
                   <div className="flex items-center space-x-4">
-                    {selectedUser.profile_image || selectedUser.profileImageUrl ? (
+                    {selectedUser.profile_image ||
+                    selectedUser.profileImageUrl ? (
                       <img
-                        src={selectedUser.profile_image || selectedUser.profileImageUrl}
-                        alt={ selectedUser.full_name || selectedUser.name || 'N/A' }
+                        src={
+                          selectedUser.profile_image ||
+                          selectedUser.profileImageUrl
+                        }
+                        alt={
+                          selectedUser.full_name || selectedUser.name || "N/A"
+                        }
                         className="w-24 h-24 rounded-xl object-cover border-2 border-gray-300 dark:border-gray-700"
                       />
                     ) : (
-                      <div className="
-                        w-24 h-24 rounded-xl
-                        bg-gradient-to-r from-blue-500 to-purple-600
-                        flex items-center justify-center text-white text-3xl font-bold
-                      ">
-                        {(selectedUser.name?.charAt(0) || selectedUser.full_name?.charAt(0) || '?').toUpperCase()}
+                      <div className="w-24 h-24 rounded-xl bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
+                        {(
+                          selectedUser.name?.charAt(0) ||
+                          selectedUser.full_name?.charAt(0) ||
+                          "?"
+                        ).toUpperCase()}
                       </div>
                     )}
                     <div>
                       <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {selectedUser.full_name || selectedUser.name || 'N/A'}
+                        {selectedUser.full_name || selectedUser.name || "N/A"}
                       </h3>
                       <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
-                        {selectedUser.employee_code || 'No employee code'}
+                        {selectedUser.employee_code || "No employee code"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Basic Information Section */}
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Basic Information
@@ -1861,48 +1467,47 @@ const UserList: React.FC = () => {
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.full_name ||  'N/A'}
+                          {selectedUser.full_name || "N/A"}
                         </p>
                       </div>
                     </div>
-                    
-
                     <div>
                       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Email Address
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.email || 'N/A'}
+                          {selectedUser.email || "N/A"}
                         </p>
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Mobile Number
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.mobileNo || 'Not specified'}
+                          {selectedUser.mobileNo || "Not specified"}
                         </p>
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Birth Date
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.birthDate ? new Date(selectedUser.birthDate).toLocaleDateString() : 'Not specified'}
+                          {selectedUser.birthDate
+                            ? new Date(
+                                selectedUser.birthDate
+                              ).toLocaleDateString()
+                            : "Not specified"}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Address Section */}
                 {selectedUser.address && (
                   <div className="mb-8">
                     <div>
@@ -1926,14 +1531,13 @@ const UserList: React.FC = () => {
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white whitespace-pre-line text-base">
-                          {selectedUser.allocatedArea || 'NA'}
+                          {selectedUser.allocatedArea || "NA"}
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Role & Department Section */}
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Role & Department
@@ -1945,11 +1549,10 @@ const UserList: React.FC = () => {
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.department || 'NA'}
+                          {selectedUser.department || "NA"}
                         </p>
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Role
@@ -1963,7 +1566,6 @@ const UserList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status & Date Section */}
                 <div className="mb-12">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Status & Employment
@@ -1975,21 +1577,34 @@ const UserList: React.FC = () => {
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <div className="flex items-center">
-                          <span className={`w-3 h-3 rounded-full mr-3 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}></span>
-                          <p className={`font-medium text-base ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                          <span
+                            className={`w-3 h-3 rounded-full mr-3 ${
+                              selectedUser.is_checkin
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          ></span>
+                          <p
+                            className={`font-medium text-base ${
+                              selectedUser.is_checkin
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
+                          >
                             {selectedUser.is_checkin ? "Online" : "Offline"}
                           </p>
                         </div>
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Date Joined
                       </label>
                       <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-gray-900 dark:text-white text-base">
-                          {selectedUser.date ? new Date(selectedUser.date).toLocaleDateString() : 'Not specified'}
+                          {selectedUser.date
+                            ? new Date(selectedUser.date).toLocaleDateString()
+                            : "Not specified"}
                         </p>
                       </div>
                     </div>
@@ -1998,8 +1613,8 @@ const UserList: React.FC = () => {
               </div>
             </div>
 
-            {/* Footer with Action Buttons */}
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
@@ -2027,17 +1642,12 @@ const UserList: React.FC = () => {
         </div>
       )}
 
-      {/* Edit User Modal - Only show if user has permission */}
+      {/* Edit User Modal */}
       {isEditModalOpen && selectedUser && canEditUser(selectedUser) && (
         <div className="fixed inset-0 z-50 bg-black/70">
-          <div className="
-            bg-white dark:bg-gray-900
-            w-full h-full
-            flex flex-col
-            overflow-hidden
-          ">
+          <div className="bg-white dark:bg-gray-900 w-full h-full flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Edit User
@@ -2047,16 +1657,28 @@ const UserList: React.FC = () => {
                 onClick={closeEditModal}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
 
-            {/* Form Content - Scrollable */}
-            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto">
+            {/* Form */}
+            <form
+              onSubmit={handleEditSubmit}
+              className="flex-1 overflow-y-auto"
+            >
               <div className="p-6">
-                {/* Basic Information Section */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Basic Information
@@ -2076,10 +1698,9 @@ const UserList: React.FC = () => {
                         placeholder="Enter full name"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Username
+                        Username
                       </label>
                       <input
                         type="text"
@@ -2091,7 +1712,6 @@ const UserList: React.FC = () => {
                         placeholder="Enter username"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Email Address *
@@ -2106,7 +1726,6 @@ const UserList: React.FC = () => {
                         placeholder="Enter email address"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Mobile Number
@@ -2120,7 +1739,6 @@ const UserList: React.FC = () => {
                         placeholder="Enter mobile number"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Birth Date
@@ -2136,7 +1754,6 @@ const UserList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Address Section */}
                 <div className="mb-8">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2169,7 +1786,6 @@ const UserList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Profile & Preferences Section */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Profile & Preferences
@@ -2191,7 +1807,6 @@ const UserList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Role & Department Section */}
                 <div className="mb-12">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Role & Department
@@ -2203,11 +1818,15 @@ const UserList: React.FC = () => {
                       </label>
                       {loadingDepartments ? (
                         <div className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-                          <p className="text-gray-500 dark:text-gray-400">Loading departments...</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Loading departments...
+                          </p>
                         </div>
                       ) : departments.length === 0 ? (
                         <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                          <p className="text-red-600 dark:text-red-400">Failed to load departments. Please refresh.</p>
+                          <p className="text-red-600 dark:text-red-400">
+                            Failed to load departments. Please refresh.
+                          </p>
                         </div>
                       ) : (
                         <select
@@ -2219,25 +1838,31 @@ const UserList: React.FC = () => {
                         >
                           <option value={0}>Select Department</option>
                           {departments.map((dept) => (
-                            <option key={`dept-${dept.departmentId}`} value={dept.departmentId}>
+                            <option
+                              key={`dept-${dept.departmentId}`}
+                              value={dept.departmentId}
+                            >
                               {dept.name}
                             </option>
                           ))}
                         </select>
                       )}
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Role *
                       </label>
                       {loadingRoles ? (
                         <div className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-                          <p className="text-gray-500 dark:text-gray-400">Loading roles...</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Loading roles...
+                          </p>
                         </div>
                       ) : roles.length === 0 ? (
                         <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                          <p className="text-red-600 dark:text-red-400">Failed to load roles. Please refresh.</p>
+                          <p className="text-red-600 dark:text-red-400">
+                            Failed to load roles. Please refresh.
+                          </p>
                         </div>
                       ) : (
                         <select
@@ -2261,8 +1886,8 @@ const UserList: React.FC = () => {
               </div>
             </form>
 
-            {/* Footer with Action Buttons */}
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
@@ -2275,19 +1900,40 @@ const UserList: React.FC = () => {
                 <button
                   type="submit"
                   onClick={handleEditSubmit}
-                  disabled={isEditing || loadingDepartments || loadingRoles || departments.length === 0 || roles.length === 0}
+                  disabled={
+                    isEditing ||
+                    loadingDepartments ||
+                    loadingRoles ||
+                    departments.length === 0 ||
+                    roles.length === 0
+                  }
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
                 >
                   {isEditing ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
                       Updating...
                     </>
                   ) : (
-                    'Save Changes'
+                    "Save Changes"
                   )}
                 </button>
               </div>

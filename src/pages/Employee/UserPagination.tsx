@@ -774,7 +774,7 @@ const UserList: React.FC = () => {
       </div>
     );
   }
-  console.log(":::::::::: DEBUG :::::::::");
+
   return (
     <div
       className="

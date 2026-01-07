@@ -1,7 +1,5 @@
 import { createContext, useContext } from "react";
 import API from "../api/axios";
-// import { startTokenRefreshInterval } from "../utils/tokenRefresher";
-import { axiosGetMe } from "../store/userStore";
 
 interface AuthContextType {
   login: (refreshToken: string, accessToken: string) => void;
@@ -14,14 +12,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const getMeData = async () => {
-    const meData = await axiosGetMe();
-
-    if (meData) {
-      localStorage.setItem("meUser", JSON.stringify(meData));
-    }
-  };
-
   const login = async (refreshToken: string, accessToken: string) => {
     try {
       console.log("AuthContext: Storing tokens...");

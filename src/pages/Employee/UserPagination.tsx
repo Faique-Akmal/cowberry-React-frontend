@@ -135,6 +135,18 @@ const UserList: React.FC = () => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Helper function to normalize strings for comparison
+  const normalizeString = (str: string | undefined): string => {
+    if (!str) return "";
+    return str.trim().toLowerCase().replace(/\s+/g, " ");
+  };
+
+  // Helper function to normalize role names
+  const normalizeRole = (role: string | undefined): string => {
+    if (!role) return "";
+    return role.trim().toLowerCase().replace(/\s+/g, " ");
+  };
+
   // Fetch current user info from token or API
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -144,13 +156,16 @@ const UserList: React.FC = () => {
       const localDepartment = localStorage.getItem("department");
       const localAllocatedArea = localStorage.getItem("allocatedarea");
 
-      if (localId && localRole && localDepartment && localAllocatedArea) {
+      if (localId && localRole) {
+        // Normalize role for consistency
+        const normalizedRole = normalizeRole(localRole);
+        
         setCurrentUser({
           id: localId,
-          role: localRole,
-          department: localDepartment,
-          departmentName: localDepartment,
-          allocatedArea: localAllocatedArea,
+          role: normalizedRole,
+          department: localDepartment || undefined,
+          departmentName: localDepartment || undefined,
+          allocatedArea: localAllocatedArea || undefined,
         });
       }
     } catch (error) {
@@ -160,24 +175,18 @@ const UserList: React.FC = () => {
     }
   }, []);
 
-  // Helper function to normalize strings for comparison
-  const normalizeString = (str: string | undefined): string => {
-    if (!str) return "";
-    return str.trim().toLowerCase().replace(/\s+/g, " ");
-  };
-
-  // Check if current user can edit a specific user
+  // Check if current user can edit a specific user - CORRECTED
   const canEditUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
 
-      const userRole = currentUser.role;
+      const userRole = currentUser.role; // Already normalized in fetchCurrentUser
 
       switch (userRole) {
-        case "HR":
-          return true;
+        case "hr": // Normalized to lowercase
+          return true; // HR can edit all users
 
-        case "Manager": {
+        case "manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
 
@@ -186,10 +195,11 @@ const UserList: React.FC = () => {
           );
           const userDept = normalizeString(user.department);
 
-          return managerDept === userDept;
+          return managerDept === userDept; // Manager can edit only their department users
         }
-        case "ZonalManager":
-          return false;
+        case "zonalmanager":
+        case "zonal manager":
+          return false; // Zonal Manager cannot edit any users
 
         default:
           return false;
@@ -198,34 +208,35 @@ const UserList: React.FC = () => {
     [currentUser]
   );
 
-  // Check if current user can view a specific user
+  // Check if current user can view a specific user - CORRECTED
   const canViewUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
-      const userRole = currentUser.role;
+      const userRole = currentUser.role; // Already normalized
 
       switch (userRole) {
-        case "HR":
-          return true;
+        case "hr":
+          return true; // HR can view all users
 
-        case "Manager": {
+        case "manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
           const managerDept = normalizeString(
             currentUser.departmentName || currentUser.department
           );
           const userDept = normalizeString(user.department);
-          return managerDept === userDept;
+          return managerDept === userDept; // Manager views only their department
         }
 
-        case "ZonalManager": {
+        case "zonalmanager":
+        case "zonal manager": {
           if (!currentUser.allocatedArea) return false;
           const managerZone = normalizeString(currentUser.allocatedArea);
           const userZone = normalizeString(user.allocatedArea);
-          return managerZone === userZone;
+          return managerZone === userZone; // Zonal Manager views same zone
         }
         default:
-          return true;
+          return true; // Default to true for other roles
       }
     },
     [currentUser]
@@ -809,6 +820,8 @@ const UserList: React.FC = () => {
           Users Directory
         </h2>
 
+      
+
         {/* Filter Section */}
         <div
           className="
@@ -1106,7 +1119,7 @@ const UserList: React.FC = () => {
           ) : (
             <>
               {/* Debug info for Manager */}
-              {currentUser?.role === "Manager" &&
+              {currentUser?.role === "manager" &&
                 filteredUsers.length === 0 &&
                 users.length > 0 && (
                   <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
@@ -1119,6 +1132,26 @@ const UserList: React.FC = () => {
                         {currentUser.departmentName ||
                           currentUser.department ||
                           "Not set"}
+                      </strong>
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+                      Total users in system: {users.length}
+                    </p>
+                  </div>
+                )}
+
+              {/* Debug info for Zonal Manager */}
+              {currentUser && (currentUser.role === "zonalmanager" || currentUser.role === "zonal manager") &&
+                filteredUsers.length === 0 &&
+                users.length > 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                      ⚠️ No users found in your allocated area.
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                      Your allocated area:{" "}
+                      <strong>
+                        {currentUser.allocatedArea || "Not set"}
                       </strong>
                     </p>
                     <p className="text-yellow-600 dark:text-yellow-400 text-xs">
@@ -1200,6 +1233,9 @@ const UserList: React.FC = () => {
                           paginatedUsers.map((user, index) => {
                             const userKey = getUserKey(user, index);
                             const canEdit = canEditUser(user);
+                            const canView = canViewUser(user);
+
+                            if (!canView) return null;
 
                             return (
                               <div
@@ -1344,13 +1380,13 @@ const UserList: React.FC = () => {
                                 No users found
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {currentUser?.role === "Manager"
+                                {currentUser?.role === "manager"
                                   ? `No users found in your department (${
                                       currentUser.departmentName ||
                                       currentUser.department ||
                                       "Not set"
                                     })`
-                                  : currentUser?.role === "ZonalManager"
+                                  : currentUser && (currentUser.role === "zonalmanager" || currentUser.role === "zonal manager")
                                   ? `No users found in your zone (${
                                       currentUser.allocatedArea || "Not set"
                                     })`

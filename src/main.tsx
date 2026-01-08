@@ -11,7 +11,7 @@ import { LocationTrackerProvider } from "./hooks/LocationTrackerProvider.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, HashRouter } from "react-router-dom";
 import "./i18n.ts";
 // import { DataProvider } from "./context/DataProvider.tsx";
 
@@ -21,11 +21,14 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <LocationTrackerProvider>
           <AppWrapper>
-            <BrowserRouter>
+           
+
+              <HashRouter>
               {/* <DataProvider> */}
               <App />
               {/* </DataProvider> */}
-            </BrowserRouter>
+              </HashRouter>
+            
           </AppWrapper>
         </LocationTrackerProvider>
       </ThemeProvider>

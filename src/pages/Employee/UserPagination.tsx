@@ -1091,334 +1091,472 @@ const UserList: React.FC = () => {
           </div>
         </div>
 
-        {/* Main content area with scroll */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* ✅ Check store isLoading instead of local loading */}
-          {isLoading && users.length === 0 ? (
-            <div
-              className="
-              flex flex-col justify-center items-center py-8 sm:py-12
-              bg-linear-to-br from-white/30 to-white/10
-              dark:from-gray-800/30 dark:to-gray-900/10
-              backdrop-blur-lg
-              rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
-              text-center
-              flex-1
-            "
-            >
+ 
+       {/* Main content area with scroll */}
+<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+  {/* ✅ Check store isLoading instead of local loading */}
+  {isLoading && users.length === 0 ? (
+    <div
+      className="
+        flex flex-col justify-center items-center py-8 sm:py-12
+        bg-linear-to-br from-white/30 to-white/10
+        dark:from-gray-800/30 dark:to-gray-900/10
+        backdrop-blur-lg
+        rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
+        text-center
+        flex-1
+      "
+    >
+      <div
+        className="
+          animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
+          backdrop-blur-sm mb-2 sm:mb-3
+        "
+      ></div>
+      <span className="text-gray-600 dark:text-gray-300 text-sm">
+        Loading users...
+      </span>
+    </div>
+  ) : (
+    <>
+      {/* Debug info for Manager */}
+      {currentUser?.role === "manager" &&
+        filteredUsers.length === 0 &&
+        users.length > 0 && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+              ⚠️ No users found in your department.
+            </p>
+            <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+              Your department:{" "}
+              <strong>
+                {currentUser.departmentName ||
+                  currentUser.department ||
+                  "Not set"}
+              </strong>
+            </p>
+            <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+              Total users in system: {users.length}
+            </p>
+          </div>
+        )}
+
+      {/* Debug info for Zonal Manager */}
+      {currentUser &&
+        (currentUser.role === "zonalmanager" ||
+          currentUser.role === "zonal manager") &&
+        filteredUsers.length === 0 &&
+        users.length > 0 && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+              ⚠️ No users found in your allocated area.
+            </p>
+            <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+              Your allocated area:{" "}
+              <strong>{currentUser.allocatedArea || "Not set"}</strong>
+            </p>
+            <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+              Total users in system: {users.length}
+            </p>
+          </div>
+        )}
+
+      {/* Users Table Container with Scroll */}
+      <div
+        ref={scrollContainerRef}
+        className="
+          overflow-hidden rounded-xl sm:rounded-2xl
+          bg-linear-to-br from-white/40 to-white/20
+          dark:from-gray-800/40 dark:to-gray-900/20
+          backdrop-blur-xl
+          border border-white/40 dark:border-gray-700/40
+          shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+          dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+          flex-1
+          relative
+          overflow-y-auto
+          overflow-x-auto
+        "
+      >
+        {/* Desktop Table */}
+        <div className="hidden md:block min-w-full h-full">
+          <div className="h-full flex flex-col">
+            {/* Table Header */}
+            <div className="shrink-0 sticky top-0 z-10">
               <div
                 className="
-                animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
-                backdrop-blur-sm mb-2 sm:mb-3
-              "
-              ></div>
-              <span className="text-gray-600 dark:text-gray-300 text-sm">
-                Loading users...
-              </span>
-            </div>
-          ) : (
-            <>
-              {/* Debug info for Manager */}
-              {currentUser?.role === "manager" &&
-                filteredUsers.length === 0 &&
-                users.length > 0 && (
-                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                      ⚠️ No users found in your department.
-                    </p>
-                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                      Your department:{" "}
-                      <strong>
-                        {currentUser.departmentName ||
-                          currentUser.department ||
-                          "Not set"}
-                      </strong>
-                    </p>
-                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-                      Total users in system: {users.length}
-                    </p>
-                  </div>
-                )}
-
-              {/* Debug info for Zonal Manager */}
-              {currentUser && (currentUser.role === "zonalmanager" || currentUser.role === "zonal manager") &&
-                filteredUsers.length === 0 &&
-                users.length > 0 && (
-                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                      ⚠️ No users found in your allocated area.
-                    </p>
-                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                      Your allocated area:{" "}
-                      <strong>
-                        {currentUser.allocatedArea || "Not set"}
-                      </strong>
-                    </p>
-                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-                      Total users in system: {users.length}
-                    </p>
-                  </div>
-                )}
-
-              {/* Users Table Container with Scroll */}
-              <div
-                ref={scrollContainerRef}
-                className="
-                  overflow-hidden rounded-xl sm:rounded-2xl
-                  bg-linear-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
-                  shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-                  dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-                  flex-1
-                  relative
-                  overflow-y-auto
-                  overflow-x-hidden
+                  grid grid-cols-8
+                  px-4 py-3
+                  bg-linear-to-r from-white/60 to-white/40
+                  dark:from-gray-800/60 dark:to-gray-900/40
+                  backdrop-blur-lg
+                  border-b border-white/30 dark:border-gray-700/30
                 "
               >
-                <div className="min-w-full h-full">
-                  <div className="h-full flex flex-col">
-                    {/* Table Header */}
-                    <div className="shrink-0 sticky top-0 z-10">
-                      <div
-                        className="
-                        grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
-                        px-2 py-2
-                        bg-linear-to-r from-white/60 to-white/40
-                        dark:from-gray-800/60 dark:to-gray-900/40
-                        backdrop-blur-lg
-                        border-b border-white/30 dark:border-gray-700/30
-                      "
-                      >
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Sr.no
-                        </div>
-                        <div
-                          className="px-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/30 dark:hover:bg-gray-800/30 transition-colors duration-300 whitespace-nowrap"
-                          onClick={toggleSortOrder}
-                        >
-                          <div className="flex items-center space-x-1">
-                            <span>Name</span>
-                            <span className="text-blue-600 dark:text-blue-400 text-xs bg-blue-100/50 dark:bg-blue-900/30 rounded-full p-0.5">
-                              {sortOrder === "asc" ? "↑" : "↓"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell whitespace-nowrap">
-                          Employee Code
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell whitespace-nowrap">
-                          Email
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Role
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Allocated Area
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell whitespace-nowrap">
-                          Department
-                        </div>
-                        <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Actions
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Table Body */}
-                    <div className="flex-1 overflow-y-auto">
-                      <div className="divide-y divide-white/20 dark:divide-gray-700/20">
-                        {paginatedUsers.length > 0 ? (
-                          paginatedUsers.map((user, index) => {
-                            const userKey = getUserKey(user, index);
-                            const canEdit = canEditUser(user);
-                            const canView = canViewUser(user);
-
-                            if (!canView) return null;
-
-                            return (
-                              <div
-                                key={userKey}
-                                className="
-                                  grid grid-cols-[40px_1fr_120px_1fr_100px_120px_120px_80px]
-                                  px-2 py-2
-                                  hover:bg-white/30 dark:hover:bg-gray-800/30
-                                  transition-all duration-300
-                                  backdrop-blur-sm
-                                "
-                              >
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-100 cursor-pointer"
-                                >
-                                  {(currentPage - 1) * limit + index + 1}
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="py-2 whitespace-nowrap cursor-pointer"
-                                >
-                                  <div className="flex items-center">
-                                    <div className="shrink-0">
-                                      <div className="h-8 w-8 rounded-lg bg-linear-to-r from-blue-500 to-black-900 dark:from-blue-400 dark:to-black-900 flex items-center justify-center text-white text-sm font-bold">
-                                        {user.full_name
-                                          ?.charAt(0)
-                                          .toUpperCase() ||
-                                          user.name?.charAt(0).toUpperCase() ||
-                                          "?"}
-                                      </div>
-                                    </div>
-                                    <div className="min-w-0 flex-1 ml-2">
-                                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
-                                        <span className="inline-flex items-center">
-                                          <span className="bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-bold">
-                                            {user.full_name?.charAt(0) ||
-                                              user.name?.charAt(0) ||
-                                              ""}
-                                          </span>
-                                          <span className="text-gray-900 dark:text-gray-100 ml-0">
-                                            {user.full_name?.slice(1) ||
-                                              user.name?.slice(1) ||
-                                              "N/A"}
-                                          </span>
-                                        </span>
-                                      </div>
-                                      <div className="text-xs text-gray-600 dark:text-gray-400 sm:hidden truncate leading-tight mt-0.5">
-                                        {user.employee_code || "N/A"}
-                                      </div>
-                                      <div className="text-xs text-gray-600 dark:text-gray-400 lg:hidden truncate leading-tight mt-0.5">
-                                        {user.email || "N/A"}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell cursor-pointer"
-                                >
-                                  <div className="bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm truncate">
-                                    {user.employee_code || "N/A"}
-                                  </div>
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 hidden lg:table-cell cursor-pointer"
-                                >
-                                  <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm">
-                                    {user.email || "N/A"}
-                                  </div>
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap cursor-pointer"
-                                >
-                                  <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate">
-                                    {user.role}
-                                  </span>
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap cursor-pointer"
-                                >
-                                  <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate">
-                                    {user.allocatedArea || "N/A"}
-                                  </span>
-                                </div>
-                                <div
-                                  onClick={() => handleRowClick(user)}
-                                  className="px-1 py-2 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 hidden md:table-cell cursor-pointer"
-                                >
-                                  <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-2 py-1.5 backdrop-blur-sm">
-                                    {user.department || "N/A"}
-                                  </div>
-                                </div>
-                                <div className="px-1 py-2 whitespace-nowrap flex items-center">
-                                  <button
-                                    onClick={() => handleEditClick(user)}
-                                    disabled={!canEdit}
-                                    className={`
-                                      px-3 py-1.5 rounded-lg text-xs font-medium
-                                      transition-all duration-300
-                                      ${
-                                        canEdit
-                                          ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
-                                          : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                                      }
-                                      flex items-center justify-center
-                                    `}
-                                    title={
-                                      canEdit
-                                        ? "Edit user"
-                                        : "No permission to edit"
-                                    }
-                                  >
-                                    Edit
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
-                            <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
-                              <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
-                                <svg
-                                  className="w-6 h-6 text-gray-400 dark:text-gray-500"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                                  />
-                                </svg>
-                              </div>
-                              <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                                No users found
-                              </p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {currentUser?.role === "manager"
-                                  ? `No users found in your department (${
-                                      currentUser.departmentName ||
-                                      currentUser.department ||
-                                      "Not set"
-                                    })`
-                                  : currentUser && (currentUser.role === "zonalmanager" || currentUser.role === "zonal manager")
-                                  ? `No users found in your zone (${
-                                      currentUser.allocatedArea || "Not set"
-                                    })`
-                                  : "Try adjusting your search or filter criteria"}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Infinite scroll sentinel */}
-                      <div ref={sentinelRef} className="h-1"></div>
-
-                      {/* Loading more indicator */}
-                      {loadingMore && (
-                        <div className="flex justify-center items-center py-3 bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10 backdrop-blur-lg rounded-xl border border-white/40 dark:border-gray-700/40 my-2 mx-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 backdrop-blur-sm mr-2"></div>
-                          <span className="text-gray-600 dark:text-gray-300 text-xs">
-                            Loading more users...
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Sr.no
+                </div>
+                <div
+                  className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/30 dark:hover:bg-gray-800/30 transition-colors duration-300 whitespace-nowrap"
+                  onClick={toggleSortOrder}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Name</span>
+                    <span className="text-blue-600 dark:text-blue-400 text-xs bg-blue-100/50 dark:bg-blue-900/30 rounded-full p-0.5">
+                      {sortOrder === "asc" ? "↑" : "↓"}
+                    </span>
                   </div>
                 </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Employee Code
+                </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Email
+                </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Role
+                </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Allocated Area
+                </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Department
+                </div>
+                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                  Actions
+                </div>
+              </div>
+            </div>
+
+            {/* Table Body */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="divide-y divide-white/20 dark:divide-gray-700/20">
+                {paginatedUsers.length > 0 ? (
+                  paginatedUsers.map((user, index) => {
+                    const userKey = getUserKey(user, index);
+                    const canEdit = canEditUser(user);
+                    const canView = canViewUser(user);
+
+                    if (!canView) return null;
+
+                    return (
+                      <div
+                        key={userKey}
+                        className="
+                          grid grid-cols-8
+                          px-4 py-3
+                          hover:bg-white/30 dark:hover:bg-gray-800/30
+                          transition-all duration-300
+                          backdrop-blur-sm
+                          items-center
+                        "
+                      >
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium">
+                            {(currentPage - 1) * limit + index + 1}
+                          </span>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 cursor-pointer"
+                        >
+                          <div className="flex items-center">
+                            <div className="shrink-0">
+                              <div className="h-8 w-8 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                {user.full_name
+                                  ?.charAt(0)
+                                  .toUpperCase() ||
+                                  user.name?.charAt(0).toUpperCase() ||
+                                  "?"}
+                              </div>
+                            </div>
+                            <div className="min-w-0 flex-1 ml-2">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {user.full_name || user.name || "N/A"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
+                        >
+                          <div className="bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm truncate">
+                            {user.employee_code || "N/A"}
+                          </div>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+                        >
+                          <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm">
+                            {user.email || "N/A"}
+                          </div>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap cursor-pointer"
+                        >
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate">
+                            {user.role}
+                          </span>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap cursor-pointer"
+                        >
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate">
+                            {user.allocatedArea || "N/A"}
+                          </span>
+                        </div>
+                        <div
+                          onClick={() => handleRowClick(user)}
+                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+                        >
+                          <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm">
+                            {user.department || "N/A"}
+                          </div>
+                        </div>
+                        <div className="px-2 py-1 whitespace-nowrap flex items-center">
+                          <button
+                            onClick={() => handleEditClick(user)}
+                            disabled={!canEdit}
+                            className={`
+                              px-3 py-1.5 rounded-lg text-xs font-medium
+                              transition-all duration-300
+                              ${
+                                canEdit
+                                  ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
+                                  : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                              }
+                              flex items-center justify-center
+                            `}
+                            title={
+                              canEdit
+                                ? "Edit user"
+                                : "No permission to edit"
+                            }
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
+                    <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
+                        <svg
+                          className="w-6 h-6 text-gray-400 dark:text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                        No users found
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {currentUser?.role === "manager"
+                          ? `No users found in your department (${
+                              currentUser.departmentName ||
+                              currentUser.department ||
+                              "Not set"
+                            })`
+                          : currentUser &&
+                            (currentUser.role === "zonalmanager" ||
+                              currentUser.role === "zonal manager")
+                          ? `No users found in your zone (${
+                              currentUser.allocatedArea || "Not set"
+                            })`
+                          : "Try adjusting your search or filter criteria"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Pagination Controls */}
-              {renderPagination()}
-            </>
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-1"></div>
+
+              {/* Loading more indicator */}
+              {loadingMore && (
+                <div className="flex justify-center items-center py-3 bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10 backdrop-blur-lg rounded-xl border border-white/40 dark:border-gray-700/40 my-2 mx-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 backdrop-blur-sm mr-2"></div>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Loading more users...
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden p-4 space-y-4">
+          {paginatedUsers.length > 0 ? (
+            paginatedUsers.map((user, index) => {
+              const userKey = getUserKey(user, index);
+              const canEdit = canEditUser(user);
+              const canView = canViewUser(user);
+
+              if (!canView) return null;
+
+              return (
+                <div
+                  key={userKey}
+                  className="
+                    bg-linear-to-br from-white/40 to-white/20
+                    dark:from-gray-800/40 dark:to-gray-900/20
+                    backdrop-blur-xl
+                    border border-white/40 dark:border-gray-700/40
+                    rounded-xl p-4
+                    shadow-[0_4px_16px_rgba(31,38,135,0.1)]
+                    dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
+                  "
+                >
+                  {/* Card Header */}
+                  <div
+                    className="flex items-start justify-between mb-3 cursor-pointer"
+                    onClick={() => handleRowClick(user)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                        {user.full_name
+                          ?.charAt(0)
+                          .toUpperCase() ||
+                          user.name?.charAt(0).toUpperCase() ||
+                          "?"}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {user.full_name || user.name || "N/A"}
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {user.employee_code || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                      {user.role}
+                    </span>
+                  </div>
+
+                  {/* Card Body */}
+                  <div
+                    className="space-y-2 cursor-pointer"
+                    onClick={() => handleRowClick(user)}
+                  >
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Email
+                        </p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                          {user.email || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Area
+                        </p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                          {user.allocatedArea || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Department
+                      </p>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">
+                        {user.department || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card Footer */}
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/30 dark:border-gray-700/30">
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          user.is_checkin ? "bg-green-500" : "bg-red-500"
+                        }`}
+                      ></span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {user.is_checkin ? "Online" : "Offline"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleEditClick(user)}
+                      disabled={!canEdit}
+                      className={`
+                        px-3 py-1.5 rounded-lg text-xs font-medium
+                        transition-all duration-300
+                        ${
+                          canEdit
+                            ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
+                            : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        }
+                      `}
+                      title={
+                        canEdit
+                          ? "Edit user"
+                          : "No permission to edit"
+                      }
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8">
+              <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
+                <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-gray-400 dark:text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                  No users found
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Try adjusting your search or filter criteria
+                </p>
+              </div>
+            </div>
           )}
         </div>
+      </div>
+
+      {/* Pagination Controls */}
+      {renderPagination()}
+    </>
+  )}
+</div>
       </div>
 
       {/* User Details Modal */}

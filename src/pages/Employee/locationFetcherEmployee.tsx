@@ -1690,15 +1690,7 @@ export default function AttendanceList() {
                               ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
                             </p>
                           </div>
-                          <div className="text-center">
-                            <button
-                              onClick={() => openMultiSessionMap(group)}
-                              className={`px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl flex items-center gap-2`}
-                            >
-                              <FaLayerGroup />
-                              View Session
-                            </button>
-                          </div>
+                          
                         </div>
                       </div>
                     </div>

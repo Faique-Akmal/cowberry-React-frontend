@@ -170,6 +170,23 @@ const getSessionColor = (index: number): string => {
   return SESSION_COLORS[index % SESSION_COLORS.length];
 };
 
+// Helper functions for GPS processing
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
+const calculateTimeDiff = (time1: string, time2: string): number => {
+  return Math.abs(new Date(time1).getTime() - new Date(time2).getTime()) / 60000;
+};
+
 export default function AttendanceList() {
   const { t } = useTranslation();
   const { themeConfig } = useTheme();
@@ -625,20 +642,130 @@ export default function AttendanceList() {
       !isNaN(latNum) && !isNaN(lngNum);
   }, [parseCoordinate]);
   
+  // Filter and smooth GPS data to prevent straight lines
+  const processGPSPoints = useCallback((logs: LocationLog[], maxSpeedKmh: number = 120, maxTimeGap: number = 5): LocationLog[] => {
+    if (!logs || logs.length < 2) return logs || [];
+
+    const filteredLogs: LocationLog[] = [logs[0]];
+    
+    for (let i = 1; i < logs.length; i++) {
+      const prevLog = logs[i - 1];
+      const currentLog = logs[i];
+      
+      // Parse coordinates
+      const prevLat = parseCoordinate(prevLog.latitude);
+      const prevLng = parseCoordinate(prevLog.longitude);
+      const currLat = parseCoordinate(currentLog.latitude);
+      const currLng = parseCoordinate(currentLog.longitude);
+      
+      // Skip invalid coordinates
+      if (!isValidCoordinate(prevLat, prevLng) || !isValidCoordinate(currLat, currLng)) {
+        continue;
+      }
+      
+      // Calculate time difference in minutes
+      const timeDiff = calculateTimeDiff(prevLog.timestamp, currentLog.timestamp);
+      
+      // Calculate distance in meters
+      const distance = calculateDistance(prevLat, prevLng, currLat, currLng);
+      
+      // Calculate speed in km/h
+      const speed = timeDiff > 0 ? (distance / 1000) / (timeDiff / 60) : 0; // km/h
+      
+      // Filter based on realistic movement
+      if (speed <= maxSpeedKmh || timeDiff <= maxTimeGap) {
+        filteredLogs.push(currentLog);
+      }
+    }
+    
+    return filteredLogs;
+  }, [isValidCoordinate, parseCoordinate]);
+
+  // Generate intermediate points to smooth the path
+  const generateIntermediatePoints = useCallback((
+    startLat: number, 
+    startLng: number, 
+    endLat: number, 
+    endLng: number, 
+    numPoints: number = 5
+  ): [number, number][] => {
+    const points: [number, number][] = [];
+    
+    for (let i = 1; i <= numPoints; i++) {
+      const fraction = i / (numPoints + 1);
+      const lat = startLat + (endLat - startLat) * fraction;
+      const lng = startLng + (endLng - startLng) * fraction;
+      points.push([lat, lng]);
+    }
+    
+    return points;
+  }, []);
+
+  // Build polyline path with smoothing and gap handling
   const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Process and filter GPS data
+    const processedLogs = processGPSPoints(session.logs);
+    
+    let previousPoint: [number, number] | null = null;
+    let previousTime: Date | null = null;
+    
+    for (let i = 0; i < processedLogs.length; i++) {
+      const log = processedLogs[i];
+      const currentTime = new Date(log.timestamp);
+      
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        
+        // Check if we should add this point
+        if (previousPoint) {
+          const distance = calculateDistance(
+            previousPoint[0], previousPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          
+          const timeDiff = previousTime ? 
+            Math.abs(currentTime.getTime() - previousTime.getTime()) / 60000 : // minutes
+            0;
+          
+          // If there's a long pause (> 15 minutes), create a break in the polyline
+          // by not connecting these points
+          if (timeDiff > 15) {
+            // Don't add this point to create a visual break
+            // Reset previous point so next point starts a new segment
+            previousPoint = currentPoint;
+            previousTime = currentTime;
+            continue;
+          }
+          
+          // For large jumps (> 1km in less than 2 minutes), add intermediate points
+          if (distance > 1000 && timeDiff < 2) {
+            const intermediatePoints = generateIntermediatePoints(
+              previousPoint[0], previousPoint[1],
+              currentPoint[0], currentPoint[1]
+            );
+            
+            path.push(...intermediatePoints);
+          }
+        }
+        
+        // Add the current point
+        path.push(currentPoint);
+        
+        previousPoint = currentPoint;
+        previousTime = currentTime;
       }
-    });
+    }
     
     return path;
-  }, [isValidCoordinate, parseCoordinate]);
-  
+  }, [isValidCoordinate, parseCoordinate, processGPSPoints, generateIntermediatePoints]);
+
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session) return [21.1702, 72.8311];
     
@@ -1144,15 +1271,94 @@ export default function AttendanceList() {
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Process and filter GPS data
+    const processedLogs = processGPSPoints(session.logs);
+    
+    let previousPoint: [number, number] | null = null;
+    let previousTime: Date | null = null;
+    
+    for (let i = 0; i < processedLogs.length; i++) {
+      const log = processedLogs[i];
+      const currentTime = new Date(log.timestamp);
+      
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        
+        // Check if we should add this point
+        if (previousPoint) {
+          const distance = calculateDistance(
+            previousPoint[0], previousPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          
+          const timeDiff = previousTime ? 
+            Math.abs(currentTime.getTime() - previousTime.getTime()) / 60000 : // minutes
+            0;
+          
+          // If there's a long pause (> 15 minutes), create a break in the polyline
+          if (timeDiff > 15) {
+            // Don't add this point to create a visual break
+            // Reset previous point so next point starts a new segment
+            previousPoint = currentPoint;
+            previousTime = currentTime;
+            continue;
+          }
+          
+          // For large jumps, add intermediate points
+          if (distance > 1000 && timeDiff < 2) {
+            const intermediatePoints = generateIntermediatePoints(
+              previousPoint[0], previousPoint[1],
+              currentPoint[0], currentPoint[1]
+            );
+            
+            path.push(...intermediatePoints);
+          }
+        }
+        
+        // Add the current point
+        path.push(currentPoint);
+        
+        previousPoint = currentPoint;
+        previousTime = currentTime;
       }
-    });
+    }
     
     return path;
-  }, [isValidCoordinate, parseCoordinate]);
-  
+  }, [isValidCoordinate, parseCoordinate, processGPSPoints, generateIntermediatePoints]);
+
+  // Build multiple polyline segments for better rendering
+  const buildPolylineSegments = useCallback((path: [number, number][]): [number, number][][] => {
+    if (path.length < 2) return [];
+    
+    const segments: [number, number][][] = [];
+    let currentSegment: [number, number][] = [path[0]];
+    
+    for (let i = 1; i < path.length; i++) {
+      const prevPoint = path[i - 1];
+      const currPoint = path[i];
+      const distance = calculateDistance(prevPoint[0], prevPoint[1], currPoint[0], currPoint[1]);
+      
+      // If distance is too large (> 2km), start a new segment
+      if (distance > 2000) {
+        if (currentSegment.length > 1) {
+          segments.push([...currentSegment]);
+        }
+        currentSegment = [currPoint];
+      } else {
+        currentSegment.push(currPoint);
+      }
+    }
+    
+    if (currentSegment.length > 1) {
+      segments.push(currentSegment);
+    }
+    
+    return segments;
+  }, []);
+
   const renderIndividualView = useMemo(() => {
     const groupedByDate = groupSessionsByUserAndDate(filteredSessions).reduce((acc, group) => {
       if (!acc[group.date]) acc[group.date] = [];
@@ -1544,60 +1750,6 @@ export default function AttendanceList() {
               </select>
             </div>
           </div>
-          
-          {/* Auto-refresh controls */}
-          {/* <div className="mt-4 pt-4 border-t border-white/10 dark:border-gray-700/50">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <FaSync className="inline mr-2" />
-              Auto-refresh Options
-            </label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  autoRefresh 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <FaSync className={autoRefresh ? "animate-spin" : ""} />
-                {autoRefresh ? "Auto ON" : "Auto OFF"}
-              </button>
-              
-              <button
-                onClick={() => setActiveSessionsOnly(!activeSessionsOnly)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  activeSessionsOnly 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-                disabled={!autoRefresh}
-              >
-                <FaPlayCircle />
-                {activeSessionsOnly ? "Active Only" : "All Sessions"}
-              </button>
-              
-              <button
-                onClick={manualRefresh}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${glassmorphismClasses.button.primary}`}
-              >
-                <FaSync />
-                Refresh Now
-              </button>
-            </div>
-            
-            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              {autoRefresh ? (
-                activeSessionsOnly ? (
-                  <span>Auto-refreshing active sessions every 10 seconds</span>
-                ) : (
-                  <span>Auto-refreshing all sessions every 30 seconds</span>
-                )
-              ) : (
-                <span>Auto-refresh is disabled</span>
-              )}
-            </div>
-          </div> */}
         </div>
       </div>
 
@@ -2227,24 +2379,23 @@ export default function AttendanceList() {
                 {/* Render all session polylines with different colors */}
                 {multiSessionMapView.sessions.map((session, index) => {
                   const path = buildSessionPolylinePath(session);
-                  if (path.length >= 2) {
-                    const isActive = !session.endTime;
-                    return (
-                      <Polyline
-                        key={`session-${session.sessionId}`}
-                        positions={path}
-                        pathOptions={{
-                          color: getSessionColor(index),
-                          weight: 5,
-                          opacity: 0.8,
-                          lineCap: "round",
-                          lineJoin: "round",
-                          dashArray: isActive ? "10, 5" : undefined,
-                        }}
-                      />
-                    );
-                  }
-                  return null;
+                  const segments = buildPolylineSegments(path);
+                  const isActive = !session.endTime;
+                  
+                  return segments.map((segment, segmentIndex) => (
+                    <Polyline
+                      key={`session-${session.sessionId}-segment-${segmentIndex}`}
+                      positions={segment}
+                      pathOptions={{
+                        color: getSessionColor(index),
+                        weight: 5,
+                        opacity: 0.8,
+                        lineCap: "round",
+                        lineJoin: "round",
+                        dashArray: isActive ? "10, 5" : undefined,
+                      }}
+                    />
+                  ));
                 })}
 
                 {/* Start markers for each session */}
@@ -2414,26 +2565,26 @@ export default function AttendanceList() {
                   url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
                 />
 
-                {/* Polyline for the travel path */}
+                {/* Polyline segments for the travel path */}
                 {(() => {
                   const path = buildPolylinePath(mapView);
-                  if (path.length >= 2) {
-                    const isActive = !mapView.endTime;
-                    return (
-                      <Polyline
-                        positions={path}
-                        pathOptions={{
-                          color: isActive ? "#10B981" : "#3B82F6",
-                          weight: 6,
-                          opacity: 0.8,
-                          lineCap: "round",
-                          lineJoin: "round",
-                          dashArray: isActive ? "10, 5" : undefined
-                        }}
-                      />
-                    );
-                  }
-                  return null;
+                  const segments = buildPolylineSegments(path);
+                  const isActive = !mapView.endTime;
+                  
+                  return segments.map((segment, index) => (
+                    <Polyline
+                      key={`segment-${index}`}
+                      positions={segment}
+                      pathOptions={{
+                        color: isActive ? "#10B981" : "#3B82F6",
+                        weight: 6,
+                        opacity: 0.8,
+                        lineCap: "round",
+                        lineJoin: "round",
+                        dashArray: isActive ? "10, 5" : undefined
+                      }}
+                    />
+                  ));
                 })()}
 
                 {/* Start marker */}

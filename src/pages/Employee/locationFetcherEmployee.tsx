@@ -1,4 +1,3 @@
-
 // src/components/admin/TravelSessions.tsx
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
@@ -622,19 +621,109 @@ export default function AttendanceList() {
       !isNaN(latNum) && !isNaN(lngNum);
   }, [parseCoordinate]);
   
+  // Helper function to calculate distance between two coordinates in meters
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  }, []);
+  
+  // Helper function to smooth the path
+  const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
+    if (points.length < 3) return points;
+    
+    const smoothed: [number, number][] = [points[0]];
+    
+    for (let i = 1; i < points.length - 1; i++) {
+      const prev = points[i - 1];
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // Simple moving average smoothing (makes path look more natural)
+      const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
+      const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
+      
+      smoothed.push([smoothedLat, smoothedLng]);
+    }
+    
+    smoothed.push(points[points.length - 1]);
+    return smoothed;
+  }, []);
+  
+  // IMPROVED: Build polyline path with gap handling and smoothing
   const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Parameters for gap detection
+    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
+    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
+    
+    let lastValidPoint: [number, number] | null = null;
+    let lastValidTime: Date | null = null;
+    
+    sortedLogs.forEach((log, index) => {
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        const currentTime = new Date(log.timestamp);
+        
+        if (lastValidPoint && lastValidTime) {
+          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
+          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+          
+          const distanceMeters = calculateDistance(
+            lastValidPoint[0], lastValidPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          const distanceKm = distanceMeters / 1000;
+          
+          // Calculate speed (km/h) between points
+          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
+          
+          // Check if this connection is reasonable
+          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
+            // Reasonable connection - add the point
+            path.push(currentPoint);
+          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
+            // Unreasonably high speed - likely GPS jump
+            // Add a duplicate point to create a visual break
+            path.push([lastValidPoint[0], lastValidPoint[1]]);
+            path.push(currentPoint);
+          } else {
+            // Too long time gap - just add point (line will continue)
+            path.push(currentPoint);
+          }
+        } else {
+          // First valid point
+          path.push(currentPoint);
+        }
+        
+        lastValidPoint = currentPoint;
+        lastValidTime = currentTime;
       }
     });
     
-    return path;
-  }, [isValidCoordinate, parseCoordinate]);
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
   
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session) return [21.1702, 72.8311];
@@ -1136,19 +1225,71 @@ export default function AttendanceList() {
     }
   };
   
+  // Build session polyline path for multi-session view
   const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Parameters for gap detection
+    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
+    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
+    
+    let lastValidPoint: [number, number] | null = null;
+    let lastValidTime: Date | null = null;
+    
+    sortedLogs.forEach((log, index) => {
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        const currentTime = new Date(log.timestamp);
+        
+        if (lastValidPoint && lastValidTime) {
+          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
+          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+          
+          const distanceMeters = calculateDistance(
+            lastValidPoint[0], lastValidPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          const distanceKm = distanceMeters / 1000;
+          
+          // Calculate speed (km/h) between points
+          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
+          
+          // Check if this connection is reasonable
+          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
+            // Reasonable connection - add the point
+            path.push(currentPoint);
+          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
+            // Unreasonably high speed - likely GPS jump
+            // Add a duplicate point to create a visual break
+            path.push([lastValidPoint[0], lastValidPoint[1]]);
+            path.push(currentPoint);
+          } else {
+            // Too long time gap - just add point (line will continue)
+            path.push(currentPoint);
+          }
+        } else {
+          // First valid point
+          path.push(currentPoint);
+        }
+        
+        lastValidPoint = currentPoint;
+        lastValidTime = currentTime;
       }
     });
     
-    return path;
-  }, [isValidCoordinate, parseCoordinate]);
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
   
   const renderIndividualView = useMemo(() => {
     const groupedByDate = groupSessionsByUserAndDate(filteredSessions).reduce((acc, group) => {
@@ -1541,60 +1682,6 @@ export default function AttendanceList() {
               </select>
             </div>
           </div>
-          
-          {/* Auto-refresh controls */}
-          {/* <div className="mt-4 pt-4 border-t border-white/10 dark:border-gray-700/50">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <FaSync className="inline mr-2" />
-              Auto-refresh Options
-            </label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  autoRefresh 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <FaSync className={autoRefresh ? "animate-spin" : ""} />
-                {autoRefresh ? "Auto ON" : "Auto OFF"}
-              </button>
-              
-              <button
-                onClick={() => setActiveSessionsOnly(!activeSessionsOnly)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  activeSessionsOnly 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-                disabled={!autoRefresh}
-              >
-                <FaPlayCircle />
-                {activeSessionsOnly ? "Active Only" : "All Sessions"}
-              </button>
-              
-              <button
-                onClick={manualRefresh}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${glassmorphismClasses.button.primary}`}
-              >
-                <FaSync />
-                Refresh Now
-              </button>
-            </div>
-            
-            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              {autoRefresh ? (
-                activeSessionsOnly ? (
-                  <span>Auto-refreshing active sessions every 10 seconds</span>
-                ) : (
-                  <span>Auto-refreshing all sessions every 30 seconds</span>
-                )
-              ) : (
-                <span>Auto-refresh is disabled</span>
-              )}
-            </div>
-          </div> */}
         </div>
       </div>
 

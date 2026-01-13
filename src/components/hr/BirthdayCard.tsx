@@ -267,7 +267,7 @@ const BirthdayCardList: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="max-h-[400px] overflow-y-hidden overflow-x-hidden  pr-1 space-y-4">
+          <div className="max-h-[400px] overflow-y-scroll overflow-x-hidden  pr-1 space-y-4">
             {birthdayUsers.map((user, index) => {
               const age = calculateAge(user.birthDate);
               const formattedDate = formatBirthDate(user.birthDate);

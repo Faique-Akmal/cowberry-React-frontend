@@ -175,7 +175,7 @@ export const ChatInterface = () => {
 
   const handleUserClick = async (receiverId: number) => {
     try {
-      const conversation = await ChatService.startChat(receiverId);
+      const conversation = await ChatService.startPersonalChat(receiverId);
       setActiveConversation(conversation);
     } catch (error) {
       console.error("Failed to start chat", error);

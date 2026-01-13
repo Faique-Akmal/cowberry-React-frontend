@@ -11,7 +11,8 @@ import {
   ChatIcon,
   // ChatIcon,
   ChevronDownIcon,
-  GridIcon, PlugInIcon,
+  GridIcon,
+  PlugInIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -22,8 +23,6 @@ import { FaTasks } from "react-icons/fa";
 import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
-
-
 
 type SubItem = {
   name: string;
@@ -63,91 +62,80 @@ const AppSidebar: React.FC = () => {
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: t("menu.dashboard"),
-    subItems: [
-      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ] },
-      
-    ],
-  },
-  {
+    {
+      icon: <GridIcon />,
+      name: t("menu.dashboard"),
+      subItems: [
+        {
+          name: t("menu.dashboard"),
+          path: "/home",
+          role: ["admin", "ZonalManager", "Manager", "HR"],
+        },
+      ],
+    },
+    {
       icon: <ChatIcon />,
       name: t("menu.chat"),
       path: "/chat",
-      role: [
-        "admin",
-        "department_head",
-        "ZonalManager",
-        "manager",
-        "HR",
-       
+      role: ["Admin", "department_head", "ZonalManager", "manager", "HR"],
+    },
+    {
+      icon: <CalenderIcon />,
+      name: t("menu.calendar"),
+      path: "/calendar",
+      role: ["admin", "ZonalManager", "Manager", "HR"],
+    },
+    {
+      icon: <UserCircleIcon />,
+      name: t("menu.profile"),
+      path: "/profile",
+      role: ["admin", "employee", "ZonalManager", "Manager", "HR"],
+    },
+    {
+      icon: <UserCircleIcon />,
+      name: t("menu.EmployeeCheckin"),
+      path: "/employeecheckin",
+      role: ["admin", "Manager", "HR"],
+    },
+
+    {
+      icon: <MdListAlt />,
+      name: t("menu.TravelSessions"),
+      path: "/tracking-admin",
+      role: ["admin", "ZonalManager", "Manager", "HR"],
+    },
+    {
+      icon: <MdAppRegistration />,
+      name: t("menu.registerUserForm"),
+      path: "/user-register",
+      role: ["admin", "HR"],
+    },
+
+    {
+      icon: <FaTasks />,
+      name: t("menu.announcement"),
+      path: "/announcementList",
+      role: ["admin", "Manager", "HR"],
+    },
+    {
+      icon: <PiUsersThreeBold />,
+      name: t("menu.allUsers"),
+      path: "/all-users",
+      role: ["admin", "Manager", "HR", "ZonalManager"],
+    },
+  ];
+
+  const othersItems: NavItem[] = [
+    {
+      icon: <PlugInIcon />,
+      name: t("menu.Authentication"),
+      subItems: [
+        { name: t("menu.signIn"), path: "/signin" },
+        // { name: "Sign Up", path: "/signup",  },
+        { name: t("logout"), path: "/logout" },
       ],
     },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.calendar"),
-    path: "/calendar",
-    role: ["admin","ZonalManager","Manager","HR"],
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: t("menu.profile"),
-    path: "/profile",
-    role: ["admin","employee","ZonalManager","Manager","HR"],
-  },
-   {
-    icon: <UserCircleIcon />,
-    name: t("menu.EmployeeCheckin"),
-    path: "/employeecheckin",
-    role: ["admin","Manager","HR"],
-  },
- 
-  
-  {
-    icon: <MdListAlt />,
-    name: t("menu.TravelSessions"),
-    path: "/tracking-admin",
-    role: ["admin","ZonalManager","Manager","HR"],
-  },
-  {
-    icon: <MdAppRegistration />,
-    name: t("menu.registerUserForm"),
-    path: "/user-register",
-    role: ["admin","HR"],
-  },
-  
-  {
-    icon: <FaTasks />,
-    name: t("menu.announcement"),
-    path: "/announcementList",
-    role: ["admin","Manager","HR"],
-  },
-  {
-    icon: <PiUsersThreeBold />,
-    name: t("menu.allUsers"),
-    path: "/all-users",
-    role: ["admin","Manager","HR","ZonalManager"],
-  },
- 
- 
- 
-];
-
-
-const othersItems: NavItem[] = [
-
-  {
-    icon: <PlugInIcon />,
-    name: t("menu.Authentication"),
-    subItems: [
-      { name: t("menu.signIn"), path: "/signin",  },
-      // { name: "Sign Up", path: "/signup",  },
-      { name: t("logout"), path: "/logout",  },
-    ],
-  },
-];
-
+  ];
 
   useEffect(() => {
     let submenuMatched = false;

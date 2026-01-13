@@ -5,6 +5,10 @@ export interface User {
   lastName?: string;
   profileImageUrl?: string;
   email: string;
+  role?: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface Message {
@@ -22,17 +26,31 @@ export interface Message {
   isEdited: boolean;
 }
 
+export interface ConversationParticipant {
+  userId: number;
+  user: User;
+}
+
 export interface Conversation {
   id: number;
   type: "PERSONAL" | "GROUP";
-  name?: string;
-  participants: {
-    user: User;
-  }[];
+  name?: string; // Group name
+  participants: ConversationParticipant[];
   messages?: Message[];
+  updatedAt: string; // Sorting ke liye
 }
 
-// Socket Payload Types
+export interface CreateGroupPayload {
+  name: string;
+  participantIds: number[];
+}
+
+export interface UpdateGroupPayload {
+  name?: string;
+  addParticipants?: number[];
+  removeParticipants?: number[];
+}
+
 export interface SendMessagePayload {
   conversationId: number;
   senderId: number;

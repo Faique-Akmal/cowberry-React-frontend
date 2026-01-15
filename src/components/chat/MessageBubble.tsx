@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import {
-  MoreVertical,
   Edit2,
   Trash2,
   CornerUpLeft,
@@ -9,7 +8,10 @@ import {
   CheckCheck,
   FileText,
   Download,
-  MapPin,
+  MapPinned,
+  Telescope,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Message } from "../../types/chatTypes";
 import { useChatStore } from "../../store/useChatStore";
@@ -73,18 +75,32 @@ const MessageBubble = React.memo(
         const [lat, lng] = (msg.content || "").split(",");
         const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
         return (
-          <div className="mb-2 rounded-lg border border-white/20 bg-black/20 p-2">
-            <div className="flex items-center gap-2 mb-2 text-white/90 font-medium">
-              <MapPin className="w-5 h-5 text-red-500" /> <span>Location</span>
+          <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
+            <div className="flex items-center gap-2 text-white/90 font-medium">
+              <img
+                // src={mapUrl}
+                src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
+                alt="Location Preview"
+                className="w-full h-40 object-cover rounded-tl rounded-tr"
+              />{" "}
             </div>
-            <a
-              href={mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-300 hover:underline"
-            >
-              Open Maps
-            </a>
+            <div className="p-2 flex flex-col items-center">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+                <button className="mx-auto overflow-hidden relative w-32 h-8 bg-brand-500 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
+                  <span className="flex items-center justify-center gap-1">
+                    <MapPinned className="w-5 h-5" /> Open map
+                  </span>
+                  <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
+                  <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
+                  <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
+                  <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-6 z-10">
+                    <span className="flex items-center justify-center gap-1">
+                      <Telescope className="w-5 h-5" /> Explore!
+                    </span>
+                  </span>
+                </button>
+              </a>
+            </div>
           </div>
         );
       }
@@ -115,14 +131,14 @@ const MessageBubble = React.memo(
       >
         <div
           className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl p-3 shadow-lg group ${
-            isMe
-              ? "bg-indigo-600 text-white rounded-br-none"
-              : "bg-white/10 text-white rounded-bl-none border border-white/10"
+            !isMe
+              ? "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
+              : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
           }`}
         >
           {/* Sender Name in Group */}
           {isGroup && (
-            <p className="text-[10px] text-orange-300 font-bold mb-1 opacity-80">
+            <p className="text-xs text-orange-300 font-bold mb-1 opacity-80">
               {!isMe ? msg.sender.username : `${msg.sender.username} (You)`}
             </p>
           )}
@@ -142,18 +158,17 @@ const MessageBubble = React.memo(
           {/* Content */}
           {msg.isDeleted ? (
             <p className="italic text-sm opacity-60 flex items-center gap-2">
-              <Ban className="w-4 h-4" /> Message deleted
+              <Ban className="w-4 h-4" />{" "}
+              {isMe ? "You deleted this message" : "This message was deleted"}
             </p>
           ) : (
             <>
               {msg.type !== "TEXT" && renderAttachment()}
-              {msg.content &&
-                msg.type !== "LOCATION" &&
-                msg.type !== "DOCUMENT" && (
-                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
-                  </p>
-                )}
+              {msg.type === "TEXT" && (
+                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                  {msg.content}
+                </p>
+              )}
             </>
           )}
 
@@ -162,27 +177,29 @@ const MessageBubble = React.memo(
             {format(new Date(msg.createdAt), "HH:mm")}
             {msg.isEdited && <span>(edited)</span>}
             {!msg.isDeleted && isMe && (
-              <CheckCheck className="w-3 h-3 text-blue-200" />
+              <CheckCheck className="w-4 h-4 text-blue-light-400" />
             )}
           </div>
 
           {/* Hover Menu */}
           {!msg.isDeleted && (
-            <div
-              className={`absolute top-2 ${
-                isMe ? "left-2" : "right-2"
-              } opacity-0 group-hover:opacity-100 transition-opacity`}
-            >
+            <div className="absolute top-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={handleMenuClick}
                 className="p-1 hover:bg-black/20 rounded-full"
               >
-                <MoreVertical className="w-4 h-4 text-white/70" />
+                {activeMenu ? (
+                  <ChevronUp className="h-5 w-5 text-white/70" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-white/70" />
+                )}
               </button>
 
               {activeMenu && (
                 <div
-                  className="absolute top-6 z-50 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl py-1 w-32 animate-in zoom-in-95"
+                  className={`absolute top-6 ${
+                    isMe ? "right-0" : "left-0"
+                  } z-50 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-32 animate-in zoom-in-95`}
                   onMouseLeave={() => setActiveMenu(false)}
                 >
                   <button
@@ -190,7 +207,7 @@ const MessageBubble = React.memo(
                       setReplyingTo(msg);
                       setActiveMenu(false);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-white/10"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-200 hover:bg-white/10"
                   >
                     <CornerUpLeft className="w-3 h-3" /> Reply
                   </button>
@@ -201,7 +218,7 @@ const MessageBubble = React.memo(
                           setEditingMessage(msg);
                           setActiveMenu(false);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-white/10"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-200 hover:bg-white/10"
                       >
                         <Edit2 className="w-3 h-3" /> Edit
                       </button>
@@ -210,7 +227,7 @@ const MessageBubble = React.memo(
                           onDelete(msg.id);
                           setActiveMenu(false);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-red-500/20 text-red-400"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-red-500/20 text-red-400"
                       >
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>

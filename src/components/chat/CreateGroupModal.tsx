@@ -38,7 +38,7 @@ export const CreateGroupModal = ({ users, onClose }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="bg-[#1a1a1a] w-full max-w-md rounded-2xl border border-white/10 shadow-2xl p-6">
         <h3 className="text-xl font-bold text-white mb-4">Create New Group</h3>
 
@@ -51,8 +51,8 @@ export const CreateGroupModal = ({ users, onClose }: Props) => {
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white mt-1 focus:border-indigo-500 outline-none transition"
-              placeholder="e.g. Project Alpha"
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white mt-1 focus:border-lime-500 outline-none transition"
+              placeholder="Group name"
             />
           </div>
 
@@ -75,14 +75,14 @@ export const CreateGroupModal = ({ users, onClose }: Props) => {
                     }}
                     className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${
                       selectedUsers.includes(user.id)
-                        ? "bg-indigo-600/30 border border-indigo-500/50"
+                        ? "bg-green-600/30 border border-green-500/50"
                         : "hover:bg-white/5 border border-transparent"
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded flex items-center justify-center border transition ${
                         selectedUsers.includes(user.id)
-                          ? "bg-indigo-500 border-indigo-500"
+                          ? "bg-green-500 border-green-500"
                           : "border-white/30"
                       }`}
                     >
@@ -108,7 +108,7 @@ export const CreateGroupModal = ({ users, onClose }: Props) => {
             <button
               onClick={handleCreate}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition font-medium shadow-lg shadow-indigo-500/20"
+              className="flex-1 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-500 transition font-medium shadow-lg shadow-lime-500/20"
             >
               {loading ? "Creating..." : "Create Group"}
             </button>

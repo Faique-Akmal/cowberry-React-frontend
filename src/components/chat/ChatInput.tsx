@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import {
   Send,
-  Plus,
+  BadgePlus,
   X,
   Image as ImageIcon,
   FileText,
@@ -118,9 +118,9 @@ export const ChatInput = () => {
     <div className="p-4 border-t border-white/10 bg-white/5 backdrop-blur-md relative">
       {/* Reply/Edit Banner */}
       {(replyingTo || editingMessage) && (
-        <div className="absolute bottom-full left-0 w-full bg-[#1a1a1a] p-3 border-t border-white/10 flex items-center justify-between animate-in slide-in-from-bottom-5">
-          <div className="flex flex-col border-l-4 border-indigo-500 pl-3">
-            <span className="text-xs text-indigo-400 font-bold">
+        <div className="absolute bottom-full left-0 w-full bg-[#1a1a1aa3] backdrop-blur-3xl p-3 rounded-tr-lg rounded-tl-lg border-t border-white/10 flex items-center justify-between animate-in slide-in-from-bottom-5">
+          <div className="flex flex-col rounded-tl-sm py-1 rounded-bl-sm border-l-5 border-brand-500 pl-3">
+            <span className="text-xs text-brand-300 font-bold">
               {editingMessage
                 ? "Editing Message"
                 : `Replying to ${replyingTo?.sender.username}`}
@@ -155,11 +155,11 @@ export const ChatInput = () => {
                 : "text-white/60 hover:text-white"
             }`}
           >
-            <Plus className="w-6 h-6" />
+            <BadgePlus className="h-6 w-6" />{" "}
           </button>
 
           {isAttachMenuOpen && (
-            <div className="absolute bottom-14 left-0 bg-[#1c1c1c]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 w-44 shadow-2xl flex flex-col gap-1 animate-in zoom-in-95 origin-bottom-left z-50">
+            <div className="absolute bottom-14 left-0 bg-[#1c1c1c]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-2 w-44 shadow-2xl flex flex-col gap-1 animate-in zoom-in-95 origin-bottom-left z-50">
               <button
                 onClick={() => mediaInputRef.current?.click()}
                 className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl text-white/90 text-sm transition"
@@ -210,8 +210,8 @@ export const ChatInput = () => {
             disabled={!input.trim()}
             className={`p-2 rounded-full transition ${
               input.trim()
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                : "bg-white/5 text-white/30"
+                ? "bg-linear-to-r from-green-300/50 to-green-500/30 text-white"
+                : "bg-white/10 text-white/30 cursor-not-allowed"
             }`}
           >
             <Send className="w-5 h-5 ml-0.5" />

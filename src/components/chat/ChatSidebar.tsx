@@ -175,7 +175,7 @@ export const Sidebar = ({
                   className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
                 />
                 {item.isGroup && (
-                  <div className="absolute -bottom-1 -right-1 bg-indigo-500 rounded-full p-0.5 border-2 border-black">
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-lime-400">
                     <Users className="w-3 h-3 text-white" />
                   </div>
                 )}

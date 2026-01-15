@@ -28,16 +28,11 @@ import Logout from "./pages/AuthPages/Logout";
 // import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
 
-
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 // import AttendanceForm from "./pages/Employee/AttandanceStart";
 // import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
 // import ProtectedRoute from "./components/ProtectedRoutes";
-
-
-
-
 
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
@@ -54,7 +49,7 @@ import ThemeCustomizer from "./themes/themecutomizer";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
 import AnnouncementModal from "./components/header/NotificationDropdown";
 import CreateAnnouncement from "./components/hr/Announcement";
-import { ChatInterface } from "./components/chat/ChatInterface";
+import ChatInterface from "./components/chat/ChatInterface";
 
 export default function App() {
   return (
@@ -93,7 +88,6 @@ export default function App() {
 
           {/* Employee Pages */}
 
-     
           {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
           <Route
             path="/attandanceEnd-page"
@@ -104,9 +98,7 @@ export default function App() {
               </AttendanceGuard>
             }
           ></Route>
-         
-          
-        
+
           <Route
             path="/user-register"
             element={
@@ -138,7 +130,7 @@ export default function App() {
           {/* Tables */}
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/assign-task-page" element={<TaskPage />} />
-        
+
           <Route path="/tracking-admin" element={<AttendanceList />} />
           <Route path="/announcement" element={<AnnouncementModal />} />
           <Route path="/announcementList" element={<CreateAnnouncement />} />

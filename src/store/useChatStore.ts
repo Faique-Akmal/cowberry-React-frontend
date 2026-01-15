@@ -2,13 +2,13 @@ import { create } from "zustand";
 import { Conversation, Message, User } from "../types/chatTypes";
 
 interface ChatState {
-  // Data
+  // Data State
   conversations: Conversation[];
   activeConversation: Conversation | null;
   messages: Message[];
   currentUser: User | null;
 
-  // UI Actions
+  // UI Action State
   replyingTo: Message | null;
   editingMessage: Message | null;
 
@@ -16,13 +16,16 @@ interface ChatState {
   setConversations: (conversations: Conversation[]) => void;
   setActiveConversation: (conversation: Conversation | null) => void;
   setMessages: (messages: Message[]) => void;
+  setCurrentUser: (user: User) => void;
 
-  // Real-time Updates
+  // Real-time Update Actions
   addMessage: (message: Message) => void;
   updateMessage: (messageId: number, updates: Partial<Message>) => void;
-  addConversation: (conversation: Conversation) => void; // New Group created
 
-  setCurrentUser: (user: User) => void;
+  // Add/Update Conversation in Sidebar
+  addOrUpdateConversation: (conversation: Conversation) => void;
+  removeConversation: (conversationId: number) => void;
+
   setReplyingTo: (message: Message | null) => void;
   setEditingMessage: (message: Message | null) => void;
 }
@@ -36,24 +39,25 @@ export const useChatStore = create<ChatState>((set) => ({
   editingMessage: null,
 
   setConversations: (conversations) => set({ conversations }),
-
   setActiveConversation: (conversation) =>
     set({ activeConversation: conversation }),
-
   setMessages: (messages) => set({ messages }),
+  setCurrentUser: (user) => set({ currentUser: user }),
 
   addMessage: (message) =>
     set((state) => {
-      // 1. Add to message list if current chat
+      // 1. Update Messages if active
       let newMessages = state.messages;
       if (state.activeConversation?.id === message.conversationId) {
         if (!state.messages.some((m) => m.id === message.id)) {
-          newMessages = [...state.messages, message];
+          newMessages = [message, ...state.messages]; // Prepend for reverse list or Append depending on UI
+          // Assuming UI renders reversed list (bottom up), usually Append is better for array but UI maps differently
+          // Let's stick to standard append logic if UI handles scroll
+          if (!state.messages.some((m) => m.id === message.id)) {
+            newMessages = [...state.messages, message];
+          }
         }
       }
-
-      // 2. Update conversation list (Move to top & update last msg preview if we had one)
-      // For now, re-fetching list is easier, but optimistic update works too.
       return { messages: newMessages };
     }),
 
@@ -64,15 +68,33 @@ export const useChatStore = create<ChatState>((set) => ({
       ),
     })),
 
-  addConversation: (conversation) =>
+  addOrUpdateConversation: (conversation) =>
+    set((state) => {
+      // Check if exists
+      const exists = state.conversations.find((c) => c.id === conversation.id);
+      let newConversations;
+      if (exists) {
+        // Update and move to top
+        newConversations = [
+          conversation,
+          ...state.conversations.filter((c) => c.id !== conversation.id),
+        ];
+      } else {
+        // Add to top
+        newConversations = [conversation, ...state.conversations];
+      }
+      return { conversations: newConversations };
+    }),
+
+  removeConversation: (conversationId) =>
     set((state) => ({
-      conversations: [
-        conversation,
-        ...state.conversations.filter((c) => c.id !== conversation.id),
-      ],
+      conversations: state.conversations.filter((c) => c.id !== conversationId),
+      activeConversation:
+        state.activeConversation?.id === conversationId
+          ? null
+          : state.activeConversation,
     })),
 
-  setCurrentUser: (user) => set({ currentUser: user }),
   setReplyingTo: (message) =>
     set({ replyingTo: message, editingMessage: null }),
   setEditingMessage: (message) =>

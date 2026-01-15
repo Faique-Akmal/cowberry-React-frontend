@@ -6,8 +6,8 @@ export interface User {
   profileImageUrl?: string;
   email: string;
   role?: {
-    id: number;
-    name: string;
+    id?: number;
+    name?: string;
   };
 }
 

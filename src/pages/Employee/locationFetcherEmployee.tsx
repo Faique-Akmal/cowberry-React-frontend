@@ -1178,272 +1178,459 @@ export default function AttendanceList() {
   const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
   
   // Export all data based on filters
-  const exportToCSV = async () => {
-    try {
-      setIsExporting(true);
+// Export all data based on filters with pagination handling
+// Export all data based on filters with pagination handling
+const exportToCSV = async () => {
+  try {
+    setIsExporting(true);
+    console.log('Export started with filters:', { startDate, endDate, selectedUser, searchQuery });
+    
+    // Build params for export (include all data based on filters)
+    const params: any = { page: 1, per_page: 50 };
+    
+    // Apply filters to the main API call
+    if (startDate) {
+      params.startDate = startDate;
+      console.log('Applied startDate filter:', startDate);
+    }
+    if (endDate) {
+      params.endDate = endDate;
+      console.log('Applied endDate filter:', endDate);
+    }
+    if (selectedUser) {
+      params.userId = selectedUser;
+      console.log('Applied user filter:', selectedUser);
+    }
+    if (searchQuery) {
+      params.search = searchQuery;
+      console.log('Applied search filter:', searchQuery);
+    }
+    
+    // Fetch all pages of data for export
+    let allSessions: TravelSession[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let hasMore = true;
+    let totalFetched = 0;
+    
+    console.log('Starting to fetch all paginated data...');
+    
+    // Fetch all pages
+    while (hasMore) {
+      params.page = currentPage;
       
-      // Build params for export (include all data based on filters)
-      const params: any = { per_page: 1000 }; // Large per_page to get all data
+      console.log(`Fetching page ${currentPage} with params:`, params);
       
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      if (selectedUser) params.userId = selectedUser;
-      if (searchQuery) params.search = searchQuery;
-      
-      // Fetch all data for export
       const response = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
       
       if (!response.data.success) {
+        console.error('API response not successful:', response.data);
         throw new Error("Failed to fetch data for export");
       }
       
-      const allSessions = response.data.data || [];
+      const pageData = response.data.data || [];
+      totalFetched += pageData.length;
+      allSessions = [...allSessions, ...pageData];
       
-      // Group the sessions for export
-      const groupedData = groupSessionsByUserAndDate(allSessions);
+      totalPages = response.data.totalPages || 1;
+      currentPage = response.data.currentPage || currentPage;
+      hasMore = response.data.hasNextPage || false;
       
-      // Process each group for farmer data
-      const groupedDataWithFarmerInfo = await Promise.all(
-        groupedData.map(async (group) => {
-          try {
-            // Fetch farmer data for this user on this date
-            const farmerResponse = await API.get(`/tracking/locationlog/get_travel_sessions`, {
-              params: { userId: group.userId }
-            });
-            
-            const data = farmerResponse.data;
-            let sessionFarmerData = [];
-            
-            if (data.success && data.sessions && data.sessions.data) {
-              const allSessions = data.sessions.data.map((session: any) => ({
-                sessionId: session.sessionId,
-                startTime: session.startTime,
-                endTime: session.endTime,
-                totalDistance: session.totalDistance,
-                startOdometerImage: session.startOdometerImage || '',
-                endOdometerImage: session.endOdometerImage || '',
-                farmerData: session.farmerData || { count: 0, data: [] }
-              }));
-              
-              // Filter sessions for this specific date
-              sessionFarmerData = allSessions.filter(session => {
-                const sessionDate = formatDateOnly(session.startTime);
-                return sessionDate === group.date;
-              });
-            }
-            
-            // Calculate totals
-            const firstSessionStart = new Date(group.startTime);
-            const lastSessionEnd = new Date(group.endTime);
-            const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
-            const totalDistanceExcludingFirst = group.totalDistance;
-            const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
-            
-            const totalPauses = group.sessions.reduce((sum, session) => {
-              const pauses = detectPauses(session.logs || []);
-              return sum + pauses.length;
-            }, 0);
-            
-            // Count total farmers met
-            const totalFarmersMet = sessionFarmerData.reduce((sum, session) => 
-              sum + (session.farmerData?.count || 0), 0
-            );
-            
-            // Build session details with farmer information
-            const sessionDetails = group.sessions.map((session, index) => {
-              const matchingFarmerData = sessionFarmerData.find(f => f.sessionId === session.sessionId);
-              const farmerCount = matchingFarmerData?.farmerData?.count || 0;
-              const farmers = matchingFarmerData?.farmerData?.data || [];
-              
-              // Format farmer descriptions
-              const farmerDescriptions = farmers.map((farmer, farmerIndex) => 
-                `Farmer ${farmerIndex + 1}: ${farmer.farmerName || 'Unknown'} - ${farmer.farmerDescription || 'No description'}`
-              ).join('; ');
-              
-              // Format farmer image URLs
-              const farmerImageUrls = farmers.map((farmer, farmerIndex) => 
-                farmer.farmerImage || ''
-              ).filter(url => url).join('; ');
-              
-              return {
-                sessionNumber: index + 1,
-                sessionId: session.sessionId,
-                sessionStartTime: formatTimeOnly(session.startTime),
-                sessionEndTime: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
-                sessionDistance: (session.totalDistance / 1000).toFixed(2),
-                sessionStatus: session.endTime ? 'Completed' : 'Active',
-                farmersCount: farmerCount,
-                farmerDescriptions: farmerDescriptions || 'None',
-                farmerImageUrls: farmerImageUrls || 'None',
-                startOdometerImage: matchingFarmerData?.startOdometerImage || '',
-                endOdometerImage: matchingFarmerData?.endOdometerImage || ''
-              };
-            });
-            
-            return {
-              // Group info
-              'User ID': group.userId,
-              'Username': group.username,
-              'Employee Code': group.employeeCode,
-              'Date': group.date,
-              'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              }),
-              'Start Time': formatDateTime(group.startTime),
-              'End Time': formatDateTime(group.endTime),
-              'Total Sessions': group.totalSessions,
-              'Active Sessions': group.activeSessions,
-              'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
-              'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
-              'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
-              'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
-              'Payable Amount (₹)': reimbursementAmount,
-              'Total Farmers Met': totalFarmersMet,
-              'Duration (minutes)': totalDuration,
-              
-              'Total Pauses Count': totalPauses,
-              'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
-              'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
-              
-              // Individual session columns (flattened)
-              ...sessionDetails.reduce((acc, session, idx) => {
-                const prefix = `Session ${session.sessionNumber}`;
-                return {
-                  ...acc,
-                  [`${prefix} ID`]: session.sessionId,
-                  [`${prefix} Start Time`]: session.sessionStartTime,
-                  [`${prefix} End Time`]: session.sessionEndTime,
-                  [`${prefix} Distance (km)`]: session.sessionDistance,
-                  [`${prefix} Status`]: session.sessionStatus,
-                  [`${prefix} Farmers Count`]: session.farmersCount,
-                  [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
-                };
-              }, {}),
-            };
-            
-          } catch (error) {
-            console.error(`Error fetching data for user ${group.userId} on ${group.date}:`, error);
-            // Return basic data without farmer info if API fails
-            return {
-              'User ID': group.userId,
-              'Username': group.username,
-              'Employee Code': group.employeeCode,
-              'Date': group.date,
-              'Error': 'Failed to fetch farmer data',
-              ...group.sessions.reduce((acc, session, idx) => {
-                const prefix = `Session ${idx + 1}`;
-                return {
-                  ...acc,
-                  [`${prefix} ID`]: session.sessionId,
-                  [`${prefix} Distance (km)`]: (session.totalDistance / 1000).toFixed(2),
-                  [`${prefix} Status`]: session.endTime ? 'Completed' : 'Active'
-                };
-              }, {})
-            };
-          }
-        })
-      );
-      
-      // Sort by date (newest first) and then by user ID
-      const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
-        const dateCompare = new Date(b.Date).getTime() - new Date(a.Date).getTime();
-        if (dateCompare !== 0) return dateCompare;
-        return b['User ID'] - a['User ID'];
+      console.log(`Page ${currentPage}: Fetched ${pageData.length} sessions. Total so far: ${totalFetched}`);
+      console.log('Pagination info:', {
+        currentPage,
+        totalPages,
+        hasMore,
+        totalSessions: response.data.totalSessions
       });
       
-      // Determine maximum number of sessions in any group to create dynamic headers
-      const maxSessions = Math.max(...groupedData.map(group => group.sessions.length));
-      
-      // Build dynamic headers
-      const baseHeaders = [
-        'User ID',
-        'Username',
-        'Employee Code',
-        'Date',
-        'Formatted Date',
-        'Start Time',
-        'End Time',
-        'Total Sessions',
-        'Active Sessions',
-        'Original Total Distance (km)',
-        'Original Total Reimbursement(km)',
-        'First Session Distance (km)',
-        'Payable Distance excluding first session(km)',
-        'Payable Amount (₹)',
-        'Total Farmers Met',
-        'Duration (minutes)',
-        
-        'Total Pauses Count',
-        'Status',
-        'Notes'
-      ];
-      
-      // Add session-specific headers for each session
-      const sessionHeaders = [];
-      for (let i = 1; i <= maxSessions; i++) {
-        sessionHeaders.push(
-          `Session ${i} ID`,
-          `Session ${i} Start Time`,
-          `Session ${i} End Time`,
-          `Session ${i} Distance (km)`,
-          `Session ${i} Status`,
-          `Session ${i} Farmers Count`,
-          `Session ${i} Farmer Descriptions`,
-          `Session ${i} Farmer Image URLs`,
-          `Session ${i} Start Odometer Image`,
-          `Session ${i} End Odometer Image`,
-        );
+      // Debug: Show first session if available
+      if (pageData.length > 0 && currentPage === 1) {
+        const firstSession = pageData[0];
+        console.log('Sample session from first page:', {
+          sessionId: firstSession.sessionId,
+          startTime: firstSession.startTime,
+          formattedDate: formatDateOnly(firstSession.startTime),
+          userId: firstSession.userId,
+          username: firstSession.username
+        });
       }
       
-      const allHeaders = [...baseHeaders, ...sessionHeaders];
+      // Update current page for next iteration
+      currentPage++;
       
-      // Build CSV content
-      const csvContent = [
-        allHeaders.join(','),
-        ...sortedData.map(row => 
-          allHeaders.map(header => {
-            const value = row[header];
-            if (value === null || value === undefined) return '""';
-            const stringValue = String(value);
-            // Handle CSV escaping
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
-              return `"${stringValue.replace(/"/g, '""')}"`;
-            }
-            return stringValue;
-          }).join(',')
-        )
-      ].join('\n');
+      // Break if we've fetched all pages
+      if (currentPage > totalPages) {
+        hasMore = false;
+      }
       
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const dateStr = new Date().toISOString().slice(0, 10);
-      const filterInfo = [];
-      if (startDate) filterInfo.push(`from-${startDate}`);
-      if (endDate) filterInfo.push(`to-${endDate}`);
-      if (selectedUser) filterInfo.push(`user-${selectedUser}`);
-      const filename = `travel_sessions_${filterInfo.length ? filterInfo.join('_') : 'all'}_${dateStr}.csv`;
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-      
-    } catch (error) {
-      console.error('Error exporting CSV:', error);
-      alert('Failed to export data. Please try again.');
-    } finally {
-      setIsExporting(false);
+      // Small delay to avoid overwhelming the server
+      if (hasMore) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
-  };
+    
+    console.log(`Total fetched ${allSessions.length} sessions for export`);
+    
+    // Debug: Show session date ranges
+    if (allSessions.length > 0) {
+      const dates = allSessions.map(s => formatDateOnly(s.startTime));
+      const uniqueDates = [...new Set(dates)].sort();
+      console.log('Date range of fetched sessions:', {
+        minDate: uniqueDates[0],
+        maxDate: uniqueDates[uniqueDates.length - 1],
+        allDates: uniqueDates
+      });
+    }
+    
+    // If no sessions found, show message and return
+    if (allSessions.length === 0) {
+      alert('No travel sessions found with the current filters.');
+      setIsExporting(false);
+      return;
+    }
+    
+    // Filter sessions by date range AGAIN on client side (double-check)
+    let filteredSessions = [...allSessions];
+    
+    if (startDate || endDate) {
+      filteredSessions = filteredSessions.filter(session => {
+        const sessionDate = formatDateOnly(session.startTime);
+        
+        if (startDate && !endDate) {
+          return sessionDate >= startDate;
+        }
+        
+        if (!startDate && endDate) {
+          return sessionDate <= endDate;
+        }
+        
+        if (startDate && endDate) {
+          return sessionDate >= startDate && sessionDate <= endDate;
+        }
+        
+        return true;
+      });
+      
+      console.log(`After client-side date filtering: ${filteredSessions.length} sessions`);
+    }
+    
+    // If client-side filtering removed all sessions, show message
+    if (filteredSessions.length === 0) {
+      alert('No travel sessions found within the selected date range after filtering.');
+      setIsExporting(false);
+      return;
+    }
+    
+    // Group the filtered sessions for export
+    const groupedData = groupSessionsByUserAndDate(filteredSessions);
+    console.log(`Grouped into ${groupedData.length} user-date groups`);
+    
+    // Process each group for farmer data
+    const groupedDataWithFarmerInfo = await Promise.all(
+      groupedData.map(async (group, index) => {
+        try {
+          console.log(`Processing group ${index + 1}/${groupedData.length}: User ${group.userId} on ${group.date}`);
+          
+          // Fetch farmer data for this user with date filters
+          const farmerParams: any = { 
+            userId: group.userId,
+            // Always filter farmer data by the specific date of this group
+            startDate: group.date,
+            endDate: group.date
+          };
+          
+          // If we have broader date filters from the main query, we should have already filtered the groups
+          // But we'll still use the specific group date for farmer data API
+          
+          console.log(`Fetching farmer data for user ${group.userId} on date ${group.date}`);
+          
+          const farmerResponse = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+            params: farmerParams,
+            timeout: 15000 // 15 second timeout for farmer data
+          });
+          
+          const data = farmerResponse.data;
+          let sessionFarmerData = [];
+          
+          if (data.success && data.sessions && data.sessions.data) {
+            const allFarmerSessions = data.sessions.data.map((session: any) => ({
+              sessionId: session.sessionId,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              totalDistance: session.totalDistance,
+              startOdometerImage: session.startOdometerImage || '',
+              endOdometerImage: session.endOdometerImage || '',
+              farmerData: session.farmerData || { count: 0, data: [] }
+            }));
+            
+            // Filter sessions for this specific date
+            sessionFarmerData = allFarmerSessions.filter(session => {
+              if (!session.startTime) return false;
+              const sessionDate = formatDateOnly(session.startTime);
+              const matchesDate = sessionDate === group.date;
+              
+              if (!matchesDate) {
+                console.warn(`Farmer session date mismatch: ${sessionDate} vs ${group.date} for session ${session.sessionId}`);
+              }
+              
+              return matchesDate;
+            });
+            
+            console.log(`Found ${sessionFarmerData.length} farmer sessions for user ${group.userId} on ${group.date}`);
+          } else {
+            console.log(`No farmer data found for user ${group.userId} on ${group.date}`, data);
+          }
+          
+          // Calculate totals
+          const firstSessionStart = new Date(group.startTime);
+          const lastSessionEnd = new Date(group.endTime);
+          const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
+          const totalDistanceExcludingFirst = group.totalDistance;
+          const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
+          
+          const totalPauses = group.sessions.reduce((sum, session) => {
+            const pauses = detectPauses(session.logs || []);
+            return sum + pauses.length;
+          }, 0);
+          
+          // Count total farmers met
+          const totalFarmersMet = sessionFarmerData.reduce((sum, session) => 
+            sum + (session.farmerData?.count || 0), 0
+          );
+          
+          // Build session details with farmer information
+          const sessionDetails = group.sessions.map((session, sessionIndex) => {
+            const matchingFarmerData = sessionFarmerData.find(f => f.sessionId === session.sessionId);
+            const farmerCount = matchingFarmerData?.farmerData?.count || 0;
+            const farmers = matchingFarmerData?.farmerData?.data || [];
+            
+            // Format farmer descriptions
+            const farmerDescriptions = farmers.map((farmer, farmerIndex) => 
+              `Farmer ${farmerIndex + 1}: ${farmer.farmerName || 'Unknown'} - ${farmer.farmerDescription || 'No description'}`
+            ).join('; ');
+            
+            // Format farmer image URLs
+            const farmerImageUrls = farmers.map((farmer, farmerIndex) => 
+              farmer.farmerImage || ''
+            ).filter(url => url).join('; ');
+            
+            return {
+              sessionNumber: sessionIndex + 1,
+              sessionId: session.sessionId,
+              sessionStartTime: formatTimeOnly(session.startTime),
+              sessionEndTime: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
+              sessionDistance: (session.totalDistance / 1000).toFixed(2),
+              sessionStatus: session.endTime ? 'Completed' : 'Active',
+              farmersCount: farmerCount,
+              farmerDescriptions: farmerDescriptions || 'None',
+              farmerImageUrls: farmerImageUrls || 'None',
+              startOdometerImage: matchingFarmerData?.startOdometerImage || '',
+              endOdometerImage: matchingFarmerData?.endOdometerImage || ''
+            };
+          });
+          
+          const result = {
+            // Group info
+            'User ID': group.userId,
+            'Username': group.username,
+            'Employee Code': group.employeeCode,
+            'Date': group.date,
+            'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            }),
+            'Start Time': formatDateTime(group.startTime),
+            'End Time': formatDateTime(group.endTime),
+            'Total Sessions': group.totalSessions,
+            'Active Sessions': group.activeSessions,
+            'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+            'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
+            'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
+            'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+            'Payable Amount (₹)': reimbursementAmount,
+            'Total Farmers Met': totalFarmersMet,
+            'Duration (minutes)': totalDuration,
+            
+            'Total Pauses Count': totalPauses,
+            'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
+            'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
+            
+            // Individual session columns (flattened)
+            ...sessionDetails.reduce((acc, session, idx) => {
+              const prefix = `Session ${session.sessionNumber}`;
+              return {
+                ...acc,
+                [`${prefix} ID`]: session.sessionId,
+                [`${prefix} Start Time`]: session.sessionStartTime,
+                [`${prefix} End Time`]: session.sessionEndTime,
+                [`${prefix} Distance (km)`]: session.sessionDistance,
+                [`${prefix} Status`]: session.sessionStatus,
+                [`${prefix} Farmers Count`]: session.farmersCount,
+                [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
+                
+              };
+            }, {}),
+          };
+          
+          console.log(`Completed processing group for user ${group.userId} on ${group.date}`);
+          return result;
+          
+        } catch (error) {
+          console.error(`Error fetching data for user ${group.userId} on ${group.date}:`, error);
+          
+          // Calculate basic info even if farmer data fails
+          const firstSessionStart = new Date(group.startTime);
+          const lastSessionEnd = new Date(group.endTime);
+          const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
+          const totalDistanceExcludingFirst = group.totalDistance;
+          const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
+          
+          return {
+            'User ID': group.userId,
+            'Username': group.username,
+            'Employee Code': group.employeeCode,
+            'Date': group.date,
+            'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            }),
+            'Start Time': formatDateTime(group.startTime),
+            'End Time': formatDateTime(group.endTime),
+            'Total Sessions': group.totalSessions,
+            'Active Sessions': group.activeSessions,
+            'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+            'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
+            'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
+            'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+            'Payable Amount (₹)': reimbursementAmount,
+            'Total Farmers Met': 'Error fetching farmer data',
+            'Duration (minutes)': totalDuration,
+            'Total Pauses Count': 'N/A',
+            'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
+            'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km; Farmer data fetch failed`,
+            ...group.sessions.reduce((acc, session, idx) => {
+              const prefix = `Session ${idx + 1}`;
+              return {
+                ...acc,
+                [`${prefix} ID`]: session.sessionId,
+                [`${prefix} Start Time`]: formatTimeOnly(session.startTime),
+                [`${prefix} End Time`]: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
+                [`${prefix} Distance (km)`]: (session.totalDistance / 1000).toFixed(2),
+                [`${prefix} Status`]: session.endTime ? 'Completed' : 'Active'
+              };
+            }, {})
+          };
+        }
+      })
+    );
+    
+    console.log(`Processed all ${groupedDataWithFarmerInfo.length} groups`);
+    
+    // Sort by date (newest first) and then by user ID
+    const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
+      const dateCompare = new Date(b.Date).getTime() - new Date(a.Date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return b['User ID'] - a['User ID'];
+    });
+    
+    // Determine maximum number of sessions in any group to create dynamic headers
+    const maxSessions = Math.max(...groupedData.map(group => group.sessions.length));
+    
+    // Build dynamic headers
+    const baseHeaders = [
+      'User ID',
+      'Username',
+      'Employee Code',
+      'Date',
+      'Formatted Date',
+      'Start Time',
+      'End Time',
+      'Total Sessions',
+      'Active Sessions',
+      'Original Total Distance (km)',
+      'Original Total Reimbursement(km)',
+      'First Session Distance (km)',
+      'Payable Distance excluding first session(km)',
+      'Payable Amount (₹)',
+      'Total Farmers Met',
+      'Duration (minutes)',
+      
+      'Total Pauses Count',
+      'Status',
+      'Notes'
+    ];
+    
+    // Add session-specific headers for each session
+    const sessionHeaders = [];
+    for (let i = 1; i <= maxSessions; i++) {
+      sessionHeaders.push(
+        `Session ${i} ID`,
+        `Session ${i} Start Time`,
+        `Session ${i} End Time`,
+        `Session ${i} Distance (km)`,
+        `Session ${i} Status`,
+        `Session ${i} Farmers Count`,
+        `Session ${i} Farmer Descriptions`,
+        `Session ${i} Farmer Image URLs`,
+        `Session ${i} Start Odometer Image`,
+        `Session ${i} End Odometer Image`,
+      );
+    }
+    
+    const allHeaders = [...baseHeaders, ...sessionHeaders];
+    
+    // Build CSV content
+    const csvContent = [
+      allHeaders.join(','),
+      ...sortedData.map(row => 
+        allHeaders.map(header => {
+          const value = row[header];
+          if (value === null || value === undefined) return '""';
+          const stringValue = String(value);
+          // Handle CSV escaping
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        }).join(',')
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filterInfo = [];
+    if (startDate) filterInfo.push(`from-${startDate}`);
+    if (endDate) filterInfo.push(`to-${endDate}`);
+    if (selectedUser) filterInfo.push(`user-${selectedUser}`);
+    if (searchQuery) filterInfo.push(`search-${searchQuery}`);
+    const filename = `travel_sessions_${filterInfo.length ? filterInfo.join('_') : 'all'}_${dateStr}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    
+    console.log(`Export completed successfully. Exported ${sortedData.length} groups.`);
+    
+  } catch (error) {
+    console.error('Error exporting CSV:', error);
+    alert('Failed to export data. Please try again.');
+  } finally {
+    setIsExporting(false);
+  }
+};
   
   // Build session polyline path for multi-session view
   const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {

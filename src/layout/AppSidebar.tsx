@@ -63,14 +63,20 @@ const AppSidebar: React.FC = () => {
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: t("menu.dashboard"),
-    subItems: [
-      { name: t("menu.dashboard"), path: "/home", role: ["admin","ZonalManager","Manager","HR" ] },
-      
-    ],
-  },
+     {
+      icon: <GridIcon  />,
+      name: t("menu.dashboard"),
+      path: "/home",
+      role: [
+        "admin",
+        "department_head",
+        "ZonalManager",
+        "manager",
+        "HR",
+       
+      ],
+    },
+ 
   {
       icon: <ChatIcon />,
       name: t("menu.chat"),
@@ -141,9 +147,9 @@ const othersItems: NavItem[] = [
     icon: <PlugInIcon />,
     name: t("menu.Authentication"),
     subItems: [
-      { name: t("menu.signIn"), path: "/signin",  },
+      { name: t("signIn"), path: "/signin",  },
       // { name: "Sign Up", path: "/signup",  },
-      { name: t("logout"), path: "/logout",  },
+      { name: t("signOut"), path: "/logout",  },
     ],
   },
 ];

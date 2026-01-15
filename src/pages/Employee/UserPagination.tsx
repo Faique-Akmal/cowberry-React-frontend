@@ -9,7 +9,6 @@ import React, {
 import { useUserStore } from "../../store/useUserStore";
 import API from "../../api/axios";
 import * as XLSX from "xlsx";
-// import { department } from "../../store/store";
 
 // Add UserRole type
 type UserRole = "HR" | "Manager" | "ZonalManager" | string;
@@ -44,15 +43,6 @@ interface CurrentUser {
   allocatedArea?: string;
 }
 
-// interface PaginationParams {
-//   page: number;
-//   limit: number;
-//   search?: string;
-//   sort_order?: "asc" | "desc";
-//   role?: number;
-//   status?: "online" | "offline";
-// }
-
 interface Department {
   departmentId: number;
   name: string;
@@ -85,8 +75,10 @@ const UserList: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+// const [openDropdownUserId, setOpenDropdownUserId] = useState<string | null>(null);
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -95,6 +87,7 @@ const UserList: React.FC = () => {
     ""
   );
   const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Current Admin User State
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -175,17 +168,16 @@ const UserList: React.FC = () => {
     }
   }, []);
 
-  // Check if current user can edit a specific user - CORRECTED
+  // Check if current user can edit a specific user
   const canEditUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
 
-      const userRole = currentUser.role; // Already normalized in fetchCurrentUser
+      const userRole = currentUser.role;
 
       switch (userRole) {
-        case "hr": // Normalized to lowercase
-          return true; // HR can edit all users
-
+        case "hr":
+          return true;
         case "manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
@@ -195,12 +187,11 @@ const UserList: React.FC = () => {
           );
           const userDept = normalizeString(user.department);
 
-          return managerDept === userDept; // Manager can edit only their department users
+          return managerDept === userDept;
         }
         case "zonalmanager":
         case "zonal manager":
-          return false; // Zonal Manager cannot edit any users
-
+          return false;
         default:
           return false;
       }
@@ -208,16 +199,54 @@ const UserList: React.FC = () => {
     [currentUser]
   );
 
-  // Check if current user can view a specific user - CORRECTED
-  const canViewUser = useCallback(
+  // Check if current user can delete a specific user - NEW FUNCTION
+  const canDeleteUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
-      const userRole = currentUser.role; // Already normalized
+
+      const userRole = currentUser.role;
+      const normalizedUserRole = normalizeRole(user.role);
+
+      // Only HR and Manager can delete users
+      if (userRole !== "hr" && userRole !== "manager") return false;
+
+      // Prevent users from deleting themselves
+      if (currentUser.id === user.id || currentUser.id === user.userId) {
+        return false;
+      }
 
       switch (userRole) {
         case "hr":
-          return true; // HR can view all users
+          // HR can delete all users except themselves
+          return true;
+        case "manager": {
+          if (!currentUser.departmentName && !currentUser.department)
+            return false;
 
+          const managerDept = normalizeString(
+            currentUser.departmentName || currentUser.department
+          );
+          const userDept = normalizeString(user.department);
+
+          // Manager can only delete users from their own department
+          return managerDept === userDept;
+        }
+        default:
+          return false;
+      }
+    },
+    [currentUser]
+  );
+
+  // Check if current user can view a specific user
+  const canViewUser = useCallback(
+    (user: User): boolean => {
+      if (!currentUser) return false;
+      const userRole = currentUser.role;
+
+      switch (userRole) {
+        case "hr":
+          return true;
         case "manager": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
@@ -225,38 +254,35 @@ const UserList: React.FC = () => {
             currentUser.departmentName || currentUser.department
           );
           const userDept = normalizeString(user.department);
-          return managerDept === userDept; // Manager views only their department
+          return managerDept === userDept;
         }
-
         case "zonalmanager":
         case "zonal manager": {
           if (!currentUser.allocatedArea) return false;
           const managerZone = normalizeString(currentUser.allocatedArea);
           const userZone = normalizeString(user.allocatedArea);
-          return managerZone === userZone; // Zonal Manager views same zone
+          return managerZone === userZone;
         }
         default:
-          return true; // Default to true for other roles
+          return true;
       }
     },
     [currentUser]
   );
 
-  // ✅ Filter & Sort Logic (Using Store Data)
-  // This replaces the backend filtering since we fetch all users once
+  // ✅ Filter & Sort Logic
   const filteredUsers = useMemo(() => {
-    // 1. Cast generic store users to local User type if needed
     const storeUsers = users as unknown as User[];
     if (!storeUsers.length) return [];
 
     let result = [...storeUsers];
 
-    // 2. Permission Filtering
+    // Permission Filtering
     if (currentUser) {
       result = result.filter((user) => canViewUser(user));
     }
 
-    // 3. Search Filtering
+    // Search Filtering
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
       result = result.filter(
@@ -268,12 +294,12 @@ const UserList: React.FC = () => {
       );
     }
 
-    // 4. Role Filtering
+    // Role Filtering
     if (roleFilter !== "") {
       result = result.filter((user) => user.role === roleFilter);
     }
 
-    // 5. Status Filtering
+    // Status Filtering
     if (statusFilter !== "") {
       result = result.filter((user) => {
         if (statusFilter === "online") return user.is_checkin;
@@ -282,7 +308,7 @@ const UserList: React.FC = () => {
       });
     }
 
-    // 6. Sorting
+    // Sorting
     result.sort((a, b) => {
       const nameA = (a.full_name || a.name || "").toLowerCase();
       const nameB = (b.full_name || b.name || "").toLowerCase();
@@ -360,67 +386,65 @@ const UserList: React.FC = () => {
     }
   }, []);
 
-  // Function to export users to Excel
-  const exportToExcel = async () => {
-    try {
-      setExporting(true);
-      const usersToExport = filteredUsers;
-
-      if (usersToExport.length === 0) {
-        alert("No users to export");
-        return;
-      }
-
-      const excelData = usersToExport.map((user: User, index: number) => ({
-        "Sr. No": index + 1,
-        "Employee Code": user.employee_code || "N/A",
-        "Full Name": user.full_name || user.name || "N/A",
-        Username: user.username || "N/A",
-        Email: user.email || "N/A",
-        Role: user.role || "N/A",
-        Department: user.department || "N/A",
-        "Allocated Area": user.allocatedArea || "N/A",
-        "Mobile Number": user.mobileNo || "N/A",
-        Status: user.is_checkin ? "Online" : "Offline",
-        "Date Joined": user.date
-          ? new Date(user.date).toLocaleDateString()
-          : "N/A",
-        Address: user.address || "N/A",
-        "Birth Date": user.birthDate
-          ? new Date(user.birthDate).toLocaleDateString()
-          : "N/A",
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-
-      const maxWidth = excelData.reduce(
-        (w, r) => Math.max(w, Object.values(r).join("").length),
-        10
-      );
-      worksheet["!cols"] = [{ wch: maxWidth }];
-
-      const fileName = `users_export_${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-
-      alert(`Exported ${usersToExport.length} users to ${fileName}`);
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      alert("Failed to export users. Please try again.");
-    } finally {
-      setExporting(false);
+  // Handle delete button click - NEW FUNCTION
+  const handleDeleteClick = (user: User) => {
+    if (!canDeleteUser(user)) {
+      alert("You don't have permission to delete this user.");
+      return;
     }
+    
+    // Prevent users from deleting themselves
+    if (currentUser && (currentUser.id === user.id || currentUser.id === user.userId)) {
+      alert("You cannot delete yourself.");
+      return;
+    }
+    
+    setSelectedUser(user);
+    setIsDeleteModalOpen(true);
   };
 
-  // Initial Data Load
-  useEffect(() => {
-    fetchCurrentUser();
-    fetchDepartments();
-    fetchRoles();
-  }, [fetchCurrentUser, fetchDepartments, fetchRoles]);
+  // Handle delete confirmation - NEW FUNCTION
+  const handleDeleteConfirm = async () => {
+    if (!selectedUser) return;
+
+    if (!canDeleteUser(selectedUser)) {
+      alert("You don't have permission to delete this user.");
+      setIsDeleteModalOpen(false);
+      return;
+    }
+
+    // Prevent users from deleting themselves
+    if (currentUser && (currentUser.id === selectedUser.id || currentUser.id === selectedUser.userId)) {
+      alert("You cannot delete yourself.");
+      setIsDeleteModalOpen(false);
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const userId = selectedUser.id || selectedUser.userId;
+      const response = await API.delete(`/admin/users/${userId}`);
+      
+      if (response.data?.success) {
+        alert("User deleted successfully!");
+        setIsDeleteModalOpen(false);
+        
+        // Refresh the store
+        resetStore();
+        fetchUsers();
+      } else {
+        alert(response.data?.message || "Failed to delete user");
+      }
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      const msg = error.response?.data?.message ||
+                  error.message ||
+                  "Failed to delete user";
+      alert(`Error: ${msg}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Handle edit button click
   const handleEditClick = async (user: User) => {
@@ -569,6 +593,68 @@ const UserList: React.FC = () => {
     }
   };
 
+  // Function to export users to Excel
+  const exportToExcel = async () => {
+    try {
+      setExporting(true);
+      const usersToExport = filteredUsers;
+
+      if (usersToExport.length === 0) {
+        alert("No users to export");
+        return;
+      }
+
+      const excelData = usersToExport.map((user: User, index: number) => ({
+        "Sr. No": index + 1,
+        "Employee Code": user.employee_code || "N/A",
+        "Full Name": user.full_name || user.name || "N/A",
+        Username: user.username || "N/A",
+        Email: user.email || "N/A",
+        Role: user.role || "N/A",
+        Department: user.department || "N/A",
+        "Allocated Area": user.allocatedArea || "N/A",
+        "Mobile Number": user.mobileNo || "N/A",
+        Status: user.is_checkin ? "Online" : "Offline",
+        "Date Joined": user.date
+          ? new Date(user.date).toLocaleDateString()
+          : "N/A",
+        Address: user.address || "N/A",
+        "Birth Date": user.birthDate
+          ? new Date(user.birthDate).toLocaleDateString()
+          : "N/A",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+      const maxWidth = excelData.reduce(
+        (w, r) => Math.max(w, Object.values(r).join("").length),
+        10
+      );
+      worksheet["!cols"] = [{ wch: maxWidth }];
+
+      const fileName = `users_export_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      alert(`Exported ${usersToExport.length} users to ${fileName}`);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Failed to export users. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Initial Data Load
+  useEffect(() => {
+    fetchCurrentUser();
+    fetchDepartments();
+    fetchRoles();
+  }, [fetchCurrentUser, fetchDepartments, fetchRoles]);
+
   // Infinite Scroll Observer
   useEffect(() => {
     if (!sentinelRef.current || !hasMore || loadingMore) return;
@@ -645,6 +731,11 @@ const UserList: React.FC = () => {
       departmentId: 0,
       roleId: 0,
     });
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedUser(null);
   };
 
   const handleGoToPage = (page: number) => {
@@ -819,8 +910,6 @@ const UserList: React.FC = () => {
         >
           Users Directory
         </h2>
-
-      
 
         {/* Filter Section */}
         <div
@@ -1091,472 +1180,454 @@ const UserList: React.FC = () => {
           </div>
         </div>
 
- 
-       {/* Main content area with scroll */}
-<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-  {/* ✅ Check store isLoading instead of local loading */}
-  {isLoading && users.length === 0 ? (
-    <div
-      className="
-        flex flex-col justify-center items-center py-8 sm:py-12
-        bg-linear-to-br from-white/30 to-white/10
-        dark:from-gray-800/30 dark:to-gray-900/10
-        backdrop-blur-lg
-        rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
-        text-center
-        flex-1
-      "
-    >
-      <div
-        className="
-          animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
-          backdrop-blur-sm mb-2 sm:mb-3
-        "
-      ></div>
-      <span className="text-gray-600 dark:text-gray-300 text-sm">
-        Loading users...
-      </span>
-    </div>
-  ) : (
-    <>
-      {/* Debug info for Manager */}
-      {currentUser?.role === "manager" &&
-        filteredUsers.length === 0 &&
-        users.length > 0 && (
-          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-            <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-              ⚠️ No users found in your department.
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-              Your department:{" "}
-              <strong>
-                {currentUser.departmentName ||
-                  currentUser.department ||
-                  "Not set"}
-              </strong>
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-              Total users in system: {users.length}
-            </p>
-          </div>
-        )}
-
-      {/* Debug info for Zonal Manager */}
-      {currentUser &&
-        (currentUser.role === "zonalmanager" ||
-          currentUser.role === "zonal manager") &&
-        filteredUsers.length === 0 &&
-        users.length > 0 && (
-          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-            <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-              ⚠️ No users found in your allocated area.
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-              Your allocated area:{" "}
-              <strong>{currentUser.allocatedArea || "Not set"}</strong>
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-              Total users in system: {users.length}
-            </p>
-          </div>
-        )}
-
-      {/* Users Table Container with Scroll */}
-      <div
-        ref={scrollContainerRef}
-        className="
-          overflow-hidden rounded-xl sm:rounded-2xl
-          bg-linear-to-br from-white/40 to-white/20
-          dark:from-gray-800/40 dark:to-gray-900/20
-          backdrop-blur-xl
-          border border-white/40 dark:border-gray-700/40
-          shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-          dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-          flex-1
-          relative
-          overflow-y-auto
-          overflow-x-auto
-        "
-      >
-        {/* Desktop Table */}
-        <div className="hidden md:block min-w-full h-full">
-          <div className="h-full flex flex-col">
-            {/* Table Header */}
-            <div className="shrink-0 sticky top-0 z-10">
+        {/* Main content area with scroll */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Check store isLoading instead of local loading */}
+          {isLoading && users.length === 0 ? (
+            <div
+              className="
+                flex flex-col justify-center items-center py-8 sm:py-12
+                bg-linear-to-br from-white/30 to-white/10
+                dark:from-gray-800/30 dark:to-gray-900/10
+                backdrop-blur-lg
+                rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
+                text-center
+                flex-1
+              "
+            >
               <div
                 className="
-                  grid grid-cols-8
-                  px-4 py-3
-                  bg-linear-to-r from-white/60 to-white/40
-                  dark:from-gray-800/60 dark:to-gray-900/40
-                  backdrop-blur-lg
-                  border-b border-white/30 dark:border-gray-700/30
+                  animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
+                  backdrop-blur-sm mb-2 sm:mb-3
+                "
+              ></div>
+              <span className="text-gray-600 dark:text-gray-300 text-sm">
+                Loading users...
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* Debug info for Manager */}
+              {currentUser?.role === "manager" &&
+                filteredUsers.length === 0 &&
+                users.length > 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                      ⚠️ No users found in your department.
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                      Your department:{" "}
+                      <strong>
+                        {currentUser.departmentName ||
+                          currentUser.department ||
+                          "Not set"}
+                      </strong>
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+                      Total users in system: {users.length}
+                    </p>
+                  </div>
+                )}
+
+              {/* Debug info for Zonal Manager */}
+              {currentUser &&
+                (currentUser.role === "zonalmanager" ||
+                  currentUser.role === "zonal manager") &&
+                filteredUsers.length === 0 &&
+                users.length > 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                      ⚠️ No users found in your allocated area.
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                      Your allocated area:{" "}
+                      <strong>{currentUser.allocatedArea || "Not set"}</strong>
+                    </p>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-xs">
+                      Total users in system: {users.length}
+                    </p>
+                  </div>
+                )}
+
+              {/* Users Table Container with Scroll */}
+              <div
+                ref={scrollContainerRef}
+                className="
+                  overflow-hidden rounded-xl sm:rounded-2xl
+                  bg-linear-to-br from-white/40 to-white/20
+                  dark:from-gray-800/40 dark:to-gray-900/20
+                  backdrop-blur-xl
+                  border border-white/40 dark:border-gray-700/40
+                  shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+                  dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+                  flex-1
+                  relative
+                  overflow-y-auto
+                  overflow-x-auto
                 "
               >
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Sr.no
-                </div>
-                <div
-                  className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/30 dark:hover:bg-gray-800/30 transition-colors duration-300 whitespace-nowrap"
-                  onClick={toggleSortOrder}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Name</span>
-                    <span className="text-blue-600 dark:text-blue-400 text-xs bg-blue-100/50 dark:bg-blue-900/30 rounded-full p-0.5">
-                      {sortOrder === "asc" ? "↑" : "↓"}
-                    </span>
-                  </div>
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Employee Code
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Email
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Role
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Allocated Area
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Department
-                </div>
-                <div className="px-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                  Actions
-                </div>
-              </div>
-            </div>
+                {/* Desktop Table */}
+                <div className="hidden md:block min-w-full h-full">
+                  <div className="h-full flex flex-col">
+                    {/* Table Header */}
+                  <div className="shrink-0 sticky top-0 z-10">
+  <div
+    className="
+      grid grid-cols-7
+      px-2 md:px-4 py-3
+      bg-gradient-to-r from-white/60 to-white/40
+      dark:from-gray-800/60 dark:to-gray-900/40
+      backdrop-blur-lg
+      border-b border-white/30 dark:border-gray-700/30
+      gap-1 md:gap-2
+    "
+  >
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap flex justify-center items-center">
+      Sr.no
+    </div>
+    <div
+      className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/30 dark:hover:bg-gray-800/30 transition-colors duration-300 whitespace-nowrap"
+      onClick={toggleSortOrder}
+    >
+      <div className="flex items-center space-x-1">
+        <span>Name</span>
+        <span className="text-blue-600 dark:text-blue-400 text-xs bg-blue-100/50 dark:bg-blue-900/30 rounded-full p-0.5">
+          {sortOrder === "asc" ? "↑" : "↓"}
+        </span>
+      </div>
+    </div>
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+      Employee Code
+    </div>
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+      Email
+    </div>
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+      Role
+    </div>
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+      Allocated Area
+    </div>
+    <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+      Department
+    </div>
+  </div>
+</div>
 
-            {/* Table Body */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="divide-y divide-white/20 dark:divide-gray-700/20">
-                {paginatedUsers.length > 0 ? (
-                  paginatedUsers.map((user, index) => {
-                    const userKey = getUserKey(user, index);
-                    const canEdit = canEditUser(user);
-                    const canView = canViewUser(user);
+                    {/* Table Body */}
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="divide-y divide-white/20 dark:divide-gray-700/20">
+                        {paginatedUsers.length > 0 ? (
+                          paginatedUsers.map((user, index) => {
+                            const userKey = getUserKey(user, index);
+                            const canEdit = canEditUser(user);
+                            const canDelete = canDeleteUser(user);
+                            const canView = canViewUser(user);
 
-                    if (!canView) return null;
+                            if (!canView) return null;
 
-                    return (
-                      <div
-                        key={userKey}
-                        className="
-                          grid grid-cols-8
-                          px-4 py-3
-                          hover:bg-white/30 dark:hover:bg-gray-800/30
-                          transition-all duration-300
-                          backdrop-blur-sm
-                          items-center
-                        "
-                      >
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
-                        >
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium">
-                            {(currentPage - 1) * limit + index + 1}
+                            return (
+                            <div
+  key={userKey}
+  className="
+    grid grid-cols-1 sm:grid-cols-7
+    gap-1 md:gap-2
+    px-2 md:px-4 py-3
+    hover:bg-white/30 dark:hover:bg-gray-800/30
+    transition-all duration-300
+    backdrop-blur-sm
+    items-center
+  "
+>
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer flex justify-center"
+  >
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium">
+      {(currentPage - 1) * limit + index + 1}
+    </span>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 cursor-pointer"
+  >
+    <div className="flex items-center">
+      <div className="shrink-0">
+        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+          {user.full_name
+            ?.charAt(0)
+            .toUpperCase() ||
+            user.name?.charAt(0).toUpperCase() ||
+            "?"}
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 ml-2">
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          {user.full_name || user.name || "N/A"}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
+  >
+    <div className="bg-white/40 dark:bg-gray-800/40 rounded px-2 md:px-3 py-1.5 backdrop-blur-sm truncate text-center">
+      {user.employee_code || "N/A"}
+    </div>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+  >
+    <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-2 md:px-3 py-1.5 backdrop-blur-sm">
+      {user.email || "N/A"}
+    </div>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap cursor-pointer"
+  >
+    <span className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate w-full">
+      {user.role}
+    </span>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap cursor-pointer"
+  >
+    <span className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate w-full">
+      {user.allocatedArea || "N/A"}
+    </span>
+  </div>
+  
+  <div
+    onClick={() => handleRowClick(user)}
+    className="px-1 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+  >
+    <div className="bg-white/40 dark:bg-gray-800/40 rounded px-2 md:px-3 py-1.5 backdrop-blur-sm truncate">
+      {user.department || "N/A"}
+    </div>
+  </div>
+</div>
+                            );
+                          })
+                        ) : (
+                          <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
+                            <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
+                              <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
+                                <svg
+                                  className="w-6 h-6 text-gray-400 dark:text-gray-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                  />
+                                </svg>
+                              </div>
+                              <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                                No users found
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {currentUser?.role === "manager"
+                                  ? `No users found in your department (${
+                                      currentUser.departmentName ||
+                                      currentUser.department ||
+                                      "Not set"
+                                    })`
+                                  : currentUser &&
+                                    (currentUser.role === "zonalmanager" ||
+                                      currentUser.role === "zonal manager")
+                                  ? `No users found in your zone (${
+                                      currentUser.allocatedArea || "Not set"
+                                    })`
+                                  : "Try adjusting your search or filter criteria"}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Infinite scroll sentinel */}
+                      <div ref={sentinelRef} className="h-1"></div>
+
+                      {/* Loading more indicator */}
+                      {loadingMore && (
+                        <div className="flex justify-center items-center py-3 bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10 backdrop-blur-lg rounded-xl border border-white/40 dark:border-gray-700/40 my-2 mx-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 backdrop-blur-sm mr-2"></div>
+                          <span className="text-gray-600 dark:text-gray-300 text-xs">
+                            Loading more users...
                           </span>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Cards View */}
+                <div className="md:hidden p-4 space-y-4">
+                  {paginatedUsers.length > 0 ? (
+                    paginatedUsers.map((user, index) => {
+                      const userKey = getUserKey(user, index);
+                      const canEdit = canEditUser(user);
+                      const canDelete = canDeleteUser(user);
+                      const canView = canViewUser(user);
+
+                      if (!canView) return null;
+
+                      return (
                         <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 cursor-pointer"
+                          key={userKey}
+                          className="
+                            bg-linear-to-br from-white/40 to-white/20
+                            dark:from-gray-800/40 dark:to-gray-900/20
+                            backdrop-blur-xl
+                            border border-white/40 dark:border-gray-700/40
+                            rounded-xl p-4
+                            shadow-[0_4px_16px_rgba(31,38,135,0.1)]
+                            dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
+                          "
                         >
-                          <div className="flex items-center">
-                            <div className="shrink-0">
-                              <div className="h-8 w-8 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                          {/* Card Header */}
+                          <div
+                            className="flex items-start justify-between mb-3 cursor-pointer"
+                            onClick={() => handleRowClick(user)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="h-10 w-10 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
                                 {user.full_name
                                   ?.charAt(0)
                                   .toUpperCase() ||
                                   user.name?.charAt(0).toUpperCase() ||
                                   "?"}
                               </div>
-                            </div>
-                            <div className="min-w-0 flex-1 ml-2">
-                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                {user.full_name || user.name || "N/A"}
+                              <div>
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                  {user.full_name || user.name || "N/A"}
+                                </h3>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  {user.employee_code || "N/A"}
+                                </p>
                               </div>
                             </div>
+                            <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                              {user.role}
+                            </span>
                           </div>
-                        </div>
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
-                        >
-                          <div className="bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm truncate">
-                            {user.employee_code || "N/A"}
-                          </div>
-                        </div>
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
-                        >
-                          <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm">
-                            {user.email || "N/A"}
-                          </div>
-                        </div>
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap cursor-pointer"
-                        >
-                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate">
-                            {user.role}
-                          </span>
-                        </div>
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap cursor-pointer"
-                        >
-                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate">
-                            {user.allocatedArea || "N/A"}
-                          </span>
-                        </div>
-                        <div
-                          onClick={() => handleRowClick(user)}
-                          className="px-2 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
-                        >
-                          <div className="truncate bg-white/40 dark:bg-gray-800/40 rounded px-3 py-1.5 backdrop-blur-sm">
-                            {user.department || "N/A"}
-                          </div>
-                        </div>
-                        <div className="px-2 py-1 whitespace-nowrap flex items-center">
-                          <button
-                            onClick={() => handleEditClick(user)}
-                            disabled={!canEdit}
-                            className={`
-                              px-3 py-1.5 rounded-lg text-xs font-medium
-                              transition-all duration-300
-                              ${
-                                canEdit
-                                  ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
-                                  : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                              }
-                              flex items-center justify-center
-                            `}
-                            title={
-                              canEdit
-                                ? "Edit user"
-                                : "No permission to edit"
-                            }
+
+                          {/* Card Body */}
+                          <div
+                            className="space-y-2 cursor-pointer"
+                            onClick={() => handleRowClick(user)}
                           >
-                            Edit
-                          </button>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  Email
+                                </p>
+                                <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                                  {user.email || "N/A"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  Area
+                                </p>
+                                <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                                  {user.allocatedArea || "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Department
+                              </p>
+                              <p className="text-sm text-gray-900 dark:text-gray-100">
+                                {user.department || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Card Footer */}
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/30 dark:border-gray-700/30">
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  user.is_checkin ? "bg-green-500" : "bg-red-500"
+                                }`}
+                              ></span>
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {user.is_checkin ? "Online" : "Offline"}
+                              </span>
+                            </div>
+                            {/* Mobile action buttons */}
+                            <div className="flex space-x-2">
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleEditClick(user)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/80 hover:bg-blue-600/80 text-white transition-all duration-300"
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDeleteClick(user)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/80 hover:bg-red-600/80 text-white transition-all duration-300"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
+                        <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
+                          <svg
+                            className="w-6 h-6 text-gray-400 dark:text-gray-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                          No users found
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          Try adjusting your search or filter criteria
+                        </p>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
-                    <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
-                      <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
-                        <svg
-                          className="w-6 h-6 text-gray-400 dark:text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                        No users found
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        {currentUser?.role === "manager"
-                          ? `No users found in your department (${
-                              currentUser.departmentName ||
-                              currentUser.department ||
-                              "Not set"
-                            })`
-                          : currentUser &&
-                            (currentUser.role === "zonalmanager" ||
-                              currentUser.role === "zonal manager")
-                          ? `No users found in your zone (${
-                              currentUser.allocatedArea || "Not set"
-                            })`
-                          : "Try adjusting your search or filter criteria"}
-                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* Infinite scroll sentinel */}
-              <div ref={sentinelRef} className="h-1"></div>
-
-              {/* Loading more indicator */}
-              {loadingMore && (
-                <div className="flex justify-center items-center py-3 bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10 backdrop-blur-lg rounded-xl border border-white/40 dark:border-gray-700/40 my-2 mx-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 backdrop-blur-sm mr-2"></div>
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">
-                    Loading more users...
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Cards View */}
-        <div className="md:hidden p-4 space-y-4">
-          {paginatedUsers.length > 0 ? (
-            paginatedUsers.map((user, index) => {
-              const userKey = getUserKey(user, index);
-              const canEdit = canEditUser(user);
-              const canView = canViewUser(user);
-
-              if (!canView) return null;
-
-              return (
-                <div
-                  key={userKey}
-                  className="
-                    bg-linear-to-br from-white/40 to-white/20
-                    dark:from-gray-800/40 dark:to-gray-900/20
-                    backdrop-blur-xl
-                    border border-white/40 dark:border-gray-700/40
-                    rounded-xl p-4
-                    shadow-[0_4px_16px_rgba(31,38,135,0.1)]
-                    dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
-                  "
-                >
-                  {/* Card Header */}
-                  <div
-                    className="flex items-start justify-between mb-3 cursor-pointer"
-                    onClick={() => handleRowClick(user)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                        {user.full_name
-                          ?.charAt(0)
-                          .toUpperCase() ||
-                          user.name?.charAt(0).toUpperCase() ||
-                          "?"}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {user.full_name || user.name || "N/A"}
-                        </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {user.employee_code || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                      {user.role}
-                    </span>
-                  </div>
-
-                  {/* Card Body */}
-                  <div
-                    className="space-y-2 cursor-pointer"
-                    onClick={() => handleRowClick(user)}
-                  >
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Email
-                        </p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {user.email || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Area
-                        </p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {user.allocatedArea || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Department
-                      </p>
-                      <p className="text-sm text-gray-900 dark:text-gray-100">
-                        {user.department || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/30 dark:border-gray-700/30">
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          user.is_checkin ? "bg-green-500" : "bg-red-500"
-                        }`}
-                      ></span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {user.is_checkin ? "Online" : "Offline"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleEditClick(user)}
-                      disabled={!canEdit}
-                      className={`
-                        px-3 py-1.5 rounded-lg text-xs font-medium
-                        transition-all duration-300
-                        ${
-                          canEdit
-                            ? "bg-blue-500/80 hover:bg-blue-600/80 text-white cursor-pointer"
-                            : "bg-gray-300/50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                        }
-                      `}
-                      title={
-                        canEdit
-                          ? "Edit user"
-                          : "No permission to edit"
-                      }
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-8">
-              <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
-                <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-gray-400 dark:text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                  No users found
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  Try adjusting your search or filter criteria
-                </p>
-              </div>
-            </div>
+              {/* Pagination Controls */}
+              {renderPagination()}
+            </>
           )}
         </div>
-      </div>
-
-      {/* Pagination Controls */}
-      {renderPagination()}
-    </>
-  )}
-</div>
       </div>
 
       {/* User Details Modal */}
@@ -1797,7 +1868,7 @@ const UserList: React.FC = () => {
                 >
                   Close
                 </button>
-                {canEditUser(selectedUser) ? (
+                {canEditUser(selectedUser) && (
                   <button
                     type="button"
                     onClick={() => handleEditClick(selectedUser)}
@@ -1805,10 +1876,15 @@ const UserList: React.FC = () => {
                   >
                     Edit User
                   </button>
-                ) : (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 px-4 py-2 italic">
-                    No permission to edit this user
-                  </div>
+                )}
+                {canDeleteUser(selectedUser) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(selectedUser)}
+                    className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all flex items-center justify-center min-w-[140px] text-base"
+                  >
+                    Delete User
+                  </button>
                 )}
               </div>
             </div>
@@ -2108,6 +2184,133 @@ const UserList: React.FC = () => {
                     </>
                   ) : (
                     "Save Changes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal - NEW MODAL */}
+      {isDeleteModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-red-50 dark:bg-red-900/20 px-6 py-4 border-b border-red-100 dark:border-red-800">
+              <div className="flex items-center">
+                <div className="mr-3">
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-red-700 dark:text-red-300">
+                  Delete User
+                </h2>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Are you sure you want to delete this user? This action cannot be undone.
+              </p>
+
+              {/* User Details */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold mr-3">
+                    {(selectedUser.full_name?.charAt(0) || selectedUser.name?.charAt(0) || "?").toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {selectedUser.full_name || selectedUser.name || "N/A"}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedUser.employee_code || "No employee code"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Role</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {selectedUser.role}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Department</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {selectedUser.department || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {selectedUser.email || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Message */}
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-6">
+                <div className="flex">
+                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    This will permanently delete the user account and all associated data.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={closeDeleteModal}
+                  disabled={deleting}
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center min-w-[100px]"
+                >
+                  {deleting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete User"
                   )}
                 </button>
               </div>

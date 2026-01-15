@@ -463,9 +463,9 @@ const CreateAnnouncement = () => {
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-2">
             {/* Priority Selection */}
-            <div className="glass-card-inner p-5 rounded-xl bg-gray-100/50">
+            <div className="glass-card-inner  rounded-xl bg-gray-100/50">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
                 Priority Level
               </label>

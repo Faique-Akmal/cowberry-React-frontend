@@ -1,4 +1,3 @@
-
 // src/components/admin/TravelSessions.tsx
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
@@ -33,7 +32,9 @@ import {
   FaListAlt,
   FaLayerGroup,
   FaChartLine,
- 
+  FaSpinner,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 
 import ImageZoom from "../../components/ImageZoom";
@@ -130,6 +131,9 @@ interface GroupedSession {
   startTime: string;
   endTime: string;
   totalPoints: number;
+  isLoading?: boolean;
+  hasMoreSessions?: boolean;
+  allSessionsLoaded?: boolean;
 }
 
 interface MultiSessionMapView {
@@ -140,6 +144,16 @@ interface MultiSessionMapView {
   sessions: TravelSession[];
   center: [number, number];
   zoom: number;
+}
+
+interface ApiPaginationResponse {
+  success: boolean;
+  data: TravelSession[];
+  currentPage: number;
+  totalPages: number;
+  limit: number;
+  hasNextPage: boolean;
+  totalSessions: number;
 }
 
 // Glassmorphism CSS classes
@@ -169,7 +183,6 @@ const getSessionColor = (index: number): string => {
 };
 
 export default function AttendanceList() {
-
   const [travelSessions, setTravelSessions] = useState<TravelSession[]>([]);
   const [sessionsMap, setSessionsMap] = useState<Record<string, TravelSession>>({});
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -178,12 +191,19 @@ export default function AttendanceList() {
   const [mapView, setMapView] = useState<TravelSession | null>(null);
   const [users, setUsers] = useState<{ userId: number; username: string; employeeCode: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement>(null);
   
   // Grouped view states
   const [groupedView, setGroupedView] = useState<GroupedSession[]>([]);
@@ -196,6 +216,9 @@ export default function AttendanceList() {
   const [selectedUserForFarmerData, setSelectedUserForFarmerData] = useState<string>("");
   const [isLoadingFarmerData, setIsLoadingFarmerData] = useState(false);
   const [farmerDataError, setFarmerDataError] = useState<string | null>(null);
+  
+  // Export state
+  const [isExporting, setIsExporting] = useState(false);
   
   // Map marker states
   const [showLogMarkers, setShowLogMarkers] = useState(true);
@@ -298,33 +321,40 @@ export default function AttendanceList() {
           activeSessions: session.endTime ? 0 : 1,
           startTime: session.startTime,
           endTime: session.endTime || session.startTime,
-          totalPoints: session.logs?.length || 0
+          totalPoints: session.logs?.length || 0,
+          isLoading: false,
+          hasMoreSessions: false,
+          allSessionsLoaded: true
         });
       } else {
         const existingGroup = groupedMap.get(groupKey)!;
         
-        // Add session to the group while maintaining chronological order
-        const insertIndex = existingGroup.sessions.findIndex(s => 
-          new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
-        );
-        
-        if (insertIndex === -1) {
-          existingGroup.sessions.push(session);
-        } else {
-          existingGroup.sessions.splice(insertIndex, 0, session);
-        }
-        
-        existingGroup.totalSessions += 1;
-        existingGroup.activeSessions += session.endTime ? 0 : 1;
-        existingGroup.totalPoints += session.logs?.length || 0;
-        
-        if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
-          existingGroup.startTime = session.startTime;
-        }
-        
-        const sessionEndTime = session.endTime || session.startTime;
-        if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
-          existingGroup.endTime = sessionEndTime;
+        // Check if session already exists in the group
+        const sessionExists = existingGroup.sessions.some(s => s.sessionId === session.sessionId);
+        if (!sessionExists) {
+          // Add session to the group while maintaining chronological order
+          const insertIndex = existingGroup.sessions.findIndex(s => 
+            new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
+          );
+          
+          if (insertIndex === -1) {
+            existingGroup.sessions.push(session);
+          } else {
+            existingGroup.sessions.splice(insertIndex, 0, session);
+          }
+          
+          existingGroup.totalSessions += 1;
+          existingGroup.activeSessions += session.endTime ? 0 : 1;
+          existingGroup.totalPoints += session.logs?.length || 0;
+          
+          if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
+            existingGroup.startTime = session.startTime;
+          }
+          
+          const sessionEndTime = session.endTime || session.startTime;
+          if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
+            existingGroup.endTime = sessionEndTime;
+          }
         }
       }
     });
@@ -363,10 +393,33 @@ export default function AttendanceList() {
     return { hours, minutes };
   }, []);
   
+  // Initial fetch
   useEffect(() => {
     fetchTravelSessions();
   }, []);
   
+  // Infinite scroll observer for main pagination
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          loadMoreSessions();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoading, isLoadingMore]);
+
   // Auto-refresh logic
   useEffect(() => {
     if (autoRefresh) {
@@ -389,18 +442,44 @@ export default function AttendanceList() {
     };
   }, [autoRefresh, activeSessionsOnly]);
   
-  // Fetch all travel sessions
-  const fetchTravelSessions = async () => {
-    setIsLoading(true);
+  // Fetch all travel sessions with pagination
+  const fetchTravelSessions = async (page: number = 1, append: boolean = false) => {
+    if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+    
     try {
-      const res = await API.get("/admin/travel-sessions");
+      const params: any = { page };
+      
+      // Add date filters if they exist
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (selectedUser) params.userId = selectedUser;
+      if (searchQuery) params.search = searchQuery;
+      
+      const res = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
+      
       if (res.data.success) {
         const sessions = res.data.data || [];
-        setTravelSessions(sessions);
         
+        if (append) {
+          setTravelSessions(prev => {
+            // Filter out duplicates
+            const existingIds = new Set(prev.map(s => s.sessionId));
+            const newSessions = sessions.filter(s => !existingIds.has(s.sessionId));
+            return [...prev, ...newSessions];
+          });
+        } else {
+          setTravelSessions(sessions);
+        }
+        
+        // Update users list from all loaded sessions
+        const allLoadedSessions = append ? [...travelSessions, ...sessions] : sessions;
         const uniqueUsers = Array.from(
           new Map(
-            sessions.map(session => [
+            allLoadedSessions.map(session => [
               session.userId,
               { userId: session.userId, username: session.username, employeeCode: session.employeeCode }
             ])
@@ -408,16 +487,22 @@ export default function AttendanceList() {
         );
         setUsers(uniqueUsers);
         
+        // Update sessions map
         const newCache: Record<string, TravelSession> = {};
         sessions.forEach(session => {
           const key = `${session.userId}-${session.sessionId}`;
           newCache[key] = session;
         });
-        setSessionsMap(newCache);
+        setSessionsMap(prev => ({ ...prev, ...newCache }));
         
-        const filtered = filterSessions(sessions);
-        const grouped = groupSessionsByUserAndDate(filtered);
+        // Update grouped view with all loaded sessions
+        const grouped = groupSessionsByUserAndDate(allLoadedSessions);
         setGroupedView(grouped);
+        
+        // Update pagination info from your API response
+        setCurrentPage(res.data.currentPage || 1);
+        setTotalPages(res.data.totalPages || 1);
+        setHasMore(res.data.hasNextPage || false);
         
         setLastUpdateTime(new Date());
       }
@@ -425,6 +510,117 @@ export default function AttendanceList() {
       console.error("Failed to fetch travel sessions", err);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+  
+  // Load more sessions for infinite scroll
+  const loadMoreSessions = async () => {
+    if (!hasMore || isLoading || isLoadingMore) return;
+    
+    const nextPage = currentPage + 1;
+    await fetchTravelSessions(nextPage, true);
+  };
+  
+  // Load more sessions for a specific user on a specific date
+  const loadMoreSessionsForUser = async (userId: number, date: string) => {
+    // Find the group
+    const groupIndex = groupedView.findIndex(g => g.userId === userId && g.date === date);
+    if (groupIndex === -1) return;
+    
+    // Mark group as loading
+    setGroupedView(prev => {
+      const updated = [...prev];
+      updated[groupIndex] = {
+        ...updated[groupIndex],
+        isLoading: true
+      };
+      return updated;
+    });
+    
+    try {
+      // Fetch ALL sessions for this user on this date
+      const params: any = { 
+        userId,
+        startDate: date,
+        endDate: date,
+        per_page: 1000 // Get all sessions for this user/date
+      };
+      
+      const res = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
+      
+      if (res.data.success) {
+        const userDateSessions = res.data.data || [];
+        
+        // Update the sessions for this user/date
+        setTravelSessions(prev => {
+          // Remove existing sessions for this user/date
+          const filtered = prev.filter(s => 
+            !(s.userId === userId && formatDateOnly(s.startTime) === date)
+          );
+          // Add new sessions
+          return [...filtered, ...userDateSessions];
+        });
+        
+        // Update grouped view
+        setGroupedView(prev => {
+          const updated = [...prev];
+          const group = updated[groupIndex];
+          
+          // Get unique sessions
+          const existingSessionIds = new Set(group.sessions.map(s => s.sessionId));
+          const newSessions = userDateSessions.filter(s => !existingSessionIds.has(s.sessionId));
+          
+          if (newSessions.length > 0) {
+            // Combine and sort sessions
+            const allSessions = [...group.sessions, ...newSessions].sort((a, b) => 
+              new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+            );
+            
+            const distanceData = calculateAdjustedGroupDistance(allSessions);
+            
+            updated[groupIndex] = {
+              ...group,
+              sessions: allSessions,
+              totalSessions: allSessions.length,
+              totalDistance: distanceData.totalDistance,
+              firstSessionDistance: distanceData.firstSessionDistance,
+              originalTotalDistance: distanceData.originalTotalDistance,
+              isLoading: false,
+              hasMoreSessions: false,
+              allSessionsLoaded: true
+            };
+          } else {
+            updated[groupIndex] = {
+              ...group,
+              isLoading: false,
+              hasMoreSessions: false,
+              allSessionsLoaded: true
+            };
+          }
+          
+          return updated;
+        });
+        
+        // Update sessions map
+        const newCache: Record<string, TravelSession> = {};
+        userDateSessions.forEach(session => {
+          const key = `${session.userId}-${session.sessionId}`;
+          newCache[key] = session;
+        });
+        setSessionsMap(prev => ({ ...prev, ...newCache }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch more sessions for user", err);
+      // Reset loading state on error
+      setGroupedView(prev => {
+        const updated = [...prev];
+        updated[groupIndex] = {
+          ...updated[groupIndex],
+          isLoading: false
+        };
+        return updated;
+      });
     }
   };
   
@@ -477,8 +673,7 @@ export default function AttendanceList() {
         });
         
         // Update grouped view
-        const filtered = filterSessions(travelSessions);
-        const grouped = groupSessionsByUserAndDate(filtered);
+        const grouped = groupSessionsByUserAndDate(travelSessions);
         setGroupedView(grouped);
         
         setLastUpdateTime(new Date());
@@ -622,19 +817,109 @@ export default function AttendanceList() {
       !isNaN(latNum) && !isNaN(lngNum);
   }, [parseCoordinate]);
   
+  // Helper function to calculate distance between two coordinates in meters
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  }, []);
+  
+  // Helper function to smooth the path
+  const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
+    if (points.length < 3) return points;
+    
+    const smoothed: [number, number][] = [points[0]];
+    
+    for (let i = 1; i < points.length - 1; i++) {
+      const prev = points[i - 1];
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // Simple moving average smoothing (makes path look more natural)
+      const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
+      const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
+      
+      smoothed.push([smoothedLat, smoothedLng]);
+    }
+    
+    smoothed.push(points[points.length - 1]);
+    return smoothed;
+  }, []);
+  
+  // IMPROVED: Build polyline path with gap handling and smoothing
   const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Parameters for gap detection
+    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
+    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
+    
+    let lastValidPoint: [number, number] | null = null;
+    let lastValidTime: Date | null = null;
+    
+    sortedLogs.forEach((log, index) => {
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        const currentTime = new Date(log.timestamp);
+        
+        if (lastValidPoint && lastValidTime) {
+          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
+          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+          
+          const distanceMeters = calculateDistance(
+            lastValidPoint[0], lastValidPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          const distanceKm = distanceMeters / 1000;
+          
+          // Calculate speed (km/h) between points
+          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
+          
+          // Check if this connection is reasonable
+          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
+            // Reasonable connection - add the point
+            path.push(currentPoint);
+          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
+            // Unreasonably high speed - likely GPS jump
+            // Add a duplicate point to create a visual break
+            path.push([lastValidPoint[0], lastValidPoint[1]]);
+            path.push(currentPoint);
+          } else {
+            // Too long time gap - just add point (line will continue)
+            path.push(currentPoint);
+          }
+        } else {
+          // First valid point
+          path.push(currentPoint);
+        }
+        
+        lastValidPoint = currentPoint;
+        lastValidTime = currentTime;
       }
     });
     
-    return path;
-  }, [isValidCoordinate, parseCoordinate]);
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
   
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session) return [21.1702, 72.8311];
@@ -808,11 +1093,8 @@ export default function AttendanceList() {
   };
   
   const manualRefresh = () => {
-    if (activeSessionsOnly && autoRefresh) {
-      fetchActiveSessionsOnly();
-    } else {
-      fetchTravelSessions();
-    }
+    // Reset to page 1 when manually refreshing
+    fetchTravelSessions(1, false);
   };
   
   // Clear date filter function
@@ -824,9 +1106,16 @@ export default function AttendanceList() {
   // Check if date filter is active
   const isDateFilterActive = startDate || endDate;
   
-  // Filter sessions with date range and sorting
-  const filterSessions = useCallback((sessions: TravelSession[] = travelSessions) => {
-    let filtered = [...sessions];
+  // Apply filters when they change
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchTravelSessions(1, false);
+  }, [startDate, endDate, selectedUser, searchQuery]);
+  
+  const filteredSessions = useMemo(() => {
+    let filtered = [...travelSessions];
     
     // Filter by date range
     if (startDate || endDate) {
@@ -879,8 +1168,6 @@ export default function AttendanceList() {
     });
   }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
   
-  const filteredSessions = useMemo(() => filterSessions(), [filterSessions]);
-  
   useEffect(() => {
     const grouped = groupSessionsByUserAndDate(filteredSessions);
     setGroupedView(grouped);
@@ -890,20 +1177,41 @@ export default function AttendanceList() {
   const activeSessions = filteredSessions.filter(s => !s.endTime).length;
   const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
   
+  // Export all data based on filters
   const exportToCSV = async () => {
     try {
-      setIsLoading(true);
+      setIsExporting(true);
       
-      // We need to fetch farmer data for all sessions first
+      // Build params for export (include all data based on filters)
+      const params: any = { per_page: 1000 }; // Large per_page to get all data
+      
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (selectedUser) params.userId = selectedUser;
+      if (searchQuery) params.search = searchQuery;
+      
+      // Fetch all data for export
+      const response = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
+      
+      if (!response.data.success) {
+        throw new Error("Failed to fetch data for export");
+      }
+      
+      const allSessions = response.data.data || [];
+      
+      // Group the sessions for export
+      const groupedData = groupSessionsByUserAndDate(allSessions);
+      
+      // Process each group for farmer data
       const groupedDataWithFarmerInfo = await Promise.all(
-        groupedView.map(async (group) => {
+        groupedData.map(async (group) => {
           try {
             // Fetch farmer data for this user on this date
-            const response = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+            const farmerResponse = await API.get(`/tracking/locationlog/get_travel_sessions`, {
               params: { userId: group.userId }
             });
             
-            const data = response.data;
+            const data = farmerResponse.data;
             let sessionFarmerData = [];
             
             if (data.success && data.sessions && data.sessions.data) {
@@ -1014,9 +1322,6 @@ export default function AttendanceList() {
                   [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
                 };
               }, {}),
-              
-              // For reference
-              sessionDetails: sessionDetails // Keep this for debugging if needed
             };
             
           } catch (error) {
@@ -1050,7 +1355,7 @@ export default function AttendanceList() {
       });
       
       // Determine maximum number of sessions in any group to create dynamic headers
-      const maxSessions = Math.max(...groupedView.map(group => group.sessions.length));
+      const maxSessions = Math.max(...groupedData.map(group => group.sessions.length));
       
       // Build dynamic headers
       const baseHeaders = [
@@ -1084,12 +1389,12 @@ export default function AttendanceList() {
           `Session ${i} Start Time`,
           `Session ${i} End Time`,
           `Session ${i} Distance (km)`,
+          `Session ${i} Status`,
           `Session ${i} Farmers Count`,
           `Session ${i} Farmer Descriptions`,
           `Session ${i} Farmer Image URLs`,
           `Session ${i} Start Odometer Image`,
           `Session ${i} End Odometer Image`,
-          `Session ${i} Notes`
         );
       }
       
@@ -1116,7 +1421,11 @@ export default function AttendanceList() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10);
-      const filename = `travel_sessions_detailed_${dateStr}.csv`;
+      const filterInfo = [];
+      if (startDate) filterInfo.push(`from-${startDate}`);
+      if (endDate) filterInfo.push(`to-${endDate}`);
+      if (selectedUser) filterInfo.push(`user-${selectedUser}`);
+      const filename = `travel_sessions_${filterInfo.length ? filterInfo.join('_') : 'all'}_${dateStr}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
@@ -1132,155 +1441,75 @@ export default function AttendanceList() {
       console.error('Error exporting CSV:', error);
       alert('Failed to export data. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsExporting(false);
     }
   };
   
+  // Build session polyline path for multi-session view
   const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
     const path: [number, number][] = [];
     
     if (!session || !session.logs || session.logs.length === 0) return path;
     
-    session.logs.forEach(log => {
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Parameters for gap detection
+    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
+    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
+    
+    let lastValidPoint: [number, number] | null = null;
+    let lastValidTime: Date | null = null;
+    
+    sortedLogs.forEach((log, index) => {
       if (isValidCoordinate(log.latitude, log.longitude)) {
-        path.push([parseCoordinate(log.latitude), parseCoordinate(log.longitude)]);
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        const currentTime = new Date(log.timestamp);
+        
+        if (lastValidPoint && lastValidTime) {
+          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
+          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+          
+          const distanceMeters = calculateDistance(
+            lastValidPoint[0], lastValidPoint[1],
+            currentPoint[0], currentPoint[1]
+          );
+          const distanceKm = distanceMeters / 1000;
+          
+          // Calculate speed (km/h) between points
+          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
+          
+          // Check if this connection is reasonable
+          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
+            // Reasonable connection - add the point
+            path.push(currentPoint);
+          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
+            // Unreasonably high speed - likely GPS jump
+            // Add a duplicate point to create a visual break
+            path.push([lastValidPoint[0], lastValidPoint[1]]);
+            path.push(currentPoint);
+          } else {
+            // Too long time gap - just add point (line will continue)
+            path.push(currentPoint);
+          }
+        } else {
+          // First valid point
+          path.push(currentPoint);
+        }
+        
+        lastValidPoint = currentPoint;
+        lastValidTime = currentTime;
       }
     });
     
-    return path;
-  }, [isValidCoordinate, parseCoordinate]);
-  
-  const renderIndividualView = useMemo(() => {
-    const groupedByDate = groupSessionsByUserAndDate(filteredSessions).reduce((acc, group) => {
-      if (!acc[group.date]) acc[group.date] = [];
-      acc[group.date].push(...group.sessions);
-      return acc;
-    }, {} as Record<string, TravelSession[]>);
-    
-    return (
-      <div className="space-y-6">
-        {Object.entries(groupedByDate).map(([date, dateSessions]) => (
-          <div key={date} className={`${glassmorphismClasses.card} rounded-2xl overflow-hidden`}>
-            <div className="px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FaCalendarAlt className="text-blue-400" />
-                  <h3 className="font-semibold text-gray-800 dark:text-white">
-                    {new Date(date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </h3>
-                </div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {dateSessions.length} session{dateSessions.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-            
-            <div className="divide-y divide-white/5 dark:divide-gray-700/50">
-              {dateSessions.map((session) => {
-                const duration = calculateDuration(session.startTime, session.endTime);
-                const isActive = !session.endTime;
-                
-                return (
-                  <div key={session.sessionId} className="p-6 hover:bg-white/5 dark:hover:bg-gray-800/20 transition-colors">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-semibold">
-                            {session.username.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-lg text-gray-800 dark:text-white">
-                                {session.username}
-                              </h4>
-                              {isActive && (
-                                <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 dark:border-green-500/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                  Active
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Employee Code: {session.employeeCode} • Session ID: #{session.sessionId}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
-                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                              <FaClock className="text-sm" />
-                              <span className="text-xs font-medium">Start Time</span>
-                            </div>
-                            <p className="text-sm font-semibold">{formatTimeOnly(session.startTime)}</p>
-                          </div>
-                          
-                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
-                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                              <FaStopCircle className="text-sm" />
-                              <span className="text-xs font-medium">End Time</span>
-                            </div>
-                            <p className="text-sm font-semibold">
-                              {session.endTime ? formatTimeOnly(session.endTime) : "—"}
-                            </p>
-                          </div>
-                          
-                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
-                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                              <FaRoad className="text-sm" />
-                              <span className="text-xs font-medium">Distance</span>
-                            </div>
-                            <p className="text-sm font-semibold">
-                              {(session.totalDistance / 1000).toFixed(2)} km
-                            </p>
-                          </div>
-                          
-                          <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 dark:border-gray-700/50">
-                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                              <FaMapPin className="text-sm" />
-                              <span className="text-xs font-medium">Points</span>
-                            </div>
-                            <p className="text-sm font-semibold">
-                              {session.logs?.length || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleFetchTravelData(
-                            session.userId.toString(), 
-                            formatDateOnly(session.startTime)
-                          )}
-                          className={`px-4 py-3 ${glassmorphismClasses.button.secondary} rounded-xl font-semibold flex items-center gap-2`}
-                        >
-                          <FaInfoCircle />
-                          Details
-                        </button>
-                        <button
-                          onClick={() => openMap(session)}
-                          className={`px-4 py-3 ${glassmorphismClasses.button.primary} rounded-xl font-semibold flex items-center gap-2`}
-                        >
-                          <FaEye />
-                          Map
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }, [filteredSessions, groupSessionsByUserAndDate, calculateDuration, formatTimeOnly, formatDateOnly]);
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
 
   const renderOdometerImage = (imageData: string) => {
     if (!imageData || imageData.trim() === '') {
@@ -1340,11 +1569,11 @@ export default function AttendanceList() {
             
             <button
               onClick={exportToCSV}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isLoading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white transition-all`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isExporting ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white transition-all`}
               title="Export grouped sessions with detailed farmer data"
-              disabled={isLoading}
+              disabled={isExporting}
             >
-              {isLoading ? (
+              {isExporting ? (
                 <>
                   <FaSync className="animate-spin" />
                   Exporting...
@@ -1541,69 +1770,22 @@ export default function AttendanceList() {
               </select>
             </div>
           </div>
-          
-          {/* Auto-refresh controls */}
-          {/* <div className="mt-4 pt-4 border-t border-white/10 dark:border-gray-700/50">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <FaSync className="inline mr-2" />
-              Auto-refresh Options
-            </label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  autoRefresh 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <FaSync className={autoRefresh ? "animate-spin" : ""} />
-                {autoRefresh ? "Auto ON" : "Auto OFF"}
-              </button>
-              
-              <button
-                onClick={() => setActiveSessionsOnly(!activeSessionsOnly)}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${
-                  activeSessionsOnly 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}
-                disabled={!autoRefresh}
-              >
-                <FaPlayCircle />
-                {activeSessionsOnly ? "Active Only" : "All Sessions"}
-              </button>
-              
-              <button
-                onClick={manualRefresh}
-                className={`px-4 py-2 rounded-xl transition-all flex-1 flex items-center justify-center gap-2 ${glassmorphismClasses.button.primary}`}
-              >
-                <FaSync />
-                Refresh Now
-              </button>
-            </div>
-            
-            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              {autoRefresh ? (
-                activeSessionsOnly ? (
-                  <span>Auto-refreshing active sessions every 10 seconds</span>
-                ) : (
-                  <span>Auto-refreshing all sessions every 30 seconds</span>
-                )
-              ) : (
-                <span>Auto-refresh is disabled</span>
-              )}
-            </div>
-          </div> */}
         </div>
       </div>
 
       {/* Sessions List - Grouped View */}
-      {groupedView.length === 0 ? (
+      {isLoading && currentPage === 1 ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <FaSpinner className="animate-spin text-4xl text-blue-500 mb-4" />
+            <p className="text-gray-600 dark:text-gray-300">Loading travel sessions...</p>
+          </div>
+        </div>
+      ) : groupedView.length === 0 ? (
         <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
           <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-gray-500 dark:text-gray-400">
             {isDateFilterActive || selectedUser || searchQuery 
               ? "Try adjusting your filters to see more results." 
               : "No travel sessions recorded yet."}
@@ -1617,231 +1799,283 @@ export default function AttendanceList() {
             </button>
           )}
         </div>
-      ) : viewMode === 'grouped' ? (
-        <div className="space-y-6">
-          {groupedView.map((group) => {
-            const groupDuration = calculateDuration(group.startTime, group.endTime);
-            const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-            
-            return (
-              <div key={`${group.userId}-${group.date}`} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}>
-                {/* Group Header */}
-                <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                        {group.username.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg text-gray-800 dark:text-white">
-                          {group.username} 
-                          <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
-                            ({group.employeeCode})
-                          </span>
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                            <FaCalendarAlt className="text-sm" />
-                            <span className="text-sm">
-                              {formattedDate}
-                            </span>
-                          </div>
-                          <span className="text-gray-400">•</span>
-                          <div className="flex items-center gap-1">
-                            <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
-                              group.activeSessions > 0 
-                                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
-                                : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
-                            }`}>
-                              {group.activeSessions > 0 ? `${group.activeSessions} Active` : 'All Completed'}
-                            </span>
-                          </div>
+      ) : (
+        <>
+          <div className="space-y-6">
+            {groupedView.map((group) => {
+              const groupDuration = calculateDuration(group.startTime, group.endTime);
+              const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              
+              // Check if this group might have more sessions than shown
+              const hasMoreSessions = group.sessions.length > 0 && !group.allSessionsLoaded;
+              
+              return (
+                <div key={`${group.userId}-${group.date}`} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}>
+                  {/* Group Header */}
+                  <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {group.username.charAt(0).toUpperCase()}
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="flex items-center gap-3">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600 dark:text-gray-300">Sessions</p>
-                            <p className="text-lg font-bold text-gray-800 dark:text-white">{group.totalSessions}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
-                            <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
-                            {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600 dark:text-gray-300">Reimbursement</p>
-                            <p className="text-lg font-bold text-gray-800 dark:text-white">
-                              ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
-                            </p>
-                          </div>
-                          
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Group Content */}
-                <div className="p-6">
-                  {/* Group Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaClock className="text-sm" />
-                        <span className="text-xs font-medium">First Session</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatTimeOnly(group.sessions[0].startTime)}</p>
-                    </div>
-                    
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaClock className="text-sm" />
-                        <span className="text-xs font-medium">Last Session</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                        {formatTimeOnly(group.sessions[group.sessions.length - 1].endTime || 
-                                      group.sessions[group.sessions.length - 1].startTime)}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaRoad className="text-sm" />
-                        <span className="text-xs font-medium">Total Distance</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
-                      {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                        <FaMapPin className="text-sm" />
-                        <span className="text-xs font-medium">Total Points</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
-                    </div>
-                  </div>
-
-                  {/* Session List */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                      <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-lg">
-                        <FaListAlt className="text-blue-500" />
-                      </div>
-                      Sessions ({group.sessions.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {group.sessions.map((session, sessionIndex) => {
-                        const sessionDuration = calculateDuration(session.startTime, session.endTime);
-                        const isActive = !session.endTime;
-                        const isFirstSession = sessionIndex === 0;
-                        
-                        return (
-                          <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
-                                     style={{ backgroundColor: getSessionColor(sessionIndex) }}>
-                                  {sessionIndex + 1}
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium text-gray-800 dark:text-white">
-                                      Session #{session.sessionId}
-                                      {isFirstSession && (
-                                        <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-                                          First Session (Excluded)
-                                        </span>
-                                      )}
-                                    </span>
-                                    {isActive && (
-                                      <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                                        LIVE - Updating
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                    <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
-                                    <span>•</span>
-                                    <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
-                                    <span>•</span>
-                                    <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
-                                    {isFirstSession && (
-                                      <>
-                                        <span>•</span>
-                                        <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                          Distance excluded from total
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleFetchTravelData(
-                                    session.userId.toString(), 
-                                    group.date
-                                  )}
-                                  className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
-                                >
-                                  <FaInfoCircle />
-                                  Details
-                                </button>
-                                <button
-                                  onClick={() => openMap(session)}
-                                  className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
-                                >
-                                  <FaEye />
-                                  Single Map
-                                </button>
-                              </div>
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                            {group.username} 
+                            <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
+                              ({group.employeeCode})
+                            </span>
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                              <FaCalendarAlt className="text-sm" />
+                              <span className="text-sm">
+                                {formattedDate}
+                              </span>
+                            </div>
+                            <span className="text-gray-400">•</span>
+                            <div className="flex items-center gap-1">
+                              <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
+                                group.activeSessions > 0 
+                                  ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
+                                  : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
+                              }`}>
+                                {group.activeSessions > 0 ? `${group.activeSessions} Active` : 'All Completed'}
+                              </span>
+                              {hasMoreSessions && (
+                                <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                  More sessions available
+                                </span>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="flex items-center gap-3">
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">Sessions</p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">{group.totalSessions}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
+                              {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">Reimbursement</p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => openMultiSessionMap(group)}
-                      className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
-                    >
-                      <FaLayerGroup className="text-xl" />
-                      View All Sessions on Map
-                      <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
-                        {group.sessions.length} session{group.sessions.length > 1 ? 's' : ''}
-                      </span>
-                    </button>
+                  {/* Group Content */}
+                  <div className="p-6">
+                    {/* Group Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                          <FaClock className="text-sm" />
+                          <span className="text-xs font-medium">First Session</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatTimeOnly(group.sessions[0].startTime)}</p>
+                      </div>
+                      
+                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                          <FaClock className="text-sm" />
+                          <span className="text-xs font-medium">Last Session</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                          {formatTimeOnly(group.sessions[group.sessions.length - 1].endTime || 
+                                        group.sessions[group.sessions.length - 1].startTime)}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                          <FaRoad className="text-sm" />
+                          <span className="text-xs font-medium">Total Distance</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
+                        {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                          <FaMapPin className="text-sm" />
+                          <span className="text-xs font-medium">Total Points</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                      </div>
+                    </div>
+
+                    {/* Session List */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-md font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-lg">
+                            <FaListAlt className="text-blue-500" />
+                          </div>
+                          Sessions ({group.sessions.length})
+                        </h4>
+                        
+                        {hasMoreSessions && (
+                          <button
+                            onClick={() => loadMoreSessionsForUser(group.userId, group.date)}
+                            disabled={group.isLoading}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                              group.isLoading 
+                                ? 'bg-gray-400' 
+                                : 'bg-gradient-to-r from-amber-500/90 to-orange-600/90 hover:from-amber-600 hover:to-orange-700'
+                            } text-white transition-all`}
+                          >
+                            {group.isLoading ? (
+                              <>
+                                <FaSpinner className="animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                <FaChevronDown />
+                                Load All Sessions
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {group.sessions.map((session, sessionIndex) => {
+                          const sessionDuration = calculateDuration(session.startTime, session.endTime);
+                          const isActive = !session.endTime;
+                          const isFirstSession = sessionIndex === 0;
+                          
+                          return (
+                            <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
+                                       style={{ backgroundColor: getSessionColor(sessionIndex) }}>
+                                    {sessionIndex + 1}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-800 dark:text-white">
+                                        Session #{session.sessionId}
+                                        {isFirstSession && (
+                                          <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                            First Session (Excluded)
+                                          </span>
+                                        )}
+                                      </span>
+                                      {isActive && (
+                                        <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                          <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                                          LIVE - Updating
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                      <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
+                                      <span>•</span>
+                                      <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
+                                      <span>•</span>
+                                      <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+                                      {isFirstSession && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                            Distance excluded from total
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleFetchTravelData(
+                                      session.userId.toString(), 
+                                      group.date
+                                    )}
+                                    className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
+                                  >
+                                    <FaInfoCircle />
+                                    Details
+                                  </button>
+                                  <button
+                                    onClick={() => openMap(session)}
+                                    className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                                  >
+                                    <FaEye />
+                                    Single Map
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => openMultiSessionMap(group)}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
+                      >
+                        <FaLayerGroup className="text-xl" />
+                        View All Sessions on Map
+                        <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
+                          {group.sessions.length} session{group.sessions.length > 1 ? 's' : ''}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+          
+          {/* Infinite scroll loader for main pagination */}
+          <div ref={observerTarget} className="py-8">
+            {isLoadingMore && (
+              <div className="flex items-center justify-center">
+                <FaSpinner className="animate-spin text-2xl text-blue-500 mr-2" />
+                <span className="text-gray-600 dark:text-gray-300">Loading more sessions...</span>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        renderIndividualView
+            )}
+            {!hasMore && currentPage > 1 && (
+              <div className="text-center text-gray-500 dark:text-gray-400">
+                <p>All {travelSessions.length} sessions loaded</p>
+                <p className="text-sm mt-1">
+                  Showing {groupedView.length} grouped sessions
+                </p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Farmer Data Modal */}
@@ -2186,23 +2420,6 @@ export default function AttendanceList() {
                   >
                     <span className="text-2xl">✕</span>
                   </button>
-                </div>
-              </div>
-              
-              {/* Session Legend */}
-              <div className="mt-4">
-                <div className="flex flex-wrap gap-2">
-                  {multiSessionMapView.sessions.map((session, index) => (
-                    <div key={session.sessionId} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: getSessionColor(index) }}
-                      ></div>
-                      <span className="text-sm font-medium">
-                        Session #{session.sessionId}: {formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}
-                      </span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>

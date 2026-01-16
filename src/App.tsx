@@ -15,7 +15,7 @@ import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
-// import BasicTables from "./pages/Tables/BasicTables";
+
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
@@ -24,37 +24,21 @@ import Home from "./pages/Dashboard/Home";
 import OtpModal from "./pages/AuthPages/LoginWithOtp";
 import TaskPage from "./pages/Employee/TaskPage";
 import Logout from "./pages/AuthPages/Logout";
-// import CompTestHistorySocket from "./pages/CompTestHistorySocket";
-// import SocketChatBox from "./components/chat/SocketChatBox";
 import { Toaster } from "react-hot-toast";
-
-
 import RegistrationPage from "./pages/Employee/RegistrationPage";
-// import AttendanceForm from "./pages/Employee/AttandanceStart";
-// import LocationFetcher from "./pages/Employee/LocationFetcher";
 import AttendanceEndForm from "./pages/Employee/AttandanceEnd";
-// import ProtectedRoute from "./components/ProtectedRoutes";
-
-
-
-
-
 import AttendanceGuard from "./guards/AttandanceGuard";
 import AttendanceList from "./pages/Employee/locationFetcherEmployee";
-// import NotificationListener from "./NotificationListener";
-// import AnnouncementForm from "./pages/Announcement";
-
-// import LocationFetcher from "./pages/Employee/LocationFetcher";
-
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";
-// import ChatToggle from "./context/ChatToggle";
-// import Testingmap from "./pages/Employee/Testing-map";
 import EmployeeCheckin from "./components/employees/Employeecheckin";
 import AnnouncementModal from "./components/header/NotificationDropdown";
 import CreateAnnouncement from "./components/hr/Announcement";
 import { ChatInterface } from "./components/chat/ChatInterface";
+import PrivacyPolicy from "./Privacy-policy/PrivacyPolicy";
+import AddRoleForm from "./admin/pages/AddRoles";
+import DepartmentManagement from "./admin/pages/AddDepartment";
 
 export default function App() {
   return (
@@ -63,6 +47,8 @@ export default function App() {
 
       {/* <NotificationListener/> */}
       <Routes>
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
         <Route
           path="/loginwithotp"
           element={
@@ -90,32 +76,17 @@ export default function App() {
             }
           />
           <Route path="/theme-customizer" element={<ThemeCustomizer />} />
+          <Route path="/add-role" element={<AddRoleForm />} />
+          <Route path="/add-department" element={<DepartmentManagement />} />
 
-          {/* Employee Pages */}
-
-     
-          {/* <Route path="/attandanceStart-page" element={<AttendanceGuard> <AttendanceForm /> </AttendanceGuard>}></Route> */}
-          <Route
-            path="/attandanceEnd-page"
-            element={
-              <AttendanceGuard>
-                {" "}
-                <AttendanceEndForm />{" "}
-              </AttendanceGuard>
-            }
-          ></Route>
+       
+      
          
           
         
           <Route
             path="/user-register"
-            element={
-              <AttendanceGuard>
-                {" "}
-                <RegistrationPage />{" "}
-              </AttendanceGuard>
-            }
-          ></Route>
+            element={ <RegistrationPage /> } />
           <Route
             path="/employeecheckin"
             element={

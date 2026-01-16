@@ -58,6 +58,7 @@ export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
   
+  const [loginType, setLoginType] = useState<'user' | 'admin'>('user'); // 'user' or 'admin'
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -97,12 +98,169 @@ export default function SignInForm() {
     );
   };
 
+  // Function to determine login endpoint based on login type
+  const getLoginEndpoint = () => {
+    return loginType === 'admin' ? '/admin/login' : '/auth/login';
+  };
+
+  // Function to handle admin login with the correct response format
+  const handleAdminLogin = async (response: any) => {
+    const { token, admin, message } = response.data;
+
+    console.log("Admin login data received:", { token, admin });
+
+    if (!token) {
+      console.error("No token received in admin login");
+      setMessage("No authentication token received from server.");
+      toast.error("No authentication token received from server.", {
+        id: loadingToast,
+      });
+      return;
+    }
+
+    // Store admin-specific data in localStorage
+    localStorage.setItem("userRole", admin?.role || "admin");
+    localStorage.setItem("userId", admin?.id || "");
+    localStorage.setItem("username", admin?.username || "");
+    localStorage.setItem("email", admin?.email || "");
+    localStorage.setItem("token", token || "");
+    localStorage.setItem("isAdmin", "true");
+
+    console.log("LocalStorage set, attempting to set auth context...");
+
+    try {
+      console.log("Calling login with token...");
+      
+      // Since admin API only returns one token, use it for both refresh and access
+      // Adjust this based on your auth context requirements
+      await login(token, token); // Using same token for both refresh and access
+
+      // Store "Keep me logged in" preference
+      if (isChecked) {
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberMe");
+      }
+
+      // Show success message
+      const successMessage = message || t("toast.Logged in successfully");
+      setMessage(successMessage);
+      
+      // Update the loading toast to success
+      toast.success(`Welcome back, ${admin.username} 🍁`, {
+        id: loadingToast,
+      });
+
+      console.log("Admin login successful, navigating to /home...");
+
+      // Navigate to home for admin
+      setTimeout(() => {
+        navigate("/home", { replace: true });
+      }, 100);
+    } catch (loginError) {
+      console.error("Error in admin login function:", loginError);
+      setMessage("Authentication context error. Please try again.");
+      toast.error("Authentication context error. Please try again.", {
+        id: loadingToast,
+      });
+    }
+  };
+
+  // Function to handle user login (HR, Manager, Zonal Manager)
+  const handleUserLogin = async (response: any) => {
+    const { user, tokens, message } = response.data;
+
+    console.log("User login data received:", { user, tokens });
+
+    // Check if user is a field employee BEFORE storing anything
+    const userRole = user?.role || "";
+    
+    if (isFieldEmployee(userRole)) {
+      // Show field employee restriction modal
+      setShowFieldEmployeeModal(true);
+      
+      // Clear any tokens that might have been set
+      if (tokens?.access) {
+        localStorage.removeItem("accessToken");
+      }
+      if (tokens?.refresh) {
+        localStorage.removeItem("refreshToken");
+      }
+      
+      // Show error toast
+      toast.error("Field employees must use the mobile app to login", {
+        id: loadingToast,
+      });
+      
+      setIsLoading(false);
+      return; // Stop further execution
+    }
+
+    // Store user data in localStorage (only if not field employee)
+    localStorage.setItem("userRole", user?.role || "employee");
+    localStorage.setItem("userId", user?.id || "");
+    localStorage.setItem("profileimg", user?.profileimg || "");
+    localStorage.setItem("department", user?.department || "");
+    localStorage.setItem("username", user?.username || "");
+    localStorage.setItem("employee_code", user?.employee_code || "");
+    localStorage.setItem("email", user?.email || "");
+    localStorage.setItem("mobileNo", user?.mobileNo || "");
+    localStorage.setItem("token", tokens?.access || user?.accesstoken || "");
+    localStorage.setItem("refreshToken", tokens?.refresh || "");
+    localStorage.setItem("allocatedarea", user?.allocatedArea || "");
+    localStorage.setItem(
+      "isActiveEmployee",
+      user?.isActiveEmployee ? "true" : "false"
+    );
+
+    // Set tokens in auth context
+    if (tokens?.access && tokens?.refresh) {
+      try {
+        await login(tokens.refresh, tokens.access);
+
+        // Store "Keep me logged in" preference
+        if (isChecked) {
+          localStorage.setItem("rememberMe", "true");
+        } else {
+          localStorage.removeItem("rememberMe");
+        }
+
+        // Show success message
+        const successMessage = message || t("toast.Logged in successfully");
+        setMessage(successMessage);
+        toast.success(`Welcome back, ${user.username} 🍁`, {
+          id: loadingToast,
+        });
+
+        console.log("User login successful, navigating to /home...");
+
+        // Navigate to home
+        setTimeout(() => {
+          navigate("/home", { replace: true });
+        }, 100);
+      } catch (loginError) {
+        console.error("Error in login function:", loginError);
+        setMessage("Authentication context error. Please try again.");
+        toast.error("Authentication context error. Please try again.", {
+          id: loadingToast,
+        });
+      }
+    } else {
+      console.error("No tokens received in user login:", tokens);
+      setMessage("No authentication tokens received from server.");
+      toast.error("No authentication tokens received from server.", {
+        id: loadingToast,
+      });
+    }
+  };
+
+  let loadingToast: string;
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
-    const loadingToast = toast.loading("Logging in...");
+    loadingToast = toast.loading("Logging in...");
     const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(
       navigator.userAgent
     );
@@ -118,103 +276,25 @@ export default function SignInForm() {
     }
 
     try {
-      const response = await API.post("/auth/login", {
+      const endpoint = getLoginEndpoint();
+      console.log("Attempting login to endpoint:", endpoint);
+      console.log("Login type:", loginType);
+      
+      const response = await API.post(endpoint, {
         email: email.trim(),
         password: password.trim(),
         deviceType: isMobileDevice ? "mobile" : "desktop",
       });
 
+      console.log("Login response:", response.data);
+
       if (response.status === 200 || response.status === 201) {
-        const { user, tokens, message } = response.data;
-
-        // Check if user is a field employee BEFORE storing anything
-        const userRole = user?.role || "";
-        
-        if (isFieldEmployee(userRole)) {
-          // Show field employee restriction modal
-          setShowFieldEmployeeModal(true);
-          
-          // Clear any tokens that might have been set
-          if (tokens?.access) {
-            localStorage.removeItem("accessToken");
-          }
-          if (tokens?.refresh) {
-            localStorage.removeItem("refreshToken");
-          }
-          
-          // Show error toast
-          toast.error("Field employees must use the mobile app to login", {
-            id: loadingToast,
-          });
-          
-          setIsLoading(false);
-          return; // Stop further execution
-        }
-
-        // Store user data in localStorage (only if not field employee)
-        localStorage.setItem("userRole", user?.role || "employee");
-        localStorage.setItem("userId", user?.id || "");
-        localStorage.setItem("profileimg", user?.profileimg || "");
-        localStorage.setItem("department", user?.department || "");
-        localStorage.setItem("username", user?.username || "");
-        localStorage.setItem("employee_code", user?.employee_code || "");
-        localStorage.setItem("email", user?.email || "");
-        localStorage.setItem("mobileNo", user?.mobileNo || "");
-        localStorage.setItem("token", user?.accesstoken || "");
-        localStorage.setItem("allocatedarea", user?.allocatedArea || "");
-        localStorage.setItem(
-          "isActiveEmployee",
-          user?.isActiveEmployee ? "true" : "false"
-        );
-
-        // Set tokens in auth context
-        if (tokens?.access && tokens?.refresh) {
-          try {
-            await login(tokens.refresh, tokens.access);
-
-            // Store "Keep me logged in" preference
-            if (isChecked) {
-              localStorage.setItem("rememberMe", "true");
-            } else {
-              localStorage.removeItem("rememberMe");
-            }
-
-            // Show success message
-            const successMessage = message || t("toast.Logged in successfully");
-            setMessage(successMessage);
-            toast.success(`Welcome back, ${user.username} 🍁`, {
-              id: loadingToast,
-            });
-
-            // Get user role and normalize it
-            const userRole = user?.role ;
-            const normalizedRole = userRole.toLowerCase().trim();
-
-            // Role-based navigation logic (excluding field employees)
-            let targetRoute = "/home";
-
-            if (userRole=== "ZonalManager" ) {
-              targetRoute = "/home";
-            } else if (normalizedRole === "hr" || normalizedRole === "manager" ) {
-              targetRoute = "/home";
-            } else {
-              targetRoute = "/";
-            }
-
-            // Navigate after a short delay
-            setTimeout(() => {
-              navigate(targetRoute, { replace: true });
-            }, 100);
-          } catch (loginError) {
-            console.error("Error in login function:", loginError);
-            setMessage("Authentication context error. Please try again.");
-            toast.error("Authentication context error. Please try again.", {
-              id: loadingToast,
-            });
-          }
+        if (loginType === 'admin') {
+          console.log("Processing admin login...");
+          await handleAdminLogin(response);
         } else {
-          setMessage("No authentication tokens received from server.");
-          toast.error("No authentication tokens received from server.");
+          console.log("Processing user login...");
+          await handleUserLogin(response);
         }
       } else {
         // If we have a message, show it
@@ -286,204 +366,257 @@ export default function SignInForm() {
       }
     } finally {
       setIsLoading(false);
+      // Don't dismiss toast here - let the success/error handlers do it
     }
   };
 
   return (
     <>
-   <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg ">
-  {/* Main animated container with dropping effect */}
-  <div 
-    className={`
-      transition-all duration-700 ease-out
-      ${isMounted 
-        ? 'opacity-100 translate-y-0' 
-        : 'opacity-0 -translate-y-8'
-      }
-    `}
-  >
-    {/* Logo with bounce animation */}
-    <div className="w-50 h-50 mx-auto mb-2 mt-1">
-      <img
-        src="cowberry_organics_1.png"
-        alt="cowberry-logo"
-        className={`
-          inline-flex items-center text-sm text-gray-500 hover:text-gray-700
-          transition-all duration-800 ease-out
-          ${isMounted 
-            ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 -translate-y-10'
-          }
-          hover:scale-105 transition-transform duration-300
-        `}
-        style={{
-          animation: isMounted ? 'logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
-        }}
-      />
-    </div>
-    
-    {/* Welcome text with enhanced dropping effect */}
-    <div className="flex items-center justify-center w-full h-10 mb-4">
-      <h1 
-        className={`
-          text-2xl font-bold relative
-          transition-all duration-900 ease-out
-          ${isMounted 
-            ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 -translate-y-12'
-          }
-        `}
-        style={{
-          animation: isMounted ? 'welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
-        }}
-      >
-        {t("Welcome to Lantern ")} 
-        <sub 
+      <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg ">
+        {/* Main animated container with dropping effect */}
+        <div 
           className={`
-            text-xs text-black dark:text-white
-            transition-all duration-1000 ease-out
+            transition-all duration-700 ease-out
             ${isMounted 
               ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 -translate-y-6'
+              : 'opacity-0 -translate-y-8'
             }
           `}
-          style={{
-            animationDelay: isMounted ? '0.2s' : '0s'
-          }}
         >
-          360
-        </sub>
-      </h1>
-    </div>
-    
-    {/* Form container with staggered animation */}
-    <div 
-      className={`
-        flex flex-col justify-center flex-1 w-full max-w-md mx-auto
-        transition-all duration-700 ease-out
-        ${isMounted 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-6'
-        }
-      `}
-      style={{
-        animationDelay: isMounted ? '0.3s' : '0s'
-      }}
-    >
-      <form onSubmit={handleLogin}>
-        <div className="space-y-6">
-          {/* Email Input with animation */}
-          <div 
-            className="capitalize space-y-2"
-            style={{
-              animation: isMounted ? 'formElementDrop 0.6s ease-out 0.4s forwards' : 'none',
-              opacity: isMounted ? 1 : 0,
-              transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
-            }}
-          >
-            <Label>
-              {t("email")} <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              placeholder={t("Enter your email")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              autoComplete="email"
-              type="email"
-              className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+          {/* Logo with bounce animation */}
+          <div className="w-40 h-40 mx-auto ">
+            <img
+              src="cowberry_organics_1.png"
+              alt="cowberry-logo"
+              className={`
+                inline-flex items-center text-sm text-gray-500 hover:text-gray-700
+                transition-all duration-800 ease-out
+                ${isMounted 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 -translate-y-10'
+                }
+                hover:scale-105 transition-transform duration-300
+              `}
+              style={{
+                animation: isMounted ? 'logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+              }}
             />
           </div>
-
-          {/* Password Input with animation */}
-          <div 
-            className="capitalize space-y-2"
-            style={{
-              animation: isMounted ? 'formElementDrop 0.6s ease-out 0.5s forwards' : 'none',
-              opacity: isMounted ? 1 : 0,
-              transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
-            }}
-          >
-            <Label>
-              {t("register.Password")} <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder={t("register.Enter your password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                autoComplete="current-password"
-                className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2 hover:scale-110 transition-transform duration-300"
+          
+          {/* Welcome text with enhanced dropping effect */}
+          <div className="flex items-center justify-center w-full h-10 mb-4">
+            <h1 
+              className={`
+                text-2xl font-bold relative
+                transition-all duration-900 ease-out
+                ${isMounted 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 -translate-y-12'
+                }
+              `}
+              style={{
+                animation: isMounted ? 'welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+              }}
+            >
+              {t("Welcome to Lantern ")} 
+              <sub 
+                className={`
+                  text-xs text-black dark:text-white
+                  transition-all duration-1000 ease-out
+                  ${isMounted 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 -translate-y-6'
+                  }
+                `}
+                style={{
+                  animationDelay: isMounted ? '0.2s' : '0s'
+                }}
               >
-                {showPassword ? (
-                  <EyeIcon className="size-5 fill-gray-500" />
-                ) : (
-                  <EyeCloseIcon className="size-5 fill-gray-500" />
-                )}
-              </span>
+                360
+              </sub>
+            </h1>
+          </div>
+
+          {/* Login Type Selector */}
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('user');
+                  setEmail('');
+                  setPassword('');
+                  setMessage('');
+                }}
+                className={`
+                  px-4 py-2 text-sm font-medium rounded-md transition-all duration-300
+                  ${loginType === 'user' 
+                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                  }
+                `}
+              >
+                Employee Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('admin');
+                  setEmail('');
+                  setPassword('');
+                  setMessage('');
+                }}
+                className={`
+                  px-4 py-2 text-sm font-medium rounded-md transition-all duration-300
+                  ${loginType === 'admin' 
+                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                  }
+                `}
+              >
+                Admin Login
+              </button>
             </div>
           </div>
 
-          {/* Checkbox and Forgot Password with animation */}
+          {/* Login type indicator */}
+          <div className="text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {loginType === 'admin' 
+                ? 'Sign in as Administrator' 
+                : 'Sign in as Employee/Manager/HR'
+              }
+            </p>
+          </div>
+          
+          {/* Form container with staggered animation */}
           <div 
-            className="flex items-center justify-between"
+            className={`
+              flex flex-col justify-center flex-1 w-full max-w-md mx-auto
+              transition-all duration-700 ease-out
+              ${isMounted 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-6'
+              }
+            `}
             style={{
-              animation: isMounted ? 'formElementDrop 0.6s ease-out 0.6s forwards' : 'none',
-              opacity: isMounted ? 1 : 0,
-              transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+              animationDelay: isMounted ? '0.3s' : '0s'
             }}
           >
-            <div className="flex items-center gap-3">
-              <Checkbox 
-                checked={isChecked} 
-                onChange={setIsChecked}
-                className="hover:scale-110 transition-transform duration-300"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {t("Keep me logged in")}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={openForgotModal}
-              className="text-sm text-brand-500 hover:underline hover:scale-105 transition-all duration-300"
-              disabled={isLoading}
-            >
-              {t("Forgot Password?")}
-            </button>
-          </div>
+            <form onSubmit={handleLogin}>
+              <div className="space-y-6">
+                {/* Email Input with animation */}
+                <div 
+                  className="capitalize space-y-2"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.4s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Label>
+                    {loginType === 'admin' ? 'Admin Email' : t("email")} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    placeholder={loginType === 'admin' ? 'Enter admin email' : t("Enter your email")}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    autoComplete="email"
+                    type="email"
+                    className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
 
-          {/* Submit Button with animation */}
-          <div
-            style={{
-              animation: isMounted ? 'formElementDrop 0.6s ease-out 0.7s forwards' : 'none',
-              opacity: isMounted ? 1 : 0,
-              transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
-            }}
-          >
-            <Button
-              type="submit"
-              className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
-              size="sm"
-              disabled={isLoading}
-            >
-              {isLoading ? t("button.Signing in...") : t("button.Sign in")}
-            </Button>
-          </div>
+                {/* Password Input with animation */}
+                <div 
+                  className="capitalize space-y-2"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.5s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Label>
+                    {t("register.Password")} <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t("register.Enter your password")}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      autoComplete="current-password"
+                      className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2 hover:scale-110 transition-transform duration-300"
+                    >
+                      {showPassword ? (
+                        <EyeIcon className="size-5 fill-gray-500" />
+                      ) : (
+                        <EyeCloseIcon className="size-5 fill-gray-500" />
+                      )}
+                    </span>
+                  </div>
+                </div>
 
-         
-        
+                {/* Checkbox and Forgot Password with animation */}
+                <div 
+                  className="flex items-center justify-between"
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.6s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      checked={isChecked} 
+                      onChange={setIsChecked}
+                      className="hover:scale-110 transition-transform duration-300"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {t("Keep me logged in")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openForgotModal}
+                    className="text-sm text-brand-500 hover:underline hover:scale-105 transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {t("Forgot Password?")}
+                  </button>
+                </div>
+
+                {/* Submit Button with animation */}
+                <div
+                  style={{
+                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.7s forwards' : 'none',
+                    opacity: isMounted ? 1 : 0,
+                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                  }}
+                >
+                  <Button
+                    type="submit"
+                    className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
+                    size="sm"
+                    disabled={isLoading}
+                  >
+                    {isLoading 
+                      ? (loginType === 'admin' ? 'Signing in as Admin...' : t("button.Signing in..."))
+                      : (loginType === 'admin' ? 'Sign in as Admin' : t("button.Sign in"))
+                    }
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
-    </div>
-  </div>
-</div>
+      </div>
 
       {/* CSS Animations */}
       <style>{`
@@ -534,30 +667,6 @@ export default function SignInForm() {
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-        
-        @keyframes messageFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-pulse-once {
-          animation: pulse 2s ease-in-out;
-        }
-        
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
           }
         }
       `}</style>

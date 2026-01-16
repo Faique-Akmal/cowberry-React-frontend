@@ -194,7 +194,7 @@ export default function AttendanceList() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);

@@ -27,8 +27,11 @@ export interface Message {
 }
 
 export interface ConversationParticipant {
+  id: number;
+  conversationId: number;
   userId: number;
   user: User;
+  joinedAt: string;
 }
 
 export interface Conversation {
@@ -37,7 +40,8 @@ export interface Conversation {
   name?: string; // Group name
   participants: ConversationParticipant[];
   messages?: Message[];
-  updatedAt: string; // Sorting ke liye
+  updatedAt: string;
+  createdAt?: string;
 }
 
 export interface CreateGroupPayload {

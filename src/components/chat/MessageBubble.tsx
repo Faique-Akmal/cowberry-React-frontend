@@ -78,7 +78,6 @@ const MessageBubble = React.memo(
           <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
             <div className="flex items-center gap-2 text-white/90 font-medium">
               <img
-                // src={mapUrl}
                 src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
                 alt="Location Preview"
                 className="w-full h-40 object-cover rounded-tl rounded-tr"
@@ -138,8 +137,8 @@ const MessageBubble = React.memo(
         >
           {/* Sender Name in Group */}
           {isGroup && (
-            <p className="text-xs text-orange-300 font-bold mb-1 opacity-80">
-              {!isMe ? msg.sender.username : `${msg.sender.username} (You)`}
+            <p className="text-xs text-gray-100 font-bold mb-1 opacity-80">
+              {isMe ? `${msg.sender.username} (You)` : msg.sender.username}
             </p>
           )}
 
@@ -161,15 +160,12 @@ const MessageBubble = React.memo(
               <Ban className="w-4 h-4" />{" "}
               {isMe ? "You deleted this message" : "This message was deleted"}
             </p>
+          ) : msg.type === "TEXT" ? (
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+              {msg.content}
+            </p>
           ) : (
-            <>
-              {msg.type !== "TEXT" && renderAttachment()}
-              {msg.type === "TEXT" && (
-                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </p>
-              )}
-            </>
+            renderAttachment()
           )}
 
           {/* Footer */}

@@ -27,6 +27,7 @@ export const ChatInput = () => {
   const [input, setInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [isSendingLocation, setIsSendingLocation] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +99,8 @@ export const ChatInput = () => {
 
   const handleSendLocation = () => {
     if (!navigator.geolocation) return toast.error("Geolocation not supported");
+
+    setIsSendingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -108,17 +111,24 @@ export const ChatInput = () => {
           type: "LOCATION",
           replyToId: replyingTo?.id || null,
         });
+        setIsSendingLocation(false);
+        setReplyingTo(null);
         setIsAttachMenuOpen(false);
+        toast.success("Location sent!");
       },
-      () => toast.error("Location access denied")
+      () => {
+        setIsSendingLocation(false);
+        toast.error("Location access denied");
+      },
+      { enableHighAccuracy: true }
     );
   };
 
   return (
-    <div className="p-4 border-t border-white/10 bg-white/5 backdrop-blur-md relative">
+    <div className="relative z-100 p-4 border-t border-white/10 bg-white/5 backdrop-blur-md">
       {/* Reply/Edit Banner */}
       {(replyingTo || editingMessage) && (
-        <div className="absolute bottom-full left-0 w-full bg-[#1a1a1aa3] backdrop-blur-3xl p-3 rounded-tr-lg rounded-tl-lg border-t border-white/10 flex items-center justify-between animate-in slide-in-from-bottom-5">
+        <div className="absolute bottom-full left-0 w-full bg-[#1a1a1aa3] backdrop-blur-3xl shadow-xl p-3 rounded-tr-lg rounded-tl-lg border-t border-white/10 flex items-center justify-between animate-in slide-in-from-bottom-5">
           <div className="flex flex-col rounded-tl-sm py-1 rounded-bl-sm border-l-5 border-brand-500 pl-3">
             <span className="text-xs text-brand-300 font-bold">
               {editingMessage
@@ -200,9 +210,9 @@ export const ChatInput = () => {
           className="flex-1 bg-transparent outline-none text-white px-2 placeholder-white/30"
         />
 
-        {isUploading ? (
+        {isUploading || isSendingLocation ? (
           <div className="p-2">
-            <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+            <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
           </div>
         ) : (
           <button

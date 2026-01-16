@@ -39,13 +39,14 @@ const ChatInterface = () => {
     const init = async () => {
       const storedUserId = localStorage.getItem("userId");
       const storedUsername = localStorage.getItem("username");
+      const storedEmail = localStorage.getItem("email");
       const storedRole = localStorage.getItem("userRole");
 
       if (storedUserId) {
         setCurrentUser({
           id: Number(storedUserId),
           username: storedUsername || "User",
-          email: "",
+          email: storedEmail!,
           role: { name: storedRole || "employee" },
         });
       }

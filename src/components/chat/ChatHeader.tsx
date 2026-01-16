@@ -1,7 +1,8 @@
-import { ArrowLeft, Phone, Video, Trash2 } from "lucide-react";
+import { ArrowLeft, Phone, Video, Trash2, MoreVertical } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { ChatService } from "../../services/chatService";
 import toast from "react-hot-toast";
+import { useState } from "react";
 
 interface Props {
   onBack: () => void;
@@ -14,6 +15,7 @@ export const ChatHeader = ({ onBack }: Props) => {
     setActiveConversation,
     removeConversation,
   } = useChatStore();
+  const [activeMenu, setActiveMenu] = useState(false);
 
   if (!activeConversation) return null;
 
@@ -26,6 +28,11 @@ export const ChatHeader = ({ onBack }: Props) => {
   const image = isGroup
     ? `https://ui-avatars.com/api/?name=${name}&background=6366f1&color=fff`
     : `https://ui-avatars.com/api/?name=${name}&background=random`;
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveMenu(!activeMenu);
+  };
 
   const handleDeleteGroup = async () => {
     if (!confirm("Delete this group permanently?")) return;
@@ -41,7 +48,7 @@ export const ChatHeader = ({ onBack }: Props) => {
   };
 
   return (
-    <div className="flex h-20 items-center justify-between border-b border-white/10 bg-white/10 px-6 backdrop-blur-md">
+    <div className="relative z-100 flex h-20 items-center justify-between border-b border-white/10 bg-white/10 px-6 backdrop-blur-md">
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
@@ -81,13 +88,51 @@ export const ChatHeader = ({ onBack }: Props) => {
           (currentUser?.role?.name?.toLowerCase() === "admin" ||
             currentUser?.role?.name?.toLowerCase() === "hr" ||
             currentUser?.role?.name?.toLowerCase() === "manager") && (
-            <button
-              onClick={handleDeleteGroup}
-              className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition"
-              title="Delete Group"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+            <>
+              <button
+                onClick={handleMenuClick}
+                className="p-2 hover:bg-white/10 rounded-full text-white/80 transition"
+                title="Group info"
+              >
+                <MoreVertical className="w-5 h-5 text-white/70" />
+              </button>
+              {activeMenu && (
+                <div
+                  className="absolute top-18 right-6 z-50 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-1 animate-in zoom-in-95"
+                  onMouseLeave={() => setActiveMenu(false)}
+                >
+                  <div className="flex gap-2 flex-col py-2">
+                    <h1 className="text-white text-xl text-center">
+                      {activeConversation.name}
+                    </h1>
+                    <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-t border-gray-200 dark:border-gray-800">
+                      {activeConversation.participants.map((p) => (
+                        <li
+                          key={p.id}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg text-gray-200 hover:bg-white/10"
+                        >
+                          <p>{p.user.username}</p>
+                          <button
+                            onClick={() => {
+                              // setActiveMenu(false);
+                            }}
+                          >
+                            Remove member
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={handleDeleteGroup}
+                      className="flex items-center justify-center w-full gap-2 py-2 px-4 hover:bg-red-500/20 text-red-400 rounded-full transition"
+                      title="Delete Group"
+                    >
+                      <Trash2 className="w-5 h-5" /> Delete Group
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
       </div>
     </div>

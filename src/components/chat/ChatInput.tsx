@@ -228,7 +228,7 @@ export const ChatInput = () => {
 
         {isUploading || isSendingLocation ? (
           <div className="p-2">
-            <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
+            <Loader2 className="w-6 h-6 text-green-500 animate-spin" />
           </div>
         ) : (
           <button

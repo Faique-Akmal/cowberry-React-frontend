@@ -129,10 +129,10 @@ const MessageBubble = React.memo(
         } animate-in slide-in-from-bottom-2 duration-300 mb-4`}
       >
         <div
-          className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl p-3 shadow-lg group ${
-            !isMe
-              ? "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
-              : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
+          className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-1 shadow-lg group ${
+            isMe
+              ? "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
+              : "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
           }`}
         >
           {/* Sender Name in Group */}

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Search, Users, Loader2 } from "lucide-react";
+import { Search, Users, Loader2, ArrowRight } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { ChatService } from "../../services/chatService";
 import { User, Conversation } from "../../types/chatTypes";
@@ -12,6 +12,7 @@ interface Props {
   onOpenGroupModal: () => void;
   showMobile: boolean;
   isLoading: boolean;
+  onChatScreen: () => void;
 }
 
 type SidebarItem = {
@@ -34,6 +35,7 @@ export const Sidebar = ({
   onOpenGroupModal,
   showMobile,
   isLoading,
+  onChatScreen,
 }: Props) => {
   const {
     conversations,
@@ -128,14 +130,22 @@ export const Sidebar = ({
         <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-md">
           Messages
         </h2>
-        {currentUser?.role?.name?.toLowerCase() !== "employee" && (
+        <div className="flex items-center justify-center gap-4">
+          {currentUser?.role?.name?.toLowerCase() !== "employee" && (
+            <button
+              onClick={onOpenGroupModal}
+              className="p-2 rounded-full bg-white/10 hover:bg-green-500/20 text-white hover:text-green-300 transition border border-white/5"
+            >
+              <Users className="w-6 h-6" />
+            </button>
+          )}
           <button
-            onClick={onOpenGroupModal}
-            className="p-2 rounded-full bg-white/10 hover:bg-indigo-500/20 text-white hover:text-indigo-300 transition border border-white/5"
+            onClick={onChatScreen}
+            className="md:hidden text-white p-1 hover:bg-white/10 rounded-full"
           >
-            <Users className="w-5 h-5" />
+            <ArrowRight />
           </button>
-        )}
+        </div>
       </div>
 
       <div className="px-6 py-4">

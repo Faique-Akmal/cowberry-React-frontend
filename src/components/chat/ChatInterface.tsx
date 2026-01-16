@@ -114,6 +114,7 @@ const ChatInterface = () => {
           isLoading={isLoadingSidebar}
           showMobile={showMobileChat}
           onOpenGroupModal={() => setIsGroupModalOpen(true)}
+          onChatScreen={() => setShowMobileChat(true)}
         />
 
         {/* --- Chat Window --- */}

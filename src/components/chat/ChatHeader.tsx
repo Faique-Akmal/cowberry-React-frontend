@@ -197,10 +197,10 @@ export const ChatHeader = ({ onBack }: Props) => {
         <div className="flex items-center gap-2">
           {/* Common Actions */}
           <button className="p-2 hover:bg-white/10 rounded-full text-white/80 transition">
-            <Phone className="w-5 h-5" />
+            <Phone className="w-6 h-6" />
           </button>
           <button className="p-2 hover:bg-white/10 rounded-full text-white/80 transition">
-            <Video className="w-5 h-5" />
+            <Video className="w-6 h-6" />
           </button>
 
           {/* Group Settings Dropdown */}
@@ -214,7 +214,7 @@ export const ChatHeader = ({ onBack }: Props) => {
                     : "hover:bg-white/10 text-white/80"
                 }`}
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-6 h-6" />
               </button>
 
               {showSettingsMenu && (

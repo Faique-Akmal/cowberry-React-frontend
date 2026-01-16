@@ -8,6 +8,7 @@ import UserDropdown from "../components/header/UserDropdown";
 // import AnnouncementNotification from "../pages/AnnouncementNotification";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { useTheme } from "../context/ThemeContext";
+import { Link } from "react-router";
 
 
 // import { useTranslation } from "react-i18next";
@@ -74,11 +75,11 @@ const AppHeader: React.FC = () => {
           </button>
 
           {/* Logo */}
-          {/* <Link to="/" className="lg:hidden"> */}
+          <Link to="/home" className="lg:hidden">
             <div >
               <img src="cowberry_organics_2.png" alt="Logo" className="flex justify-center items-center " width={170} height={0}/>
             </div>
-          {/* </Link> */}
+          </Link>
 
           {/* App Menu Button */}
           <button

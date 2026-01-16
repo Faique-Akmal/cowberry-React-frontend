@@ -87,6 +87,7 @@ const AppSidebar: React.FC = () => {
         "ZonalManager",
         "manager",
         "HR",
+        "admin"
        
       ],
     },
@@ -121,6 +122,18 @@ const AppSidebar: React.FC = () => {
     name: t("menu.registerUserForm"),
     path: "/user-register",
     role: ["admin","HR"],
+  },
+   {
+    icon: <FaTasks />,
+    name: t("Add Role"),
+    path: "/add-role",
+    role: ["admin"],
+  },
+  {
+    icon: <FaTasks />,
+    name: t("Add department"),
+    path: "/add-department",
+    role: ["admin"],
   },
   
   {

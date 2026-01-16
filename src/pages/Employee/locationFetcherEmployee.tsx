@@ -35,6 +35,7 @@ import {
   FaSpinner,
   FaChevronDown,
   FaChevronUp,
+  FaPauseCircle,
 } from "react-icons/fa";
 
 import ImageZoom from "../../components/ImageZoom";
@@ -193,7 +194,7 @@ export default function AttendanceList() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -223,6 +224,7 @@ export default function AttendanceList() {
   // Map marker states
   const [showLogMarkers, setShowLogMarkers] = useState(true);
   const [showLogMarkersMulti, setShowLogMarkersMulti] = useState(true);
+  const [showPauseMarkers, setShowPauseMarkers] = useState(true);
   
   // Custom icons for markers
   const customIcons = {
@@ -249,6 +251,14 @@ export default function AttendanceList() {
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
       shadowSize: [41, 41]
+    }),
+    pauseIcon: new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [19, 31],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [21, 21]
     })
   };
 
@@ -1177,460 +1187,458 @@ export default function AttendanceList() {
   const activeSessions = filteredSessions.filter(s => !s.endTime).length;
   const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
   
-  // Export all data based on filters
-// Export all data based on filters with pagination handling
-// Export all data based on filters with pagination handling
-const exportToCSV = async () => {
-  try {
-    setIsExporting(true);
-    console.log('Export started with filters:', { startDate, endDate, selectedUser, searchQuery });
-    
-    // Build params for export (include all data based on filters)
-    const params: any = { page: 1, per_page: 50 };
-    
-    // Apply filters to the main API call
-    if (startDate) {
-      params.startDate = startDate;
-      console.log('Applied startDate filter:', startDate);
-    }
-    if (endDate) {
-      params.endDate = endDate;
-      console.log('Applied endDate filter:', endDate);
-    }
-    if (selectedUser) {
-      params.userId = selectedUser;
-      console.log('Applied user filter:', selectedUser);
-    }
-    if (searchQuery) {
-      params.search = searchQuery;
-      console.log('Applied search filter:', searchQuery);
-    }
-    
-    // Fetch all pages of data for export
-    let allSessions: TravelSession[] = [];
-    let currentPage = 1;
-    let totalPages = 1;
-    let hasMore = true;
-    let totalFetched = 0;
-    
-    console.log('Starting to fetch all paginated data...');
-    
-    // Fetch all pages
-    while (hasMore) {
-      params.page = currentPage;
+  // Export all data based on filters with pagination handling
+  const exportToCSV = async () => {
+    try {
+      setIsExporting(true);
+      console.log('Export started with filters:', { startDate, endDate, selectedUser, searchQuery });
       
-      console.log(`Fetching page ${currentPage} with params:`, params);
+      // Build params for export (include all data based on filters)
+      const params: any = { page: 1, per_page: 50 };
       
-      const response = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
-      
-      if (!response.data.success) {
-        console.error('API response not successful:', response.data);
-        throw new Error("Failed to fetch data for export");
+      // Apply filters to the main API call
+      if (startDate) {
+        params.startDate = startDate;
+        console.log('Applied startDate filter:', startDate);
+      }
+      if (endDate) {
+        params.endDate = endDate;
+        console.log('Applied endDate filter:', endDate);
+      }
+      if (selectedUser) {
+        params.userId = selectedUser;
+        console.log('Applied user filter:', selectedUser);
+      }
+      if (searchQuery) {
+        params.search = searchQuery;
+        console.log('Applied search filter:', searchQuery);
       }
       
-      const pageData = response.data.data || [];
-      totalFetched += pageData.length;
-      allSessions = [...allSessions, ...pageData];
+      // Fetch all pages of data for export
+      let allSessions: TravelSession[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+      let hasMore = true;
+      let totalFetched = 0;
       
-      totalPages = response.data.totalPages || 1;
-      currentPage = response.data.currentPage || currentPage;
-      hasMore = response.data.hasNextPage || false;
+      console.log('Starting to fetch all paginated data...');
       
-      console.log(`Page ${currentPage}: Fetched ${pageData.length} sessions. Total so far: ${totalFetched}`);
-      console.log('Pagination info:', {
-        currentPage,
-        totalPages,
-        hasMore,
-        totalSessions: response.data.totalSessions
-      });
+      // Fetch all pages
+      while (hasMore) {
+        params.page = currentPage;
+        
+        console.log(`Fetching page ${currentPage} with params:`, params);
+        
+        const response = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
+        
+        if (!response.data.success) {
+          console.error('API response not successful:', response.data);
+          throw new Error("Failed to fetch data for export");
+        }
+        
+        const pageData = response.data.data || [];
+        totalFetched += pageData.length;
+        allSessions = [...allSessions, ...pageData];
+        
+        totalPages = response.data.totalPages || 1;
+        currentPage = response.data.currentPage || currentPage;
+        hasMore = response.data.hasNextPage || false;
+        
+        console.log(`Page ${currentPage}: Fetched ${pageData.length} sessions. Total so far: ${totalFetched}`);
+        console.log('Pagination info:', {
+          currentPage,
+          totalPages,
+          hasMore,
+          totalSessions: response.data.totalSessions
+        });
+        
+        // Debug: Show first session if available
+        if (pageData.length > 0 && currentPage === 1) {
+          const firstSession = pageData[0];
+          console.log('Sample session from first page:', {
+            sessionId: firstSession.sessionId,
+            startTime: firstSession.startTime,
+            formattedDate: formatDateOnly(firstSession.startTime),
+            userId: firstSession.userId,
+            username: firstSession.username
+          });
+        }
+        
+        // Update current page for next iteration
+        currentPage++;
+        
+        // Break if we've fetched all pages
+        if (currentPage > totalPages) {
+          hasMore = false;
+        }
+        
+        // Small delay to avoid overwhelming the server
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
       
-      // Debug: Show first session if available
-      if (pageData.length > 0 && currentPage === 1) {
-        const firstSession = pageData[0];
-        console.log('Sample session from first page:', {
-          sessionId: firstSession.sessionId,
-          startTime: firstSession.startTime,
-          formattedDate: formatDateOnly(firstSession.startTime),
-          userId: firstSession.userId,
-          username: firstSession.username
+      console.log(`Total fetched ${allSessions.length} sessions for export`);
+      
+      // Debug: Show session date ranges
+      if (allSessions.length > 0) {
+        const dates = allSessions.map(s => formatDateOnly(s.startTime));
+        const uniqueDates = [...new Set(dates)].sort();
+        console.log('Date range of fetched sessions:', {
+          minDate: uniqueDates[0],
+          maxDate: uniqueDates[uniqueDates.length - 1],
+          allDates: uniqueDates
         });
       }
       
-      // Update current page for next iteration
-      currentPage++;
-      
-      // Break if we've fetched all pages
-      if (currentPage > totalPages) {
-        hasMore = false;
+      // If no sessions found, show message and return
+      if (allSessions.length === 0) {
+        alert('No travel sessions found with the current filters.');
+        setIsExporting(false);
+        return;
       }
       
-      // Small delay to avoid overwhelming the server
-      if (hasMore) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    
-    console.log(`Total fetched ${allSessions.length} sessions for export`);
-    
-    // Debug: Show session date ranges
-    if (allSessions.length > 0) {
-      const dates = allSessions.map(s => formatDateOnly(s.startTime));
-      const uniqueDates = [...new Set(dates)].sort();
-      console.log('Date range of fetched sessions:', {
-        minDate: uniqueDates[0],
-        maxDate: uniqueDates[uniqueDates.length - 1],
-        allDates: uniqueDates
-      });
-    }
-    
-    // If no sessions found, show message and return
-    if (allSessions.length === 0) {
-      alert('No travel sessions found with the current filters.');
-      setIsExporting(false);
-      return;
-    }
-    
-    // Filter sessions by date range AGAIN on client side (double-check)
-    let filteredSessions = [...allSessions];
-    
-    if (startDate || endDate) {
-      filteredSessions = filteredSessions.filter(session => {
-        const sessionDate = formatDateOnly(session.startTime);
-        
-        if (startDate && !endDate) {
-          return sessionDate >= startDate;
-        }
-        
-        if (!startDate && endDate) {
-          return sessionDate <= endDate;
-        }
-        
-        if (startDate && endDate) {
-          return sessionDate >= startDate && sessionDate <= endDate;
-        }
-        
-        return true;
-      });
+      // Filter sessions by date range AGAIN on client side (double-check)
+      let filteredSessions = [...allSessions];
       
-      console.log(`After client-side date filtering: ${filteredSessions.length} sessions`);
-    }
-    
-    // If client-side filtering removed all sessions, show message
-    if (filteredSessions.length === 0) {
-      alert('No travel sessions found within the selected date range after filtering.');
-      setIsExporting(false);
-      return;
-    }
-    
-    // Group the filtered sessions for export
-    const groupedData = groupSessionsByUserAndDate(filteredSessions);
-    console.log(`Grouped into ${groupedData.length} user-date groups`);
-    
-    // Process each group for farmer data
-    const groupedDataWithFarmerInfo = await Promise.all(
-      groupedData.map(async (group, index) => {
-        try {
-          console.log(`Processing group ${index + 1}/${groupedData.length}: User ${group.userId} on ${group.date}`);
+      if (startDate || endDate) {
+        filteredSessions = filteredSessions.filter(session => {
+          const sessionDate = formatDateOnly(session.startTime);
           
-          // Fetch farmer data for this user with date filters
-          const farmerParams: any = { 
-            userId: group.userId,
-            // Always filter farmer data by the specific date of this group
-            startDate: group.date,
-            endDate: group.date
-          };
+          if (startDate && !endDate) {
+            return sessionDate >= startDate;
+          }
           
-          // If we have broader date filters from the main query, we should have already filtered the groups
-          // But we'll still use the specific group date for farmer data API
+          if (!startDate && endDate) {
+            return sessionDate <= endDate;
+          }
           
-          console.log(`Fetching farmer data for user ${group.userId} on date ${group.date}`);
+          if (startDate && endDate) {
+            return sessionDate >= startDate && sessionDate <= endDate;
+          }
           
-          const farmerResponse = await API.get(`/tracking/locationlog/get_travel_sessions`, {
-            params: farmerParams,
-            timeout: 15000 // 15 second timeout for farmer data
-          });
-          
-          const data = farmerResponse.data;
-          let sessionFarmerData = [];
-          
-          if (data.success && data.sessions && data.sessions.data) {
-            const allFarmerSessions = data.sessions.data.map((session: any) => ({
-              sessionId: session.sessionId,
-              startTime: session.startTime,
-              endTime: session.endTime,
-              totalDistance: session.totalDistance,
-              startOdometerImage: session.startOdometerImage || '',
-              endOdometerImage: session.endOdometerImage || '',
-              farmerData: session.farmerData || { count: 0, data: [] }
-            }));
+          return true;
+        });
+        
+        console.log(`After client-side date filtering: ${filteredSessions.length} sessions`);
+      }
+      
+      // If client-side filtering removed all sessions, show message
+      if (filteredSessions.length === 0) {
+        alert('No travel sessions found within the selected date range after filtering.');
+        setIsExporting(false);
+        return;
+      }
+      
+      // Group the filtered sessions for export
+      const groupedData = groupSessionsByUserAndDate(filteredSessions);
+      console.log(`Grouped into ${groupedData.length} user-date groups`);
+      
+      // Process each group for farmer data
+      const groupedDataWithFarmerInfo = await Promise.all(
+        groupedData.map(async (group, index) => {
+          try {
+            console.log(`Processing group ${index + 1}/${groupedData.length}: User ${group.userId} on ${group.date}`);
             
-            // Filter sessions for this specific date
-            sessionFarmerData = allFarmerSessions.filter(session => {
-              if (!session.startTime) return false;
-              const sessionDate = formatDateOnly(session.startTime);
-              const matchesDate = sessionDate === group.date;
-              
-              if (!matchesDate) {
-                console.warn(`Farmer session date mismatch: ${sessionDate} vs ${group.date} for session ${session.sessionId}`);
-              }
-              
-              return matchesDate;
+            // Fetch farmer data for this user with date filters
+            const farmerParams: any = { 
+              userId: group.userId,
+              // Always filter farmer data by the specific date of this group
+              startDate: group.date,
+              endDate: group.date
+            };
+            
+            // If we have broader date filters from the main query, we should have already filtered the groups
+            // But we'll still use the specific group date for farmer data API
+            
+            console.log(`Fetching farmer data for user ${group.userId} on date ${group.date}`);
+            
+            const farmerResponse = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+              params: farmerParams,
+              timeout: 15000 // 15 second timeout for farmer data
             });
             
-            console.log(`Found ${sessionFarmerData.length} farmer sessions for user ${group.userId} on ${group.date}`);
-          } else {
-            console.log(`No farmer data found for user ${group.userId} on ${group.date}`, data);
-          }
-          
-          // Calculate totals
-          const firstSessionStart = new Date(group.startTime);
-          const lastSessionEnd = new Date(group.endTime);
-          const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
-          const totalDistanceExcludingFirst = group.totalDistance;
-          const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
-          
-          const totalPauses = group.sessions.reduce((sum, session) => {
-            const pauses = detectPauses(session.logs || []);
-            return sum + pauses.length;
-          }, 0);
-          
-          // Count total farmers met
-          const totalFarmersMet = sessionFarmerData.reduce((sum, session) => 
-            sum + (session.farmerData?.count || 0), 0
-          );
-          
-          // Build session details with farmer information
-          const sessionDetails = group.sessions.map((session, sessionIndex) => {
-            const matchingFarmerData = sessionFarmerData.find(f => f.sessionId === session.sessionId);
-            const farmerCount = matchingFarmerData?.farmerData?.count || 0;
-            const farmers = matchingFarmerData?.farmerData?.data || [];
+            const data = farmerResponse.data;
+            let sessionFarmerData = [];
             
-            // Format farmer descriptions
-            const farmerDescriptions = farmers.map((farmer, farmerIndex) => 
-              `Farmer ${farmerIndex + 1}: ${farmer.farmerName || 'Unknown'} - ${farmer.farmerDescription || 'No description'}`
-            ).join('; ');
+            if (data.success && data.sessions && data.sessions.data) {
+              const allFarmerSessions = data.sessions.data.map((session: any) => ({
+                sessionId: session.sessionId,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                totalDistance: session.totalDistance,
+                startOdometerImage: session.startOdometerImage || '',
+                endOdometerImage: session.endOdometerImage || '',
+                farmerData: session.farmerData || { count: 0, data: [] }
+              }));
+              
+              // Filter sessions for this specific date
+              sessionFarmerData = allFarmerSessions.filter(session => {
+                if (!session.startTime) return false;
+                const sessionDate = formatDateOnly(session.startTime);
+                const matchesDate = sessionDate === group.date;
+                
+                if (!matchesDate) {
+                  console.warn(`Farmer session date mismatch: ${sessionDate} vs ${group.date} for session ${session.sessionId}`);
+                }
+                
+                return matchesDate;
+              });
+              
+              console.log(`Found ${sessionFarmerData.length} farmer sessions for user ${group.userId} on ${group.date}`);
+            } else {
+              console.log(`No farmer data found for user ${group.userId} on ${group.date}`, data);
+            }
             
-            // Format farmer image URLs
-            const farmerImageUrls = farmers.map((farmer, farmerIndex) => 
-              farmer.farmerImage || ''
-            ).filter(url => url).join('; ');
+            // Calculate totals
+            const firstSessionStart = new Date(group.startTime);
+            const lastSessionEnd = new Date(group.endTime);
+            const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
+            const totalDistanceExcludingFirst = group.totalDistance;
+            const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
+            
+            const totalPauses = group.sessions.reduce((sum, session) => {
+              const pauses = detectPauses(session.logs || []);
+              return sum + pauses.length;
+            }, 0);
+            
+            // Count total farmers met
+            const totalFarmersMet = sessionFarmerData.reduce((sum, session) => 
+              sum + (session.farmerData?.count || 0), 0
+            );
+            
+            // Build session details with farmer information
+            const sessionDetails = group.sessions.map((session, sessionIndex) => {
+              const matchingFarmerData = sessionFarmerData.find(f => f.sessionId === session.sessionId);
+              const farmerCount = matchingFarmerData?.farmerData?.count || 0;
+              const farmers = matchingFarmerData?.farmerData?.data || [];
+              
+              // Format farmer descriptions
+              const farmerDescriptions = farmers.map((farmer, farmerIndex) => 
+                `Farmer ${farmerIndex + 1}: ${farmer.farmerName || 'Unknown'} - ${farmer.farmerDescription || 'No description'}`
+              ).join('; ');
+              
+              // Format farmer image URLs
+              const farmerImageUrls = farmers.map((farmer, farmerIndex) => 
+                farmer.farmerImage || ''
+              ).filter(url => url).join('; ');
+              
+              return {
+                sessionNumber: sessionIndex + 1,
+                sessionId: session.sessionId,
+                sessionStartTime: formatTimeOnly(session.startTime),
+                sessionEndTime: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
+                sessionDistance: (session.totalDistance / 1000).toFixed(2),
+                sessionStatus: session.endTime ? 'Completed' : 'Active',
+                farmersCount: farmerCount,
+                farmerDescriptions: farmerDescriptions || 'None',
+                farmerImageUrls: farmerImageUrls || 'None',
+                startOdometerImage: matchingFarmerData?.startOdometerImage || '',
+                endOdometerImage: matchingFarmerData?.endOdometerImage || ''
+              };
+            });
+            
+            const result = {
+              // Group info
+              'User ID': group.userId,
+              'Username': group.username,
+              'Employee Code': group.employeeCode,
+              'Date': group.date,
+              'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }),
+              'Start Time': formatDateTime(group.startTime),
+              'End Time': formatDateTime(group.endTime),
+              'Total Sessions': group.totalSessions,
+              'Active Sessions': group.activeSessions,
+              'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+              'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
+              'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
+              'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+              'Payable Amount (₹)': reimbursementAmount,
+              'Total Farmers Met': totalFarmersMet,
+              'Duration (minutes)': totalDuration,
+              
+              'Total Pauses Count': totalPauses,
+              'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
+              'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
+              
+              // Individual session columns (flattened)
+              ...sessionDetails.reduce((acc, session, idx) => {
+                const prefix = `Session ${session.sessionNumber}`;
+                return {
+                  ...acc,
+                  [`${prefix} ID`]: session.sessionId,
+                  [`${prefix} Start Time`]: session.sessionStartTime,
+                  [`${prefix} End Time`]: session.sessionEndTime,
+                  [`${prefix} Distance (km)`]: session.sessionDistance,
+                  [`${prefix} Status`]: session.sessionStatus,
+                  [`${prefix} Farmers Count`]: session.farmersCount,
+                  [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
+                  
+                };
+              }, {}),
+            };
+            
+            console.log(`Completed processing group for user ${group.userId} on ${group.date}`);
+            return result;
+            
+          } catch (error) {
+            console.error(`Error fetching data for user ${group.userId} on ${group.date}:`, error);
+            
+            // Calculate basic info even if farmer data fails
+            const firstSessionStart = new Date(group.startTime);
+            const lastSessionEnd = new Date(group.endTime);
+            const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
+            const totalDistanceExcludingFirst = group.totalDistance;
+            const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
             
             return {
-              sessionNumber: sessionIndex + 1,
-              sessionId: session.sessionId,
-              sessionStartTime: formatTimeOnly(session.startTime),
-              sessionEndTime: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
-              sessionDistance: (session.totalDistance / 1000).toFixed(2),
-              sessionStatus: session.endTime ? 'Completed' : 'Active',
-              farmersCount: farmerCount,
-              farmerDescriptions: farmerDescriptions || 'None',
-              farmerImageUrls: farmerImageUrls || 'None',
-              startOdometerImage: matchingFarmerData?.startOdometerImage || '',
-              endOdometerImage: matchingFarmerData?.endOdometerImage || ''
+              'User ID': group.userId,
+              'Username': group.username,
+              'Employee Code': group.employeeCode,
+              'Date': group.date,
+              'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }),
+              'Start Time': formatDateTime(group.startTime),
+              'End Time': formatDateTime(group.endTime),
+              'Total Sessions': group.totalSessions,
+              'Active Sessions': group.activeSessions,
+              'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
+              'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
+              'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
+              'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
+              'Payable Amount (₹)': reimbursementAmount,
+              'Total Farmers Met': 'Error fetching farmer data',
+              'Duration (minutes)': totalDuration,
+              'Total Pauses Count': 'N/A',
+              'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
+              'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km; Farmer data fetch failed`,
+              ...group.sessions.reduce((acc, session, idx) => {
+                const prefix = `Session ${idx + 1}`;
+                return {
+                  ...acc,
+                  [`${prefix} ID`]: session.sessionId,
+                  [`${prefix} Start Time`]: formatTimeOnly(session.startTime),
+                  [`${prefix} End Time`]: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
+                  [`${prefix} Distance (km)`]: (session.totalDistance / 1000).toFixed(2),
+                  [`${prefix} Status`]: session.endTime ? 'Completed' : 'Active'
+                };
+              }, {})
             };
-          });
-          
-          const result = {
-            // Group info
-            'User ID': group.userId,
-            'Username': group.username,
-            'Employee Code': group.employeeCode,
-            'Date': group.date,
-            'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            }),
-            'Start Time': formatDateTime(group.startTime),
-            'End Time': formatDateTime(group.endTime),
-            'Total Sessions': group.totalSessions,
-            'Active Sessions': group.activeSessions,
-            'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
-            'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
-            'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
-            'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
-            'Payable Amount (₹)': reimbursementAmount,
-            'Total Farmers Met': totalFarmersMet,
-            'Duration (minutes)': totalDuration,
-            
-            'Total Pauses Count': totalPauses,
-            'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
-            'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
-            
-            // Individual session columns (flattened)
-            ...sessionDetails.reduce((acc, session, idx) => {
-              const prefix = `Session ${session.sessionNumber}`;
-              return {
-                ...acc,
-                [`${prefix} ID`]: session.sessionId,
-                [`${prefix} Start Time`]: session.sessionStartTime,
-                [`${prefix} End Time`]: session.sessionEndTime,
-                [`${prefix} Distance (km)`]: session.sessionDistance,
-                [`${prefix} Status`]: session.sessionStatus,
-                [`${prefix} Farmers Count`]: session.farmersCount,
-                [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
-                
-              };
-            }, {}),
-          };
-          
-          console.log(`Completed processing group for user ${group.userId} on ${group.date}`);
-          return result;
-          
-        } catch (error) {
-          console.error(`Error fetching data for user ${group.userId} on ${group.date}:`, error);
-          
-          // Calculate basic info even if farmer data fails
-          const firstSessionStart = new Date(group.startTime);
-          const lastSessionEnd = new Date(group.endTime);
-          const totalDuration = Math.round((lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000);
-          const totalDistanceExcludingFirst = group.totalDistance;
-          const reimbursementAmount = ((totalDistanceExcludingFirst / 1000) * 3.5).toFixed(2);
-          
-          return {
-            'User ID': group.userId,
-            'Username': group.username,
-            'Employee Code': group.employeeCode,
-            'Date': group.date,
-            'Formatted Date': new Date(group.date).toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            }),
-            'Start Time': formatDateTime(group.startTime),
-            'End Time': formatDateTime(group.endTime),
-            'Total Sessions': group.totalSessions,
-            'Active Sessions': group.activeSessions,
-            'Original Total Distance (km)': (group.originalTotalDistance / 1000).toFixed(2),
-            'Original Total Reimbursement(km)': ((group.originalTotalDistance / 1000)*3.5).toFixed(2),
-            'First Session Distance (km)': (group.firstSessionDistance / 1000).toFixed(2),
-            'Payable Distance excluding first session(km)': (totalDistanceExcludingFirst / 1000).toFixed(2),
-            'Payable Amount (₹)': reimbursementAmount,
-            'Total Farmers Met': 'Error fetching farmer data',
-            'Duration (minutes)': totalDuration,
-            'Total Pauses Count': 'N/A',
-            'Status': group.activeSessions > 0 ? 'Has Active Sessions' : 'All Completed',
-            'Notes': `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km; Farmer data fetch failed`,
-            ...group.sessions.reduce((acc, session, idx) => {
-              const prefix = `Session ${idx + 1}`;
-              return {
-                ...acc,
-                [`${prefix} ID`]: session.sessionId,
-                [`${prefix} Start Time`]: formatTimeOnly(session.startTime),
-                [`${prefix} End Time`]: session.endTime ? formatTimeOnly(session.endTime) : 'Active',
-                [`${prefix} Distance (km)`]: (session.totalDistance / 1000).toFixed(2),
-                [`${prefix} Status`]: session.endTime ? 'Completed' : 'Active'
-              };
-            }, {})
-          };
-        }
-      })
-    );
-    
-    console.log(`Processed all ${groupedDataWithFarmerInfo.length} groups`);
-    
-    // Sort by date (newest first) and then by user ID
-    const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
-      const dateCompare = new Date(b.Date).getTime() - new Date(a.Date).getTime();
-      if (dateCompare !== 0) return dateCompare;
-      return b['User ID'] - a['User ID'];
-    });
-    
-    // Determine maximum number of sessions in any group to create dynamic headers
-    const maxSessions = Math.max(...groupedData.map(group => group.sessions.length));
-    
-    // Build dynamic headers
-    const baseHeaders = [
-      'User ID',
-      'Username',
-      'Employee Code',
-      'Date',
-      'Formatted Date',
-      'Start Time',
-      'End Time',
-      'Total Sessions',
-      'Active Sessions',
-      'Original Total Distance (km)',
-      'Original Total Reimbursement(km)',
-      'First Session Distance (km)',
-      'Payable Distance excluding first session(km)',
-      'Payable Amount (₹)',
-      'Total Farmers Met',
-      'Duration (minutes)',
-      
-      'Total Pauses Count',
-      'Status',
-      'Notes'
-    ];
-    
-    // Add session-specific headers for each session
-    const sessionHeaders = [];
-    for (let i = 1; i <= maxSessions; i++) {
-      sessionHeaders.push(
-        `Session ${i} ID`,
-        `Session ${i} Start Time`,
-        `Session ${i} End Time`,
-        `Session ${i} Distance (km)`,
-        `Session ${i} Status`,
-        `Session ${i} Farmers Count`,
-        `Session ${i} Farmer Descriptions`,
-        `Session ${i} Farmer Image URLs`,
-        `Session ${i} Start Odometer Image`,
-        `Session ${i} End Odometer Image`,
-      );
-    }
-    
-    const allHeaders = [...baseHeaders, ...sessionHeaders];
-    
-    // Build CSV content
-    const csvContent = [
-      allHeaders.join(','),
-      ...sortedData.map(row => 
-        allHeaders.map(header => {
-          const value = row[header];
-          if (value === null || value === undefined) return '""';
-          const stringValue = String(value);
-          // Handle CSV escaping
-          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
-            return `"${stringValue.replace(/"/g, '""')}"`;
           }
-          return stringValue;
-        }).join(',')
-      )
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const filterInfo = [];
-    if (startDate) filterInfo.push(`from-${startDate}`);
-    if (endDate) filterInfo.push(`to-${endDate}`);
-    if (selectedUser) filterInfo.push(`user-${selectedUser}`);
-    if (searchQuery) filterInfo.push(`search-${searchQuery}`);
-    const filename = `travel_sessions_${filterInfo.length ? filterInfo.join('_') : 'all'}_${dateStr}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-    
-    console.log(`Export completed successfully. Exported ${sortedData.length} groups.`);
-    
-  } catch (error) {
-    console.error('Error exporting CSV:', error);
-    alert('Failed to export data. Please try again.');
-  } finally {
-    setIsExporting(false);
-  }
-};
+        })
+      );
+      
+      console.log(`Processed all ${groupedDataWithFarmerInfo.length} groups`);
+      
+      // Sort by date (newest first) and then by user ID
+      const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
+        const dateCompare = new Date(b.Date).getTime() - new Date(a.Date).getTime();
+        if (dateCompare !== 0) return dateCompare;
+        return b['User ID'] - a['User ID'];
+      });
+      
+      // Determine maximum number of sessions in any group to create dynamic headers
+      const maxSessions = Math.max(...groupedData.map(group => group.sessions.length));
+      
+      // Build dynamic headers
+      const baseHeaders = [
+        'User ID',
+        'Username',
+        'Employee Code',
+        'Date',
+        'Formatted Date',
+        'Start Time',
+        'End Time',
+        'Total Sessions',
+        'Active Sessions',
+        'Original Total Distance (km)',
+        'Original Total Reimbursement(km)',
+        'First Session Distance (km)',
+        'Payable Distance excluding first session(km)',
+        'Payable Amount (₹)',
+        'Total Farmers Met',
+        'Duration (minutes)',
+        
+        'Total Pauses Count',
+        'Status',
+        'Notes'
+      ];
+      
+      // Add session-specific headers for each session
+      const sessionHeaders = [];
+      for (let i = 1; i <= maxSessions; i++) {
+        sessionHeaders.push(
+          `Session ${i} ID`,
+          `Session ${i} Start Time`,
+          `Session ${i} End Time`,
+          `Session ${i} Distance (km)`,
+          `Session ${i} Status`,
+          `Session ${i} Farmers Count`,
+          `Session ${i} Farmer Descriptions`,
+          `Session ${i} Farmer Image URLs`,
+          `Session ${i} Start Odometer Image`,
+          `Session ${i} End Odometer Image`,
+        );
+      }
+      
+      const allHeaders = [...baseHeaders, ...sessionHeaders];
+      
+      // Build CSV content
+      const csvContent = [
+        allHeaders.join(','),
+        ...sortedData.map(row => 
+          allHeaders.map(header => {
+            const value = row[header];
+            if (value === null || value === undefined) return '""';
+            const stringValue = String(value);
+            // Handle CSV escaping
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes(';')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',')
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filterInfo = [];
+      if (startDate) filterInfo.push(`from-${startDate}`);
+      if (endDate) filterInfo.push(`to-${endDate}`);
+      if (selectedUser) filterInfo.push(`user-${selectedUser}`);
+      if (searchQuery) filterInfo.push(`search-${searchQuery}`);
+      const filename = `travel_sessions_${filterInfo.length ? filterInfo.join('_') : 'all'}_${dateStr}.csv`;
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      console.log(`Export completed successfully. Exported ${sortedData.length} groups.`);
+      
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   // Build session polyline path for multi-session view
   const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
@@ -1960,7 +1968,7 @@ const exportToCSV = async () => {
         </div>
       </div>
 
-      {/* Sessions List - Grouped View */}
+      {/* Sessions List - Conditional Rendering based on viewMode */}
       {isLoading && currentPage === 1 ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -1968,301 +1976,429 @@ const exportToCSV = async () => {
             <p className="text-gray-600 dark:text-gray-300">Loading travel sessions...</p>
           </div>
         </div>
-      ) : groupedView.length === 0 ? (
-        <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
-          <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            {isDateFilterActive || selectedUser || searchQuery 
-              ? "Try adjusting your filters to see more results." 
-              : "No travel sessions recorded yet."}
-          </p>
-          {isDateFilterActive && (
-            <button
-              onClick={clearDateFilter}
-              className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
-            >
-              Clear Date Filter
-            </button>
-          )}
-        </div>
+      ) : viewMode === 'grouped' ? (
+        /* Grouped View */
+        groupedView.length === 0 ? (
+          <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
+            <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              {isDateFilterActive || selectedUser || searchQuery 
+                ? "Try adjusting your filters to see more results." 
+                : "No travel sessions recorded yet."}
+            </p>
+            {isDateFilterActive && (
+              <button
+                onClick={clearDateFilter}
+                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
+              >
+                Clear Date Filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-6">
+              {groupedView.map((group) => {
+                const groupDuration = calculateDuration(group.startTime, group.endTime);
+                const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                });
+                
+                // Check if this group might have more sessions than shown
+                const hasMoreSessions = group.sessions.length > 0 && !group.allSessionsLoaded;
+                
+                return (
+                  <div key={`${group.userId}-${group.date}`} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}>
+                    {/* Group Header */}
+                    <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {group.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                              {group.username} 
+                              <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
+                                ({group.employeeCode})
+                              </span>
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                                <FaCalendarAlt className="text-sm" />
+                                <span className="text-sm">
+                                  {formattedDate}
+                                </span>
+                              </div>
+                              <span className="text-gray-400">•</span>
+                              <div className="flex items-center gap-1">
+                                <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
+                                  group.activeSessions > 0 
+                                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
+                                    : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
+                                }`}>
+                                  {group.activeSessions > 0 ? `${group.activeSessions} Active` : 'All Completed'}
+                                </span>
+                                {hasMoreSessions && (
+                                  <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                    More sessions available
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="flex items-center gap-3">
+                              <div className="text-center">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">Sessions</p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-white">{group.totalSessions}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
+                                {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">Reimbursement</p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                  ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Group Content */}
+                    <div className="p-6">
+                      {/* Group Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                            <FaClock className="text-sm" />
+                            <span className="text-xs font-medium">First Session</span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatTimeOnly(group.sessions[0].startTime)}</p>
+                        </div>
+                        
+                        <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                            <FaClock className="text-sm" />
+                            <span className="text-xs font-medium">Last Session</span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                            {formatTimeOnly(group.sessions[group.sessions.length - 1].endTime || 
+                                          group.sessions[group.sessions.length - 1].startTime)}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                            <FaRoad className="text-sm" />
+                            <span className="text-xs font-medium">Total Distance</span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
+                          {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                            <FaMapPin className="text-sm" />
+                            <span className="text-xs font-medium">Total Points</span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
+                        </div>
+                      </div>
+
+                      {/* Session List */}
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-md font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                            <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-lg">
+                              <FaListAlt className="text-blue-500" />
+                            </div>
+                            Sessions ({group.sessions.length})
+                          </h4>
+                          
+                          {hasMoreSessions && (
+                            <button
+                              onClick={() => loadMoreSessionsForUser(group.userId, group.date)}
+                              disabled={group.isLoading}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                                group.isLoading 
+                                  ? 'bg-gray-400' 
+                                  : 'bg-gradient-to-r from-amber-500/90 to-orange-600/90 hover:from-amber-600 hover:to-orange-700'
+                              } text-white transition-all`}
+                            >
+                              {group.isLoading ? (
+                                <>
+                                  <FaSpinner className="animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                <>
+                                  <FaChevronDown />
+                                  Load All Sessions
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {group.sessions.map((session, sessionIndex) => {
+                            const sessionDuration = calculateDuration(session.startTime, session.endTime);
+                            const isActive = !session.endTime;
+                            const isFirstSession = sessionIndex === 0;
+                            
+                            return (
+                              <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
+                                         style={{ backgroundColor: getSessionColor(sessionIndex) }}>
+                                      {sessionIndex + 1}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-800 dark:text-white">
+                                          Session #{session.sessionId}
+                                          {isFirstSession && (
+                                            <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                                              First Session (Excluded)
+                                            </span>
+                                          )}
+                                        </span>
+                                        {isActive && (
+                                          <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                                            LIVE - Updating
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
+                                        <span>•</span>
+                                        <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
+                                        <span>•</span>
+                                        <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+                                        {isFirstSession && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                              Distance excluded from total
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleFetchTravelData(
+                                        session.userId.toString(), 
+                                        group.date
+                                      )}
+                                      className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
+                                    >
+                                      <FaInfoCircle />
+                                      Details
+                                    </button>
+                                    <button
+                                      onClick={() => openMap(session)}
+                                      className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                                    >
+                                      <FaEye />
+                                      Single Map
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => openMultiSessionMap(group)}
+                          className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
+                        >
+                          <FaLayerGroup className="text-xl" />
+                          View All Sessions on Map
+                          <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
+                            {group.sessions.length} session{group.sessions.length > 1 ? 's' : ''}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Infinite scroll loader for main pagination */}
+            <div ref={observerTarget} className="py-8">
+              {isLoadingMore && (
+                <div className="flex items-center justify-center">
+                  <FaSpinner className="animate-spin text-2xl text-blue-500 mr-2" />
+                  <span className="text-gray-600 dark:text-gray-300">Loading more sessions...</span>
+                </div>
+              )}
+              {!hasMore && currentPage > 1 && (
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <p>All {travelSessions.length} sessions loaded</p>
+                  <p className="text-sm mt-1">
+                    Showing {groupedView.length} grouped sessions
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )
       ) : (
-        <>
-          <div className="space-y-6">
-            {groupedView.map((group) => {
-              const groupDuration = calculateDuration(group.startTime, group.endTime);
-              const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              });
-              
-              // Check if this group might have more sessions than shown
-              const hasMoreSessions = group.sessions.length > 0 && !group.allSessionsLoaded;
-              
-              return (
-                <div key={`${group.userId}-${group.date}`} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}>
-                  {/* Group Header */}
-                  <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        /* Individual Sessions View */
+        filteredSessions.length === 0 ? (
+          <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
+            <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              {isDateFilterActive || selectedUser || searchQuery 
+                ? "Try adjusting your filters to see more results." 
+                : "No travel sessions recorded yet."}
+            </p>
+            {isDateFilterActive && (
+              <button
+                onClick={clearDateFilter}
+                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
+              >
+                Clear Date Filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {filteredSessions.map((session) => {
+                const sessionDuration = calculateDuration(session.startTime, session.endTime);
+                const isActive = !session.endTime;
+                
+                return (
+                  <div key={session.sessionId} className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl p-4 backdrop-blur-lg`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {group.username.charAt(0).toUpperCase()}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
+                          {session.username.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="font-bold text-lg text-gray-800 dark:text-white">
-                            {group.username} 
+                          <h3 className="font-bold text-gray-800 dark:text-white">
+                            {session.username}
                             <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
-                              ({group.employeeCode})
+                              ({session.employeeCode})
                             </span>
                           </h3>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                              <FaCalendarAlt className="text-sm" />
-                              <span className="text-sm">
-                                {formattedDate}
-                              </span>
+                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                              <FaCalendarAlt className="text-xs" />
+                              <span>{formatDateTime(session.startTime)}</span>
                             </div>
-                            <span className="text-gray-400">•</span>
-                            <div className="flex items-center gap-1">
-                              <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
-                                group.activeSessions > 0 
-                                  ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
-                                  : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
-                              }`}>
-                                {group.activeSessions > 0 ? `${group.activeSessions} Active` : 'All Completed'}
-                              </span>
-                              {hasMoreSessions && (
-                                <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-                                  More sessions available
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="flex items-center gap-3">
-                            <div className="text-center">
-                              <p className="text-xs text-gray-600 dark:text-gray-300">Sessions</p>
-                              <p className="text-lg font-bold text-gray-800 dark:text-white">{group.totalSessions}</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
-                              <p className="text-lg font-bold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(1)} km</p>
-                              {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  (Excluding first session: {(group.firstSessionDistance / 1000).toFixed(1)} km)
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-gray-600 dark:text-gray-300">Reimbursement</p>
-                              <p className="text-lg font-bold text-gray-800 dark:text-white">
-                                ₹ {((group.totalDistance / 1000) * 3.5).toFixed(1)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Group Content */}
-                  <div className="p-6">
-                    {/* Group Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                          <FaClock className="text-sm" />
-                          <span className="text-xs font-medium">First Session</span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatTimeOnly(group.sessions[0].startTime)}</p>
-                      </div>
-                      
-                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                          <FaClock className="text-sm" />
-                          <span className="text-xs font-medium">Last Session</span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                          {formatTimeOnly(group.sessions[group.sessions.length - 1].endTime || 
-                                        group.sessions[group.sessions.length - 1].startTime)}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                          <FaRoad className="text-sm" />
-                          <span className="text-xs font-medium">Total Distance</span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{(group.totalDistance / 1000).toFixed(2)} km</p>
-                        {group.firstSessionDistance > 0 && group.totalSessions > 1 && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Original: {(group.originalTotalDistance / 1000).toFixed(2)} km
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                          <FaMapPin className="text-sm" />
-                          <span className="text-xs font-medium">Total Points</span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{group.totalPoints}</p>
-                      </div>
-                    </div>
-
-                    {/* Session List */}
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-md font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                          <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm rounded-lg">
-                            <FaListAlt className="text-blue-500" />
-                          </div>
-                          Sessions ({group.sessions.length})
-                        </h4>
-                        
-                        {hasMoreSessions && (
-                          <button
-                            onClick={() => loadMoreSessionsForUser(group.userId, group.date)}
-                            disabled={group.isLoading}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                              group.isLoading 
-                                ? 'bg-gray-400' 
-                                : 'bg-gradient-to-r from-amber-500/90 to-orange-600/90 hover:from-amber-600 hover:to-orange-700'
-                            } text-white transition-all`}
-                          >
-                            {group.isLoading ? (
+                            {session.endTime && (
                               <>
-                                <FaSpinner className="animate-spin" />
-                                Loading...
-                              </>
-                            ) : (
-                              <>
-                                <FaChevronDown />
-                                Load All Sessions
+                                <span className="text-gray-400">→</span>
+                                <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                                  <FaClock className="text-xs" />
+                                  <span>{formatTimeOnly(session.endTime)}</span>
+                                </div>
                               </>
                             )}
-                          </button>
-                        )}
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="space-y-3">
-                        {group.sessions.map((session, sessionIndex) => {
-                          const sessionDuration = calculateDuration(session.startTime, session.endTime);
-                          const isActive = !session.endTime;
-                          const isFirstSession = sessionIndex === 0;
-                          
-                          return (
-                            <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
-                                       style={{ backgroundColor: getSessionColor(sessionIndex) }}>
-                                    {sessionIndex + 1}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-gray-800 dark:text-white">
-                                        Session #{session.sessionId}
-                                        {isFirstSession && (
-                                          <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-                                            First Session (Excluded)
-                                          </span>
-                                        )}
-                                      </span>
-                                      {isActive && (
-                                        <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                          <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                                          LIVE - Updating
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                      <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
-                                      <span>•</span>
-                                      <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
-                                      <span>•</span>
-                                      <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
-                                      {isFirstSession && (
-                                        <>
-                                          <span>•</span>
-                                          <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                            Distance excluded from total
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleFetchTravelData(
-                                      session.userId.toString(), 
-                                      group.date
-                                    )}
-                                    className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
-                                  >
-                                    <FaInfoCircle />
-                                    Details
-                                  </button>
-                                  <button
-                                    onClick={() => openMap(session)}
-                                    className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
-                                  >
-                                    <FaEye />
-                                    Single Map
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Distance</p>
+                          <p className="text-lg font-bold text-gray-800 dark:text-white">
+                            {(session.totalDistance / 1000).toFixed(2)} km
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Duration</p>
+                          <p className="text-lg font-bold text-gray-800 dark:text-white">
+                            {sessionDuration.hours}h {sessionDuration.minutes}m
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Status</p>
+                          <span className={`px-3 py-1 backdrop-blur-sm rounded-full text-sm font-semibold ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400'
+                              : 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400'
+                          }`}>
+                            {isActive ? 'Active' : 'Completed'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleFetchTravelData(
+                            session.userId.toString(), 
+                            formatDateOnly(session.startTime)
+                          )}
+                          className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
+                        >
+                          <FaInfoCircle />
+                          Details
+                        </button>
+                        <button
+                          onClick={() => openMap(session)}
+                          className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                        >
+                          <FaEye />
+                          View Map
+                        </button>
                       </div>
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button
-                        onClick={() => openMultiSessionMap(group)}
-                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
-                      >
-                        <FaLayerGroup className="text-xl" />
-                        View All Sessions on Map
-                        <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
-                          {group.sessions.length} session{group.sessions.length > 1 ? 's' : ''}
-                        </span>
-                      </button>
-                    </div>
                   </div>
+                );
+              })}
+            </div>
+            
+            {/* Infinite scroll loader for individual view */}
+            <div ref={observerTarget} className="py-8">
+              {isLoadingMore && (
+                <div className="flex items-center justify-center">
+                  <FaSpinner className="animate-spin text-2xl text-blue-500 mr-2" />
+                  <span className="text-gray-600 dark:text-gray-300">Loading more sessions...</span>
                 </div>
-              );
-            })}
-          </div>
-          
-          {/* Infinite scroll loader for main pagination */}
-          <div ref={observerTarget} className="py-8">
-            {isLoadingMore && (
-              <div className="flex items-center justify-center">
-                <FaSpinner className="animate-spin text-2xl text-blue-500 mr-2" />
-                <span className="text-gray-600 dark:text-gray-300">Loading more sessions...</span>
-              </div>
-            )}
-            {!hasMore && currentPage > 1 && (
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <p>All {travelSessions.length} sessions loaded</p>
-                <p className="text-sm mt-1">
-                  Showing {groupedView.length} grouped sessions
-                </p>
-              </div>
-            )}
-          </div>
-        </>
+              )}
+              {!hasMore && currentPage > 1 && (
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <p>All {filteredSessions.length} sessions loaded</p>
+                </div>
+              )}
+            </div>
+          </>
+        )
       )}
 
       {/* Farmer Data Modal */}
@@ -2602,6 +2738,13 @@ const exportToCSV = async () => {
                     {showLogMarkersMulti ? 'Hide Log Points' : 'Show Log Points'}
                   </button>
                   <button
+                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  >
+                    <FaPauseCircle />
+                    {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
+                  </button>
+                  <button
                     onClick={closeMultiSessionMap}
                     className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
                   >
@@ -2710,6 +2853,87 @@ const exportToCSV = async () => {
                   return null;
                 })}
 
+                {/* Pause markers for each session */}
+                {showPauseMarkers && multiSessionMapView.sessions.map((session, sessionIndex) => {
+                  const pauses = detectPauses(session.logs || []);
+                  return pauses.map((pause, pauseIndex) => {
+                    const pauseLog = pause.start;
+                    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
+                      return (
+                        <Marker
+                          key={`pause-${session.sessionId}-${pauseIndex}`}
+                          position={[
+                            parseCoordinate(pauseLog.latitude), 
+                            parseCoordinate(pauseLog.longitude)
+                          ]}
+                          icon={customIcons.pauseIcon}
+                        >
+                          <Popup>
+                            <div className="text-sm min-w-[200px]">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div 
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                                  style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                                >
+                                  <span className="font-bold text-sm">{sessionIndex + 1}</span>
+                                </div>
+                                <div>
+                                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
+                                  <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                    <span>Session #{session.sessionId}</span>
+                                    <span>•</span>
+                                    <span>Pause #{pauseIndex + 1}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
+                                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
+                                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-1">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
+                                      <p className="text-lg font-bold text-black">
+                                        {Math.round(pause.durationMinutes)} minutes
+                                      </p>
+                                    </div>
+                                   
+                                  </div>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                    <span><strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                                    ></div>
+                                    <span>Session Color</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    return null;
+                  });
+                })}
+
                 {/* Log points markers for each session */}
                 {showLogMarkersMulti && multiSessionMapView.sessions.map((session, sessionIndex) => (
                   session.logs && session.logs.slice(0, 50).map((log, logIndex) => { // Limit to 50 points per session for performance
@@ -2791,6 +3015,13 @@ const exportToCSV = async () => {
                   >
                     <FaMapPin />
                     {showLogMarkers ? 'Hide Log Points' : 'Show Log Points'}
+                  </button>
+                  <button
+                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  >
+                    <FaPauseCircle />
+                    {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
                   </button>
                   <button
                     onClick={closeMap}
@@ -2877,6 +3108,82 @@ const exportToCSV = async () => {
                     </Popup>
                   </Marker>
                 )}
+
+                {/* Pause markers */}
+                {showPauseMarkers && mapView.logs && (() => {
+                  const pauses = detectPauses(mapView.logs);
+                  return pauses.map((pause, pauseIndex) => {
+                    // Use the pause start point for the marker
+                    const pauseLog = pause.start;
+                    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
+                      return (
+                        <Marker
+                          key={`pause-${pauseIndex}`}
+                          position={[
+                            parseCoordinate(pauseLog.latitude), 
+                            parseCoordinate(pauseLog.longitude)
+                          ]}
+                          icon={customIcons.pauseIcon}
+                        >
+                          <Popup>
+                            <div className="text-sm min-w-[250px]">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white">
+                                  <FaClock />
+                                </div>
+                                <div>
+                                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">Pause #{pauseIndex + 1}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
+                                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
+                                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg ">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
+                                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                        {Math.round(pause.durationMinutes)} minutes
+                                      </p>
+                                    </div>
+                                    <div className="bg-purple-500/20 backdrop-blur-sm p-2 rounded-lg">
+                                      <FaClock className="text-purple-500" />
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                    <span><strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <span><strong>Battery:</strong> {pauseLog.battery ? `${pauseLog.battery}%` : 'N/A'}</span>
+                                  </div>
+                                </div>
+                                
+                                
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    return null;
+                  });
+                })()}
 
                 {/* Log points markers */}
                 {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {

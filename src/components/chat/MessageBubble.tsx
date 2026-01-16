@@ -209,15 +209,17 @@ const MessageBubble = React.memo(
                   </button>
                   {isMe && (
                     <>
-                      <button
-                        onClick={() => {
-                          setEditingMessage(msg);
-                          setActiveMenu(false);
-                        }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-200 hover:bg-white/10"
-                      >
-                        <Edit2 className="w-3 h-3" /> Edit
-                      </button>
+                      {msg.type !== "LOCATION" && (
+                        <button
+                          onClick={() => {
+                            setEditingMessage(msg);
+                            setActiveMenu(false);
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-200 hover:bg-white/10"
+                        >
+                          <Edit2 className="w-3 h-3" /> Edit
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           onDelete(msg.id);

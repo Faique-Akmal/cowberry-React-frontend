@@ -65,8 +65,11 @@ export const ChatInput = () => {
     const file = e.target.files?.[0];
     if (!file || !activeConversation || !currentUser || !socket) return;
 
+    const loadingToast = toast.loading("File Uploading...");
     if (file.size > 100 * 1024 * 1024) {
-      toast.error("File exceeds 100MB limit");
+      toast.error("File exceeds 100MB limit", {
+        id: loadingToast,
+      });
       return;
     }
 
@@ -86,8 +89,13 @@ export const ChatInput = () => {
         fileUrl: fileUrl,
       });
       setIsAttachMenuOpen(false);
+      toast.success("File sent!", {
+        id: loadingToast,
+      });
     } catch (err) {
-      toast.error("Upload failed");
+      toast.error("Upload failed", {
+        id: loadingToast,
+      });
       console.error("Upload failed", err);
     } finally {
       setIsUploading(false);
@@ -98,7 +106,11 @@ export const ChatInput = () => {
   };
 
   const handleSendLocation = () => {
-    if (!navigator.geolocation) return toast.error("Geolocation not supported");
+    const loadingToast = toast.loading("Fetching Location...");
+    if (!navigator.geolocation)
+      return toast.error("Geolocation not supported", {
+        id: loadingToast,
+      });
 
     setIsSendingLocation(true);
     navigator.geolocation.getCurrentPosition(
@@ -114,11 +126,15 @@ export const ChatInput = () => {
         setIsSendingLocation(false);
         setReplyingTo(null);
         setIsAttachMenuOpen(false);
-        toast.success("Location sent!");
+        toast.success("Location sent!", {
+          id: loadingToast,
+        });
       },
       () => {
         setIsSendingLocation(false);
-        toast.error("Location access denied");
+        toast.error("Location access denied", {
+          id: loadingToast,
+        });
       },
       { enableHighAccuracy: true }
     );

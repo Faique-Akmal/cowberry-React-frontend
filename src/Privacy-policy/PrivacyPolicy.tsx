@@ -3,7 +3,7 @@ import React from 'react';
 const PrivacyPolicy: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="max-w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-cowberry-green-500 to-cowberry-green-600 px-6 py-8 sm:px-10 sm:py-12">
           <div className="text-center">

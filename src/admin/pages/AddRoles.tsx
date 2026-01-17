@@ -219,7 +219,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-bold text-black bg-clip-text ">
                 Role Management
               </h1>
               <p className="text-gray-600 mt-2">
@@ -272,7 +272,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               <div className="mb-8">
                 <div className="flex items-center mb-6">
                   <div className="w-14 h-14 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex items-center justify-center mr-5 shadow-lg">
-                    <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                   </div>
@@ -334,7 +334,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="glass-button bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white w-full py-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-cowberry-green-600 text-white w-full py-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -397,7 +397,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               <div className="mb-8">
                 <div className="flex items-center mb-6">
                   <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mr-5 shadow-lg">
-                    <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                     </svg>
                   </div>
@@ -440,13 +440,11 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
-                                <span className="text-indigo-600 font-bold text-lg">#</span>
-                              </div>
+                              
                               <div>
                                 <h4 className="text-lg font-bold text-gray-800">{role.name}</h4>
                                 <div className="flex items-center mt-1">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium  text-black">
                                     ID: {role.id}
                                   </span>
                                 </div>

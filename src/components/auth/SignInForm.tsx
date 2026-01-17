@@ -438,7 +438,7 @@ export default function SignInForm() {
           </div>
 
           {/* Login Type Selector */}
-          <div className="flex justify-center">
+          {/* <div className="flex justify-center">
             <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800">
               <button
                 type="button"
@@ -477,10 +477,10 @@ export default function SignInForm() {
                 Admin Login
               </button>
             </div>
-          </div>
+          </div> */}
 
           {/* Login type indicator */}
-          <div className="text-center">
+          {/* <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {loginType === 'admin' 
                 ? 'Sign in as Administrator' 
@@ -488,7 +488,7 @@ export default function SignInForm() {
               }
             </p>
           </div>
-          
+           */}
           {/* Form container with staggered animation */}
           <div 
             className={`

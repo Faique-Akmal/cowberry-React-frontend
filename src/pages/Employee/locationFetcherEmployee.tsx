@@ -1,13 +1,6 @@
 // src/components/admin/TravelSessions.tsx
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import API from "../../api/axios";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
@@ -35,6 +28,7 @@ import {
   FaChevronDown,
   FaPauseCircle,
 } from "react-icons/fa";
+import { useDebounce } from "use-debounce"; // Install: npm install use-debounce
 
 import ImageZoom from "../../components/ImageZoom";
 import Loader from "../UiElements/Loader";
@@ -46,6 +40,13 @@ L.Icon.Default.mergeOptions({
   iconUrl: iconUrl,
   shadowUrl: shadowUrl
 });
+
+// Lazy load map components for better performance
+const MapContainer = lazy(() => import('react-leaflet').then(mod => ({ default: mod.MapContainer })));
+const TileLayer = lazy(() => import('react-leaflet').then(mod => ({ default: mod.TileLayer })));
+const Marker = lazy(() => import('react-leaflet').then(mod => ({ default: mod.Marker })));
+const Popup = lazy(() => import('react-leaflet').then(mod => ({ default: mod.Popup })));
+const Polyline = lazy(() => import('react-leaflet').then(mod => ({ default: mod.Polyline })));
 
 // Interface for Travel Sessions API response
 interface TravelSession {
@@ -182,6 +183,118 @@ const getSessionColor = (index: number): string => {
   return SESSION_COLORS[index % SESSION_COLORS.length];
 };
 
+// Create memoized components for better performance
+const MemoizedMarker = React.memo(({ children, ...props }: any) => (
+  <Marker {...props}>{children}</Marker>
+));
+
+const MemoizedPolyline = React.memo((props: any) => (
+  <Polyline {...props} />
+));
+
+const MemoizedTileLayer = React.memo((props: any) => (
+  <TileLayer {...props} />
+));
+
+// Skeleton loader component
+const SessionSkeleton = () => (
+  <div className="bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl p-4 h-32 mb-4"></div>
+);
+
+const GroupSkeleton = () => (
+  <div className="bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl p-6 h-64 mb-6"></div>
+);
+
+// Memoized session item component
+const SessionItem = React.memo(({ 
+  session, 
+  onViewMap, 
+  onViewDetails,
+  formatTimeOnly,
+  calculateDuration,
+  isFirstSession = false
+}: { 
+  session: TravelSession;
+  onViewMap: (session: TravelSession) => void;
+  onViewDetails: (userId: string, date: string) => void;
+  formatTimeOnly: (dateTimeStr: string) => string;
+  calculateDuration: (startTime: string, endTime: string) => { hours: number; minutes: number };
+  isFirstSession?: boolean;
+}) => {
+  const sessionDuration = calculateDuration(session.startTime, session.endTime);
+  const isActive = !session.endTime;
+  
+  return (
+    <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50 mb-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm bg-blue-500">
+            {session.sessionId.toString().slice(-2)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-800 dark:text-white">
+                Session #{session.sessionId}
+                {isFirstSession && (
+                  <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
+                    First Session (Excluded)
+                  </span>
+                )}
+              </span>
+              {isActive && (
+                <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                  LIVE - Updating
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
+              <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
+              <span>•</span>
+              <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
+              <span>•</span>
+              <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
+              {isFirstSession && (
+                <>
+                  <span>•</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    Distance excluded from total
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => onViewDetails(
+              session.userId.toString(), 
+              new Date(session.startTime).toISOString().split('T')[0]
+            )}
+            className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-green-800 transition-all`}
+          >
+            <FaInfoCircle />
+            Details
+          </button>
+          <button
+            onClick={() => onViewMap(session)}
+            className={`px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2 transition-all`}
+          >
+            <FaEye />
+            Single Map
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if session data actually changed
+  return prevProps.session.sessionId === nextProps.session.sessionId &&
+         prevProps.session.endTime === nextProps.session.endTime &&
+         prevProps.session.totalDistance === nextProps.session.totalDistance;
+});
+
 export default function AttendanceList() {
   const [travelSessions, setTravelSessions] = useState<TravelSession[]>([]);
   const [sessionsMap, setSessionsMap] = useState<Record<string, TravelSession>>({});
@@ -196,6 +309,7 @@ export default function AttendanceList() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 500); // Debounced search query
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
   
@@ -225,8 +339,11 @@ export default function AttendanceList() {
   const [showLogMarkersMulti, setShowLogMarkersMulti] = useState(true);
   const [showPauseMarkers, setShowPauseMarkers] = useState(true);
   
+  // Virtualization states for grouped view
+  const [visibleGroups, setVisibleGroups] = useState(5);
+  
   // Custom icons for markers
-  const customIcons = {
+  const customIcons = useMemo(() => ({
     startIcon: new L.Icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -259,7 +376,7 @@ export default function AttendanceList() {
       popupAnchor: [1, -34],
       shadowSize: [21, 21]
     })
-  };
+  }), []);
 
   // Format date without time (YYYY-MM-DD)
   const formatDateOnly = useCallback((dateTimeStr: string): string => {
@@ -302,104 +419,104 @@ export default function AttendanceList() {
   }, []);
   
   
-// Group sessions by user and date with correct sorting
-const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
-  const groupedMap = new Map<string, GroupedSession>();
-  
-  // First sort sessions by date (newest first)
-  const sortedSessions = [...sessions].sort((a, b) => {
-    const dateA = new Date(a.startTime);
-    const dateB = new Date(b.startTime);
-    return dateB.getTime() - dateA.getTime(); // Newest first
-  });
-  
-  sortedSessions.forEach(session => {
-    const dateKey = formatDateOnly(session.startTime);
-    const groupKey = `${session.userId}-${dateKey}`;
+  // Group sessions by user and date with correct sorting
+  const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
+    const groupedMap = new Map<string, GroupedSession>();
     
-    if (!groupedMap.has(groupKey)) {
-      groupedMap.set(groupKey, {
-        userId: session.userId,
-        username: session.username,
-        employeeCode: session.employeeCode,
-        date: dateKey,
-        sessions: [session],
-        totalSessions: 1,
-        totalDistance: 0,
-        firstSessionDistance: 0,
-        originalTotalDistance: 0,
-        activeSessions: session.endTime ? 0 : 1,
-        startTime: session.startTime,
-        endTime: session.endTime || session.startTime,
-        totalPoints: session.logs?.length || 0,
-        isLoading: false,
-        hasMoreSessions: false,
-        allSessionsLoaded: true
-      });
-    } else {
-      const existingGroup = groupedMap.get(groupKey)!;
+    // First sort sessions by date (newest first)
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const dateA = new Date(a.startTime);
+      const dateB = new Date(b.startTime);
+      return dateB.getTime() - dateA.getTime(); // Newest first
+    });
+    
+    sortedSessions.forEach(session => {
+      const dateKey = formatDateOnly(session.startTime);
+      const groupKey = `${session.userId}-${dateKey}`;
       
-      // Check if session already exists in the group
-      const sessionExists = existingGroup.sessions.some(s => s.sessionId === session.sessionId);
-      if (!sessionExists) {
-        // Add session to the group while maintaining chronological order
-        const insertIndex = existingGroup.sessions.findIndex(s => 
-          new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
-        );
+      if (!groupedMap.has(groupKey)) {
+        groupedMap.set(groupKey, {
+          userId: session.userId,
+          username: session.username,
+          employeeCode: session.employeeCode,
+          date: dateKey,
+          sessions: [session],
+          totalSessions: 1,
+          totalDistance: 0,
+          firstSessionDistance: 0,
+          originalTotalDistance: 0,
+          activeSessions: session.endTime ? 0 : 1,
+          startTime: session.startTime,
+          endTime: session.endTime || session.startTime,
+          totalPoints: session.logs?.length || 0,
+          isLoading: false,
+          hasMoreSessions: false,
+          allSessionsLoaded: true
+        });
+      } else {
+        const existingGroup = groupedMap.get(groupKey)!;
         
-        if (insertIndex === -1) {
-          existingGroup.sessions.push(session);
-        } else {
-          existingGroup.sessions.splice(insertIndex, 0, session);
-        }
-        
-        existingGroup.totalSessions += 1;
-        existingGroup.activeSessions += session.endTime ? 0 : 1;
-        existingGroup.totalPoints += session.logs?.length || 0;
-        
-        if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
-          existingGroup.startTime = session.startTime;
-        }
-        
-        const sessionEndTime = session.endTime || session.startTime;
-        if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
-          existingGroup.endTime = sessionEndTime;
+        // Check if session already exists in the group
+        const sessionExists = existingGroup.sessions.some(s => s.sessionId === session.sessionId);
+        if (!sessionExists) {
+          // Add session to the group while maintaining chronological order
+          const insertIndex = existingGroup.sessions.findIndex(s => 
+            new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
+          );
+          
+          if (insertIndex === -1) {
+            existingGroup.sessions.push(session);
+          } else {
+            existingGroup.sessions.splice(insertIndex, 0, session);
+          }
+          
+          existingGroup.totalSessions += 1;
+          existingGroup.activeSessions += session.endTime ? 0 : 1;
+          existingGroup.totalPoints += session.logs?.length || 0;
+          
+          if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
+            existingGroup.startTime = session.startTime;
+          }
+          
+          const sessionEndTime = session.endTime || session.startTime;
+          if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
+            existingGroup.endTime = sessionEndTime;
+          }
         }
       }
-    }
-  });
-  
-  // Calculate adjusted distances for each group
-  const groups = Array.from(groupedMap.values()).map(group => {
-    const distanceData = calculateAdjustedGroupDistance(group.sessions);
+    });
     
-    return {
-      ...group,
-      totalDistance: distanceData.totalDistance,
-      firstSessionDistance: distanceData.firstSessionDistance,
-      originalTotalDistance: distanceData.originalTotalDistance
-    };
-  });
-  
-  // NEW: Sort groups by latest session time of each user
-  return groups.sort((a, b) => {
-    // Get the latest session start time for each group
-    const getLatestSessionTime = (group: GroupedSession): Date => {
-      const latestSession = group.sessions.reduce((latest, current) => {
-        const latestTime = new Date(latest.startTime).getTime();
-        const currentTime = new Date(current.startTime).getTime();
-        return currentTime > latestTime ? current : latest;
-      }, group.sessions[0]);
-      return new Date(latestSession.startTime);
-    };
+    // Calculate adjusted distances for each group
+    const groups = Array.from(groupedMap.values()).map(group => {
+      const distanceData = calculateAdjustedGroupDistance(group.sessions);
+      
+      return {
+        ...group,
+        totalDistance: distanceData.totalDistance,
+        firstSessionDistance: distanceData.firstSessionDistance,
+        originalTotalDistance: distanceData.originalTotalDistance
+      };
+    });
     
-    const aLatestTime = getLatestSessionTime(a);
-    const bLatestTime = getLatestSessionTime(b);
-    
-    // Sort by latest session time (descending - newest first)
-    return bLatestTime.getTime() - aLatestTime.getTime();
-  });
-}, [formatDateOnly, calculateAdjustedGroupDistance]);
+    // NEW: Sort groups by latest session time of each user
+    return groups.sort((a, b) => {
+      // Get the latest session start time for each group
+      const getLatestSessionTime = (group: GroupedSession): Date => {
+        const latestSession = group.sessions.reduce((latest, current) => {
+          const latestTime = new Date(latest.startTime).getTime();
+          const currentTime = new Date(current.startTime).getTime();
+          return currentTime > latestTime ? current : latest;
+        }, group.sessions[0]);
+        return new Date(latestSession.startTime);
+      };
+      
+      const aLatestTime = getLatestSessionTime(a);
+      const bLatestTime = getLatestSessionTime(b);
+      
+      // Sort by latest session time (descending - newest first)
+      return bLatestTime.getTime() - aLatestTime.getTime();
+    });
+  }, [formatDateOnly, calculateAdjustedGroupDistance]);
   
   // Calculate duration in hours and minutes
   const calculateDuration = useCallback((startTime: string, endTime: string) => {
@@ -464,6 +581,82 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
     };
   }, [autoRefresh, activeSessionsOnly]);
   
+  // Filter effect with debounced search query
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchTravelSessions(1, false);
+  }, [startDate, endDate, selectedUser, debouncedSearchQuery]);
+  
+  // MEMOIZED COMPUTATIONS - This is key for performance!
+  const memoizedFilteredSessions = useMemo(() => {
+    let filtered = [...travelSessions];
+    
+    // Filter by date range
+    if (startDate || endDate) {
+      filtered = filtered.filter(session => {
+        const sessionDate = new Date(session.startTime);
+        const sessionDateOnly = sessionDate.toISOString().split('T')[0];
+        
+        if (startDate && !endDate) {
+          return sessionDateOnly >= startDate;
+        }
+        
+        if (!startDate && endDate) {
+          return sessionDateOnly <= endDate;
+        }
+        
+        if (startDate && endDate) {
+          return sessionDateOnly >= startDate && sessionDateOnly <= endDate;
+        }
+        
+        return true;
+      });
+    }
+    
+    if (selectedUser) {
+      filtered = filtered.filter(session => 
+        session.userId.toString() === selectedUser
+      );
+    }
+    
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
+      filtered = filtered.filter(session =>
+        session.username.toLowerCase().includes(query) ||
+        session.employeeCode.toLowerCase().includes(query)
+      );
+    }
+    
+    // Sort by date descending (newest first) but keep natural order within same date
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.startTime).getTime();
+      const dateB = new Date(b.startTime).getTime();
+      
+      // Sort by date descending
+      if (Math.abs(dateA - dateB) > 86400000) { // More than 1 day difference
+        return dateB - dateA; // Newer dates first
+      }
+      
+      // If same date, keep original order (by sessionId)
+      return a.sessionId - b.sessionId;
+    });
+  }, [travelSessions, startDate, endDate, selectedUser, debouncedSearchQuery]);
+  
+  const memoizedGroupedView = useMemo(() => {
+    return groupSessionsByUserAndDate(memoizedFilteredSessions);
+  }, [memoizedFilteredSessions, groupSessionsByUserAndDate]);
+  
+  // Memoized stats calculations
+  const memoizedStats = useMemo(() => {
+    const totalSessions = memoizedFilteredSessions.length;
+    const activeSessions = memoizedFilteredSessions.filter(s => !s.endTime).length;
+    const totalDistance = memoizedFilteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
+    
+    return { totalSessions, activeSessions, totalDistance };
+  }, [memoizedFilteredSessions]);
+  
   // Fetch all travel sessions with pagination
   const fetchTravelSessions = async (page: number = 1, append: boolean = false) => {
     if (page === 1) {
@@ -479,7 +672,7 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       if (selectedUser) params.userId = selectedUser;
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
       
       const res = await API.get<ApiPaginationResponse>("/admin/travel-sessions", { params });
       
@@ -517,10 +710,6 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
         });
         setSessionsMap(prev => ({ ...prev, ...newCache }));
         
-        // Update grouped view with all loaded sessions
-        const grouped = groupSessionsByUserAndDate(allLoadedSessions);
-        setGroupedView(grouped);
-        
         // Update pagination info from your API response
         setCurrentPage(res.data.currentPage || 1);
         setTotalPages(res.data.totalPages || 1);
@@ -547,7 +736,7 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
   // Load more sessions for a specific user on a specific date
   const loadMoreSessionsForUser = async (userId: number, date: string) => {
     // Find the group
-    const groupIndex = groupedView.findIndex(g => g.userId === userId && g.date === date);
+    const groupIndex = memoizedGroupedView.findIndex(g => g.userId === userId && g.date === date);
     if (groupIndex === -1) return;
     
     // Mark group as loading
@@ -584,45 +773,10 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
           return [...filtered, ...userDateSessions];
         });
         
-        // Update grouped view
-        setGroupedView(prev => {
-          const updated = [...prev];
-          const group = updated[groupIndex];
-          
-          // Get unique sessions
-          const existingSessionIds = new Set(group.sessions.map(s => s.sessionId));
-          const newSessions = userDateSessions.filter(s => !existingSessionIds.has(s.sessionId));
-          
-          if (newSessions.length > 0) {
-            // Combine and sort sessions
-            const allSessions = [...group.sessions, ...newSessions].sort((a, b) => 
-              new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-            );
-            
-            const distanceData = calculateAdjustedGroupDistance(allSessions);
-            
-            updated[groupIndex] = {
-              ...group,
-              sessions: allSessions,
-              totalSessions: allSessions.length,
-              totalDistance: distanceData.totalDistance,
-              firstSessionDistance: distanceData.firstSessionDistance,
-              originalTotalDistance: distanceData.originalTotalDistance,
-              isLoading: false,
-              hasMoreSessions: false,
-              allSessionsLoaded: true
-            };
-          } else {
-            updated[groupIndex] = {
-              ...group,
-              isLoading: false,
-              hasMoreSessions: false,
-              allSessionsLoaded: true
-            };
-          }
-          
-          return updated;
-        });
+        // Update pagination info
+        setCurrentPage(res.data.currentPage || 1);
+        setTotalPages(res.data.totalPages || 1);
+        setHasMore(res.data.hasNextPage || false);
         
         // Update sessions map
         const newCache: Record<string, TravelSession> = {};
@@ -631,6 +785,8 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
           newCache[key] = session;
         });
         setSessionsMap(prev => ({ ...prev, ...newCache }));
+        
+        setLastUpdateTime(new Date());
       }
     } catch (err) {
       console.error("Failed to fetch more sessions for user", err);
@@ -693,10 +849,6 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
             setSessionsMap(prev => ({ ...prev, [key]: session }));
           }
         });
-        
-        // Update grouped view
-        const grouped = groupSessionsByUserAndDate(travelSessions);
-        setGroupedView(grouped);
         
         setLastUpdateTime(new Date());
       }
@@ -856,57 +1008,55 @@ const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): Grou
   }, []);
   
   // Helper function to smooth the path
-// Helper function to smooth the path
-const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
-  if (points.length < 3) return points;
-  
-  const smoothed: [number, number][] = [points[0]];
-  
-  for (let i = 1; i < points.length - 1; i++) {
-    const prev = points[i - 1];
-    const current = points[i];
-    const next = points[i + 1];
+  const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
+    if (points.length < 3) return points;
     
-    // Simple moving average smoothing
-    const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
-    const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
+    const smoothed: [number, number][] = [points[0]];
     
-    smoothed.push([smoothedLat, smoothedLng]);
-  }
-  
-  smoothed.push(points[points.length - 1]);
-  return smoothed;
-}, []);
+    for (let i = 1; i < points.length - 1; i++) {
+      const prev = points[i - 1];
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // Simple moving average smoothing
+      const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
+      const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
+      
+      smoothed.push([smoothedLat, smoothedLng]);
+    }
+    
+    smoothed.push(points[points.length - 1]);
+    return smoothed;
+  }, []);
   
   // IMPROVED: Build polyline path with gap handling and smoothing
-// IMPROVED: Build polyline path with gap handling and smoothing
-const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
-  const path: [number, number][] = [];
-  
-  if (!session || !session.logs || session.logs.length === 0) return path;
-  
-  // Sort logs by timestamp to ensure chronological order
-  const sortedLogs = [...session.logs].sort((a, b) => 
-    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-  
-  // Collect all valid coordinates
-  sortedLogs.forEach((log) => {
-    if (isValidCoordinate(log.latitude, log.longitude)) {
-      const currentPoint: [number, number] = [
-        parseCoordinate(log.latitude), 
-        parseCoordinate(log.longitude)
-      ];
-      
-      // Always add the point if coordinates are valid
-      // Leaflet will automatically draw the line between points
-      path.push(currentPoint);
-    }
-  });
-  
-  // Apply smoothing to make the path look more natural
-  return smoothPath(path);
-}, [isValidCoordinate, parseCoordinate, smoothPath]);
+  const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
+    const path: [number, number][] = [];
+    
+    if (!session || !session.logs || session.logs.length === 0) return path;
+    
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Collect all valid coordinates
+    sortedLogs.forEach((log) => {
+      if (isValidCoordinate(log.latitude, log.longitude)) {
+        const currentPoint: [number, number] = [
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ];
+        
+        // Always add the point if coordinates are valid
+        // Leaflet will automatically draw the line between points
+        path.push(currentPoint);
+      }
+    });
+    
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, smoothPath]);
   
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session) return [21.1702, 72.8311];
@@ -973,56 +1123,56 @@ const buildPolylinePath = useCallback((session: TravelSession): [number, number]
     return 16;
   }, [isValidCoordinate, parseCoordinate]);
   
-// Replace the existing detectPauses function with this:
-const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
-  if (!logs || logs.length < 2) return [];
-  
-  const pauses: PauseInterval[] = [];
-  let currentPause: PauseInterval | null = null;
-  
-  for (let i = 0; i < logs.length; i++) {
-    const log = logs[i];
+  // Replace the existing detectPauses function with this:
+  const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
+    if (!logs || logs.length < 2) return [];
     
-    // Check if this log has pause flag set to true
-    if (log.pause === true) {
-      // If we're not in a pause interval, start one
-      if (!currentPause) {
-        currentPause = {
-          start: log,
-          end: log,
-          durationMinutes: 0,
-        };
-      } else {
-        // Update the end of the current pause
-        currentPause.end = log;
+    const pauses: PauseInterval[] = [];
+    let currentPause: PauseInterval | null = null;
+    
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      
+      // Check if this log has pause flag set to true
+      if (log.pause === true) {
+        // If we're not in a pause interval, start one
+        if (!currentPause) {
+          currentPause = {
+            start: log,
+            end: log,
+            durationMinutes: 0,
+          };
+        } else {
+          // Update the end of the current pause
+          currentPause.end = log;
+        }
+      } else if (currentPause) {
+        // Calculate duration when pause ends
+        const startTime = new Date(currentPause.start.timestamp);
+        const endTime = new Date(currentPause.end.timestamp);
+        currentPause.durationMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
+        
+        // Only add if duration is meaningful (>= 1 minute)
+        if (currentPause.durationMinutes >= 1) {
+          pauses.push(currentPause);
+        }
+        currentPause = null;
       }
-    } else if (currentPause) {
-      // Calculate duration when pause ends
+    }
+    
+    // Handle case where last log is still in pause
+    if (currentPause) {
       const startTime = new Date(currentPause.start.timestamp);
       const endTime = new Date(currentPause.end.timestamp);
       currentPause.durationMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
       
-      // Only add if duration is meaningful (>= 1 minute)
       if (currentPause.durationMinutes >= 1) {
         pauses.push(currentPause);
       }
-      currentPause = null;
     }
-  }
-  
-  // Handle case where last log is still in pause
-  if (currentPause) {
-    const startTime = new Date(currentPause.start.timestamp);
-    const endTime = new Date(currentPause.end.timestamp);
-    currentPause.durationMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
     
-    if (currentPause.durationMinutes >= 1) {
-      pauses.push(currentPause);
-    }
-  }
-  
-  return pauses;
-}, []);
+    return pauses;
+  }, []);
   
   const openMap = (session: TravelSession) => {
     setMapView(session);
@@ -1122,76 +1272,9 @@ const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
   // Check if date filter is active
   const isDateFilterActive = startDate || endDate;
   
-  // Apply filters when they change
-  useEffect(() => {
-    // Reset to page 1 when filters change
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchTravelSessions(1, false);
-  }, [startDate, endDate, selectedUser, searchQuery]);
-  
-  const filteredSessions = useMemo(() => {
-    let filtered = [...travelSessions];
-    
-    // Filter by date range
-    if (startDate || endDate) {
-      filtered = filtered.filter(session => {
-        const sessionDate = new Date(session.startTime);
-        const sessionDateOnly = sessionDate.toISOString().split('T')[0];
-        
-        if (startDate && !endDate) {
-          return sessionDateOnly >= startDate;
-        }
-        
-        if (!startDate && endDate) {
-          return sessionDateOnly <= endDate;
-        }
-        
-        if (startDate && endDate) {
-          return sessionDateOnly >= startDate && sessionDateOnly <= endDate;
-        }
-        
-        return true;
-      });
-    }
-    
-    if (selectedUser) {
-      filtered = filtered.filter(session => 
-        session.userId.toString() === selectedUser
-      );
-    }
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(session =>
-        session.username.toLowerCase().includes(query) ||
-        session.employeeCode.toLowerCase().includes(query)
-      );
-    }
-    
-    // Sort by date descending (newest first) but keep natural order within same date
-    return filtered.sort((a, b) => {
-      const dateA = new Date(a.startTime).getTime();
-      const dateB = new Date(b.startTime).getTime();
-      
-      // Sort by date descending
-      if (Math.abs(dateA - dateB) > 86400000) { // More than 1 day difference
-        return dateB - dateA; // Newer dates first
-      }
-      
-      // If same date, keep original order (by sessionId)
-      return a.sessionId - b.sessionId;
-    });
-  }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
-  
-  useEffect(() => {
-    const grouped = groupSessionsByUserAndDate(filteredSessions);
-    setGroupedView(grouped);
-  }, [filteredSessions, groupSessionsByUserAndDate]);
-  
-  const totalSessions = filteredSessions.length;
-  const activeSessions = filteredSessions.filter(s => !s.endTime).length;
-  const totalDistance = filteredSessions.reduce((sum, s) => sum + s.totalDistance, 0);
+  const loadMoreGroups = () => {
+    setVisibleGroups(prev => prev + 5);
+  };
   
   // Export all data based on filters with pagination handling
   const exportToCSV = async () => {
@@ -1647,30 +1730,29 @@ const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
   };
   
   // Build session polyline path for multi-session view
-// Build session polyline path for multi-session view
-const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
-  const path: [number, number][] = [];
-  
-  if (!session || !session.logs || session.logs.length === 0) return path;
-  
-  // Sort logs by timestamp to ensure chronological order
-  const sortedLogs = [...session.logs].sort((a, b) => 
-    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-  
-  // Collect all valid coordinates
-  sortedLogs.forEach((log) => {
-    if (isValidCoordinate(log.latitude, log.longitude)) {
-      path.push([
-        parseCoordinate(log.latitude), 
-        parseCoordinate(log.longitude)
-      ]);
-    }
-  });
-  
-  // Apply smoothing to make the path look more natural
-  return smoothPath(path);
-}, [isValidCoordinate, parseCoordinate, smoothPath]);
+  const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
+    const path: [number, number][] = [];
+    
+    if (!session || !session.logs || session.logs.length === 0) return path;
+    
+    // Sort logs by timestamp to ensure chronological order
+    const sortedLogs = [...session.logs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Collect all valid coordinates
+    sortedLogs.forEach((log) => {
+      if (isValidCoordinate(log.latitude, log.longitude)) {
+        path.push([
+          parseCoordinate(log.latitude), 
+          parseCoordinate(log.longitude)
+        ]);
+      }
+    });
+    
+    // Apply smoothing to make the path look more natural
+    return smoothPath(path);
+  }, [isValidCoordinate, parseCoordinate, smoothPath]);
 
   const renderOdometerImage = (imageData: string) => {
     if (!imageData || imageData.trim() === '') {
@@ -1777,7 +1859,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Total Sessions</p>
-                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{totalSessions}</p>
+                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{memoizedStats.totalSessions}</p>
               </div>
               <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
                 <FaListAlt className="text-blue-500 text-xl" />
@@ -1789,7 +1871,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Active Sessions</p>
-                <p className="text-2xl font-bold mt-1 text-green-500">{activeSessions}</p>
+                <p className="text-2xl font-bold mt-1 text-green-500">{memoizedStats.activeSessions}</p>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
                 <FaPlayCircle className="text-green-500 text-xl" />
@@ -1801,7 +1883,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Total Distance</p>
-                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{(totalDistance / 1000).toFixed(1)} km</p>
+                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">{(memoizedStats.totalDistance / 1000).toFixed(1)} km</p>
               </div>
               <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
                 <FaRoad className="text-purple-500 text-xl" />
@@ -1938,14 +2020,13 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
       {isLoading && currentPage === 1 ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-           {/* <FaSpinner className="animate-spin text-gray-500 dark:text-gray-400 text-4xl mx-auto mb-4" /> */}
             <Loader/>
-            <p className="text-gray-600 dark:text-gray-300">Loading travel sessions...</p>
+            <p className="text-gray-600 dark:text-gray-300 mt-4">Loading travel sessions...</p>
           </div>
         </div>
       ) : viewMode === 'grouped' ? (
         /* Grouped View */
-        groupedView.length === 0 ? (
+        memoizedGroupedView.length === 0 ? (
           <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
             <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
@@ -1957,7 +2038,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             {isDateFilterActive && (
               <button
                 onClick={clearDateFilter}
-                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
+                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl mt-4`}
               >
                 Clear Date Filter
               </button>
@@ -1966,7 +2047,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
         ) : (
           <>
             <div className="space-y-6">
-              {groupedView.map((group) => {
+              {memoizedGroupedView.slice(0, visibleGroups).map((group) => {
                 const groupDuration = calculateDuration(group.startTime, group.endTime);
                 const formattedDate = new Date(group.date).toLocaleDateString('en-US', {
                   weekday: 'long',
@@ -2130,74 +2211,18 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
                         
                         <div className="space-y-3">
                           {group.sessions.map((session, sessionIndex) => {
-                            const sessionDuration = calculateDuration(session.startTime, session.endTime);
-                            const isActive = !session.endTime;
                             const isFirstSession = sessionIndex === 0;
                             
                             return (
-                              <div key={session.sessionId} className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
-                                         style={{ backgroundColor: getSessionColor(sessionIndex) }}>
-                                      {sessionIndex + 1}
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-800 dark:text-white">
-                                          Session #{session.sessionId}
-                                          {isFirstSession && (
-                                            <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-                                              First Session (Excluded)
-                                            </span>
-                                          )}
-                                        </span>
-                                        {isActive && (
-                                          <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
-                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                                            LIVE - Updating
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                        <span>{formatTimeOnly(session.startTime)} - {session.endTime ? formatTimeOnly(session.endTime) : 'Active'}</span>
-                                        <span>•</span>
-                                        <span>{(session.totalDistance / 1000).toFixed(2)} km</span>
-                                        <span>•</span>
-                                        <span>{Math.floor(sessionDuration.hours)}h {sessionDuration.minutes}m</span>
-                                        {isFirstSession && (
-                                          <>
-                                            <span>•</span>
-                                            <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                              Distance excluded from total
-                                            </span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleFetchTravelData(
-                                        session.userId.toString(), 
-                                        group.date
-                                      )}
-                                      className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
-                                    >
-                                      <FaInfoCircle />
-                                      Details
-                                    </button>
-                                    <button
-                                      onClick={() => openMap(session)}
-                                      className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
-                                    >
-                                      <FaEye />
-                                      Single Map
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                              <SessionItem
+                                key={session.sessionId}
+                                session={session}
+                                onViewMap={openMap}
+                                onViewDetails={handleFetchTravelData}
+                                formatTimeOnly={formatTimeOnly}
+                                calculateDuration={calculateDuration}
+                                isFirstSession={isFirstSession}
+                              />
                             );
                           })}
                         </div>
@@ -2222,6 +2247,19 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
               })}
             </div>
             
+            {/* Load more groups button */}
+            {visibleGroups < memoizedGroupedView.length && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={loadMoreGroups}
+                  className={`px-6 py-3 ${glassmorphismClasses.button.primary} rounded-xl font-medium flex items-center gap-2`}
+                >
+                  <FaChevronDown />
+                  Load More Groups ({memoizedGroupedView.length - visibleGroups} more)
+                </button>
+              </div>
+            )}
+            
             {/* Infinite scroll loader for main pagination */}
             <div ref={observerTarget} className="py-8">
               {isLoadingMore && (
@@ -2234,7 +2272,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
                 <div className="text-center text-gray-500 dark:text-gray-400">
                   <p>All {travelSessions.length} sessions loaded</p>
                   <p className="text-sm mt-1">
-                    Showing {groupedView.length} grouped sessions
+                    Showing {memoizedGroupedView.length} grouped sessions
                   </p>
                 </div>
               )}
@@ -2243,7 +2281,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
         )
       ) : (
         /* Individual Sessions View */
-        filteredSessions.length === 0 ? (
+        memoizedFilteredSessions.length === 0 ? (
           <div className={`${glassmorphismClasses.card} rounded-2xl p-12 text-center backdrop-blur-lg`}>
             <FaRoute className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Travel Sessions Found</h3>
@@ -2255,7 +2293,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             {isDateFilterActive && (
               <button
                 onClick={clearDateFilter}
-                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl`}
+                className={`px-4 py-2 ${glassmorphismClasses.button.outline} rounded-xl mt-4`}
               >
                 Clear Date Filter
               </button>
@@ -2264,7 +2302,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
         ) : (
           <>
             <div className="space-y-4">
-              {filteredSessions.map((session) => {
+              {memoizedFilteredSessions.map((session) => {
                 const sessionDuration = calculateDuration(session.startTime, session.endTime);
                 const isActive = !session.endTime;
                 
@@ -2338,7 +2376,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
                         </button>
                         <button
                           onClick={() => openMap(session)}
-                          className={`px-3 py-2 ${glassmorphismClasses.button.primary} rounded-xl text-sm font-medium flex items-center gap-2`}
+                          className={`px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2`}
                         >
                           <FaEye />
                           View Map
@@ -2360,7 +2398,7 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
               )}
               {!hasMore && currentPage > 1 && (
                 <div className="text-center text-gray-500 dark:text-gray-400">
-                  <p>All {filteredSessions.length} sessions loaded</p>
+                  <p>All {memoizedFilteredSessions.length} sessions loaded</p>
                 </div>
               )}
             </div>
@@ -2723,112 +2761,120 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
 
             {/* Map Container */}
             <div className="flex-1 relative">
-              <MapContainer
-                center={multiSessionMapView.center}
-                zoom={multiSessionMapView.zoom}
-                scrollWheelZoom
-                style={{ height: "100%", width: "100%" }}
-                key={`multi-map-${multiSessionMapView.userId}-${multiSessionMapView.date}`}
-              >
-                <TileLayer
-                  attribution="Google Maps"
-                  url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
-                />
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-900">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300">Loading map...</p>
+                  </div>
+                </div>
+              }>
+                <MapContainer
+                  center={multiSessionMapView.center}
+                  zoom={multiSessionMapView.zoom}
+                  scrollWheelZoom
+                  style={{ height: "100%", width: "100%" }}
+                  key={`multi-map-${multiSessionMapView.userId}-${multiSessionMapView.date}`}
+                >
+                  <MemoizedTileLayer
+                    attribution="Google Maps"
+                    url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                  />
 
-                {/* Render all session polylines with different colors */}
-                {multiSessionMapView.sessions.map((session, index) => {
-                  const path = buildSessionPolylinePath(session);
-                  if (path.length >= 2) {
-                    const isActive = !session.endTime;
-                    return (
-                      <Polyline
-                        key={`session-${session.sessionId}`}
-                        positions={path}
-                        pathOptions={{
-                          color: getSessionColor(index),
-                          weight: 5,
-                          opacity: 0.8,
-                          lineCap: "round",
-                          lineJoin: "round",
-                          dashArray: isActive ? "10, 5" : undefined,
-                        }}
-                      />
-                    );
-                  }
-                  return null;
-                })}
+                  {/* Render all session polylines with different colors */}
+                  {multiSessionMapView.sessions.map((session, index) => {
+                    const path = buildSessionPolylinePath(session);
+                    if (path.length >= 2) {
+                      const isActive = !session.endTime;
+                      return (
+                        <MemoizedPolyline
+                          key={`session-${session.sessionId}`}
+                          positions={path}
+                          pathOptions={{
+                            color: getSessionColor(index),
+                            weight: 5,
+                            opacity: 0.8,
+                            lineCap: "round",
+                            lineJoin: "round",
+                            dashArray: isActive ? "10, 5" : undefined,
+                          }}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
 
-                {/* Start markers for each session */}
-                {multiSessionMapView.sessions.map((session, index) => {
-                  if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
-                    return (
-                      <Marker
-                        key={`start-${session.sessionId}`}
-                        position={[
-                          parseCoordinate(session.startLatitude), 
-                          parseCoordinate(session.startLongitude)
-                        ]}
-                        icon={customIcons.startIcon}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <strong>🟢 Start (Session #{session.sessionId})</strong><br />
-                            <strong>Time:</strong> {formatDateTime(session.startTime)}<br />
-                            <strong>Coordinates:</strong> {parseCoordinate(session.startLatitude).toFixed(6)}, {parseCoordinate(session.startLongitude).toFixed(6)}<br />
-                            <div 
-                              className="inline-block w-3 h-3 rounded-full mr-1"
-                              style={{ backgroundColor: getSessionColor(index) }}
-                            ></div>
-                            <span>Session Color</span>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  }
-                  return null;
-                })}
+                  {/* Start markers for each session */}
+                  {multiSessionMapView.sessions.map((session, index) => {
+                    if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
+                      return (
+                        <MemoizedMarker
+                          key={`start-${session.sessionId}`}
+                          position={[
+                            parseCoordinate(session.startLatitude), 
+                            parseCoordinate(session.startLongitude)
+                          ]}
+                          icon={customIcons.startIcon}
+                        >
+                          <Popup>
+                            <div className="text-sm">
+                              <strong>🟢 Start (Session #{session.sessionId})</strong><br />
+                              <strong>Time:</strong> {formatDateTime(session.startTime)}<br />
+                              <strong>Coordinates:</strong> {parseCoordinate(session.startLatitude).toFixed(6)}, {parseCoordinate(session.startLongitude).toFixed(6)}<br />
+                              <div 
+                                className="inline-block w-3 h-3 rounded-full mr-1"
+                                style={{ backgroundColor: getSessionColor(index) }}
+                              ></div>
+                              <span>Session Color</span>
+                            </div>
+                          </Popup>
+                        </MemoizedMarker>
+                      );
+                    }
+                    return null;
+                  })}
 
-                {/* End markers for each session */}
-                {multiSessionMapView.sessions.map((session, index) => {
-                  if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
-                    const isActive = !session.endTime;
-                    return (
-                      <Marker
-                        key={`end-${session.sessionId}`}
-                        position={[
-                          parseCoordinate(session.endLatitude), 
-                          parseCoordinate(session.endLongitude)
-                        ]}
-                        icon={isActive ? customIcons.activeIcon : customIcons.endIcon}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <strong>{isActive ? '🟡 Active' : '🔴 End'} (Session #{session.sessionId})</strong><br />
-                            <strong>Time:</strong> {isActive ? 'Active' : formatDateTime(session.endTime)}<br />
-                            <strong>Coordinates:</strong> {parseCoordinate(session.endLatitude).toFixed(6)}, {parseCoordinate(session.endLongitude).toFixed(6)}<br />
-                            <strong>Distance:</strong> {(session.totalDistance / 1000).toFixed(2)} km<br />
-                            <div 
-                              className="inline-block w-3 h-3 rounded-full mr-1"
-                              style={{ backgroundColor: getSessionColor(index) }}
-                            ></div>
-                            <span>Session Color</span>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  }
-                  return null;
-                })}
+                  {/* End markers for each session */}
+                  {multiSessionMapView.sessions.map((session, index) => {
+                    if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+                      const isActive = !session.endTime;
+                      return (
+                        <MemoizedMarker
+                          key={`end-${session.sessionId}`}
+                          position={[
+                            parseCoordinate(session.endLatitude), 
+                            parseCoordinate(session.endLongitude)
+                          ]}
+                          icon={isActive ? customIcons.activeIcon : customIcons.endIcon}
+                        >
+                          <Popup>
+                            <div className="text-sm">
+                              <strong>{isActive ? '🟡 Active' : '🔴 End'} (Session #{session.sessionId})</strong><br />
+                              <strong>Time:</strong> {isActive ? 'Active' : formatDateTime(session.endTime)}<br />
+                              <strong>Coordinates:</strong> {parseCoordinate(session.endLatitude).toFixed(6)}, {parseCoordinate(session.endLongitude).toFixed(6)}<br />
+                              <strong>Distance:</strong> {(session.totalDistance / 1000).toFixed(2)} km<br />
+                              <div 
+                                className="inline-block w-3 h-3 rounded-full mr-1"
+                                style={{ backgroundColor: getSessionColor(index) }}
+                              ></div>
+                              <span>Session Color</span>
+                            </div>
+                          </Popup>
+                        </MemoizedMarker>
+                      );
+                    }
+                    return null;
+                  })}
 
-                {/* Pause markers for each session */}
-              {showPauseMarkers && multiSessionMapView.sessions.map((session, sessionIndex) => {
+                  {/* Pause markers for each session */}
+                {showPauseMarkers && multiSessionMapView.sessions.map((session, sessionIndex) => {
   // Only detect pauses based on backend pause flags
   const pauses = detectPauses(session.logs || []);
   return pauses.map((pause, pauseIndex) => {
     const pauseLog = pause.start;
     if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
       return (
-        <Marker
+        <MemoizedMarker
           key={`pause-${session.sessionId}-${pauseIndex}`}
           position={[
             parseCoordinate(pauseLog.latitude), 
@@ -2900,66 +2946,67 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
               </div>
             </div>
           </Popup>
-        </Marker>
+        </MemoizedMarker>
       );
     }
     return null;
   });
 })}
-                {/* Log points markers for each session */}
-                {showLogMarkersMulti && multiSessionMapView.sessions.map((session, sessionIndex) => (
-                  session.logs && session.logs.slice(0, 50).map((log, logIndex) => { // Limit to 50 points per session for performance
-                    if (isValidCoordinate(log.latitude, log.longitude)) {
-                      const isPausePoint = log.pause;
-                      
-                      return (
-                        <Marker
-                          key={`log-${session.sessionId}-${log.id || logIndex}`}
-                          position={[
-                            parseCoordinate(log.latitude), 
-                            parseCoordinate(log.longitude)
-                          ]}
-                          icon={L.divIcon({
-                            className: 'custom-marker',
-                            html: `
-                              <div style="
-                                width: 8px;
-                                height: 8px;
-                                background-color: ${getSessionColor(sessionIndex)};
-                                border: 1px solid white;
-                                border-radius: 50%;
-                                opacity: 0.7;
-                                cursor: pointer;
-                              "></div>
-                            `,
-                            iconSize: [8, 8],
-                            iconAnchor: [4, 4]
-                          })}
-                        >
-                          <Popup>
-                            <div className="text-sm min-w-[200px]">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: getSessionColor(sessionIndex) }}
-                                ></div>
-                                <strong>Session #{session.sessionId} - Point #{logIndex + 1}</strong>
+                  {/* Log points markers for each session */}
+                  {showLogMarkersMulti && multiSessionMapView.sessions.map((session, sessionIndex) => (
+                    session.logs && session.logs.slice(0, 50).map((log, logIndex) => { // Limit to 50 points per session for performance
+                      if (isValidCoordinate(log.latitude, log.longitude)) {
+                        const isPausePoint = log.pause;
+                        
+                        return (
+                          <MemoizedMarker
+                            key={`log-${session.sessionId}-${log.id || logIndex}`}
+                            position={[
+                              parseCoordinate(log.latitude), 
+                              parseCoordinate(log.longitude)
+                            ]}
+                            icon={L.divIcon({
+                              className: 'custom-marker',
+                              html: `
+                                <div style="
+                                  width: 8px;
+                                  height: 8px;
+                                  background-color: ${getSessionColor(sessionIndex)};
+                                  border: 1px solid white;
+                                  border-radius: 50%;
+                                  opacity: 0.7;
+                                  cursor: pointer;
+                                "></div>
+                              `,
+                              iconSize: [8, 8],
+                              iconAnchor: [4, 4]
+                            })}
+                          >
+                            <Popup>
+                              <div className="text-sm min-w-[200px]">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                                  ></div>
+                                  <strong>Session #{session.sessionId} - Point #{logIndex + 1}</strong>
+                                </div>
+                                <div className="space-y-1">
+                                  <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
+                                  <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
+                                  <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
+                                  <div><strong>Status:</strong> {isPausePoint ? '⏸️ Pause' : 'Moving'}</div>
+                                </div>
                               </div>
-                              <div className="space-y-1">
-                                <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
-                                <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
-                                <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
-                                <div><strong>Status:</strong> {isPausePoint ? '⏸️ Pause' : 'Moving'}</div>
-                              </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    }
-                    return null;
-                  })
-                ))}
-              </MapContainer>
+                            </Popup>
+                          </MemoizedMarker>
+                        );
+                      }
+                      return null;
+                    })
+                  ))}
+                </MapContainer>
+              </Suspense>
             </div>
           </div>
         </div>
@@ -2988,13 +3035,6 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
                     <FaMapPin />
                     {showLogMarkers ? 'Hide Log Points' : 'Show Log Points'}
                   </button>
-                  {/* <button
-                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
-                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
-                  >
-                    <FaPauseCircle />
-                    {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
-                  </button> */}
                   <button
                     onClick={closeMap}
                     className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
@@ -3006,90 +3046,98 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
             </div>
 
             <div className="flex-1 relative">
-              <MapContainer
-                center={getMapCenter(mapView)}
-                zoom={getMapZoom(mapView)}
-                scrollWheelZoom
-                style={{ height: "100%", width: "100%" }}
-                key={`map-${mapView.sessionId}-${lastUpdateTime?.getTime()}`}
-              >
-                <TileLayer
-                  attribution="Google Maps"
-                  url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
-                />
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-900">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300">Loading map...</p>
+                  </div>
+                </div>
+              }>
+                <MapContainer
+                  center={getMapCenter(mapView)}
+                  zoom={getMapZoom(mapView)}
+                  scrollWheelZoom
+                  style={{ height: "100%", width: "100%" }}
+                  key={`map-${mapView.sessionId}-${lastUpdateTime?.getTime()}`}
+                >
+                  <MemoizedTileLayer
+                    attribution="Google Maps"
+                    url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                  />
 
-                {/* Polyline for the travel path */}
-                {(() => {
-                  const path = buildPolylinePath(mapView);
-                  if (path.length >= 2) {
-                    const isActive = !mapView.endTime;
-                    return (
-                      <Polyline
-                        positions={path}
-                        pathOptions={{
-                          color: isActive ? "#10B981" : "#3B82F6",
-                          weight: 6,
-                          opacity: 0.8,
-                          lineCap: "round",
-                          lineJoin: "round",
-                          dashArray: isActive ? "10, 5" : undefined
-                        }}
-                      />
-                    );
-                  }
-                  return null;
-                })()}
+                  {/* Polyline for the travel path */}
+                  {(() => {
+                    const path = buildPolylinePath(mapView);
+                    if (path.length >= 2) {
+                      const isActive = !mapView.endTime;
+                      return (
+                        <MemoizedPolyline
+                          positions={path}
+                          pathOptions={{
+                            color: isActive ? "#10B981" : "#3B82F6",
+                            weight: 6,
+                            opacity: 0.8,
+                            lineCap: "round",
+                            lineJoin: "round",
+                            dashArray: isActive ? "10, 5" : undefined
+                          }}
+                        />
+                      );
+                    }
+                    return null;
+                  })()}
 
-                {/* Start marker */}
-                {isValidCoordinate(mapView.startLatitude, mapView.startLongitude) && (
-                  <Marker
-                    position={[
-                      parseCoordinate(mapView.startLatitude), 
-                      parseCoordinate(mapView.startLongitude)
-                    ]}
-                    icon={customIcons.startIcon}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <strong>🟢 Start Point</strong><br />
-                        <strong>User:</strong> {mapView.username}<br />
-                        <strong>Time:</strong> {formatDateTime(mapView.startTime)}<br />
-                        <strong>Coordinates:</strong> {parseCoordinate(mapView.startLatitude).toFixed(6)}, {parseCoordinate(mapView.startLongitude).toFixed(6)}
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
+                  {/* Start marker */}
+                  {isValidCoordinate(mapView.startLatitude, mapView.startLongitude) && (
+                    <MemoizedMarker
+                      position={[
+                        parseCoordinate(mapView.startLatitude), 
+                        parseCoordinate(mapView.startLongitude)
+                      ]}
+                      icon={customIcons.startIcon}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <strong>🟢 Start Point</strong><br />
+                          <strong>User:</strong> {mapView.username}<br />
+                          <strong>Time:</strong> {formatDateTime(mapView.startTime)}<br />
+                          <strong>Coordinates:</strong> {parseCoordinate(mapView.startLatitude).toFixed(6)}, {parseCoordinate(mapView.startLongitude).toFixed(6)}
+                        </div>
+                      </Popup>
+                    </MemoizedMarker>
+                  )}
 
-                {/* End marker */}
-                {isValidCoordinate(mapView.endLatitude, mapView.endLongitude) && (
-                  <Marker
-                    position={[
-                      parseCoordinate(mapView.endLatitude), 
-                      parseCoordinate(mapView.endLongitude)
-                    ]}
-                    icon={!mapView.endTime ? customIcons.activeIcon : customIcons.endIcon}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <strong>{!mapView.endTime ? '🟡 Active Point' : '🔴 End Point'}</strong><br />
-                        <strong>User:</strong> {mapView.username}<br />
-                        <strong>Time:</strong> {!mapView.endTime ? 'Active' : formatDateTime(mapView.endTime)}<br />
-                        <strong>Coordinates:</strong> {parseCoordinate(mapView.endLatitude).toFixed(6)}, {parseCoordinate(mapView.endLongitude).toFixed(6)}<br />
-                        <strong>Total Distance:</strong> {(mapView.totalDistance / 1000).toFixed(2)} km
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
+                  {/* End marker */}
+                  {isValidCoordinate(mapView.endLatitude, mapView.endLongitude) && (
+                    <MemoizedMarker
+                      position={[
+                        parseCoordinate(mapView.endLatitude), 
+                        parseCoordinate(mapView.endLongitude)
+                      ]}
+                      icon={!mapView.endTime ? customIcons.activeIcon : customIcons.endIcon}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <strong>{!mapView.endTime ? '🟡 Active Point' : '🔴 End Point'}</strong><br />
+                          <strong>User:</strong> {mapView.username}<br />
+                          <strong>Time:</strong> {!mapView.endTime ? 'Active' : formatDateTime(mapView.endTime)}<br />
+                          <strong>Coordinates:</strong> {parseCoordinate(mapView.endLatitude).toFixed(6)}, {parseCoordinate(mapView.endLongitude).toFixed(6)}<br />
+                          <strong>Total Distance:</strong> {(mapView.totalDistance / 1000).toFixed(2)} km
+                        </div>
+                      </Popup>
+                    </MemoizedMarker>
+                  )}
 
-                {/* Pause markers */}
-               {showPauseMarkers && mapView.logs && (() => {
+                  {/* Pause markers */}
+                 {showPauseMarkers && mapView.logs && (() => {
   // Only detect pauses based on backend pause flags
   const pauses = detectPauses(mapView.logs);
   return pauses.map((pause, pauseIndex) => {
     const pauseLog = pause.start;
     if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
       return (
-        <Marker
+        <MemoizedMarker
           key={`pause-${pauseIndex}`}
           position={[
             parseCoordinate(pauseLog.latitude), 
@@ -3156,68 +3204,69 @@ const buildSessionPolylinePath = useCallback((session: TravelSession): [number, 
               </div>
             </div>
           </Popup>
-        </Marker>
+        </MemoizedMarker>
       );
     }
     return null;
   });
 })()}
 
-                {/* Log points markers */}
-                {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {
-                  if (isValidCoordinate(log.latitude, log.longitude)) {
-                    const logDate = new Date(log.timestamp);
-                    const isPausePoint = log.pause === true;
-                    
-                    return (
-                      <Marker
-                        key={`log-${log.id || logIndex}`}
-                        position={[
-                          parseCoordinate(log.latitude), 
-                          parseCoordinate(log.longitude)
-                        ]}
-                        icon={L.divIcon({
-                          className: 'custom-marker',
-                          html: `
-                            <div style="
-                              width: 12px;
-                              height: 12px;
-                              background-color: ${isPausePoint ? '#FFA500' : '#6366F1'};
-                              border: 2px solid white;
-                              border-radius: 50%;
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                              cursor: pointer;
-                            "></div>
-                          `,
-                          iconSize: [12, 12],
-                          iconAnchor: [6, 6]
-                        })}
-                      >
-                        <Popup>
-                          <div className="text-sm min-w-[200px]">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div 
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: isPausePoint ? '#FFA500' : '#6366F1' }}
-                              ></div>
-                              <strong>{isPausePoint ? '⏸️ Pause Point' : '📍 Log Point'}</strong>
+                  {/* Log points markers */}
+                  {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {
+                    if (isValidCoordinate(log.latitude, log.longitude)) {
+                      const logDate = new Date(log.timestamp);
+                      const isPausePoint = log.pause === true;
+                      
+                      return (
+                        <MemoizedMarker
+                          key={`log-${log.id || logIndex}`}
+                          position={[
+                            parseCoordinate(log.latitude), 
+                            parseCoordinate(log.longitude)
+                          ]}
+                          icon={L.divIcon({
+                            className: 'custom-marker',
+                            html: `
+                              <div style="
+                                width: 12px;
+                                height: 12px;
+                                background-color: ${isPausePoint ? '#FFA500' : '#6366F1'};
+                                border: 2px solid white;
+                                border-radius: 50%;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                cursor: pointer;
+                              "></div>
+                            `,
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                          })}
+                        >
+                          <Popup>
+                            <div className="text-sm min-w-[200px]">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: isPausePoint ? '#FFA500' : '#6366F1' }}
+                                ></div>
+                                <strong>{isPausePoint ? '⏸️ Pause Point' : '📍 Log Point'}</strong>
+                              </div>
+                              <div className="space-y-1">
+                                <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
+                                <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
+                                <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
+                                <div><strong>Battery:</strong> {log.battery ? `${log.battery}%` : 'N/A'}</div>
+                                <div><strong>Point #:</strong> {logIndex + 1} of {mapView.logs.length}</div>
+                                {log.pause && <div className="text-amber-600 font-medium">⏸️ Pause detected</div>}
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <div><strong>Time:</strong> {formatDateTime(log.timestamp)}</div>
-                              <div><strong>Coordinates:</strong> {parseCoordinate(log.latitude).toFixed(6)}, {parseCoordinate(log.longitude).toFixed(6)}</div>
-                              <div><strong>Speed:</strong> {log.speed ? `${log.speed} km/h` : 'N/A'}</div>
-                              <div><strong>Battery:</strong> {log.battery ? `${log.battery}%` : 'N/A'}</div>
-                              <div><strong>Point #:</strong> {logIndex + 1} of {mapView.logs.length}</div>
-                              {log.pause && <div className="text-amber-600 font-medium">⏸️ Pause detected</div>}
-                            </div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  }
-                  return null;
-                })}
-              </MapContainer>
+                          </Popup>
+                        </MemoizedMarker>
+                      );
+                    }
+                    return null;
+                  })}
+                </MapContainer>
+              </Suspense>
             </div>
           </div>
         </div>

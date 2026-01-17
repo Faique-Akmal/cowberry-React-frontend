@@ -58,20 +58,17 @@ const EmployeeStatus = () => {
   const { isDarkMode } = useTheme();
   const { t } = useTranslation();
 
-  // ✅ 1. Access Store
+
   const { users, fetchUsers, isLoading } = useUserStore();
 
-  // Local state for Lazy Loading (Infinite Scroll behavior)
   const [visibleCount, setVisibleCount] = useState(15);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ 2. Fetch on Mount
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ✅ 3. Derived State (Optimization)
-  // Calculate active users and totals only when 'users' changes
+ 
   const { onlineUsers, totalUsersCount, activeUsersCount } = useMemo(() => {
     const online = users.filter((user) => user.is_checkin === true);
     return {
@@ -81,8 +78,7 @@ const EmployeeStatus = () => {
     };
   }, [users]);
 
-  // ✅ 4. Lazy Rendering Logic
-  // Only render the number of users specified by visibleCount
+ 
   const visibleUsers = useMemo(() => {
     return onlineUsers.slice(0, visibleCount);
   }, [onlineUsers, visibleCount]);

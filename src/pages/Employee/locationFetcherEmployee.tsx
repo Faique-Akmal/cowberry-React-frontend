@@ -24,7 +24,6 @@ import {
   FaInfoCircle,
   FaTimes,
   FaPlayCircle,
-  FaStopCircle,
   FaMapPin,
   FaSearch,
   FaCar,
@@ -34,11 +33,11 @@ import {
   FaChartLine,
   FaSpinner,
   FaChevronDown,
-  FaChevronUp,
   FaPauseCircle,
 } from "react-icons/fa";
 
 import ImageZoom from "../../components/ImageZoom";
+import Loader from "../UiElements/Loader";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -302,92 +301,105 @@ export default function AttendanceList() {
     };
   }, []);
   
-  // Group sessions by user and date with correct sorting
-  const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
-    const groupedMap = new Map<string, GroupedSession>();
+  
+// Group sessions by user and date with correct sorting
+const groupSessionsByUserAndDate = useCallback((sessions: TravelSession[]): GroupedSession[] => {
+  const groupedMap = new Map<string, GroupedSession>();
+  
+  // First sort sessions by date (newest first)
+  const sortedSessions = [...sessions].sort((a, b) => {
+    const dateA = new Date(a.startTime);
+    const dateB = new Date(b.startTime);
+    return dateB.getTime() - dateA.getTime(); // Newest first
+  });
+  
+  sortedSessions.forEach(session => {
+    const dateKey = formatDateOnly(session.startTime);
+    const groupKey = `${session.userId}-${dateKey}`;
     
-    // First sort sessions by date (newest first)
-    const sortedSessions = [...sessions].sort((a, b) => {
-      const dateA = new Date(a.startTime);
-      const dateB = new Date(b.startTime);
-      return dateB.getTime() - dateA.getTime(); // Newest first
-    });
-    
-    sortedSessions.forEach(session => {
-      const dateKey = formatDateOnly(session.startTime);
-      const groupKey = `${session.userId}-${dateKey}`;
+    if (!groupedMap.has(groupKey)) {
+      groupedMap.set(groupKey, {
+        userId: session.userId,
+        username: session.username,
+        employeeCode: session.employeeCode,
+        date: dateKey,
+        sessions: [session],
+        totalSessions: 1,
+        totalDistance: 0,
+        firstSessionDistance: 0,
+        originalTotalDistance: 0,
+        activeSessions: session.endTime ? 0 : 1,
+        startTime: session.startTime,
+        endTime: session.endTime || session.startTime,
+        totalPoints: session.logs?.length || 0,
+        isLoading: false,
+        hasMoreSessions: false,
+        allSessionsLoaded: true
+      });
+    } else {
+      const existingGroup = groupedMap.get(groupKey)!;
       
-      if (!groupedMap.has(groupKey)) {
-        groupedMap.set(groupKey, {
-          userId: session.userId,
-          username: session.username,
-          employeeCode: session.employeeCode,
-          date: dateKey,
-          sessions: [session],
-          totalSessions: 1,
-          totalDistance: 0,
-          firstSessionDistance: 0,
-          originalTotalDistance: 0,
-          activeSessions: session.endTime ? 0 : 1,
-          startTime: session.startTime,
-          endTime: session.endTime || session.startTime,
-          totalPoints: session.logs?.length || 0,
-          isLoading: false,
-          hasMoreSessions: false,
-          allSessionsLoaded: true
-        });
-      } else {
-        const existingGroup = groupedMap.get(groupKey)!;
+      // Check if session already exists in the group
+      const sessionExists = existingGroup.sessions.some(s => s.sessionId === session.sessionId);
+      if (!sessionExists) {
+        // Add session to the group while maintaining chronological order
+        const insertIndex = existingGroup.sessions.findIndex(s => 
+          new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
+        );
         
-        // Check if session already exists in the group
-        const sessionExists = existingGroup.sessions.some(s => s.sessionId === session.sessionId);
-        if (!sessionExists) {
-          // Add session to the group while maintaining chronological order
-          const insertIndex = existingGroup.sessions.findIndex(s => 
-            new Date(s.startTime).getTime() > new Date(session.startTime).getTime()
-          );
-          
-          if (insertIndex === -1) {
-            existingGroup.sessions.push(session);
-          } else {
-            existingGroup.sessions.splice(insertIndex, 0, session);
-          }
-          
-          existingGroup.totalSessions += 1;
-          existingGroup.activeSessions += session.endTime ? 0 : 1;
-          existingGroup.totalPoints += session.logs?.length || 0;
-          
-          if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
-            existingGroup.startTime = session.startTime;
-          }
-          
-          const sessionEndTime = session.endTime || session.startTime;
-          if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
-            existingGroup.endTime = sessionEndTime;
-          }
+        if (insertIndex === -1) {
+          existingGroup.sessions.push(session);
+        } else {
+          existingGroup.sessions.splice(insertIndex, 0, session);
+        }
+        
+        existingGroup.totalSessions += 1;
+        existingGroup.activeSessions += session.endTime ? 0 : 1;
+        existingGroup.totalPoints += session.logs?.length || 0;
+        
+        if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
+          existingGroup.startTime = session.startTime;
+        }
+        
+        const sessionEndTime = session.endTime || session.startTime;
+        if (new Date(sessionEndTime) > new Date(existingGroup.endTime)) {
+          existingGroup.endTime = sessionEndTime;
         }
       }
-    });
+    }
+  });
+  
+  // Calculate adjusted distances for each group
+  const groups = Array.from(groupedMap.values()).map(group => {
+    const distanceData = calculateAdjustedGroupDistance(group.sessions);
     
-    // Calculate adjusted distances for each group and sort groups
-    const groups = Array.from(groupedMap.values()).map(group => {
-      const distanceData = calculateAdjustedGroupDistance(group.sessions);
-      
-      return {
-        ...group,
-        totalDistance: distanceData.totalDistance,
-        firstSessionDistance: distanceData.firstSessionDistance,
-        originalTotalDistance: distanceData.originalTotalDistance
-      };
-    });
+    return {
+      ...group,
+      totalDistance: distanceData.totalDistance,
+      firstSessionDistance: distanceData.firstSessionDistance,
+      originalTotalDistance: distanceData.originalTotalDistance
+    };
+  });
+  
+  // NEW: Sort groups by latest session time of each user
+  return groups.sort((a, b) => {
+    // Get the latest session start time for each group
+    const getLatestSessionTime = (group: GroupedSession): Date => {
+      const latestSession = group.sessions.reduce((latest, current) => {
+        const latestTime = new Date(latest.startTime).getTime();
+        const currentTime = new Date(current.startTime).getTime();
+        return currentTime > latestTime ? current : latest;
+      }, group.sessions[0]);
+      return new Date(latestSession.startTime);
+    };
     
-    // Sort groups by date (newest first), then by user ID
-    return groups.sort((a, b) => {
-      const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dateCompare !== 0) return dateCompare;
-      return b.userId - a.userId;
-    });
-  }, [formatDateOnly, calculateAdjustedGroupDistance]);
+    const aLatestTime = getLatestSessionTime(a);
+    const bLatestTime = getLatestSessionTime(b);
+    
+    // Sort by latest session time (descending - newest first)
+    return bLatestTime.getTime() - aLatestTime.getTime();
+  });
+}, [formatDateOnly, calculateAdjustedGroupDistance]);
   
   // Calculate duration in hours and minutes
   const calculateDuration = useCallback((startTime: string, endTime: string) => {
@@ -844,92 +856,57 @@ export default function AttendanceList() {
   }, []);
   
   // Helper function to smooth the path
-  const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
-    if (points.length < 3) return points;
+// Helper function to smooth the path
+const smoothPath = useCallback((points: [number, number][]): [number, number][] => {
+  if (points.length < 3) return points;
+  
+  const smoothed: [number, number][] = [points[0]];
+  
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = points[i - 1];
+    const current = points[i];
+    const next = points[i + 1];
     
-    const smoothed: [number, number][] = [points[0]];
+    // Simple moving average smoothing
+    const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
+    const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
     
-    for (let i = 1; i < points.length - 1; i++) {
-      const prev = points[i - 1];
-      const current = points[i];
-      const next = points[i + 1];
-      
-      // Simple moving average smoothing (makes path look more natural)
-      const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
-      const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
-      
-      smoothed.push([smoothedLat, smoothedLng]);
-    }
-    
-    smoothed.push(points[points.length - 1]);
-    return smoothed;
-  }, []);
+    smoothed.push([smoothedLat, smoothedLng]);
+  }
+  
+  smoothed.push(points[points.length - 1]);
+  return smoothed;
+}, []);
   
   // IMPROVED: Build polyline path with gap handling and smoothing
-  const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
-    const path: [number, number][] = [];
-    
-    if (!session || !session.logs || session.logs.length === 0) return path;
-    
-    // Sort logs by timestamp to ensure chronological order
-    const sortedLogs = [...session.logs].sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-    
-    // Parameters for gap detection
-    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
-    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
-    
-    let lastValidPoint: [number, number] | null = null;
-    let lastValidTime: Date | null = null;
-    
-    sortedLogs.forEach((log, index) => {
-      if (isValidCoordinate(log.latitude, log.longitude)) {
-        const currentPoint: [number, number] = [
-          parseCoordinate(log.latitude), 
-          parseCoordinate(log.longitude)
-        ];
-        const currentTime = new Date(log.timestamp);
-        
-        if (lastValidPoint && lastValidTime) {
-          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
-          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-          
-          const distanceMeters = calculateDistance(
-            lastValidPoint[0], lastValidPoint[1],
-            currentPoint[0], currentPoint[1]
-          );
-          const distanceKm = distanceMeters / 1000;
-          
-          // Calculate speed (km/h) between points
-          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
-          
-          // Check if this connection is reasonable
-          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
-            // Reasonable connection - add the point
-            path.push(currentPoint);
-          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
-            // Unreasonably high speed - likely GPS jump
-            // Add a duplicate point to create a visual break
-            path.push([lastValidPoint[0], lastValidPoint[1]]);
-            path.push(currentPoint);
-          } else {
-            // Too long time gap - just add point (line will continue)
-            path.push(currentPoint);
-          }
-        } else {
-          // First valid point
-          path.push(currentPoint);
-        }
-        
-        lastValidPoint = currentPoint;
-        lastValidTime = currentTime;
-      }
-    });
-    
-    // Apply smoothing to make the path look more natural
-    return smoothPath(path);
-  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
+// IMPROVED: Build polyline path with gap handling and smoothing
+const buildPolylinePath = useCallback((session: TravelSession): [number, number][] => {
+  const path: [number, number][] = [];
+  
+  if (!session || !session.logs || session.logs.length === 0) return path;
+  
+  // Sort logs by timestamp to ensure chronological order
+  const sortedLogs = [...session.logs].sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+  
+  // Collect all valid coordinates
+  sortedLogs.forEach((log) => {
+    if (isValidCoordinate(log.latitude, log.longitude)) {
+      const currentPoint: [number, number] = [
+        parseCoordinate(log.latitude), 
+        parseCoordinate(log.longitude)
+      ];
+      
+      // Always add the point if coordinates are valid
+      // Leaflet will automatically draw the line between points
+      path.push(currentPoint);
+    }
+  });
+  
+  // Apply smoothing to make the path look more natural
+  return smoothPath(path);
+}, [isValidCoordinate, parseCoordinate, smoothPath]);
   
   const getMapCenter = useCallback((session: TravelSession): [number, number] => {
     if (!session) return [21.1702, 72.8311];
@@ -996,27 +973,56 @@ export default function AttendanceList() {
     return 16;
   }, [isValidCoordinate, parseCoordinate]);
   
-  const detectPauses = useCallback((logs: LocationLog[], pauseThresholdMinutes: number = 2): PauseInterval[] => {
-    if (!logs || logs.length < 2) return [];
+// Replace the existing detectPauses function with this:
+const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
+  if (!logs || logs.length < 2) return [];
+  
+  const pauses: PauseInterval[] = [];
+  let currentPause: PauseInterval | null = null;
+  
+  for (let i = 0; i < logs.length; i++) {
+    const log = logs[i];
     
-    const pauses: PauseInterval[] = [];
-    
-    for (let i = 1; i < logs.length; i++) {
-      const prev = new Date(logs[i - 1].timestamp);
-      const curr = new Date(logs[i].timestamp);
-      const diffMinutes = (curr.getTime() - prev.getTime()) / 60000;
-      
-      if (diffMinutes > pauseThresholdMinutes || logs[i].pause) {
-        pauses.push({
-          start: logs[i - 1],
-          end: logs[i],
-          durationMinutes: diffMinutes,
-        });
+    // Check if this log has pause flag set to true
+    if (log.pause === true) {
+      // If we're not in a pause interval, start one
+      if (!currentPause) {
+        currentPause = {
+          start: log,
+          end: log,
+          durationMinutes: 0,
+        };
+      } else {
+        // Update the end of the current pause
+        currentPause.end = log;
       }
+    } else if (currentPause) {
+      // Calculate duration when pause ends
+      const startTime = new Date(currentPause.start.timestamp);
+      const endTime = new Date(currentPause.end.timestamp);
+      currentPause.durationMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
+      
+      // Only add if duration is meaningful (>= 1 minute)
+      if (currentPause.durationMinutes >= 1) {
+        pauses.push(currentPause);
+      }
+      currentPause = null;
     }
+  }
+  
+  // Handle case where last log is still in pause
+  if (currentPause) {
+    const startTime = new Date(currentPause.start.timestamp);
+    const endTime = new Date(currentPause.end.timestamp);
+    currentPause.durationMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
     
-    return pauses;
-  }, []);
+    if (currentPause.durationMinutes >= 1) {
+      pauses.push(currentPause);
+    }
+  }
+  
+  return pauses;
+}, []);
   
   const openMap = (session: TravelSession) => {
     setMapView(session);
@@ -1641,70 +1647,30 @@ export default function AttendanceList() {
   };
   
   // Build session polyline path for multi-session view
-  const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
-    const path: [number, number][] = [];
-    
-    if (!session || !session.logs || session.logs.length === 0) return path;
-    
-    // Sort logs by timestamp to ensure chronological order
-    const sortedLogs = [...session.logs].sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-    
-    // Parameters for gap detection
-    const MAX_REASONABLE_SPEED_KMH = 120; // Maximum reasonable speed (120 km/h)
-    const MAX_TIME_GAP_MINUTES = 10; // Maximum time gap to connect points
-    
-    let lastValidPoint: [number, number] | null = null;
-    let lastValidTime: Date | null = null;
-    
-    sortedLogs.forEach((log, index) => {
-      if (isValidCoordinate(log.latitude, log.longitude)) {
-        const currentPoint: [number, number] = [
-          parseCoordinate(log.latitude), 
-          parseCoordinate(log.longitude)
-        ];
-        const currentTime = new Date(log.timestamp);
-        
-        if (lastValidPoint && lastValidTime) {
-          const timeDiffMs = currentTime.getTime() - lastValidTime.getTime();
-          const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-          
-          const distanceMeters = calculateDistance(
-            lastValidPoint[0], lastValidPoint[1],
-            currentPoint[0], currentPoint[1]
-          );
-          const distanceKm = distanceMeters / 1000;
-          
-          // Calculate speed (km/h) between points
-          const speedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
-          
-          // Check if this connection is reasonable
-          if (timeDiffMs < MAX_TIME_GAP_MINUTES * 60 * 1000 && speedKmh < MAX_REASONABLE_SPEED_KMH) {
-            // Reasonable connection - add the point
-            path.push(currentPoint);
-          } else if (speedKmh >= MAX_REASONABLE_SPEED_KMH) {
-            // Unreasonably high speed - likely GPS jump
-            // Add a duplicate point to create a visual break
-            path.push([lastValidPoint[0], lastValidPoint[1]]);
-            path.push(currentPoint);
-          } else {
-            // Too long time gap - just add point (line will continue)
-            path.push(currentPoint);
-          }
-        } else {
-          // First valid point
-          path.push(currentPoint);
-        }
-        
-        lastValidPoint = currentPoint;
-        lastValidTime = currentTime;
-      }
-    });
-    
-    // Apply smoothing to make the path look more natural
-    return smoothPath(path);
-  }, [isValidCoordinate, parseCoordinate, calculateDistance, smoothPath]);
+// Build session polyline path for multi-session view
+const buildSessionPolylinePath = useCallback((session: TravelSession): [number, number][] => {
+  const path: [number, number][] = [];
+  
+  if (!session || !session.logs || session.logs.length === 0) return path;
+  
+  // Sort logs by timestamp to ensure chronological order
+  const sortedLogs = [...session.logs].sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+  
+  // Collect all valid coordinates
+  sortedLogs.forEach((log) => {
+    if (isValidCoordinate(log.latitude, log.longitude)) {
+      path.push([
+        parseCoordinate(log.latitude), 
+        parseCoordinate(log.longitude)
+      ]);
+    }
+  });
+  
+  // Apply smoothing to make the path look more natural
+  return smoothPath(path);
+}, [isValidCoordinate, parseCoordinate, smoothPath]);
 
   const renderOdometerImage = (imageData: string) => {
     if (!imageData || imageData.trim() === '') {
@@ -1972,7 +1938,8 @@ export default function AttendanceList() {
       {isLoading && currentPage === 1 ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <FaSpinner className="animate-spin text-4xl text-blue-500 mb-4" />
+           {/* <FaSpinner className="animate-spin text-gray-500 dark:text-gray-400 text-4xl mx-auto mb-4" /> */}
+            <Loader/>
             <p className="text-gray-600 dark:text-gray-300">Loading travel sessions...</p>
           </div>
         </div>
@@ -2854,86 +2821,91 @@ export default function AttendanceList() {
                 })}
 
                 {/* Pause markers for each session */}
-                {showPauseMarkers && multiSessionMapView.sessions.map((session, sessionIndex) => {
-                  const pauses = detectPauses(session.logs || []);
-                  return pauses.map((pause, pauseIndex) => {
-                    const pauseLog = pause.start;
-                    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
-                      return (
-                        <Marker
-                          key={`pause-${session.sessionId}-${pauseIndex}`}
-                          position={[
-                            parseCoordinate(pauseLog.latitude), 
-                            parseCoordinate(pauseLog.longitude)
-                          ]}
-                          icon={customIcons.pauseIcon}
-                        >
-                          <Popup>
-                            <div className="text-sm min-w-[200px]">
-                              <div className="flex items-center gap-2 mb-3">
-                                <div 
-                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                                  style={{ backgroundColor: getSessionColor(sessionIndex) }}
-                                >
-                                  <span className="font-bold text-sm">{sessionIndex + 1}</span>
-                                </div>
-                                <div>
-                                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
-                                  <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                                    <span>Session #{session.sessionId}</span>
-                                    <span>•</span>
-                                    <span>Pause #{pauseIndex + 1}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
-                                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
-                                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
-                                  </div>
-                                </div>
-                                
-                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-1">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
-                                      <p className="text-lg font-bold text-black">
-                                        {Math.round(pause.durationMinutes)} minutes
-                                      </p>
-                                    </div>
-                                   
-                                  </div>
-                                </div>
-                                
-                                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                    <span><strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div 
-                                      className="w-2 h-2 rounded-full"
-                                      style={{ backgroundColor: getSessionColor(sessionIndex) }}
-                                    ></div>
-                                    <span>Session Color</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    }
-                    return null;
-                  });
-                })}
-
+              {showPauseMarkers && multiSessionMapView.sessions.map((session, sessionIndex) => {
+  // Only detect pauses based on backend pause flags
+  const pauses = detectPauses(session.logs || []);
+  return pauses.map((pause, pauseIndex) => {
+    const pauseLog = pause.start;
+    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
+      return (
+        <Marker
+          key={`pause-${session.sessionId}-${pauseIndex}`}
+          position={[
+            parseCoordinate(pauseLog.latitude), 
+            parseCoordinate(pauseLog.longitude)
+          ]}
+          icon={customIcons.pauseIcon}
+        >
+          <Popup>
+            <div className="text-sm min-w-[200px]">
+              <div className="flex items-center gap-2 mb-3">
+                <div 
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                >
+                  <span className="font-bold text-sm">{sessionIndex + 1}</span>
+                </div>
+                <div>
+                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
+                  <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                    <span>Session #{session.sessionId}</span>
+                    <span>•</span>
+                    <span>Backend Pause #{pauseIndex + 1}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
+                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
+                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
+                      <p className="text-lg font-bold text-black">
+                        {Math.round(pause.durationMinutes)} minutes
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span>
+                      <strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: getSessionColor(sessionIndex) }}
+                    ></div>
+                    <span>Session Color</span>
+                  </div>
+                </div>
+                
+                <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                  <strong>Backend Detected Pause</strong>
+                </div>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    }
+    return null;
+  });
+})}
                 {/* Log points markers for each session */}
                 {showLogMarkersMulti && multiSessionMapView.sessions.map((session, sessionIndex) => (
                   session.logs && session.logs.slice(0, 50).map((log, logIndex) => { // Limit to 50 points per session for performance
@@ -3016,13 +2988,13 @@ export default function AttendanceList() {
                     <FaMapPin />
                     {showLogMarkers ? 'Hide Log Points' : 'Show Log Points'}
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => setShowPauseMarkers(!showPauseMarkers)}
                     className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
                   >
                     <FaPauseCircle />
                     {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
-                  </button>
+                  </button> */}
                   <button
                     onClick={closeMap}
                     className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
@@ -3110,90 +3082,92 @@ export default function AttendanceList() {
                 )}
 
                 {/* Pause markers */}
-                {showPauseMarkers && mapView.logs && (() => {
-                  const pauses = detectPauses(mapView.logs);
-                  return pauses.map((pause, pauseIndex) => {
-                    // Use the pause start point for the marker
-                    const pauseLog = pause.start;
-                    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
-                      return (
-                        <Marker
-                          key={`pause-${pauseIndex}`}
-                          position={[
-                            parseCoordinate(pauseLog.latitude), 
-                            parseCoordinate(pauseLog.longitude)
-                          ]}
-                          icon={customIcons.pauseIcon}
-                        >
-                          <Popup>
-                            <div className="text-sm min-w-[250px]">
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white">
-                                  <FaClock />
-                                </div>
-                                <div>
-                                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400">Pause #{pauseIndex + 1}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
-                                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
-                                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
-                                  </div>
-                                </div>
-                                
-                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg ">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
-                                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                                        {Math.round(pause.durationMinutes)} minutes
-                                      </p>
-                                    </div>
-                                    <div className="bg-purple-500/20 backdrop-blur-sm p-2 rounded-lg">
-                                      <FaClock className="text-purple-500" />
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                    <span><strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                    <span><strong>Battery:</strong> {pauseLog.battery ? `${pauseLog.battery}%` : 'N/A'}</span>
-                                  </div>
-                                </div>
-                                
-                                
-                              </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    }
-                    return null;
-                  });
-                })()}
+               {showPauseMarkers && mapView.logs && (() => {
+  // Only detect pauses based on backend pause flags
+  const pauses = detectPauses(mapView.logs);
+  return pauses.map((pause, pauseIndex) => {
+    const pauseLog = pause.start;
+    if (isValidCoordinate(pauseLog.latitude, pauseLog.longitude)) {
+      return (
+        <Marker
+          key={`pause-${pauseIndex}`}
+          position={[
+            parseCoordinate(pauseLog.latitude), 
+            parseCoordinate(pauseLog.longitude)
+          ]}
+          icon={customIcons.pauseIcon}
+        >
+          <Popup>
+            <div className="text-sm min-w-[250px]">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white">
+                  <FaClock />
+                </div>
+                <div>
+                  <strong className="text-lg text-purple-700 dark:text-purple-400">⏸️ Pause Point</strong>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Backend Detected Pause #{pauseIndex + 1}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause Start</p>
+                    <p className="font-medium">{formatDateTime(pause.start.timestamp)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Pause End</p>
+                    <p className="font-medium">{formatDateTime(pause.end.timestamp)}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
+                  <div className="flex items-center justify-between p-3">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Pause Duration</p>
+                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                        {Math.round(pause.durationMinutes)} minutes
+                      </p>
+                    </div>
+                    <div className="bg-purple-500/20 backdrop-blur-sm p-2 rounded-lg">
+                      <FaClock className="text-purple-500" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span>
+                      <strong>Coordinates:</strong> {parseCoordinate(pauseLog.latitude).toFixed(6)}, {parseCoordinate(pauseLog.longitude).toFixed(6)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span><strong>Battery:</strong> {pauseLog.battery ? `${pauseLog.battery}%` : 'N/A'}</span>
+                  </div>
+                </div>
+                
+                <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                  <strong>Note:</strong> This pause was detected by the backend (pause: true flag)
+                </div>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    }
+    return null;
+  });
+})()}
 
                 {/* Log points markers */}
                 {showLogMarkers && mapView.logs && mapView.logs.map((log, logIndex) => {
                   if (isValidCoordinate(log.latitude, log.longitude)) {
                     const logDate = new Date(log.timestamp);
-                    const isPausePoint = log.pause || 
-                      (logIndex > 0 && 
-                       (new Date(log.timestamp).getTime() - 
-                        new Date(mapView.logs[logIndex - 1].timestamp).getTime()) > 
-                        2 * 60 * 1000); // 2 minute threshold
+                    const isPausePoint = log.pause === true;
                     
                     return (
                       <Marker

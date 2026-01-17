@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-// import { TbTableShare } from "react-icons/tb";
-// import { RiUserSharedFill } from "react-icons/ri";
-import { PiUsersThreeBold } from "react-icons/pi";
-// import  LogoutIcon from '@mui/icons-material/Logout';
 
-// Assume these icons are imported from an icon library
+import { PiUsersThreeBold } from "react-icons/pi";
 import {
   CalenderIcon,
   ChatIcon,
@@ -13,10 +9,17 @@ import {
   ChevronDownIcon,
   GridIcon, PlugInIcon,
   UserCircleIcon,
+  
 } from "../icons";
+
+import { IoPersonAddOutline } from "react-icons/io5";
+
+import { MdOutlineAdd } from "react-icons/md";
+
 import { useSidebar } from "../context/SidebarContext";
+import { MdAnnouncement } from "react-icons/md";
 import SidebarWidget from "./SidebarWidget";
-import { MdAppRegistration } from "react-icons/md";
+// import { MdAppRegistration } from "react-icons/md";
 import { FaTasks } from "react-icons/fa";
 // import { FaHouseChimneyUser } from "react-icons/fa6";
 import { MdListAlt } from "react-icons/md";
@@ -91,12 +94,12 @@ const AppSidebar: React.FC = () => {
        
       ],
     },
-  {
-    icon: <CalenderIcon />,
-    name: t("menu.calendar"),
-    path: "/calendar",
-    role: ["admin","ZonalManager","Manager","HR"],
-  },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: t("menu.calendar"),
+  //   path: "/calendar",
+  //   role: ["admin","ZonalManager","Manager","HR"],
+  // },
   {
     icon: <UserCircleIcon />,
     name: t("menu.profile"),
@@ -118,26 +121,26 @@ const AppSidebar: React.FC = () => {
     role: ["admin","ZonalManager","Manager","HR"],
   },
   {
-    icon: <MdAppRegistration />,
+    icon: <IoPersonAddOutline />,
     name: t("menu.registerUserForm"),
     path: "/user-register",
     role: ["admin","HR"],
   },
    {
-    icon: <FaTasks />,
+    icon: <MdOutlineAdd  />,
     name: t("Add Role"),
     path: "/add-role",
-    role: ["admin"],
+    role: ["admin","HR"],
   },
   {
-    icon: <FaTasks />,
+    icon: < MdOutlineAdd  />,
     name: t("Add department"),
     path: "/add-department",
-    role: ["admin"],
+    role: ["admin","HR"],
   },
   
   {
-    icon: <FaTasks />,
+    icon: <MdAnnouncement />,
     name: t("menu.announcement"),
     path: "/announcementList",
     role: ["admin","Manager","HR"],

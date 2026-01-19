@@ -75,11 +75,16 @@ const AppHeader: React.FC = () => {
           </button>
 
           {/* Logo */}
-          <Link to="/home" className="lg:hidden">
-            <div >
-              <img src="cowberry_organics_2.png" alt="Logo" className="flex justify-center items-center " width={170} height={0}/>
-            </div>
-          </Link>
+        <Link to="/home" className="absolute left-1/2 transform -translate-x-1/2">
+  <div>
+    <img 
+      src="cowberry_organics_2.png" 
+      alt="Logo" 
+      width={170} 
+      height="auto"
+    />
+  </div>
+</Link>
 
           {/* App Menu Button */}
           <button

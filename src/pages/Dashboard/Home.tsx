@@ -68,8 +68,8 @@ export default function Home() {
           <BirthdaysToday />
         </div>
 
-        {/* Job Applications + Rejections */}
-        {/* <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
+        {/* Job Applications + Rejections */} 
+        {/* {/* <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
       <JobApplicationCard />
       <JobRejectionCard />
     </div> */}

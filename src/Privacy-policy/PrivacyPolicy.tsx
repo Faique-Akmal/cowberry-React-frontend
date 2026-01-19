@@ -21,7 +21,7 @@ const PrivacyPolicy: React.FC = () => {
           {/* Introduction */}
           <section className="space-y-4">
             <p className="text-gray-700 leading-relaxed">
-              LANTERN360 ("we", "our", "us") respects the privacy of its users. This Privacy Policy explains how we collect, use, store, share, and protect information when you use the LANTERN360 mobile application ("App").
+              LANTERN360 ,we respects the privacy of its users. This Privacy Policy explains how we collect, use, store, share, and protect information when you use the LANTERN360 mobile application ("App").
             </p>
             <p className="text-gray-700 leading-relaxed">
               LANTERN360 is an employee-tracking and field-work management application designed for organizations to monitor field employees' attendance, travel activities, and work sessions. This App is intended <strong className="font-semibold text-cowberry-green-500">only for authorized field employees</strong> of organizations using LANTERN360.

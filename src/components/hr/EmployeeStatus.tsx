@@ -286,11 +286,12 @@ const EmployeeStatus = () => {
             <Mail className="w-4 h-4" />
             Contact
           </span>
-          <span className="flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            Status
+          <span className=" ">
+           
+            Department
           </span>
-          <span className="pr-3">Activity</span>
+          <span className="flex items-center gap-2">
+          AllocatedArea</span>
         </div>
 
         {/* Users List Container */}
@@ -400,7 +401,7 @@ const EmployeeStatus = () => {
                       </p>
                       <div className="flex items-center gap-2">
                         <span
-                          className="text-xs px-2 py-1 rounded-full backdrop-blur-sm truncate max-w-[100px]"
+                          className="text-xs px-2 py-1 rounded-full backdrop-blur-sm max-w-[100px]"
                           style={{
                             background: "rgba(139, 92, 246, 0.1)",
                             border: "1px solid rgba(139, 92, 246, 0.2)",
@@ -420,7 +421,7 @@ const EmployeeStatus = () => {
                     </div>
                   </div>
                   <div className="ml-2">
-                    <StatusPill status="Active" />
+                   {user.allocatedArea}
                   </div>
                 </div>
               </div>
@@ -457,25 +458,25 @@ const EmployeeStatus = () => {
                       >
                         {user.role || "Field Employee"}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        {user.employee_code}
-                      </span>
+                     
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                    {user.email}
-                  </p>
-                </div>
+               <div className="flex flex-col">
+  <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
+    {user.email}
+  </p>
+  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+    {user.employee_code}
+  </span>
+</div>
 
                 <div className="flex items-center">
-                  <HomeOfficePill active={user.is_checkin} />
-                </div>
+                  {user.department}                 </div>
 
                 <div className="flex items-center">
-                  <StatusPill status="Active" />
+                 {user.allocatedArea}
                 </div>
               </div>
             </div>

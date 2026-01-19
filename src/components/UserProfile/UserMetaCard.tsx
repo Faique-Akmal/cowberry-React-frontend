@@ -351,7 +351,7 @@ export default function UserMetaCard() {
             <div className="
               w-full h-full
               flex items-center justify-center
-              bg-gradient-to-r from-green-500/80 to-green-600/80
+              
               text-black text-xl sm:text-2xl font-medium
               backdrop-blur-sm
             ">

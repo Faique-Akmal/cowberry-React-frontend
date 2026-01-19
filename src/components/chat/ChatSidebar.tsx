@@ -61,7 +61,7 @@ export const Sidebar = ({
         isGroup = true;
       } else {
         const other = conv.participants.find(
-          (p) => p.user.id !== currentUser.id
+          (p) => p.user.id !== currentUser.id,
         )?.user;
         if (other) {
           chattedIds.add(other.id);
@@ -101,7 +101,7 @@ export const Sidebar = ({
 
     return searchTerm
       ? items.filter((i) =>
-          i.name.toLowerCase().includes(searchTerm.toLowerCase())
+          i.name.toLowerCase().includes(searchTerm.toLowerCase()),
         )
       : items;
   }, [conversations, allUsers, currentUser, searchTerm]);
@@ -139,12 +139,14 @@ export const Sidebar = ({
               <Users className="w-6 h-6" />
             </button>
           )}
-          <button
-            onClick={onChatScreen}
-            className="md:hidden text-white p-1 hover:bg-white/10 rounded-full"
-          >
-            <ArrowRight />
-          </button>
+          {!!activeConversation && (
+            <button
+              onClick={onChatScreen}
+              className="md:hidden text-white p-1 hover:bg-white/10 rounded-full"
+            >
+              <ArrowRight />
+            </button>
+          )}
         </div>
       </div>
 

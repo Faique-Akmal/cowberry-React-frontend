@@ -16,7 +16,7 @@ import {
 import { Message } from "../../types/chatTypes";
 import { useChatStore } from "../../store/useChatStore";
 
-const BASE_URL = import.meta.env.VITE_FILE_URL || "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_FILE_URL;
 
 const getFullUrl = (path: string | undefined) => {
   if (!path) return "";
@@ -28,12 +28,12 @@ interface MessageBubbleProps {
   msg: Message;
   isMe: boolean;
   onDelete: (id: number) => void;
-  isGroup: boolean;
+  isGroup?: boolean;
 }
 
 // React.memo use kiya taaki parent re-render hone per ye dubara render na ho
 const MessageBubble = React.memo(
-  ({ msg, isMe, onDelete, isGroup }: MessageBubbleProps) => {
+  ({ msg, isMe, onDelete }: MessageBubbleProps) => {
     const [activeMenu, setActiveMenu] = useState(false);
     const { setReplyingTo, setEditingMessage } = useChatStore();
 
@@ -76,7 +76,7 @@ const MessageBubble = React.memo(
         const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
         return (
           <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
-            <div className="flex items-center gap-2 text-white/90 font-medium">
+            <div className="flex justify-center items-center gap-2 text-white/90 font-medium relative">
               <img
                 src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
                 alt="Location Preview"
@@ -135,12 +135,9 @@ const MessageBubble = React.memo(
               : "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
           }`}
         >
-          {/* Sender Name in Group */}
-          {isGroup && (
-            <p className="text-xs text-gray-100 font-bold mb-1 opacity-80">
-              {isMe ? `${msg.sender.username} (You)` : msg.sender.username}
-            </p>
-          )}
+          <p className="text-xs text-gray-100 font-bold mb-1 opacity-80">
+            {isMe ? `${msg.sender.username} (You)` : msg.sender.username}
+          </p>
 
           {/* Reply Context */}
           {msg.replyTo && (
@@ -238,7 +235,7 @@ const MessageBubble = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 export default MessageBubble;

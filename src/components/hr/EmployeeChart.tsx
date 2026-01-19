@@ -35,9 +35,7 @@ export default function EmployeeChart() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ✅ Process Data with useMemo
-  // No need for useEffect or local state to transform data.
-  // This runs strictly when 'users' changes.
+ 
   const { chartData, totalEmployees } = useMemo(() => {
     const total = users.length;
     const departmentMap = new Map<string, number>();

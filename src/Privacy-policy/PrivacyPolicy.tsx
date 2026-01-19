@@ -338,7 +338,7 @@ const PrivacyPolicy: React.FC = () => {
                   href="mailto:support@lantern360.com" 
                   className="text-cowberry-green-500 hover:text-blue-800 underline font-medium"
                 >
-                  support@lantern360.com
+                 team.lantern360@gmail.com
                 </a>
               </p>
             </div>

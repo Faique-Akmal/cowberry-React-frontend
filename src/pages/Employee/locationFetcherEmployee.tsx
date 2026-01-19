@@ -2248,7 +2248,7 @@ export default function AttendanceList() {
             </div>
             
             {/* Load more groups button */}
-            {visibleGroups < memoizedGroupedView.length && (
+            {/* {visibleGroups < memoizedGroupedView.length && (
               <div className="flex justify-center mt-6">
                 <button
                   onClick={loadMoreGroups}
@@ -2258,7 +2258,7 @@ export default function AttendanceList() {
                   Load More Groups ({memoizedGroupedView.length - visibleGroups} more)
                 </button>
               </div>
-            )}
+            )} */}
             
             {/* Infinite scroll loader for main pagination */}
             <div ref={observerTarget} className="py-8">

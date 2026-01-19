@@ -169,7 +169,7 @@ export default function UserInfoCard() {
       
       closeModal();
     } catch (error: any) {
-      console.error("Update error:", error);
+    
       
       if (error.response?.status === 404) {
         toast.error(`User with ID ${userId} not found`, { id: "save-user" });

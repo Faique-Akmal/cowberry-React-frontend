@@ -62,7 +62,7 @@ export default function OtpModal({ isOpen, onClose, onVerificationSuccess }: Otp
         setIsError(true);
       }
     } catch (error: any) {
-      console.error("OTP verification error:", error);
+     
       
       if (error.response) {
         const status = error.response.status;

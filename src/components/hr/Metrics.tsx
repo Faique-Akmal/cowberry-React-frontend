@@ -175,12 +175,8 @@ export default function Metrics() {
                         before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br ${card.gradient}
                         overflow-hidden group
                     `}
-          style={{
-            ...currentGlassStyle,
-            backgroundColor: isDarkMode
-              ? "rgba(30, 41, 59, 0.7)"
-              : "rgba(255, 255, 255, 0.7)",
-          }}
+          style={
+            currentGlassStyle}
         >
           {/* Optional: Subtle background pattern */}
           <div className="absolute inset-0 opacity-5 dark:opacity-10">

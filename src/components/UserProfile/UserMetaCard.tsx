@@ -59,12 +59,12 @@ export default function UserMetaCard() {
       if (!isNaN(id)) {
         setUserId(id);
       } else {
-        // console.error("Invalid user ID in localStorage:", storedUserId);
+       
         setError("Invalid user ID found. Please log in again.");
         setLoading(false);
       }
     } else {
-      // console.error("No user ID found in localStorage");
+     
       setError("User not authenticated. Please log in.");
       setLoading(false);
     }
@@ -99,7 +99,7 @@ export default function UserMetaCard() {
               return; // Use cached data
             }
           } catch (parseError) {
-            // console.error("Error parsing localStorage data:", parseError);
+           
             // Continue to fetch from API if parsing fails
           }
         }
@@ -108,7 +108,7 @@ export default function UserMetaCard() {
         await fetchUserFromAPI();
         
       } catch (error) {
-        // console.error("Error loading user data:", error);
+       
         setError("Failed to load user profile. Please try again.");
       } finally {
         setLoading(false);
@@ -117,10 +117,10 @@ export default function UserMetaCard() {
 
     const fetchUserFromAPI = async () => {
       try {
-        // console.log("Fetching user with ID:", userId); // Debug log
+       
         
         const response = await API.get(`/auth/me/${userId}`);
-        // console.log("API Response:", response.data); // Debug log
+    
         
         if (response.data && response.data.user) {
           const userData = response.data.user;
@@ -136,7 +136,7 @@ export default function UserMetaCard() {
           throw new Error("Invalid response structure");
         }
       } catch (error: any) {
-        // console.error("Failed to fetch user from API:", error);
+    
         const errorMessage = error.response?.data?.message || 
                            error.message || 
                            "Failed to load user profile";
@@ -174,8 +174,6 @@ export default function UserMetaCard() {
         return;
       }
 
-      // console.log("Updating user with ID:", userId); // Debug log
-      // console.log("Update data:", { username, hasImage: !!profileImage }); // Debug log
 
       // Make PATCH request
       const response = await API.patch(`/auth/me/${userId}`, formData, {
@@ -184,7 +182,7 @@ export default function UserMetaCard() {
         },
       });
 
-      // console.log("Update response:", response.data); // Debug log
+    
 
       // Update localStorage and state with new data
       if (response.data && response.data.user) {
@@ -217,7 +215,7 @@ export default function UserMetaCard() {
       closeModal();
       
     } catch (error: any) {
-      // console.error("Failed to update profile:", error);
+     
       
       if (error.response?.status === 401) {
         toast.error("Unauthorized. Please log in again.");

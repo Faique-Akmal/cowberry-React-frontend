@@ -21,17 +21,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket"],
-      // Auth token bhej sakte hain handshake me agar backend verify kare
       auth: { token: localStorage.getItem("token") },
     });
 
     newSocket.on("connect", () => {
-      console.log("🟢 Socket Connected:", newSocket.id);
       set({ isConnected: true });
     });
 
     newSocket.on("disconnect", () => {
-      console.log("🔴 Socket Disconnected");
       set({ isConnected: false });
     });
 
@@ -45,9 +42,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         message.conversationId === activeConversation.id
       ) {
         addMessage(message);
-      } else {
-        // Optional: Show notification for other chats
-        console.log("New message in another conversation", message);
       }
     });
 

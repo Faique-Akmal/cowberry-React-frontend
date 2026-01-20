@@ -42,7 +42,7 @@ API.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // --- Response Interceptor ---
@@ -87,12 +87,10 @@ API.interceptors.response.use(
       }
 
       try {
-        console.log("Rotating tokens...");
-
         const response = await axios.post(
           `${API_URL}/auth/refresh-token`,
           { refreshToken: refreshToken },
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const { accessToken, refreshToken: newRefreshToken } = response.data;
@@ -104,8 +102,6 @@ API.interceptors.response.use(
         // ✅ IMPORTANT: Update BOTH tokens (Rotation Logic)
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", newRefreshToken);
-
-        console.log("Tokens rotated successfully");
 
         // Update Axios Defaults
         API.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
@@ -130,7 +126,7 @@ API.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default API;

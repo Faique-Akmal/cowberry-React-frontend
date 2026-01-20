@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import API from "../api/axios";
 
 /** -------- Types -------- */
@@ -37,7 +45,7 @@ const readJSON = <T,>(key: string, fallback: T): T => {
 const writeJSON = (key: string, value: unknown) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch { }
+  } catch {}
 };
 
 const cacheOffline = (payload: LocationPayload) => {
@@ -79,8 +87,8 @@ const startGeoWatch = () => {
       };
     },
     // ignore errors — we’ll surface via send step
-    () => { },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+    () => {},
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
   );
 };
 
@@ -92,15 +100,21 @@ const stopGeoWatch = () => {
 };
 
 /** -------- Context -------- */
-const LocationTrackerContext = createContext<LocationTrackerContextValue | null>(null);
+const LocationTrackerContext =
+  createContext<LocationTrackerContextValue | null>(null);
 
 export const useLocationTracker = () => {
   const ctx = useContext(LocationTrackerContext);
-  if (!ctx) throw new Error("useLocationTracker must be used within LocationTrackerProvider");
+  if (!ctx)
+    throw new Error(
+      "useLocationTracker must be used within LocationTrackerProvider",
+    );
   return ctx;
 };
 
-export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
   const [status, setStatus] = useState<TrackerStatus>("idle");
   const [intervalMs, setIntervalMs] = useState<number | null>(null);
   const [lastSentAt, setLastSentAt] = useState<string | null>(null);
@@ -115,10 +129,12 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
 
     try {
       const res = await API.get("/location-log-config/");
-      console.log("my api location config result", res.data[0])
       const serverMs: number | undefined =
-        typeof res?.data[0]?.refresh_interval === "number" ? res?.data[0]?.refresh_interval * 1000 : undefined;
-      const finalMs = serverMs && serverMs >= 5000 ? serverMs : (cached ?? 15000);
+        typeof res?.data[0]?.refresh_interval === "number"
+          ? res?.data[0]?.refresh_interval * 1000
+          : undefined;
+      const finalMs =
+        serverMs && serverMs >= 5000 ? serverMs : (cached ?? 15000);
       setIntervalMs(finalMs);
       writeJSON(LS_INTERVAL, finalMs);
       return finalMs;
@@ -140,7 +156,7 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
               lng: Number(pos.coords.longitude.toFixed(6)),
             }),
           (err) => reject(err),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
         );
       });
 
@@ -155,8 +171,7 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
 
       if (navigator.onLine) {
         try {
-          const res = await API.post("/locations/", payload);
-          console.log(res.data)
+          await API.post("/locations/", payload);
         } catch {
           cacheOffline(payload);
         }
@@ -180,7 +195,7 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
       // kick off
       tickTimer = window.setTimeout(tick, ms);
     },
-    [sendOnce]
+    [sendOnce],
   );
 
   const clearTicks = () => {
@@ -207,7 +222,7 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
       scheduleTicks(ms);
       setStatus("running");
     },
-    [loadInterval, scheduleTicks, sendOnce]
+    [loadInterval, scheduleTicks, sendOnce],
   );
 
   const stop = useCallback(async () => {
@@ -223,13 +238,16 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
     // best effort final flush of cached
     try {
       if (navigator.onLine) await flushCached();
-    } catch { }
+    } catch {}
     setStatus("idle");
   }, []);
 
   /** Resume tracking on reload / route changes if attendance was active */
   useEffect(() => {
-    const att = readJSON<{ userId: number; since: string } | null>(LS_ATT_KEY, null);
+    const att = readJSON<{ userId: number; since: string } | null>(
+      LS_ATT_KEY,
+      null,
+    );
     if (att?.userId) {
       // fire and forget; no await inside effect
       start(att.userId).catch(() => setStatus("error"));
@@ -257,8 +275,12 @@ export const LocationTrackerProvider: React.FC<React.PropsWithChildren> = ({ chi
 
   const value = useMemo<LocationTrackerContextValue>(
     () => ({ status, lastSentAt, intervalMs, start, stop }),
-    [status, lastSentAt, intervalMs, start, stop]
+    [status, lastSentAt, intervalMs, start, stop],
   );
 
-  return <LocationTrackerContext.Provider value={value}>{children}</LocationTrackerContext.Provider>;
+  return (
+    <LocationTrackerContext.Provider value={value}>
+      {children}
+    </LocationTrackerContext.Provider>
+  );
 };

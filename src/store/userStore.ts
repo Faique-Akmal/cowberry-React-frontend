@@ -26,21 +26,21 @@ export interface AxiosGetUsers {
   user_permissions: any[]; // Replace `any` with proper permission type if known
 }
 
-export interface AxiosGetMe{
-address: string | null;
-birth_date: Date | null;
-department: number;
-email: string;
-id:number;
-mobile_no: number | null;
-profile_image: string | null;
-role: number;
-username:string
+export interface AxiosGetMe {
+  address: string | null;
+  birth_date: Date | null;
+  department: number;
+  email: string;
+  id: number;
+  mobile_no: number | null;
+  profile_image: string | null;
+  role: number;
+  username: string;
 }
 
-export interface AxiosPostChangePassword{
+export interface AxiosPostChangePassword {
   old_password: string;
-  new_password: string;        
+  new_password: string;
 }
 
 // export interface PaginatedResponse<T> {
@@ -52,7 +52,7 @@ export interface AxiosPostChangePassword{
 // export const axiosGetUsers = async () => {
 //       try {
 //           const res = await API.get("/users/");
-          
+
 //           if(res.data){
 //             return res.data?.results;
 //           }
@@ -64,50 +64,50 @@ export interface AxiosPostChangePassword{
 export const axiosGetUsers = async (
   page: number,
   limit: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
-      try {
-        const res = await API.get("/users/", {
-          params: { page, limit },
-          signal,
-        });
-        
-        if(res.data){
-          return res.data?.results;
-        }
-      } catch (error) {
-        if (axios.isCancel(error) || error?.name === "CanceledError") {
-              // request was canceled intentionally (safe to ignore)
-              console.log("✅ Axios request cancelled");
-            } else {
-              // actual error (show toast, log, etc)
-              console.error("❌ /users/ Request failed", error);
-            }
+  try {
+    const res = await API.get("/users/", {
+      params: { page, limit },
+      signal,
+    });
 
-        }
-        // console.error("/User get request error:", error);
+    if (res.data) {
+      return res.data?.results;
     }
+  } catch (error) {
+    if (axios.isCancel(error) || error?.name === "CanceledError") {
+      // request was canceled intentionally (safe to ignore)
+    } else {
+      // actual error (show toast, log, etc)
+      console.error("❌ /users/ Request failed", error);
+    }
+  }
+  // console.error("/User get request error:", error);
+};
 
 export const axiosGetMe = async () => {
-      try {
-          const res = await API.get("/me/");
-          
-          if(res.data){
-            return res.data;
-          }
-      } catch (error) {
-        console.error("/me/ get request error:", error);
-      }
-    }
-
-export const axiosPostChangePassword = async (oldNewPassword: AxiosPostChangePassword) => {
   try {
-      const res = await API.post("/auth/change-password/", oldNewPassword);
-      
-      if(res.data){
-        return res.data;
-      }
+    const res = await API.get("/me/");
+
+    if (res.data) {
+      return res.data;
+    }
+  } catch (error) {
+    console.error("/me/ get request error:", error);
+  }
+};
+
+export const axiosPostChangePassword = async (
+  oldNewPassword: AxiosPostChangePassword,
+) => {
+  try {
+    const res = await API.post("/auth/change-password/", oldNewPassword);
+
+    if (res.data) {
+      return res.data;
+    }
   } catch (error) {
     console.error("/change-password/ post request error:", error);
   }
-}
+};

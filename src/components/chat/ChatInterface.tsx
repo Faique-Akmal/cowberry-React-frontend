@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../../store/useChatStore";
 import { useSocketStore } from "../../store/useSocketStore";
 import { ChatService } from "../../services/chatService";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
   Send,
@@ -26,6 +27,7 @@ import {
   Trash2,
   X,
   CornerUpLeft,
+  ArrowRight,
 } from "lucide-react";
 import { Message, User } from "../../types/chatTypes";
 import toast from "react-hot-toast";
@@ -69,6 +71,7 @@ const useUserList = () => {
 };
 
 export const ChatInterface = () => {
+  const navigate = useNavigate();
   const { socket, connect, disconnect } = useSocketStore();
   const {
     activeConversation,
@@ -105,7 +108,7 @@ export const ChatInterface = () => {
   const filteredUsers = users.filter(
     (u) =>
       u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchTerm.toLowerCase())
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Setup User & Socket
@@ -172,6 +175,9 @@ export const ChatInterface = () => {
   }, []);
 
   // --- Handlers ---
+  const handleGoBack = () => {
+    navigate(-1); // -1 means: Go back 1 step in history
+  };
 
   const handleUserClick = async (receiverId: number) => {
     try {
@@ -298,7 +304,7 @@ export const ChatInterface = () => {
         setIsSendingLocation(false);
         toast.error("Unable to retrieve location");
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   };
 
@@ -401,15 +407,34 @@ export const ChatInterface = () => {
           } flex`}
         >
           <div className="flex h-20 items-center justify-between px-6 border-b border-white/10">
-            <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-sm">
-              Messages
-            </h2>
-            <div className="h-10 w-10 rounded-full bg-linear-to-tr from-lime-400 to-green-500 p-0.5">
-              <img
-                src={`https://ui-avatars.com/api/?name=${currentUser?.username}&background=random`}
-                alt="Me"
-                className="h-full w-full rounded-full border-2 border-white/50"
-              />
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleGoBack}
+                className="mr-1 rounded-full p-1 text-white/80 hover:bg-white/20"
+              >
+                <X className="h-7 w-7" />
+              </button>
+              <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-sm">
+                Messages
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-lime-400 to-green-500 p-0.5">
+                <img
+                  src={`https://ui-avatars.com/api/?name=${currentUser?.username}&background=random`}
+                  alt="Me"
+                  className="h-full w-full rounded-full border-2 border-white/50"
+                />
+              </div>
+              {!!activeConversation && (
+                <button
+                  onClick={() => setShowMobileChat(true)}
+                  className="mr-1 rounded-full p-2 text-white/80 hover:bg-white/20 md:hidden"
+                >
+                  <ArrowRight className="h-6 w-6" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -438,7 +463,7 @@ export const ChatInterface = () => {
                   onClick={() => handleUserClick(user.id)}
                   className={`group flex cursor-pointer items-center gap-4 rounded-2xl p-3 transition-all duration-200 hover:bg-white/20 ${
                     activeConversation?.participants.some(
-                      (p) => p.user.id === user.id
+                      (p) => p.user.id === user.id,
                     )
                       ? "bg-white/25 shadow-lg ring-1 ring-white/20"
                       : "hover:shadow-md"
@@ -497,7 +522,7 @@ export const ChatInterface = () => {
                     <h3 className="text-lg font-bold text-white drop-shadow-sm">
                       {activeConversation.type === "PERSONAL"
                         ? activeConversation.participants.find(
-                            (p) => p.user.id !== currentUser?.id
+                            (p) => p.user.id !== currentUser?.id,
                           )?.user.username || "Chat"
                         : activeConversation.name}
                     </h3>
@@ -602,7 +627,7 @@ export const ChatInterface = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveMenuId(
-                                  activeMenuId === msg.id ? null : msg.id
+                                  activeMenuId === msg.id ? null : msg.id,
                                 );
                               }}
                               className="p-1 rounded-full hover:bg-black/50 text-white/90"
@@ -697,7 +722,7 @@ export const ChatInterface = () => {
 
                 <div
                   className={`flex items-center gap-3 rounded-3xl bg-black/20 p-1.5 pr-2 ring-1 transition-all focus-within:bg-black/30 ${
-                    editingMessage ?? replyingTo
+                    (editingMessage ?? replyingTo)
                       ? "ring-amber-400/50"
                       : "ring-white/10"
                   }`}

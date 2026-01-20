@@ -17,7 +17,6 @@ export const startTokenRefreshInterval = () => {
 
         const newAccessToken = res.data.access;
         localStorage.setItem("accessToken", newAccessToken);
-        console.log("🔁 Access token refreshed automatically");
       } catch (error) {
         console.error("❌ Auto refresh token failed", error);
         localStorage.clear();

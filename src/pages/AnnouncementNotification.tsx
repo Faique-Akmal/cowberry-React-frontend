@@ -21,7 +21,6 @@ export default function AnnouncementNotification() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   // const socketRef = useRef<WebSocket | null>(null);
 
-
   //   const accessToken = localStorage.getItem("accessToken");
   //   const meUser = JSON.parse(localStorage.getItem("meUser")!);
   // const userId=meUser?.id;
@@ -30,8 +29,6 @@ export default function AnnouncementNotification() {
   useEffect(() => {
     API.get("/hrms/announcements/")
       .then((res) => {
-          // console.log("Fetched announcements:", res.data);
-        //  setAnnouncements(res.data.results || []);
         setAnnouncements(res.data.results || []);
       })
       .catch((err) => {
@@ -43,7 +40,7 @@ export default function AnnouncementNotification() {
   // useEffect(() => {
   //     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL; // should already include ws:// or wss://
   //   const socketUrl = `${SOCKET_URL}/ws/announcements/${userId}/?token=${accessToken}`;
-   
+
   //   const socket = new WebSocket(socketUrl);
   //   socketRef.current = socket;
 
@@ -82,8 +79,6 @@ export default function AnnouncementNotification() {
   //   };
   // }, []);
 
-
-
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
@@ -121,15 +116,15 @@ export default function AnnouncementNotification() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-            className="
+        className="
           fixed 
           left-1/2 transform -translate-x-1/2   /* Center for mobile/tablet */
           lg:left-auto lg:right-8 lg:translate-x-0  /* Move to right on large screens */
           flex flex-col gap-3 
           w-[90%] sm:w-auto max-w-sm 
           z-50 p-6
-        ">
-
+        "
+      >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             {t("announcement.Announcements")}
@@ -145,7 +140,7 @@ export default function AnnouncementNotification() {
         <ul className="flex flex-col h-auto overflow-y-auto custom-scrollbar">
           {announcements.length === 0 && (
             <li className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-             {t("announcement.No announcements available")}
+              {t("announcement.No announcements available")}
             </li>
           )}
           {announcements.map((item) => (
@@ -167,7 +162,7 @@ export default function AnnouncementNotification() {
             </li>
           ))}
         </ul>
-{/* 
+        {/* 
         <Link
           to="/"
           className="block px-4 py-2 mt-3 text-sm font-medium text-center text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"

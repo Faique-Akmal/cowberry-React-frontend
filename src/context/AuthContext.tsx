@@ -14,15 +14,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const login = async (refreshToken: string, accessToken: string) => {
     try {
-      console.log("AuthContext: Storing tokens...");
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("accessToken", accessToken);
-
-      // Optional: Verify tokens are stored
-      console.log("AuthContext: Tokens stored -", {
-        hasAccessToken: !!localStorage.getItem("accessToken"),
-        hasRefreshToken: !!localStorage.getItem("refreshToken"),
-      });
 
       return Promise.resolve();
     } catch (error) {
@@ -33,8 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const axiosLogout = async () => {
     try {
-      const res = await API.post("/auth/user_logout/")!;
-      console.log(res.data);
+      await API.post("/auth/user_logout/")!;
     } catch (err) {
       console.error("Failed to logout user", err);
     }

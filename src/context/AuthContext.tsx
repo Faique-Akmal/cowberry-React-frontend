@@ -38,13 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.clear();
   };
 
-  // useEffect(()=>{
-
-  //   const intervalId = startTokenRefreshInterval();
-  //   return () => clearInterval(intervalId);
-
-  // },[]);
-
   return (
     <AuthContext.Provider value={{ login, logout, axiosLogout }}>
       {children}

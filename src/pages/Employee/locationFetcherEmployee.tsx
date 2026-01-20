@@ -2853,8 +2853,1142 @@ export default function AttendanceList() {
       )}
 
       {/* Rest of the component remains the same... */}
-      {/* (Farmer Data Modal, Multi-Session Map Modal, Single Session Map Modal) */}
-      {/* ... The rest of your existing JSX code ... */}
+           {/* Farmer Data Modal */}
+      {showFarmerDataModal && (
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div
+            className={`${glassmorphismClasses.modal} w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col`}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-amber-600/90 to-orange-600/90 backdrop-blur-sm p-4 text-white flex-shrink-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg flex-shrink-0">
+                    <FaCar className="text-lg" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold truncate">
+                      Travel Session Details
+                    </h2>
+                    <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
+                      <span className="truncate backdrop-blur-sm bg-white/10 px-2 py-1 rounded">
+                        User ID: {selectedUserForFarmerData}
+                      </span>
+                      {users.find(
+                        (u) =>
+                          u.userId.toString() === selectedUserForFarmerData,
+                      )?.username && (
+                        <>
+                          <span className="text-white/50">•</span>
+                          <span className="truncate">
+                            User:{" "}
+                            {
+                              users.find(
+                                (u) =>
+                                  u.userId.toString() ===
+                                  selectedUserForFarmerData,
+                              )?.username
+                            }
+                          </span>
+                        </>
+                      )}
+                      {selectedSessionDate && (
+                        <>
+                          <span className="text-white/50">•</span>
+                          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded">
+                            <FaCalendarAlt className="text-xs" />
+                            <span className="truncate">
+                              {new Date(selectedSessionDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+                  <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
+                    <p className="text-xs opacity-80">Sessions</p>
+                    <p className="font-bold">{farmerTravelData.length}</p>
+                  </div>
+                  {farmerTravelData.length > 0 && (
+                    <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
+                      <p className="text-xs opacity-80">Showing</p>
+                      <p className="font-bold">
+                        1-{Math.min(farmerTravelData.length, 10)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={closeFarmerDataModal}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-lg transition-all flex-shrink-0"
+                  title="Close"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {isLoadingFarmerData ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Loading travel session data...
+                    </p>
+                  </div>
+                </div>
+              ) : farmerDataError ? (
+                <div className="bg-gradient-to-br from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-200/50 dark:border-red-800/50 rounded-xl p-8 text-center">
+                  <FaInfoCircle className="text-red-500 text-4xl mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-red-700 dark:text-red-400 mb-2">
+                    Error Loading Data
+                  </h3>
+                  <p className="text-red-600 dark:text-red-300">
+                    {farmerDataError}
+                  </p>
+                </div>
+              ) : farmerTravelData.length === 0 ? (
+                <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-12 text-center border border-white/10 dark:border-gray-700/50">
+                  <FaCar className="text-gray-400 dark:text-gray-600 text-5xl mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                    No Travel Data Found
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No travel sessions recorded for this user.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/10 dark:border-gray-700/50">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Total Sessions
+                        </p>
+                        <p className="text-2xl font-bold text-purple-500">
+                          {farmerTravelData.length}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Active Sessions
+                        </p>
+                        <p className="text-2xl font-bold text-green-500">
+                          {farmerTravelData.filter((s) => s.isActive).length}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Total Distance
+                        </p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                          {(
+                            farmerTravelData.reduce(
+                              (sum, s) => sum + (s.totalDistance || 0),
+                              0,
+                            ) / 1000
+                          ).toFixed(1)}{" "}
+                          km
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Total Farmers Met
+                        </p>
+                        <p className="text-2xl font-bold text-orange-500">
+                          {farmerTravelData.reduce(
+                            (sum, s) => sum + (s.farmerData?.count || 0),
+                            0,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sessions List */}
+                  {farmerTravelData.map((session, index) => {
+                    const duration = calculateDuration(
+                      session.startTime,
+                      session.endTime,
+                    );
+                    const farmerCount = session.farmerData?.count || 0;
+
+                    return (
+                      <div
+                        key={session.sessionId}
+                        className={`${glassmorphismClasses.card} rounded-2xl overflow-hidden backdrop-blur-lg mb-6`}
+                      >
+                        <div className="bg-gradient-to-r from-gray-500/10 via-gray-600/10 to-gray-700/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-xl">
+                                <FaRoute className="text-purple-500 dark:text-purple-400" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                                  Session #{session.sessionId}
+                                </h3>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <span
+                                    className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${session.isActive ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400" : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400"}`}
+                                  >
+                                    {session.status}
+                                  </span>
+                                  <span className="px-2 py-1 backdrop-blur-sm bg-white/10 dark:bg-gray-800/30 rounded-full text-xs text-gray-600 dark:text-gray-400">
+                                    {formatDateOnly(session.startTime)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 md:mt-0">
+                              <div className="text-right">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                  {formatTimeOnly(session.startTime)} -{" "}
+                                  {session.endTime
+                                    ? formatTimeOnly(session.endTime)
+                                    : "Active"}
+                                </p>
+                                <p className="text-sm font-medium text-gray-800 dark:text-white">
+                                  Duration: {duration.hours}h {duration.minutes}
+                                  m
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-6">
+                          {/* Session Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaClock />
+                                <span className="text-sm font-medium">
+                                  Duration
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {duration.hours}h {duration.minutes}m
+                              </p>
+                            </div>
+
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaRoad />
+                                <span className="text-sm font-medium">
+                                  Distance
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {(session.totalDistance / 1000).toFixed(2)} km
+                              </p>
+                            </div>
+
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaUser />
+                                <span className="text-sm font-medium">
+                                  Farmers Met
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-purple-500">
+                                {farmerCount}
+                              </p>
+                            </div>
+
+                            <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                <FaMapPin />
+                                <span className="text-sm font-medium">
+                                  Location Logs
+                                </span>
+                              </div>
+                              <p className="text-lg font-bold text-blue-500">
+                                {session.locationLogs?.count || 0}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Odometer Images Section */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                Start Odometer
+                              </h4>
+                              {renderOdometerImage(session.startOdometerImage)}
+                            </div>
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                End Odometer
+                              </h4>
+                              {renderOdometerImage(session.endOdometerImage)}
+                            </div>
+                          </div>
+
+                          {/* Farmer Data Section */}
+                          {farmerCount > 0 && session.farmerData?.data && (
+                            <div className="mb-6">
+                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-lg">
+                                  <FaUser className="text-purple-500" />
+                                </div>
+                                Farmers Met During This Session ({farmerCount})
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {session.farmerData.data.map(
+                                  (farmer, farmerIndex) => (
+                                    <div
+                                      key={farmer.id || farmerIndex}
+                                      className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50"
+                                    >
+                                      <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                          <h5 className="font-bold text-gray-800 dark:text-white">
+                                            {farmer.farmerName ||
+                                              `Farmer #${farmerIndex + 1}`}
+                                          </h5>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                                            Recorded:{" "}
+                                            {formatDateTime(farmer.createdAt)}
+                                          </p>
+                                        </div>
+                                        <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-purple-500/20 to-pink-600/20 border border-purple-400/30 text-purple-700 dark:text-purple-400 text-xs font-semibold rounded-full">
+                                          ID: {farmer.id}
+                                        </span>
+                                      </div>
+
+                                      {farmer.farmerDescription && (
+                                        <div className="mb-3">
+                                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            {farmer.farmerDescription}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {farmer.farmerImage &&
+                                        farmer.farmerImage.trim() !== "" && (
+                                          <div className="mt-3">
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                              Farmer Image:
+                                            </p>
+                                            <div className="rounded-xl overflow-hidden max-w-xs">
+                                              {renderOdometerImage(
+                                                farmer.farmerImage,
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 backdrop-blur-sm border-t border-white/10 dark:border-gray-700/50 p-4 flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  Showing {farmerTravelData.length} session
+                  {farmerTravelData.length !== 1 ? "s" : ""}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      alert("Export functionality to be implemented");
+                    }}
+                    className={`px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl font-medium flex items-center gap-2`}
+                  >
+                    <FaDownload />
+                    Export Data
+                  </button>
+                  <button
+                    onClick={closeFarmerDataModal}
+                    className={`px-6 py-2 ${glassmorphismClasses.button.outline} rounded-xl font-medium`}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Multi-Session Map Modal */}
+      {multiSessionMapView && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div
+            className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}
+          >
+            {/* Map Header */}
+            <div className="bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-sm p-6 text-white flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <FaUser className="text-2xl" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">
+                      {multiSessionMapView.username}
+                    </h2>
+                    <p className="text-blue-100">
+                      {multiSessionMapView.employeeCode} •
+                      {new Date(multiSessionMapView.date).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}{" "}
+                      •{multiSessionMapView.sessions.length} Session
+                      {multiSessionMapView.sessions.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowLogMarkersMulti(!showLogMarkersMulti)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showLogMarkersMulti ? "bg-white/30" : "bg-white/10 hover:bg-white/20"}`}
+                  >
+                    <FaMapPin />
+                    {showLogMarkersMulti
+                      ? "Hide Log Points"
+                      : "Show Log Points"}
+                  </button>
+                  <button
+                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? "bg-white/30" : "bg-white/10 hover:bg-white/20"}`}
+                  >
+                    <FaPauseCircle />
+                    {showPauseMarkers
+                      ? "Hide Pause Points"
+                      : "Show Pause Points"}
+                  </button>
+                  <button
+                    onClick={closeMultiSessionMap}
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
+                  >
+                    <span className="text-2xl">✕</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Map Container */}
+            <div className="flex-1 relative">
+              <MapContainer
+                center={multiSessionMapView.center}
+                zoom={multiSessionMapView.zoom}
+                scrollWheelZoom
+                style={{ height: "100%", width: "100%" }}
+                key={`multi-map-${multiSessionMapView.userId}-${multiSessionMapView.date}`}
+              >
+                <TileLayer
+                  attribution="Google Maps"
+                  url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                />
+
+                {/* Render all session polylines with different colors */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  const path = buildSessionPolylinePath(session);
+                  if (path.length >= 2) {
+                    const isActive = !session.endTime;
+                    return (
+                      <Polyline
+                        key={`session-${session.sessionId}`}
+                        positions={path}
+                        pathOptions={{
+                          color: getSessionColor(index),
+                          weight: 5,
+                          opacity: 0.8,
+                          lineCap: "round",
+                          lineJoin: "round",
+                          dashArray: isActive ? "10, 5" : undefined,
+                        }}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Start markers for each session */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  if (
+                    isValidCoordinate(
+                      session.startLatitude,
+                      session.startLongitude,
+                    )
+                  ) {
+                    return (
+                      <Marker
+                        key={`start-${session.sessionId}`}
+                        position={[
+                          parseCoordinate(session.startLatitude),
+                          parseCoordinate(session.startLongitude),
+                        ]}
+                        icon={customIcons.startIcon}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>
+                              🟢 Start (Session #{session.sessionId})
+                            </strong>
+                            <br />
+                            <strong>Time:</strong>{" "}
+                            {formatDateTime(session.startTime)}
+                            <br />
+                            <strong>Coordinates:</strong>{" "}
+                            {parseCoordinate(session.startLatitude).toFixed(6)},{" "}
+                            {parseCoordinate(session.startLongitude).toFixed(6)}
+                            <br />
+                            <div
+                              className="inline-block w-3 h-3 rounded-full mr-1"
+                              style={{
+                                backgroundColor: getSessionColor(index),
+                              }}
+                            ></div>
+                            <span>Session Color</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* End markers for each session */}
+                {multiSessionMapView.sessions.map((session, index) => {
+                  if (
+                    isValidCoordinate(session.endLatitude, session.endLongitude)
+                  ) {
+                    const isActive = !session.endTime;
+                    return (
+                      <Marker
+                        key={`end-${session.sessionId}`}
+                        position={[
+                          parseCoordinate(session.endLatitude),
+                          parseCoordinate(session.endLongitude),
+                        ]}
+                        icon={
+                          isActive
+                            ? customIcons.activeIcon
+                            : customIcons.endIcon
+                        }
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>
+                              {isActive ? "🟡 Active" : "🔴 End"} (Session #
+                              {session.sessionId})
+                            </strong>
+                            <br />
+                            <strong>Time:</strong>{" "}
+                            {isActive
+                              ? "Active"
+                              : formatDateTime(session.endTime)}
+                            <br />
+                            <strong>Coordinates:</strong>{" "}
+                            {parseCoordinate(session.endLatitude).toFixed(6)},{" "}
+                            {parseCoordinate(session.endLongitude).toFixed(6)}
+                            <br />
+                            <strong>Distance:</strong>{" "}
+                            {(session.totalDistance / 1000).toFixed(2)} km
+                            <br />
+                            <div
+                              className="inline-block w-3 h-3 rounded-full mr-1"
+                              style={{
+                                backgroundColor: getSessionColor(index),
+                              }}
+                            ></div>
+                            <span>Session Color</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Pause markers for each session */}
+                {showPauseMarkers &&
+                  multiSessionMapView.sessions.map((session, sessionIndex) => {
+                    // Only detect pauses based on backend pause flags
+                    const pauses = detectPauses(session.logs || []);
+                    return pauses.map((pause, pauseIndex) => {
+                      const pauseLog = pause.start;
+                      if (
+                        isValidCoordinate(pauseLog.latitude, pauseLog.longitude)
+                      ) {
+                        return (
+                          <Marker
+                            key={`pause-${session.sessionId}-${pauseIndex}`}
+                            position={[
+                              parseCoordinate(pauseLog.latitude),
+                              parseCoordinate(pauseLog.longitude),
+                            ]}
+                            icon={customIcons.pauseIcon}
+                          >
+                            <Popup>
+                              <div className="text-sm min-w-[200px]">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                                    style={{
+                                      backgroundColor:
+                                        getSessionColor(sessionIndex),
+                                    }}
+                                  >
+                                    <span className="font-bold text-sm">
+                                      {sessionIndex + 1}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <strong className="text-lg text-purple-700 dark:text-purple-400">
+                                      ⏸️ Pause Point
+                                    </strong>
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                      <span>Session #{session.sessionId}</span>
+                                      <span>•</span>
+                                      <span>
+                                        Backend Pause #{pauseIndex + 1}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Pause Start
+                                      </p>
+                                      <p className="font-medium">
+                                        {formatDateTime(pause.start.timestamp)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Pause End
+                                      </p>
+                                      <p className="font-medium">
+                                        {formatDateTime(pause.end.timestamp)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-1">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          Pause Duration
+                                        </p>
+                                        <p className="text-lg font-bold text-black">
+                                          {Math.round(pause.durationMinutes)}{" "}
+                                          minutes
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                      <span>
+                                        <strong>Coordinates:</strong>{" "}
+                                        {parseCoordinate(
+                                          pauseLog.latitude,
+                                        ).toFixed(6)}
+                                        ,{" "}
+                                        {parseCoordinate(
+                                          pauseLog.longitude,
+                                        ).toFixed(6)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="w-2 h-2 rounded-full"
+                                        style={{
+                                          backgroundColor:
+                                            getSessionColor(sessionIndex),
+                                        }}
+                                      ></div>
+                                      <span>Session Color</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                                    <strong>Backend Detected Pause</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      }
+                      return null;
+                    });
+                  })}
+                {/* Log points markers for each session */}
+                {showLogMarkersMulti &&
+                  multiSessionMapView.sessions.map(
+                    (session, sessionIndex) =>
+                      session.logs &&
+                      session.logs.slice(0, 50).map((log, logIndex) => {
+                        // Limit to 50 points per session for performance
+                        if (isValidCoordinate(log.latitude, log.longitude)) {
+                          const isPausePoint = log.pause;
+
+                          return (
+                            <Marker
+                              key={`log-${session.sessionId}-${log.id || logIndex}`}
+                              position={[
+                                parseCoordinate(log.latitude),
+                                parseCoordinate(log.longitude),
+                              ]}
+                              icon={L.divIcon({
+                                className: "custom-marker",
+                                html: `
+                              <div style="
+                                width: 8px;
+                                height: 8px;
+                                background-color: ${getSessionColor(sessionIndex)};
+                                border: 1px solid white;
+                                border-radius: 50%;
+                                opacity: 0.7;
+                                cursor: pointer;
+                              "></div>
+                            `,
+                                iconSize: [8, 8],
+                                iconAnchor: [4, 4],
+                              })}
+                            >
+                              <Popup>
+                                <div className="text-sm min-w-[200px]">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div
+                                      className="w-3 h-3 rounded-full"
+                                      style={{
+                                        backgroundColor:
+                                          getSessionColor(sessionIndex),
+                                      }}
+                                    ></div>
+                                    <strong>
+                                      Session #{session.sessionId} - Point #
+                                      {logIndex + 1}
+                                    </strong>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div>
+                                      <strong>Time:</strong>{" "}
+                                      {formatDateTime(log.timestamp)}
+                                    </div>
+                                    <div>
+                                      <strong>Coordinates:</strong>{" "}
+                                      {parseCoordinate(log.latitude).toFixed(6)}
+                                      ,{" "}
+                                      {parseCoordinate(log.longitude).toFixed(
+                                        6,
+                                      )}
+                                    </div>
+                                    <div>
+                                      <strong>Speed:</strong>{" "}
+                                      {log.speed ? `${log.speed} km/h` : "N/A"}
+                                    </div>
+                                    <div>
+                                      <strong>Status:</strong>{" "}
+                                      {isPausePoint ? "⏸️ Pause" : "Moving"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      }),
+                  )}
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Session Map Modal */}
+      {mapView && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div
+            className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}
+          >
+            <div className="bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-sm p-6 text-white flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <FaUser className="text-2xl" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">{mapView.username}</h2>
+                    <p className="text-blue-100">
+                      Employee Code: {mapView.employeeCode} • Session ID: #
+                      {mapView.sessionId}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowLogMarkers(!showLogMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showLogMarkers ? "bg-white/30" : "bg-white/10 hover:bg-white/20"}`}
+                  >
+                    <FaMapPin />
+                    {showLogMarkers ? "Hide Log Points" : "Show Log Points"}
+                  </button>
+                  {/* <button
+                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
+                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  >
+                    <FaPauseCircle />
+                    {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
+                  </button> */}
+                  <button
+                    onClick={closeMap}
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
+                  >
+                    <span className="text-2xl">✕</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 relative">
+              <MapContainer
+                center={getMapCenter(mapView)}
+                zoom={getMapZoom(mapView)}
+                scrollWheelZoom
+                style={{ height: "100%", width: "100%" }}
+                key={`map-${mapView.sessionId}-${lastUpdateTime?.getTime()}`}
+              >
+                <TileLayer
+                  attribution="Google Maps"
+                  url="https://www.google.cn/maps/vt?lyrs=m@189&gl=cn&x={x}&y={y}&z={z}"
+                />
+
+                {/* Polyline for the travel path */}
+                {(() => {
+                  const path = buildPolylinePath(mapView);
+                  if (path.length >= 2) {
+                    const isActive = !mapView.endTime;
+                    return (
+                      <Polyline
+                        positions={path}
+                        pathOptions={{
+                          color: isActive ? "#10B981" : "#3B82F6",
+                          weight: 6,
+                          opacity: 0.8,
+                          lineCap: "round",
+                          lineJoin: "round",
+                          dashArray: isActive ? "10, 5" : undefined,
+                        }}
+                      />
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Start marker */}
+                {isValidCoordinate(
+                  mapView.startLatitude,
+                  mapView.startLongitude,
+                ) && (
+                  <Marker
+                    position={[
+                      parseCoordinate(mapView.startLatitude),
+                      parseCoordinate(mapView.startLongitude),
+                    ]}
+                    icon={customIcons.startIcon}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <strong>🟢 Start Point</strong>
+                        <br />
+                        <strong>User:</strong> {mapView.username}
+                        <br />
+                        <strong>Time:</strong>{" "}
+                        {formatDateTime(mapView.startTime)}
+                        <br />
+                        <strong>Coordinates:</strong>{" "}
+                        {parseCoordinate(mapView.startLatitude).toFixed(6)},{" "}
+                        {parseCoordinate(mapView.startLongitude).toFixed(6)}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* End marker */}
+                {isValidCoordinate(
+                  mapView.endLatitude,
+                  mapView.endLongitude,
+                ) && (
+                  <Marker
+                    position={[
+                      parseCoordinate(mapView.endLatitude),
+                      parseCoordinate(mapView.endLongitude),
+                    ]}
+                    icon={
+                      !mapView.endTime
+                        ? customIcons.activeIcon
+                        : customIcons.endIcon
+                    }
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <strong>
+                          {!mapView.endTime
+                            ? "🟡 Active Point"
+                            : "🔴 End Point"}
+                        </strong>
+                        <br />
+                        <strong>User:</strong> {mapView.username}
+                        <br />
+                        <strong>Time:</strong>{" "}
+                        {!mapView.endTime
+                          ? "Active"
+                          : formatDateTime(mapView.endTime)}
+                        <br />
+                        <strong>Coordinates:</strong>{" "}
+                        {parseCoordinate(mapView.endLatitude).toFixed(6)},{" "}
+                        {parseCoordinate(mapView.endLongitude).toFixed(6)}
+                        <br />
+                        <strong>Total Distance:</strong>{" "}
+                        {(mapView.totalDistance / 1000).toFixed(2)} km
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Pause markers */}
+                {showPauseMarkers &&
+                  mapView.logs &&
+                  (() => {
+                    // Only detect pauses based on backend pause flags
+                    const pauses = detectPauses(mapView.logs);
+                    return pauses.map((pause, pauseIndex) => {
+                      const pauseLog = pause.start;
+                      if (
+                        isValidCoordinate(pauseLog.latitude, pauseLog.longitude)
+                      ) {
+                        return (
+                          <Marker
+                            key={`pause-${pauseIndex}`}
+                            position={[
+                              parseCoordinate(pauseLog.latitude),
+                              parseCoordinate(pauseLog.longitude),
+                            ]}
+                            icon={customIcons.pauseIcon}
+                          >
+                            <Popup>
+                              <div className="text-sm min-w-[250px]">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white">
+                                    <FaClock />
+                                  </div>
+                                  <div>
+                                    <strong className="text-lg text-purple-700 dark:text-purple-400">
+                                      ⏸️ Pause Point
+                                    </strong>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      Backend Detected Pause #{pauseIndex + 1}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Pause Start
+                                      </p>
+                                      <p className="font-medium">
+                                        {formatDateTime(pause.start.timestamp)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Pause End
+                                      </p>
+                                      <p className="font-medium">
+                                        {formatDateTime(pause.end.timestamp)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
+                                    <div className="flex items-center justify-between p-3">
+                                      <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          Pause Duration
+                                        </p>
+                                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                          {Math.round(pause.durationMinutes)}{" "}
+                                          minutes
+                                        </p>
+                                      </div>
+                                      <div className="bg-purple-500/20 backdrop-blur-sm p-2 rounded-lg">
+                                        <FaClock className="text-purple-500" />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                      <span>
+                                        <strong>Coordinates:</strong>{" "}
+                                        {parseCoordinate(
+                                          pauseLog.latitude,
+                                        ).toFixed(6)}
+                                        ,{" "}
+                                        {parseCoordinate(
+                                          pauseLog.longitude,
+                                        ).toFixed(6)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                      <span>
+                                        <strong>Battery:</strong>{" "}
+                                        {pauseLog.battery
+                                          ? `${pauseLog.battery}%`
+                                          : "N/A"}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                                    <strong>Note:</strong> This pause was
+                                    detected by the backend (pause: true flag)
+                                  </div>
+                                </div>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      }
+                      return null;
+                    });
+                  })()}
+
+                {/* Log points markers */}
+                {showLogMarkers &&
+                  mapView.logs &&
+                  mapView.logs.map((log, logIndex) => {
+                    if (isValidCoordinate(log.latitude, log.longitude)) {
+                      const logDate = new Date(log.timestamp);
+                      const isPausePoint = log.pause === true;
+
+                      return (
+                        <Marker
+                          key={`log-${log.id || logIndex}`}
+                          position={[
+                            parseCoordinate(log.latitude),
+                            parseCoordinate(log.longitude),
+                          ]}
+                          icon={L.divIcon({
+                            className: "custom-marker",
+                            html: `
+                            <div style="
+                              width: 12px;
+                              height: 12px;
+                              background-color: ${isPausePoint ? "#FFA500" : "#6366F1"};
+                              border: 2px solid white;
+                              border-radius: 50%;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                              cursor: pointer;
+                            "></div>
+                          `,
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6],
+                          })}
+                        >
+                          <Popup>
+                            <div className="text-sm min-w-[200px]">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: isPausePoint
+                                      ? "#FFA500"
+                                      : "#6366F1",
+                                  }}
+                                ></div>
+                                <strong>
+                                  {isPausePoint
+                                    ? "⏸️ Pause Point"
+                                    : "📍 Log Point"}
+                                </strong>
+                              </div>
+                              <div className="space-y-1">
+                                <div>
+                                  <strong>Time:</strong>{" "}
+                                  {formatDateTime(log.timestamp)}
+                                </div>
+                                <div>
+                                  <strong>Coordinates:</strong>{" "}
+                                  {parseCoordinate(log.latitude).toFixed(6)},{" "}
+                                  {parseCoordinate(log.longitude).toFixed(6)}
+                                </div>
+                                <div>
+                                  <strong>Speed:</strong>{" "}
+                                  {log.speed ? `${log.speed} km/h` : "N/A"}
+                                </div>
+                                <div>
+                                  <strong>Battery:</strong>{" "}
+                                  {log.battery ? `${log.battery}%` : "N/A"}
+                                </div>
+                                <div>
+                                  <strong>Point #:</strong> {logIndex + 1} of{" "}
+                                  {mapView.logs.length}
+                                </div>
+                                {log.pause && (
+                                  <div className="text-amber-600 font-medium">
+                                    ⏸️ Pause detected
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    return null;
+                  })}
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+    
 }

@@ -12,7 +12,13 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
 // Field Employee Restriction Modal Component
-const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const FieldEmployeeRestrictionModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -20,15 +26,26 @@ const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; o
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md mx-4">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
-            <svg className="h-6 w-6 text-red-600 dark:text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="h-6 w-6 text-red-600 dark:text-red-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Access Restricted
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Field employees cannot login through the web portal. Please use the mobile app to access your account.
+            Field employees cannot login through the web portal. Please use the
+            mobile app to access your account.
           </p>
           <div className="flex flex-col space-y-3">
             <button
@@ -40,7 +57,10 @@ const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; o
             <button
               onClick={() => {
                 // You can add logic to redirect to app store or show download links
-                window.open('https://your-mobile-app-download-link.com', '_blank');
+                window.open(
+                  "https://your-mobile-app-download-link.com",
+                  "_blank",
+                );
                 onClose();
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -57,9 +77,9 @@ const FieldEmployeeRestrictionModal = ({ isOpen, onClose }: { isOpen: boolean; o
 export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
-  
-  const [loginType, setLoginType] = useState<'user' | 'admin'>('user'); // 'user' or 'admin'
-  const [email, setEmail] = useState(""); 
+
+  const [loginType, setLoginType] = useState<"user" | "admin">("user"); // 'user' or 'admin'
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(true);
@@ -84,15 +104,16 @@ export default function SignInForm() {
   // Function to check if user is a field employee
   const isFieldEmployee = (role: string): boolean => {
     if (!role) return false;
-    
+
     const normalizedRole = role.toLowerCase().trim();
-    
+
     // Check for various possible field employee role names
     return (
       normalizedRole === "fieldemployee" ||
       normalizedRole === "field employee" ||
       normalizedRole === "field_employee" ||
-      normalizedRole.includes("field") && normalizedRole.includes("employee") ||
+      (normalizedRole.includes("field") &&
+        normalizedRole.includes("employee")) ||
       normalizedRole === "fieldstaff" ||
       normalizedRole === "field staff"
     );
@@ -100,14 +121,12 @@ export default function SignInForm() {
 
   // Function to determine login endpoint based on login type
   const getLoginEndpoint = () => {
-    return loginType === 'admin' ? '/admin/login' : '/auth/login';
+    return loginType === "admin" ? "/admin/login" : "/auth/login";
   };
 
   // Function to handle admin login with the correct response format
   const handleAdminLogin = async (response: any) => {
     const { token, admin, message } = response.data;
-
-    console.log("Admin login data received:", { token, admin });
 
     if (!token) {
       console.error("No token received in admin login");
@@ -126,13 +145,7 @@ export default function SignInForm() {
     localStorage.setItem("token", token || "");
     localStorage.setItem("isAdmin", "true");
 
-    console.log("LocalStorage set, attempting to set auth context...");
-
     try {
-      console.log("Calling login with token...");
-      
-      // Since admin API only returns one token, use it for both refresh and access
-      // Adjust this based on your auth context requirements
       await login(token, token); // Using same token for both refresh and access
 
       // Store "Keep me logged in" preference
@@ -145,13 +158,11 @@ export default function SignInForm() {
       // Show success message
       const successMessage = message || t("toast.Logged in successfully");
       setMessage(successMessage);
-      
+
       // Update the loading toast to success
       toast.success(`Welcome back, ${admin.username} 🍁`, {
         id: loadingToast,
       });
-
-      console.log("Admin login successful, navigating to /home...");
 
       // Navigate to home for admin
       setTimeout(() => {
@@ -170,15 +181,13 @@ export default function SignInForm() {
   const handleUserLogin = async (response: any) => {
     const { user, tokens, message } = response.data;
 
-    console.log("User login data received:", { user, tokens });
-
     // Check if user is a field employee BEFORE storing anything
     const userRole = user?.role || "";
-    
+
     if (isFieldEmployee(userRole)) {
       // Show field employee restriction modal
       setShowFieldEmployeeModal(true);
-      
+
       // Clear any tokens that might have been set
       if (tokens?.access) {
         localStorage.removeItem("accessToken");
@@ -186,12 +195,12 @@ export default function SignInForm() {
       if (tokens?.refresh) {
         localStorage.removeItem("refreshToken");
       }
-      
+
       // Show error toast
       toast.error("Field employees must use the mobile app to login", {
         id: loadingToast,
       });
-      
+
       setIsLoading(false);
       return; // Stop further execution
     }
@@ -210,7 +219,7 @@ export default function SignInForm() {
     localStorage.setItem("allocatedarea", user?.allocatedArea || "");
     localStorage.setItem(
       "isActiveEmployee",
-      user?.isActiveEmployee ? "true" : "false"
+      user?.isActiveEmployee ? "true" : "false",
     );
 
     // Set tokens in auth context
@@ -231,8 +240,6 @@ export default function SignInForm() {
         toast.success(`Welcome back, ${user.username} 🍁`, {
           id: loadingToast,
         });
-
-        console.log("User login successful, navigating to /home...");
 
         // Navigate to home
         setTimeout(() => {
@@ -262,7 +269,7 @@ export default function SignInForm() {
 
     loadingToast = toast.loading("Logging in...");
     const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(
-      navigator.userAgent
+      navigator.userAgent,
     );
 
     // Basic validation
@@ -277,23 +284,17 @@ export default function SignInForm() {
 
     try {
       const endpoint = getLoginEndpoint();
-      console.log("Attempting login to endpoint:", endpoint);
-      console.log("Login type:", loginType);
-      
+
       const response = await API.post(endpoint, {
         email: email.trim(),
         password: password.trim(),
         deviceType: isMobileDevice ? "mobile" : "desktop",
       });
 
-      console.log("Login response:", response.data);
-
       if (response.status === 200 || response.status === 201) {
-        if (loginType === 'admin') {
-          console.log("Processing admin login...");
+        if (loginType === "admin") {
           await handleAdminLogin(response);
         } else {
-          console.log("Processing user login...");
           await handleUserLogin(response);
         }
       } else {
@@ -350,14 +351,14 @@ export default function SignInForm() {
       } else if (error.request) {
         // Request was made but no response received
         const errorMsg = t(
-          "message.Cannot connect to server. Please check your connection."
+          "message.Cannot connect to server. Please check your connection.",
         );
         setMessage(errorMsg);
         toast.error(errorMsg);
       } else {
         // Something else happened
         const errorMsg = t(
-          "message.An unexpected error occurred. Please try again."
+          "message.An unexpected error occurred. Please try again.",
         );
         setMessage(errorMsg);
         toast.error(errorMsg, {
@@ -374,12 +375,13 @@ export default function SignInForm() {
     <>
       <div className="flex flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg ">
         {/* Main animated container with dropping effect */}
-        <div 
+        <div
           className={`
             transition-all duration-700 ease-out
-            ${isMounted 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 -translate-y-8'
+            ${
+              isMounted
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-8"
             }
           `}
         >
@@ -391,45 +393,52 @@ export default function SignInForm() {
               className={`
                 inline-flex items-center text-sm text-gray-500 hover:text-gray-700
                 transition-all duration-800 ease-out
-                ${isMounted 
-                  ? 'opacity-100 translate-y-0' 
-                  : 'opacity-0 -translate-y-10'
+                ${
+                  isMounted
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-10"
                 }
                 hover:scale-105 transition-transform duration-300
               `}
               style={{
-                animation: isMounted ? 'logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+                animation: isMounted
+                  ? "logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                  : "none",
               }}
             />
           </div>
-          
+
           {/* Welcome text with enhanced dropping effect */}
           <div className="flex items-center justify-center w-full h-10 mb-4">
-            <h1 
+            <h1
               className={`
                 text-2xl font-bold relative
                 transition-all duration-900 ease-out
-                ${isMounted 
-                  ? 'opacity-100 translate-y-0' 
-                  : 'opacity-0 -translate-y-12'
+                ${
+                  isMounted
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-12"
                 }
               `}
               style={{
-                animation: isMounted ? 'welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none'
+                animation: isMounted
+                  ? "welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                  : "none",
               }}
             >
-              {t("Welcome to Lantern ")} 
-              <sub 
+              {t("Welcome to Lantern ")}
+              <sub
                 className={`
                   text-xs text-black dark:text-white
                   transition-all duration-1000 ease-out
-                  ${isMounted 
-                    ? 'opacity-100 translate-y-0' 
-                    : 'opacity-0 -translate-y-6'
+                  ${
+                    isMounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 -translate-y-6"
                   }
                 `}
                 style={{
-                  animationDelay: isMounted ? '0.2s' : '0s'
+                  animationDelay: isMounted ? "0.2s" : "0s",
                 }}
               >
                 360
@@ -490,35 +499,43 @@ export default function SignInForm() {
           </div>
            */}
           {/* Form container with staggered animation */}
-          <div 
+          <div
             className={`
               flex flex-col justify-center flex-1 w-full max-w-md mx-auto
               transition-all duration-700 ease-out
-              ${isMounted 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-6'
+              ${
+                isMounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-6"
               }
             `}
             style={{
-              animationDelay: isMounted ? '0.3s' : '0s'
+              animationDelay: isMounted ? "0.3s" : "0s",
             }}
           >
             <form onSubmit={handleLogin}>
               <div className="space-y-6">
                 {/* Email Input with animation */}
-                <div 
+                <div
                   className="capitalize space-y-2"
                   style={{
-                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.4s forwards' : 'none',
+                    animation: isMounted
+                      ? "formElementDrop 0.6s ease-out 0.4s forwards"
+                      : "none",
                     opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
                   }}
                 >
                   <Label>
-                    {loginType === 'admin' ? 'Admin Email' : t("email")} <span className="text-red-500">*</span>
+                    {loginType === "admin" ? "Admin Email" : t("email")}{" "}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    placeholder={loginType === 'admin' ? 'Enter admin email' : t("Enter your email")}
+                    placeholder={
+                      loginType === "admin"
+                        ? "Enter admin email"
+                        : t("Enter your email")
+                    }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
@@ -529,16 +546,19 @@ export default function SignInForm() {
                 </div>
 
                 {/* Password Input with animation */}
-                <div 
+                <div
                   className="capitalize space-y-2"
                   style={{
-                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.5s forwards' : 'none',
+                    animation: isMounted
+                      ? "formElementDrop 0.6s ease-out 0.5s forwards"
+                      : "none",
                     opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
                   }}
                 >
                   <Label>
-                    {t("register.Password")} <span className="text-red-500">*</span>
+                    {t("register.Password")}{" "}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -564,17 +584,19 @@ export default function SignInForm() {
                 </div>
 
                 {/* Checkbox and Forgot Password with animation */}
-                <div 
+                <div
                   className="flex items-center justify-between"
                   style={{
-                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.6s forwards' : 'none',
+                    animation: isMounted
+                      ? "formElementDrop 0.6s ease-out 0.6s forwards"
+                      : "none",
                     opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <Checkbox 
-                      checked={isChecked} 
+                    <Checkbox
+                      checked={isChecked}
                       onChange={setIsChecked}
                       className="hover:scale-110 transition-transform duration-300"
                     />
@@ -595,9 +617,11 @@ export default function SignInForm() {
                 {/* Submit Button with animation */}
                 <div
                   style={{
-                    animation: isMounted ? 'formElementDrop 0.6s ease-out 0.7s forwards' : 'none',
+                    animation: isMounted
+                      ? "formElementDrop 0.6s ease-out 0.7s forwards"
+                      : "none",
                     opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
                   }}
                 >
                   <Button
@@ -606,10 +630,13 @@ export default function SignInForm() {
                     size="sm"
                     disabled={isLoading}
                   >
-                    {isLoading 
-                      ? (loginType === 'admin' ? 'Signing in as Admin...' : t("button.Signing in..."))
-                      : (loginType === 'admin' ? 'Sign in as Admin' : t("button.Sign in"))
-                    }
+                    {isLoading
+                      ? loginType === "admin"
+                        ? "Signing in as Admin..."
+                        : t("button.Signing in...")
+                      : loginType === "admin"
+                        ? "Sign in as Admin"
+                        : t("button.Sign in")}
                   </Button>
                 </div>
               </div>
@@ -676,7 +703,7 @@ export default function SignInForm() {
         isOpen={isForgotModalOpen}
         onClose={closeForgotModal}
       />
-      
+
       <FieldEmployeeRestrictionModal
         isOpen={showFieldEmployeeModal}
         onClose={() => setShowFieldEmployeeModal(false)}

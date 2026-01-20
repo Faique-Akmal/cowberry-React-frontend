@@ -420,7 +420,7 @@ const BirthdayCardList: React.FC = () => {
         </div>
       </div>
 
-      <style jsx="true">{`
+      <style>{`
         @keyframes float {
           0%,
           100% {

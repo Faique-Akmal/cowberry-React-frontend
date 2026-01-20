@@ -15,24 +15,22 @@ const DueTasksList: React.FC = () => {
   const [error, setError] = useState("");
 
   const fetchTasks = async () => {
-  try {
-    const res = await API.get("/my-assigned-tasks/");
-    console.log("API response:", res.data);
+    try {
+      const res = await API.get("/my-assigned-tasks/");
 
-    // Check if response is wrapped
-    const rawData = Array.isArray(res.data)
-      ? res.data
-      : Array.isArray(res.data.results)
-      ? res.data.results
-      : [];
+      // Check if response is wrapped
+      const rawData = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data.results)
+          ? res.data.results
+          : [];
 
-    setTasks(rawData);
-  } catch (err) {
-    setError("Failed to load tasks");
-    console.error(err);
-  }
-};
-
+      setTasks(rawData);
+    } catch (err) {
+      setError("Failed to load tasks");
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -94,12 +92,10 @@ const DueTasksList: React.FC = () => {
               ) : (
                 <div
                   className={`relative w-12 h-12 rounded-full border-4 ${getColor(
-                    task.progress
+                    task.progress,
                   )} flex items-center justify-center`}
                 >
-                  <span className="text-sm font-bold">
-                    {task.progress}%
-                  </span>
+                  <span className="text-sm font-bold">{task.progress}%</span>
                 </div>
               )}
             </button>

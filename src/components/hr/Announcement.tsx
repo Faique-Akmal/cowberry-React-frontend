@@ -744,7 +744,7 @@ const CreateAnnouncement = () => {
       </div>
 
       {/* Add custom animation styles */}
-      <style jsx={"true"}>{`
+      <style>{`
         @keyframes float {
           0%,
           100% {

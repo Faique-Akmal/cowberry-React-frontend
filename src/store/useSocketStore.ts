@@ -26,7 +26,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     });
 
     newSocket.on("connect", () => {
-      console.log("🟢 Socket Connected:", newSocket.id);
+      // console.log("🟢 Socket Connected:", newSocket.id);
       set({ isConnected: true });
     });
 

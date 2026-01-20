@@ -1,13 +1,15 @@
 {
-  "homepage": "https://https.lantern360-react.titoni.in",
+  "homepage": "https://lantern360-react.titoni.in",
   "name": "tailadmin-react",
   "private": true,
   "version": "2.0.2",
   "type": "module",
   "scripts": {
-    "start": "react-scripts start --host 0.0.0.0",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "start": "vite preview",
+    "type-check": "tsc -b",
+    "build": "vite build",
+    "build:strict": "tsc -b && vite build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "lint": "eslint .",

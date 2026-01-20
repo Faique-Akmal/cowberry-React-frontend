@@ -427,12 +427,14 @@ export const ChatInterface = () => {
                   className="h-full w-full rounded-full border-2 border-white/50"
                 />
               </div>
-              <button
-                onClick={() => setShowMobileChat(true)}
-                className="mr-1 rounded-full p-2 text-white/80 hover:bg-white/20 md:hidden"
-              >
-                <ArrowRight className="h-6 w-6" />
-              </button>
+              {!!activeConversation && (
+                <button
+                  onClick={() => setShowMobileChat(true)}
+                  className="mr-1 rounded-full p-2 text-white/80 hover:bg-white/20 md:hidden"
+                >
+                  <ArrowRight className="h-6 w-6" />
+                </button>
+              )}
             </div>
           </div>
 

@@ -35,7 +35,6 @@ export default function EmployeeChart() {
     fetchUsers();
   }, [fetchUsers]);
 
- 
   const { chartData, totalEmployees } = useMemo(() => {
     const total = users.length;
     const departmentMap = new Map<string, number>();
@@ -167,7 +166,7 @@ export default function EmployeeChart() {
         <div className="relative z-10">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-6"></div>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-            {t("home.LoadingChart") || "Loading chart data..."}
+            {t("LoadingChart") || "Loading chart data..."}
           </p>
         </div>
       </div>

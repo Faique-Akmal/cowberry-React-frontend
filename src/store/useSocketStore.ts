@@ -26,12 +26,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     });
 
     newSocket.on("connect", () => {
-      // console.log("🟢 Socket Connected:", newSocket.id);
       set({ isConnected: true });
     });
 
     newSocket.on("disconnect", () => {
-      // console.log("🔴 Socket Disconnected");
       set({ isConnected: false });
     });
 

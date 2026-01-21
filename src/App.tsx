@@ -79,14 +79,7 @@ export default function App() {
           <Route path="/add-role" element={<AddRoleForm />} />
           <Route path="/add-department" element={<DepartmentManagement />} />
 
-       
-      
-         
-          
-        
-          <Route
-            path="/user-register"
-            element={ <RegistrationPage /> } />
+          <Route path="/user-register" element={<RegistrationPage />} />
           <Route
             path="/employeecheckin"
             element={
@@ -109,7 +102,7 @@ export default function App() {
           {/* Tables */}
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/assign-task-page" element={<TaskPage />} />
-        
+
           <Route path="/tracking-admin" element={<AttendanceList />} />
           <Route path="/announcement" element={<AnnouncementModal />} />
           <Route path="/announcementList" element={<CreateAnnouncement />} />
@@ -144,14 +137,14 @@ export default function App() {
           // Global styling (Optional)
           style: {
             borderRadius: "10px",
-            background: "#333",
-            color: "#fff",
+            background: "green",
+            color: "black",
             fontSize: "14px",
           },
           // Success specific style
           success: {
             style: {
-              background: "green",
+              background: "lantern-blue-600",
             },
           },
           // Error specific style

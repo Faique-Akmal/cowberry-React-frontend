@@ -353,19 +353,19 @@ export default function RegisterUserForm() {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg">
+    <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded  shadow-lg  backdrop-blur-2xl">
       <PageMeta
         title="Employee Registration"
         description="Register a new employee"
       />
       {/* Header */}
-      <div className="text-center mb-10  border-2xl white">
+      <div className="text-center mb-10  border-2xl white bg-blur   ">
         <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800 dark:text-gray-200">
           User Registration
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8 ">
         {/* Personal Information Section */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -761,7 +761,7 @@ export default function RegisterUserForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-lantern-blue-600 hover:bg-green-950 text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>

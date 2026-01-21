@@ -267,8 +267,8 @@ export default function EmployeeChart() {
       </div>
 
       <div className="relative z-10">
-        <h2 className="text-2xl font-bold text-center mb-8 bg-linear-to-r from-green-700 to-gray-600 bg-clip-text text-transparent">
-          {t("home.UsersbyDepartment") || "Users by Department"}
+        <h2 className="text-3xl font-bold text-center mb-8 bg-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
+          Users By Department
         </h2>
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center lg:items-start">

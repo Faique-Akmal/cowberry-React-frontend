@@ -675,7 +675,7 @@ const CreateAnnouncement = () => {
                 <button
                   type="submit"
                   disabled={loading || !authToken}
-                  className={`glass-button-submit  bg-green-800 px-8 py-4 font-bold rounded-lg shadow-xl transition-all duration-300 ${
+                  className={`glass-button-submit  bg-lantern-blue-600 hover:bg-green-950 px-8 py-4 font-bold rounded-lg shadow-xl transition-all duration-300 ${
                     loading || !authToken ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >

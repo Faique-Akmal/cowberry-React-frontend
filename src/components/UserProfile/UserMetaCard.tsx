@@ -41,7 +41,7 @@ export default function UserMetaCard() {
   // const { themeConfig } = useTheme();
   // const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
-  
+
   // State for user data
   const [meUserData, setMeUserData] = useState<UserData | null>(null);
   const [username, setUsername] = useState("");
@@ -59,12 +59,10 @@ export default function UserMetaCard() {
       if (!isNaN(id)) {
         setUserId(id);
       } else {
-       
         setError("Invalid user ID found. Please log in again.");
         setLoading(false);
       }
     } else {
-     
       setError("User not authenticated. Please log in.");
       setLoading(false);
     }
@@ -78,14 +76,14 @@ export default function UserMetaCard() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // First check localStorage
         const localMeData = localStorage.getItem("meUser");
-        
+
         if (localMeData) {
           try {
             const parsedData = JSON.parse(localMeData);
-            
+
             // Check if the data has the structure { message: "...", user: {...} }
             if (parsedData.user) {
               const userData: UserData = parsedData.user;
@@ -99,16 +97,13 @@ export default function UserMetaCard() {
               return; // Use cached data
             }
           } catch (parseError) {
-           
             // Continue to fetch from API if parsing fails
           }
         }
-        
+
         // Fetch from API if no cached data or parsing failed
         await fetchUserFromAPI();
-        
       } catch (error) {
-       
         setError("Failed to load user profile. Please try again.");
       } finally {
         setLoading(false);
@@ -117,29 +112,26 @@ export default function UserMetaCard() {
 
     const fetchUserFromAPI = async () => {
       try {
-       
-        
         const response = await API.get(`/auth/me/${userId}`);
-    
-        
+
         if (response.data && response.data.user) {
           const userData = response.data.user;
           setMeUserData(userData);
           setUsername(userData.username || "");
-          
+
           // Store complete response in localStorage
           localStorage.setItem("meUser", JSON.stringify(response.data));
           localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
-          
+
           toast.success("Profile loaded successfully!");
         } else {
           throw new Error("Invalid response structure");
         }
       } catch (error: any) {
-    
-        const errorMessage = error.response?.data?.message || 
-                           error.message || 
-                           "Failed to load user profile";
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to load user profile";
         setError(errorMessage);
         toast.error(errorMessage);
       }
@@ -157,7 +149,7 @@ export default function UserMetaCard() {
     try {
       setIsSaving(true);
       const formData = new FormData();
-      
+
       // Only update username if it has changed
       if (username !== meUserData.username) {
         formData.append("username", username);
@@ -174,7 +166,6 @@ export default function UserMetaCard() {
         return;
       }
 
-
       // Make PATCH request
       const response = await API.patch(`/auth/me/${userId}`, formData, {
         headers: {
@@ -182,41 +173,39 @@ export default function UserMetaCard() {
         },
       });
 
-    
-
       // Update localStorage and state with new data
       if (response.data && response.data.user) {
         const updatedUser = response.data.user;
         setMeUserData(updatedUser);
         setUsername(updatedUser.username);
-        
+
         // Update localStorage with complete response
         localStorage.setItem("meUser", JSON.stringify(response.data));
         localStorage.setItem(`user_${userId}`, JSON.stringify(updatedUser));
-        
+
         toast.success("Profile updated successfully!");
       } else if (response.data) {
         // If response is just the user object
         const updatedUser = response.data;
         setMeUserData(updatedUser);
         setUsername(updatedUser.username);
-        
-        localStorage.setItem("meUser", JSON.stringify({ 
-          message: "User updated", 
-          user: updatedUser 
-        }));
+
+        localStorage.setItem(
+          "meUser",
+          JSON.stringify({
+            message: "User updated",
+            user: updatedUser,
+          }),
+        );
         localStorage.setItem(`user_${userId}`, JSON.stringify(updatedUser));
-        
+
         toast.success("Profile updated successfully!");
       }
 
       // Reset profile image
       setProfileImage(null);
       closeModal();
-      
     } catch (error: any) {
-     
-      
       if (error.response?.status === 401) {
         toast.error("Unauthorized. Please log in again.");
       } else if (error.response?.status === 404) {
@@ -247,10 +236,12 @@ export default function UserMetaCard() {
   // Show loading state when initially loading userId
   if (!userId && loading) {
     return (
-      <div className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-cowberry-green-500">
+      <div className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-lantern-blue-600">
         <div className="flex items-center justify-center p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading user information...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">
+            Loading user information...
+          </span>
         </div>
       </div>
     );
@@ -271,10 +262,12 @@ export default function UserMetaCard() {
   // Loading state while fetching user data
   if (loading && !meUserData) {
     return (
-      <div className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-cowberry-green-500">
+      <div className="p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white dark:bg-black dark:text-white dark:border-lantern-blue-600">
         <div className="flex items-center justify-center p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading profile...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">
+            Loading profile...
+          </span>
         </div>
       </div>
     );
@@ -298,8 +291,9 @@ export default function UserMetaCard() {
   }
 
   return (
- <>
-  <div className="
+    <>
+      <div
+        className="
     p-4 sm:p-5 lg:p-6
     rounded-3xl
     
@@ -309,15 +303,17 @@ export default function UserMetaCard() {
     dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]
     overflow-hidden
     relative
-  ">
-    {/* Background gradient overlay */}
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
-    
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between relative z-10">
-      {/* Profile Section */}
-      <div className="flex flex-col items-center w-full gap-4 sm:gap-6 lg:flex-row">
-        {/* Profile Image Container */}
-        <div className="
+  "
+      >
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between relative z-10">
+          {/* Profile Section */}
+          <div className="flex flex-col items-center w-full gap-4 sm:gap-6 lg:flex-row">
+            {/* Profile Image Container */}
+            <div
+              className="
           relative
           mr-3
           overflow-hidden
@@ -326,54 +322,66 @@ export default function UserMetaCard() {
           flex items-center justify-center
           border-2 border-white/40 dark:border-gray-700/40
           shadow-[0_4px_20px_rgba(59,130,246,0.2)]
-        ">
-          {meUserData.profileImageUrl && meUserData.profileImageUrl !== "https://example.com/profile.jpg" ? (
-            <img
-              src={meUserData.profileImageUrl}
-              alt="User"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  const fallback = document.createElement('div');
-                  fallback.className = 'w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-black text-xl sm:text-2xl font-medium backdrop-blur-sm';
-                  fallback.textContent = meUserData.username?.charAt(0).toUpperCase() || '?';
-                  parent.appendChild(fallback);
-                }
-              }}
-            />
-          ) : (
-            <div className="
+        "
+            >
+              {meUserData.profileImageUrl &&
+              meUserData.profileImageUrl !==
+                "https://example.com/profile.jpg" ? (
+                <img
+                  src={meUserData.profileImageUrl}
+                  alt="User"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement("div");
+                      fallback.className =
+                        "w-full h-full flex items-center justify-center bg-lantern-blue-600 text-black text-xl sm:text-2xl font-medium backdrop-blur-sm";
+                      fallback.textContent =
+                        meUserData.username?.charAt(0).toUpperCase() || "?";
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              ) : (
+                <div
+                  className="
               w-full h-full
               flex items-center justify-center
-              
+              bg-lantern-blue-600
               text-black text-xl sm:text-2xl font-medium
               backdrop-blur-sm
-            ">
-              {meUserData.username?.charAt(0).toUpperCase() || '?'}
+            "
+                >
+                  {meUserData.username?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Username & Details */}
-        <div className="text-center lg:text-left">
-          <h4 className="
+            {/* Username & Details */}
+            <div className="text-center lg:text-left">
+              <h4
+                className="
             mb-2 text-lg sm:text-xl font-semibold capitalize
            text-black dark:text-gray-100
             
             bg-clip-text 
-          ">
-            {meUserData.username}
-          </h4>
-          
-          <div className="
+          "
+              >
+                {meUserData.username}
+              </h4>
+
+              <div
+                className="
             flex flex-col items-center gap-2 text-center 
             lg:flex-row lg:gap-3 lg:text-left
-          ">
-            <p className="
+          "
+              >
+                <p
+                  className="
               text-sm px-2 py-1
               rounded-lg
               bg-gradient-to-r from-blue-100/60 to-cyan-100/40
@@ -382,18 +390,22 @@ export default function UserMetaCard() {
               text-blue-800 dark:text-blue-300
               backdrop-blur-sm
               capitalize
-            ">
-              {meUserData.role || "Field Employee"}
-            </p>
-            
-            <div className="
+            "
+                >
+                  {meUserData.role || "Field Employee"}
+                </p>
+
+                <div
+                  className="
               hidden lg:block
               h-3.5 w-px
               bg-gradient-to-b from-white/40 to-transparent
               dark:from-gray-600/40 dark:to-transparent
-            "></div>
-            
-            <p className="
+            "
+                ></div>
+
+                <p
+                  className="
               text-sm px-2 py-1
               rounded-lg
               bg-gradient-to-r from-gray-100/60 to-gray-100/40
@@ -403,12 +415,14 @@ export default function UserMetaCard() {
               backdrop-blur-sm
               capitalize
               max-w-[200px] truncate
-            ">
-              {meUserData.address || "No address provided"}
-            </p>
-          </div>
-          
-          <div className="
+            "
+                >
+                  {meUserData.address || "No address provided"}
+                </p>
+              </div>
+
+              <div
+                className="
             mt-2
             text-xs px-2 py-1
             rounded-lg
@@ -418,14 +432,18 @@ export default function UserMetaCard() {
             border border-white/40 dark:border-gray-700/40
             text-gray-600 dark:text-gray-400
             inline-block
-          ">
-            Employee Code: <span className="font-mono font-medium">{meUserData.employeeCode}</span>
+          "
+              >
+                Employee Code:{" "}
+                <span className="font-mono font-medium">
+                  {meUserData.employeeCode}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Edit Button */}
-      {/* <button
+          {/* Edit Button */}
+          {/* <button
         onClick={openModal}
         disabled={loading}
         className="
@@ -461,12 +479,17 @@ export default function UserMetaCard() {
         </div>
         Edit
       </button> */}
-    </div>
-  </div>
+        </div>
+      </div>
 
-  {/* Modal */}
-  <Modal isOpen={isOpen} onClose={handleModalClose} className="max-w-lg w-full m-4">
-    <div className="
+      {/* Modal */}
+      {/* <Modal
+        isOpen={isOpen}
+        onClose={handleModalClose}
+        className="max-w-lg w-full m-4"
+      >
+        <div
+          className="
       relative
       p-6 sm:p-8
       rounded-3xl
@@ -476,24 +499,27 @@ export default function UserMetaCard() {
       border border-white/40 dark:border-gray-700/40
       shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]
       overflow-hidden
-    ">
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
-      
-      <div className="relative z-10">
-        <div className="flex justify-between items-start mb-6">
-          <h3 className="
+    "
+        >
+          
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-6">
+              <h3
+                className="
             text-lg sm:text-xl font-semibold
             bg-gradient-to-r from-blue-600 to-purple-600
             dark:from-blue-400 dark:to-purple-400
             bg-clip-text text-transparent
-          ">
-            Edit Profile
-          </h3>
-          <button
-            onClick={handleModalClose}
-            disabled={isSaving}
-            className="
+          "
+              >
+                Edit Profile
+              </h3>
+              <button
+                onClick={handleModalClose}
+                disabled={isSaving}
+                className="
               p-2 rounded-lg
               bg-white/40 dark:bg-gray-700/40
               backdrop-blur-sm
@@ -504,34 +530,38 @@ export default function UserMetaCard() {
               transition-all duration-300
               disabled:opacity-50 disabled:cursor-not-allowed
             "
-          >
-            ✕
-          </button>
-        </div>
-        
-        <p className="
+              >
+                ✕
+              </button>
+            </div>
+
+            <p
+              className="
           text-sm mb-6
           text-gray-600 dark:text-gray-400
           bg-white/30 dark:bg-gray-800/30
           backdrop-blur-sm
           rounded-xl px-3 py-2
-        ">
-          Update your profile information below.
-        </p>
-        
-        <form className="space-y-5">
-          {/* Username */}
-          <div>
-            <label className="
+        "
+            >
+              Update your profile information below.
+            </p>
+
+            <form className="space-y-5">
+          
+              <div>
+                <label
+                  className="
               block text-sm font-medium mb-2
               text-gray-700 dark:text-gray-300
-            ">
-              Username
-            </label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="
+            "
+                >
+                  Username
+                </label>
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="
                 w-full px-4 py-3
                 bg-white/50 dark:bg-gray-700/50
                 backdrop-blur-sm
@@ -543,20 +573,23 @@ export default function UserMetaCard() {
                 transition-all duration-300
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
-              disabled={isSaving}
-              placeholder="Enter username"
-            />
-          </div>
+                  disabled={isSaving}
+                  placeholder="Enter username"
+                />
+              </div>
 
-          {/* Profile Image Upload */}
-          <div>
-            <label className="
+           
+              <div>
+                <label
+                  className="
               block text-sm font-medium mb-2
               text-gray-700 dark:text-gray-300
-            ">
-              Profile Image
-            </label>
-            <div className="
+            "
+                >
+                  Profile Image
+                </label>
+                <div
+                  className="
               relative
               px-4 py-3
               bg-white/50 dark:bg-gray-700/50
@@ -565,79 +598,107 @@ export default function UserMetaCard() {
               rounded-xl
               hover:border-blue-400/60 dark:hover:border-blue-500/60
               transition-all duration-300
-            ">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setProfileImage(e.target.files?.[0] || null)}
-                className="
+            "
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setProfileImage(e.target.files?.[0] || null)
+                    }
+                    className="
                   absolute inset-0 w-full h-full opacity-0 cursor-pointer
                   disabled:opacity-0 disabled:cursor-not-allowed
                 "
-                disabled={isSaving}
-              />
-              <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="text-sm">
-                  {profileImage ? profileImage.name : "Click to upload profile image"}
-                </span>
-              </div>
-            </div>
-            
-            {profileImage && (
-              <p className="
+                    disabled={isSaving}
+                  />
+                  <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="text-sm">
+                      {profileImage
+                        ? profileImage.name
+                        : "Click to upload profile image"}
+                    </span>
+                  </div>
+                </div>
+
+                {profileImage && (
+                  <p
+                    className="
                 mt-2 text-sm
                 text-gray-600 dark:text-gray-400
                 bg-white/30 dark:bg-gray-800/30
                 backdrop-blur-sm
                 rounded-lg px-3 py-1.5 inline-block
-              ">
-                Selected: <span className="font-medium">{profileImage.name}</span>
-              </p>
-            )}
-            
-            <p className="
+              "
+                  >
+                    Selected:{" "}
+                    <span className="font-medium">{profileImage.name}</span>
+                  </p>
+                )}
+
+                <p
+                  className="
               mt-2 text-xs
               text-gray-500 dark:text-gray-400
               bg-white/20 dark:bg-gray-800/20
               backdrop-blur-sm
               rounded-lg px-2 py-1 inline-block
-            ">
-              Current: {meUserData.profileImageUrl && meUserData.profileImageUrl !== "https://example.com/profile.jpg" 
-                ? meUserData.profileImageUrl 
-                : "Default image"}
-            </p>
-          </div>
+            "
+                >
+                  Current:{" "}
+                  {meUserData.profileImageUrl &&
+                  meUserData.profileImageUrl !==
+                    "https://example.com/profile.jpg"
+                    ? meUserData.profileImageUrl
+                    : "Default image"}
+                </p>
+              </div>
 
-          {/* Current Profile Info */}
-          <div className="
+             
+              <div
+                className="
             p-4 rounded-xl
             bg-gradient-to-br from-blue-50/40 to-blue-50/20
             dark:from-blue-900/20 dark:to-blue-800/10
             backdrop-blur-xl
             border border-blue-200/40 dark:border-blue-800/40
-          ">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                <span className="font-medium">User ID:</span> <span className="font-mono">{meUserData.id}</span>
-              </p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                <span className="font-medium">Current Username:</span> {meUserData.username}
-              </p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                <span className="font-medium">Email:</span> {meUserData.email}
-              </p>
-            </div>
-          </div>
+          "
+              >
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">User ID:</span>{" "}
+                    <span className="font-mono">{meUserData.id}</span>
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">Current Username:</span>{" "}
+                    {meUserData.username}
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">Email:</span>{" "}
+                    {meUserData.email}
+                  </p>
+                </div>
+              </div>
 
-          {/* Save Button */}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="
+            
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="
               w-full
               px-6 py-3
               rounded-xl
@@ -654,24 +715,26 @@ export default function UserMetaCard() {
               disabled:opacity-50 disabled:cursor-not-allowed
               flex items-center justify-center gap-2
             "
-          >
-            {isSaving ? (
-              <>
-                <div className="
+              >
+                {isSaving ? (
+                  <>
+                    <div
+                      className="
                   animate-spin rounded-full
                   h-4 w-4
                   border-2 border-white border-t-transparent
-                "></div>
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
-  </Modal>
-</>
+                "
+                    ></div>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </Modal> */}
+    </>
   );
 }

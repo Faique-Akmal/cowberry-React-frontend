@@ -42,6 +42,7 @@ import {
 
 import ImageZoom from "../../components/ImageZoom";
 import Loader from "../UiElements/Loader";
+import PageMeta from "../../components/common/PageMeta";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -177,7 +178,7 @@ const glassmorphismClasses = {
     "backdrop-blur-sm bg-white/5 dark:bg-gray-800/20 border border-white/10 dark:border-gray-700/30 focus:border-white/30 dark:focus:border-blue-500/50 focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30",
   button: {
     primary:
-      "backdrop-blur-sm bg-gradient-to-r from-blue-500/90 to-indigo-600/90 hover:from-blue-600 hover:to-indigo-700 border border-blue-400/20 dark:border-blue-500/30 text-white shadow-lg hover:shadow-xl transition-all duration-300",
+      "backdrop-blur-sm bg-lantern-blue-600 hover:from-blue-600 hover:to-indigo-700 border border-blue-400/20 dark:border-blue-500/30 text-white shadow-lg hover:shadow-xl transition-all duration-300",
     secondary:
       "backdrop-blur-sm bg-gradient-to-r from-purple-500/90 to-pink-600/90 hover:from-purple-600 hover:to-pink-700 border border-purple-400/20 dark:border-purple-500/30 text-white shadow-lg hover:shadow-xl transition-all duration-300",
     outline:
@@ -2024,6 +2025,10 @@ export default function AttendanceList() {
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gradient-to-br from-gray-100/50 via-white/30 to-blue-50/30 dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900">
+      <PageMeta
+        title="Employee location tracker"
+        description="Track Fieldemployee here"
+      />
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -2065,7 +2070,7 @@ export default function AttendanceList() {
 
             <button
               onClick={exportToCSV}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isExporting ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"} text-white transition-all`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isExporting ? "bg-gray-400" : "bg-lantern-blue-600 hover:bg-lantern-yellow-400"} text-white transition-all`}
               title="Export grouped sessions with detailed farmer data (using cached data)"
               disabled={isExporting}
             >
@@ -2363,10 +2368,10 @@ export default function AttendanceList() {
                     className={`${glassmorphismClasses.card} ${glassmorphismClasses.cardHover} rounded-2xl overflow-hidden backdrop-blur-lg`}
                   >
                     {/* Group Header */}
-                    <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
+                    <div className="bg-white px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-12 h-12 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
                             {group.username.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -2639,7 +2644,7 @@ export default function AttendanceList() {
                                           group.date,
                                         )
                                       }
-                                      className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
+                                      className={`px-3 py-2 bg-lantern-blue-600 text-white rounded-xl text-sm font-medium flex items-center gap-2`}
                                     >
                                       <FaInfoCircle />
                                       Details
@@ -2663,9 +2668,9 @@ export default function AttendanceList() {
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button
                           onClick={() => openMultiSessionMap(group)}
-                          className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-green-700 rounded-xl font-semibold`}
+                          className={`flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-lantern-blue-600 rounded-xl text-white font-semibold `}
                         >
-                          <FaLayerGroup className="text-xl" />
+                          <FaLayerGroup className="text-xl " />
                           View All Sessions on Map
                           <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
                             {group.sessions.length} session
@@ -2814,7 +2819,7 @@ export default function AttendanceList() {
                             formatDateOnly(session.startTime),
                           )
                         }
-                        className={`px-3 py-2 bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2`}
+                        className={`px-3 py-2 bg-lantern-blue-600 rounded-xl text-sm font-medium flex items-center gap-2`}
                       >
                         <FaInfoCircle />
                         Details
@@ -2853,7 +2858,7 @@ export default function AttendanceList() {
       )}
 
       {/* Rest of the component remains the same... */}
-           {/* Farmer Data Modal */}
+      {/* Farmer Data Modal */}
       {showFarmerDataModal && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
           <div
@@ -3472,9 +3477,7 @@ export default function AttendanceList() {
                                     <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                                       <span>Session #{session.sessionId}</span>
                                       <span>•</span>
-                                      <span>
-                                        Backend Pause #{pauseIndex + 1}
-                                      </span>
+                                      <span>Pause #{pauseIndex + 1}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -3539,9 +3542,9 @@ export default function AttendanceList() {
                                     </div>
                                   </div>
 
-                                  <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                                  {/* <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
                                     <strong>Backend Detected Pause</strong>
-                                  </div>
+                                  </div> */}
                                 </div>
                               </div>
                             </Popup>
@@ -3817,9 +3820,6 @@ export default function AttendanceList() {
                                     <strong className="text-lg text-purple-700 dark:text-purple-400">
                                       ⏸️ Pause Point
                                     </strong>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                                      Backend Detected Pause #{pauseIndex + 1}
-                                    </p>
                                   </div>
                                 </div>
 
@@ -3883,11 +3883,6 @@ export default function AttendanceList() {
                                           : "N/A"}
                                       </span>
                                     </div>
-                                  </div>
-
-                                  <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
-                                    <strong>Note:</strong> This pause was
-                                    detected by the backend (pause: true flag)
                                   </div>
                                 </div>
                               </div>
@@ -3990,5 +3985,4 @@ export default function AttendanceList() {
       )}
     </div>
   );
-    
 }

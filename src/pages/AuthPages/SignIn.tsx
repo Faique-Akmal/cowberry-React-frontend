@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title=" Welcome to Cowberry SignIn "
-        description="Sign in to your Cowberry account"
+        title=" Welcome to Lantern - Sign In"
+        description="Sign in to your lantern account"
       />
       <AuthLayout>
         <SignInForm />

@@ -401,7 +401,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-cowberry-green-600 text-white w-full py-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hover:bg-cowberry-green-600 bg-lantern-blue-600 text-white w-full py-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -501,7 +501,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               </div>
               <div className="mt-4 w-full bg-gray-200/50 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-lantern-blue-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(roles.length * 10, 100)}%` }}
                 ></div>
               </div>

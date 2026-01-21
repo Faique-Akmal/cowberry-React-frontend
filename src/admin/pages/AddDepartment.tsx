@@ -397,7 +397,7 @@ const DepartmentManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-cowberry-green-600 text-white w-full py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="bg-lantern-blue-600 hover:bg-green-950 text-white w-full py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
                       <>

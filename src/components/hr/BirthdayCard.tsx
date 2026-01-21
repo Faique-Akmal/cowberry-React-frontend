@@ -178,8 +178,8 @@ const BirthdayCardList: React.FC = () => {
                 : "1px solid rgba(139, 92, 246, 0.2)",
             }}
           >
-            <h2 className="text-2xl font-bold bg-linear-to-r from-green-600 to-gray-600 bg-clip-text text-transparent">
-              🎉 {t("home.Today’s Birthdays") || "Today's Birthdays"}
+            <h2 className="text-2xl font-bold bg-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
+              🎉 Today's Birthdays
             </h2>
           </div>
 

@@ -3,20 +3,22 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 import ChangePasswordModal from "../auth/ChangePasswordModal";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 // import { IoIosColorPalette } from "react-icons/io";
 
 export default function UserDropdown() {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
 
   // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem("meUser") || "{}");
   const { username, email, profile_image, id: userId } = userData;
 
   // Use userId from userData, fallback to localStorage.getItem("userId")
-  const currentUserId = userId || parseInt(localStorage.getItem("userId") || "0", 10);
+  const currentUserId =
+    userId || parseInt(localStorage.getItem("userId") || "0", 10);
 
   const handleOpenChangePasswordModal = () => {
     setIsChangePasswordModalOpen(true);
@@ -39,7 +41,7 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="flex items-center bg-white p-2 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-lantern-blue-600"
       >
         <div className="mr-3 overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
           {profile_image ? (
@@ -49,15 +51,16 @@ export default function UserDropdown() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full rounded-full bg-gradient-to-r from-green-700 to-gray-600 flex items-center justify-center text-white text-lg font-medium">
-              {localStorage.getItem("username")?.charAt(0)?.toUpperCase() }
+            <div className="w-full h-full rounded-full bg-gradient-to-r from-lantern-blue-600 to-gray-600 flex items-center justify-center text-white text-lg font-medium">
+              {localStorage.getItem("username")?.charAt(0)?.toUpperCase()}
             </div>
           )}
         </div>
 
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-            }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
           width="18"
           height="20"
           viewBox="0 0 18 20"
@@ -126,7 +129,7 @@ export default function UserDropdown() {
               {t("menu.themeCustomizer")}
             </DropdownItem>
           </li> */}
-          
+
           <li>
             <DropdownItem
               onItemClick={handleOpenChangePasswordModal}
@@ -174,7 +177,6 @@ export default function UserDropdown() {
           </svg>
           {t("header.Sign out")}
         </Link>
-
       </Dropdown>
 
       {/* Change Password Modal */}

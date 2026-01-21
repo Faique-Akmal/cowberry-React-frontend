@@ -58,7 +58,6 @@ const EmployeeStatus = () => {
   const { isDarkMode } = useTheme();
   const { t } = useTranslation();
 
-
   const { users, fetchUsers, isLoading } = useUserStore();
 
   const [visibleCount, setVisibleCount] = useState(15);
@@ -68,7 +67,6 @@ const EmployeeStatus = () => {
     fetchUsers();
   }, [fetchUsers]);
 
- 
   const { onlineUsers, totalUsersCount, activeUsersCount } = useMemo(() => {
     const online = users.filter((user) => user.is_checkin === true);
     return {
@@ -78,7 +76,6 @@ const EmployeeStatus = () => {
     };
   }, [users]);
 
- 
   const visibleUsers = useMemo(() => {
     return onlineUsers.slice(0, visibleCount);
   }, [onlineUsers, visibleCount]);
@@ -133,7 +130,7 @@ const EmployeeStatus = () => {
     >
       {/* Animated background gradients */}
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-linear-to-r from-blue-500/20 to-indigo-500/20 blur-3xl animate-pulse"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-lantern-blue-600 blur-3xl animate-pulse"></div>
         <div
           className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-linear-to-r from-green-500/20 to-emerald-500/20 blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
@@ -154,10 +151,8 @@ const EmployeeStatus = () => {
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
               <div
-                className="p-3 rounded-2xl backdrop-blur-sm"
+                className="p-3 rounded-2xl backdrop-blur-sm bg-lantern-blue-600"
                 style={{
-                  background:
-                    "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))",
                   border: "1px solid rgba(59, 130, 246, 0.2)",
                 }}
               >
@@ -286,12 +281,8 @@ const EmployeeStatus = () => {
             <Mail className="w-4 h-4" />
             Contact
           </span>
-          <span className=" ">
-           
-            Department
-          </span>
-          <span className="flex items-center gap-2">
-          AllocatedArea</span>
+          <span className=" ">Department</span>
+          <span className="flex items-center gap-2">AllocatedArea</span>
         </div>
 
         {/* Users List Container */}
@@ -372,56 +363,75 @@ const EmployeeStatus = () => {
 
               {/* Mobile Layout */}
               <div className="md:hidden">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div
-                        className="w-12 h-12 rounded-2xl backdrop-blur-sm flex items-center justify-center group-hover/user:scale-110 transition-transform duration-300"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))",
-                          border: "1px solid rgba(255, 255, 255, 0.2)",
-                        }}
-                      >
-                        <span className="font-bold text-white text-lg">
-                          {user.name?.charAt(0)?.toUpperCase() || "U"}
-                        </span>
+                <div className="flex flex-col gap-4 p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="relative flex-shrink-0">
+                        <div
+                          className="w-12 h-12 rounded-2xl backdrop-blur-sm flex items-center justify-center group-hover/user:scale-110 transition-transform duration-300"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))",
+                            border: "1px solid rgba(255, 255, 255, 0.2)",
+                          }}
+                        >
+                          <span className="font-bold text-white text-lg">
+                            {user.name?.charAt(0)?.toUpperCase() || "U"}
+                          </span>
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-800"></div>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-linear-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="font-semibold text-sm capitalize truncate text-gray-800 dark:text-white">
-                          {user.name}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="font-semibold text-sm capitalize truncate text-gray-800 dark:text-white">
+                              {user.name}
+                            </p>
+                            <div className="flex-shrink-0">
+                              <HomeOfficePill active={user.is_checkin} />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate mb-2">
+                          {user.email}
                         </p>
-                        <HomeOfficePill active={user.is_checkin} />
-                      </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate mb-2">
-                        {user.email}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs px-2 py-1 rounded-full backdrop-blur-sm max-w-[100px]"
-                          style={{
-                            background: "rgba(139, 92, 246, 0.1)",
-                            border: "1px solid rgba(139, 92, 246, 0.2)",
-                          }}
-                        >
-                          {user.role || "Field Employee"}
-                        </span>
-                        <span
-                          className="text-xs text-gray-500 px-2 py-1 rounded-full backdrop-blur-sm"
-                          style={{
-                            background: "rgba(255, 255, 255, 0.1)",
-                          }}
-                        >
-                          {user.employee_code}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <span
+                            className="text-xs px-2 py-1 rounded-full backdrop-blur-sm truncate max-w-[120px]"
+                            style={{
+                              background: "rgba(139, 92, 246, 0.1)",
+                              border: "1px solid rgba(139, 92, 246, 0.2)",
+                            }}
+                          >
+                            {user.role || "Field Employee"}
+                          </span>
+                          <span
+                            className="text-xs text-gray-500 px-2 py-1 rounded-full backdrop-blur-sm truncate max-w-[100px]"
+                            style={{
+                              background: "rgba(255, 255, 255, 0.1)",
+                            }}
+                          >
+                            {user.employee_code}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="ml-2">
-                   {user.allocatedArea}
+
+                  {/* Allocated Area - now on its own line for mobile */}
+                  <div className="w-full">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Allocated Area:
+                    </div>
+                    <div
+                      className="text-sm text-gray-800 dark:text-white p-3 rounded-lg backdrop-blur-sm break-words"
+                      style={{
+                        background: "rgba(59, 130, 246, 0.05)",
+                        border: "1px solid rgba(59, 130, 246, 0.1)",
+                      }}
+                    >
+                      {user.allocatedArea || "No area allocated"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -431,10 +441,8 @@ const EmployeeStatus = () => {
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <div
-                      className="w-12 h-12 rounded-2xl backdrop-blur-sm flex items-center justify-center group-hover/user:scale-110 transition-transform duration-300"
+                      className="w-12 h-12 rounded-2xl backdrop-blur-sm bg-lantern-blue-600 flex items-center justify-center group-hover/user:scale-110 transition-transform duration-300"
                       style={{
-                        background:
-                          "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3))",
                         border: "1px solid rgba(255, 255, 255, 0.2)",
                       }}
                     >
@@ -458,26 +466,22 @@ const EmployeeStatus = () => {
                       >
                         {user.role || "Field Employee"}
                       </span>
-                     
                     </div>
                   </div>
                 </div>
 
-               <div className="flex flex-col">
-  <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
-    {user.email}
-  </p>
-  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-    {user.employee_code}
-  </span>
-</div>
-
-                <div className="flex items-center">
-                  {user.department}                 </div>
-
-                <div className="flex items-center">
-                 {user.allocatedArea}
+                <div className="flex flex-col">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    {user.email}
+                  </p>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {user.employee_code}
+                  </span>
                 </div>
+
+                <div className="flex items-center">{user.department} </div>
+
+                <div className="flex items-center">{user.allocatedArea}</div>
               </div>
             </div>
           ))}

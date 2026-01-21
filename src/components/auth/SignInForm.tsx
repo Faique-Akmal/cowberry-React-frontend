@@ -235,7 +235,7 @@ export default function SignInForm() {
         }
 
         // Show success message
-        const successMessage = message || t("toast.Logged in successfully");
+        const successMessage = message || t("Logged in successfully");
         setMessage(successMessage);
         toast.success(`Welcome back, ${user.username} 🍁`, {
           id: loadingToast,
@@ -275,7 +275,7 @@ export default function SignInForm() {
     // Basic validation
     if (!email.trim() || !password.trim()) {
       setMessage(t("message.Please enter both email and password."));
-      toast.error(t("toast.Please enter both email and password."), {
+      toast.error(t("Please enter both email and password."), {
         id: loadingToast,
       });
       setIsLoading(false);
@@ -386,9 +386,9 @@ export default function SignInForm() {
           `}
         >
           {/* Logo with bounce animation */}
-          <div className="w-40 h-40 mx-auto ">
+          <div className="w-60 h-60 mx-auto pt-16">
             <img
-              src="cowberry_organics_1.png"
+              src="lantern-logo.png"
               alt="cowberry-logo"
               className={`
                 inline-flex items-center text-sm text-gray-500 hover:text-gray-700
@@ -409,7 +409,7 @@ export default function SignInForm() {
           </div>
 
           {/* Welcome text with enhanced dropping effect */}
-          <div className="flex items-center justify-center w-full h-10 mb-4">
+          <div className="flex items-center justify-center w-full h-10 pb-4">
             <h1
               className={`
                 text-2xl font-bold relative
@@ -541,7 +541,7 @@ export default function SignInForm() {
                     disabled={isLoading}
                     autoComplete="email"
                     type="email"
-                    className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+                    className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-lantern-blue-600"
                   />
                 </div>
 
@@ -568,7 +568,7 @@ export default function SignInForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
                       autoComplete="current-password"
-                      className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-blue-500"
+                      className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-lantern-blue-600"
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -607,7 +607,7 @@ export default function SignInForm() {
                   <button
                     type="button"
                     onClick={openForgotModal}
-                    className="text-sm text-brand-500 hover:underline hover:scale-105 transition-all duration-300"
+                    className="text-sm text-lantern-blue-600 hover:underline hover:scale-105 transition-all duration-300"
                     disabled={isLoading}
                   >
                     {t("Forgot Password?")}

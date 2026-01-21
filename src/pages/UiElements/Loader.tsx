@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
 const Loader = () => {
   return (
@@ -23,7 +23,7 @@ const Loader = () => {
       </div>
     </StyledWrapper>
   );
-}
+};
 
 const StyledWrapper = styled.div`
   .loader {
@@ -44,7 +44,7 @@ const StyledWrapper = styled.div`
     border: solid 2px var(--color);
     border-radius: 50%;
     margin: 0 10px;
-    background-color: green;
+    background-color:;
     animation: circle-keys var(--animation);
   }
 
@@ -164,6 +164,7 @@ const StyledWrapper = styled.div`
       outline-offset: 20px;
       opacity: 0;
     }
-  }`;
+  }
+`;
 
 export default Loader;

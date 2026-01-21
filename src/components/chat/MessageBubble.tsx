@@ -176,7 +176,7 @@ const MessageBubble = React.memo(
 
           {/* Hover Menu */}
           {!msg.isDeleted && (
-            <div className="absolute top-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 right-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={handleMenuClick}
                 className="p-1 hover:bg-black/20 rounded-full"

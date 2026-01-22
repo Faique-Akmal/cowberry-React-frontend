@@ -5,7 +5,6 @@ import { PiUsersThreeBold } from "react-icons/pi";
 import {
   CalenderIcon,
   ChatIcon,
-  // ChatIcon,
   ChevronDownIcon,
   GridIcon,
   PlugInIcon,
@@ -60,7 +59,28 @@ const AppSidebar: React.FC = () => {
     (path: string) => location.pathname === path,
     [location.pathname],
   );
-  const userRole = localStorage.getItem("userRole");
+
+  // Helper function to normalize roles to lowercase
+  const normalizeRole = (role: string | null): string | null => {
+    return role ? role.toLowerCase().trim() : null;
+  };
+
+  // Get and normalize user role
+  const rawUserRole = localStorage.getItem("userRole");
+  const userRole = normalizeRole(rawUserRole);
+
+  // Helper function to check if user has access to an item
+  const hasAccess = (itemRoles?: string[]): boolean => {
+    if (!itemRoles || itemRoles.length === 0) return true;
+    if (!userRole) return false;
+
+    // Normalize item roles to lowercase for comparison
+    const normalizedItemRoles = itemRoles.map((role) =>
+      role.toLowerCase().trim(),
+    );
+    return normalizedItemRoles.includes(userRole);
+  };
+
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
@@ -68,77 +88,61 @@ const AppSidebar: React.FC = () => {
       icon: <GridIcon />,
       name: t("menu.dashboard"),
       path: "/home",
-      role: ["admin", "department_head", "ZonalManager", "manager", "HR"],
+      role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
     },
-
     {
       icon: <ChatIcon />,
       name: t("menu.chat"),
       path: "/chat",
-      role: [
-        "admin",
-        "department_head",
-        "ZonalManager",
-        "manager",
-        "HR",
-        "admin",
-      ],
+      role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
     },
-    // {
-    //   icon: <CalenderIcon />,
-    //   name: t("menu.calendar"),
-    //   path: "/calendar",
-    //   role: ["admin","ZonalManager","Manager","HR"],
-    // },
     {
       icon: <UserCircleIcon />,
       name: t("menu.profile"),
       path: "/profile",
-      role: ["admin", "employee", "ZonalManager", "Manager", "HR"],
+      role: ["admin", "employee", "zonalmanager", "manager", "hr"],
     },
     {
       icon: <UserCircleIcon />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
-      role: ["admin", "Manager", "HR"],
+      role: ["admin", "manager", "hr"],
     },
-
     {
       icon: <MdListAlt />,
       name: t("menu.TravelSessions"),
       path: "/tracking-admin",
-      role: ["admin", "ZonalManager", "Manager", "HR"],
+      role: ["admin", "zonalmanager", "manager", "hr"],
     },
     {
       icon: <IoPersonAddOutline />,
       name: t("menu.registerUserForm"),
       path: "/user-register",
-      role: ["admin", "HR"],
+      role: ["admin", "hr"],
     },
     {
       icon: <MdOutlineAdd />,
       name: t("Add Role"),
       path: "/add-role",
-      role: ["admin", "HR"],
+      role: ["admin", "hr"],
     },
     {
       icon: <MdOutlineAdd />,
       name: t("Add department"),
       path: "/add-department",
-      role: ["admin", "HR"],
+      role: ["admin", "hr"],
     },
-
     {
       icon: <MdAnnouncement />,
       name: t("menu.announcement"),
       path: "/announcementList",
-      role: ["admin", "Manager", "HR"],
+      role: ["admin", "hr"],
     },
     {
       icon: <PiUsersThreeBold />,
       name: t("menu.allUsers"),
       path: "/all-users",
-      role: ["admin", "Manager", "HR", "ZonalManager"],
+      role: ["admin", "manager", "hr", "zonalmanager"],
     },
   ];
 
@@ -148,7 +152,6 @@ const AppSidebar: React.FC = () => {
       name: t("menu.Authentication"),
       subItems: [
         { name: t("signIn"), path: "/signin" },
-        // { name: "Sign Up", path: "/signup",  },
         { name: t("signOut"), path: "/logout" },
       ],
     },
@@ -194,10 +197,10 @@ const AppSidebar: React.FC = () => {
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-4">
       {items
-        .filter((nav) => !nav.role || nav.role.includes(userRole!)) // Main item role check
+        .filter((nav) => hasAccess(nav.role)) // Use hasAccess function for main item
         .map((nav, index) => {
           const visibleSubItems = nav.subItems?.filter(
-            (sub) => !sub.role || sub.role.includes(userRole!),
+            (sub) => hasAccess(sub.role), // Use hasAccess function for sub items
           );
 
           if (
@@ -303,9 +306,7 @@ const AppSidebar: React.FC = () => {
             !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
           } px-5`}
         >
-          {/* <Link to="/"> */}
           <img src="lantern-banner.png" alt="Logo" width={170} height={0} />
-          {/* </Link> */}
         </div>
 
         {/* Scrollable Area */}

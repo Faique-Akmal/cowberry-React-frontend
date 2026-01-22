@@ -2151,58 +2151,6 @@ export default function AttendanceList() {
     );
   };
 
-  // Render user role badge
-  const renderUserRoleBadge = () => {
-    if (!currentUserInfo?.userRole) return null;
-
-    const role = currentUserInfo.userRole.toLowerCase();
-    let badgeColor = "";
-    let icon = null;
-
-    switch (role) {
-      case "admin":
-      case "superadmin":
-      case "hr":
-        badgeColor =
-          "bg-gradient-to-r from-red-500/20 to-red-600/20 border-red-400/30 text-red-700 dark:text-red-400";
-        icon = <FaUserShield className="text-sm" />;
-        break;
-      case "manager":
-        badgeColor =
-          "bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-400/30 text-blue-700 dark:text-blue-400";
-        icon = <FaBuilding className="text-sm" />;
-        break;
-      case "zonalmanager":
-      case "zonal":
-        badgeColor =
-          "bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-400/30 text-green-700 dark:text-green-400";
-        icon = <FaMapPin className="text-sm" />;
-        break;
-      default:
-        badgeColor =
-          "bg-gradient-to-r from-gray-500/20 to-gray-600/20 border-gray-400/30 text-gray-700 dark:text-gray-400";
-    }
-
-    return (
-      <div
-        className={`px-3 py-1 backdrop-blur-sm ${badgeColor} border rounded-full text-sm font-semibold flex items-center gap-2`}
-      >
-        {icon}
-        <span className="capitalize">{currentUserInfo.userRole}</span>
-        {currentUserInfo.department && (
-          <span className="text-xs opacity-80">
-            • {currentUserInfo.department}
-          </span>
-        )}
-        {currentUserInfo.allocatedArea && (
-          <span className="text-xs opacity-80">
-            • {currentUserInfo.allocatedArea}
-          </span>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gradient-to-br from-gray-100/50 via-white/30 to-blue-50/30 dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900">
       <PageMeta
@@ -2220,7 +2168,6 @@ export default function AttendanceList() {
                 </div>
                 Travel Sessions
               </h1>
-              {renderUserRoleBadge()}
             </div>
             <p className="text-gray-600 dark:text-gray-300">
               Track employee travel activities and paths

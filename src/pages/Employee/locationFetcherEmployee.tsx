@@ -327,21 +327,74 @@ export default function AttendanceList() {
     }),
   };
 
-  // NEW: Get current user info from localStorage
+  // NEW: Get current user info from localStorage - FIXED VERSION
   useEffect(() => {
-    try {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        const user = JSON.parse(userData);
-        setCurrentUserInfo({
-          userRole: user.userRole || user.role,
-          department: user.department,
-          allocatedArea: user.allocatedArea,
+    const getUserInfo = () => {
+      try {
+        // Try to get user data from localStorage
+        const userDataStr = localStorage.getItem("user");
+        let userData = null;
+        if (userDataStr) {
+          try {
+            userData = JSON.parse(userDataStr);
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+
+        // Try multiple possible keys for role
+        let userRole = "";
+        if (localStorage.getItem("userRole")) {
+          userRole = localStorage.getItem("userRole") || "";
+        } else if (localStorage.getItem("role")) {
+          userRole = localStorage.getItem("role") || "";
+        } else if (localStorage.getItem("user_role")) {
+          userRole = localStorage.getItem("user_role") || "";
+        } else if (userData?.userRole) {
+          userRole = userData.userRole;
+        } else if (userData?.role) {
+          userRole = userData.role;
+        } else if (userData?.user_role) {
+          userRole = userData.user_role;
+        }
+
+        // Get department
+        let department = localStorage.getItem("department") || "";
+        if (!department && userData?.department) {
+          department = userData.department;
+        } else if (!department && userData?.dept) {
+          department = userData.dept;
+        }
+
+        // Get allocated area
+        let allocatedArea = localStorage.getItem("allocatedarea") || "";
+        if (!allocatedArea && userData?.allocatedArea) {
+          allocatedArea = userData.allocatedArea;
+        } else if (!allocatedArea && userData?.area) {
+          allocatedArea = userData.area;
+        } else if (!allocatedArea && userData?.allocated_area) {
+          allocatedArea = userData.allocated_area;
+        }
+
+        console.log("Extracted user info:", {
+          userRole,
+          department,
+          allocatedArea,
+          rawUserData: userData,
         });
+
+        setCurrentUserInfo({
+          userRole: userRole.toLowerCase(),
+          department: department,
+          allocatedArea: allocatedArea,
+        });
+      } catch (error) {
+        console.error("Error getting user info from localStorage:", error);
+        setCurrentUserInfo(null);
       }
-    } catch (error) {
-      console.error("Error parsing user data from localStorage:", error);
-    }
+    };
+
+    getUserInfo();
   }, []);
 
   // Format date without time (YYYY-MM-DD)
@@ -525,92 +578,146 @@ export default function AttendanceList() {
 
   // Initial fetch
   useEffect(() => {
-    fetchTravelSessions();
-    // Load all sessions for export
-    loadAllSessionsForExport();
-  }, []);
+    if (currentUserInfo) {
+      fetchTravelSessions();
+      // Load all sessions for export
+      loadAllSessionsForExport();
+    }
+  }, [currentUserInfo]);
 
-  // NEW: Filter sessions based on user role
+  // NEW: Filter sessions based on user role - FIXED VERSION
   const filterSessionsByRole = useCallback(
     (sessions: TravelSession[]): TravelSession[] => {
-      if (!currentUserInfo?.userRole) return sessions;
+      if (!currentUserInfo?.userRole) {
+        console.log("No user role found, showing all sessions");
+        return sessions;
+      }
 
       const userRole = currentUserInfo.userRole.toLowerCase();
+      console.log(`Filtering sessions for role: ${userRole}`, currentUserInfo);
 
-      if (userRole === "admin" || userRole === "superadmin") {
-        return sessions; // Show all sessions
+      // HR/Admin/SuperAdmin should see everything
+      if (
+        userRole.includes("admin") ||
+        userRole.includes("superadmin") ||
+        userRole.includes("hr")
+      ) {
+        console.log("Admin/HR: Showing all sessions");
+        return sessions;
       }
 
-      if (userRole === "manager") {
-        const managerDepartment = currentUserInfo.department;
-        if (!managerDepartment) return sessions;
+      // Manager: filter by department
+      if (userRole.includes("manager")) {
+        const managerDepartment = currentUserInfo.department
+          ?.toLowerCase()
+          .trim();
+        if (!managerDepartment) {
+          console.warn("Manager role but no department found");
+          return []; // Don't show anything if no department
+        }
 
-        // Filter users by department and then filter their sessions
-        const filteredUsers = users.filter(
-          (user) =>
-            user.department?.toLowerCase() === managerDepartment.toLowerCase(),
-        );
+        console.log(`Manager filtering by department: ${managerDepartment}`);
 
-        const filteredUserIds = new Set(
-          filteredUsers.map((user) => user.userId),
+        // Filter sessions where session department matches manager's department
+        const filtered = sessions.filter((session) => {
+          const sessionDept = (session.department || "").toLowerCase().trim();
+          return sessionDept === managerDepartment;
+        });
+
+        console.log(
+          `Filtered sessions for manager: ${filtered.length} of ${sessions.length}`,
         );
-        return sessions.filter((session) =>
-          filteredUserIds.has(session.userId),
-        );
+        return filtered;
       }
 
-      if (userRole === "zonalmanager") {
-        const zonalArea = currentUserInfo.allocatedArea;
-        if (!zonalArea) return sessions;
+      // Zonal Manager: filter by allocated area
+      if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
+        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
+        if (!zonalArea) {
+          console.warn("ZonalManager role but no allocated area found");
+          return []; // Don't show anything if no area
+        }
 
-        // Filter users by allocatedArea and then filter their sessions
-        const filteredUsers = users.filter(
-          (user) =>
-            user.allocatedArea?.toLowerCase() === zonalArea.toLowerCase(),
-        );
+        console.log(`ZonalManager filtering by area: ${zonalArea}`);
 
-        const filteredUserIds = new Set(
-          filteredUsers.map((user) => user.userId),
+        // Filter sessions where session allocated area matches zonal manager's area
+        const filtered = sessions.filter((session) => {
+          const sessionArea = (session.allocatedArea || "")
+            .toLowerCase()
+            .trim();
+          return sessionArea === zonalArea;
+        });
+
+        console.log(
+          `Filtered sessions for zonal manager: ${filtered.length} of ${sessions.length}`,
         );
-        return sessions.filter((session) =>
-          filteredUserIds.has(session.userId),
-        );
+        return filtered;
       }
 
+      console.log(`Unknown role: ${userRole}, showing all sessions`);
       return sessions;
     },
-    [currentUserInfo, users],
+    [currentUserInfo],
   );
 
-  // NEW: Filter users based on user role
+  // NEW: Filter users based on user role - FIXED VERSION
   const filterUsersByRole = useCallback(
     (usersList: typeof users): typeof users => {
-      if (!currentUserInfo?.userRole) return usersList;
+      if (!currentUserInfo?.userRole) {
+        console.log("No user role found, showing all users");
+        return usersList;
+      }
 
       const userRole = currentUserInfo.userRole.toLowerCase();
+      console.log(`Filtering users for role: ${userRole}`);
 
-      if (userRole === "admin" || userRole === "superadmin") {
-        return usersList; // Show all users
+      // HR/Admin/SuperAdmin should see all users
+      if (
+        userRole.includes("admin") ||
+        userRole.includes("superadmin") ||
+        userRole.includes("hr")
+      ) {
+        return usersList;
       }
 
-      if (userRole === "manager") {
-        const managerDepartment = currentUserInfo.department;
-        if (!managerDepartment) return usersList;
+      // Manager: filter by department
+      if (userRole.includes("manager")) {
+        const managerDepartment = currentUserInfo.department
+          ?.toLowerCase()
+          .trim();
+        if (!managerDepartment) {
+          console.warn("Manager role but no department found");
+          return [];
+        }
 
-        return usersList.filter(
-          (user) =>
-            user.department?.toLowerCase() === managerDepartment.toLowerCase(),
+        const filtered = usersList.filter((user) => {
+          const userDept = (user.department || "").toLowerCase().trim();
+          return userDept === managerDepartment;
+        });
+
+        console.log(
+          `Filtered users for manager: ${filtered.length} of ${usersList.length}`,
         );
+        return filtered;
       }
 
-      if (userRole === "zonalmanager") {
-        const zonalArea = currentUserInfo.allocatedArea;
-        if (!zonalArea) return usersList;
+      // Zonal Manager: filter by allocated area
+      if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
+        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
+        if (!zonalArea) {
+          console.warn("ZonalManager role but no allocated area found");
+          return [];
+        }
 
-        return usersList.filter(
-          (user) =>
-            user.allocatedArea?.toLowerCase() === zonalArea.toLowerCase(),
+        const filtered = usersList.filter((user) => {
+          const userArea = (user.allocatedArea || "").toLowerCase().trim();
+          return userArea === zonalArea;
+        });
+
+        console.log(
+          `Filtered users for zonal manager: ${filtered.length} of ${usersList.length}`,
         );
+        return filtered;
       }
 
       return usersList;
@@ -762,7 +869,7 @@ export default function AttendanceList() {
     }
   };
 
-  // Fetch all travel sessions with pagination
+  // Fetch all travel sessions with pagination - UPDATED VERSION
   const fetchTravelSessions = async (
     page: number = 1,
     append: boolean = false,
@@ -782,6 +889,27 @@ export default function AttendanceList() {
       if (selectedUser) params.userId = selectedUser;
       if (searchQuery) params.search = searchQuery;
 
+      // Add role-based filters to API call if not admin/hr
+      if (currentUserInfo?.userRole) {
+        const userRole = currentUserInfo.userRole.toLowerCase();
+
+        // Only add role-based filters for non-admin users
+        if (!userRole.includes("admin") && !userRole.includes("hr")) {
+          if (userRole.includes("manager") && currentUserInfo.department) {
+            params.department = currentUserInfo.department;
+          }
+
+          if (
+            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
+            currentUserInfo.allocatedArea
+          ) {
+            params.allocatedArea = currentUserInfo.allocatedArea;
+          }
+        }
+      }
+
+      console.log("Fetching sessions with params:", params);
+
       const res = await API.get<ApiPaginationResponse>(
         "/admin/travel-sessions",
         { params },
@@ -789,8 +917,9 @@ export default function AttendanceList() {
 
       if (res.data.success) {
         const sessions = res.data.data || [];
+        console.log(`Fetched ${sessions.length} sessions for page ${page}`);
 
-        // Apply role-based filtering
+        // Apply role-based filtering on frontend as well (double safety)
         let filteredSessions = sessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(sessions);
@@ -813,16 +942,18 @@ export default function AttendanceList() {
         const allLoadedSessions = append
           ? [...travelSessions, ...filteredSessions]
           : filteredSessions;
+
+        // Extract unique users from filtered sessions only
         const uniqueUsers = Array.from(
           new Map(
-            allLoadedSessions.map((session) => [
+            filteredSessions.map((session) => [
               session.userId,
               {
                 userId: session.userId,
                 username: session.username,
                 employeeCode: session.employeeCode,
-                department: session.department,
-                allocatedArea: session.allocatedArea,
+                department: session.department || "Unknown",
+                allocatedArea: session.allocatedArea || "Unknown",
               },
             ]),
           ).values(),
@@ -830,6 +961,9 @@ export default function AttendanceList() {
 
         // Apply role-based filtering to users
         const filteredUsers = filterUsersByRole(uniqueUsers);
+        console.log(
+          `Filtered users: ${filteredUsers.length} of ${uniqueUsers.length}`,
+        );
         setUsers(filteredUsers);
 
         // Update sessions map
@@ -894,6 +1028,24 @@ export default function AttendanceList() {
         per_page: 1000, // Get all sessions for this user/date
       };
 
+      // Add role-based filters
+      if (currentUserInfo?.userRole) {
+        const userRole = currentUserInfo.userRole.toLowerCase();
+
+        if (!userRole.includes("admin") && !userRole.includes("hr")) {
+          if (userRole.includes("manager") && currentUserInfo.department) {
+            params.department = currentUserInfo.department;
+          }
+
+          if (
+            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
+            currentUserInfo.allocatedArea
+          ) {
+            params.allocatedArea = currentUserInfo.allocatedArea;
+          }
+        }
+      }
+
       const res = await API.get<ApiPaginationResponse>(
         "/admin/travel-sessions",
         { params },
@@ -901,6 +1053,12 @@ export default function AttendanceList() {
 
       if (res.data.success) {
         const userDateSessions = res.data.data || [];
+
+        // Apply role-based filtering
+        let filteredSessions = userDateSessions;
+        if (currentUserInfo?.userRole) {
+          filteredSessions = filterSessionsByRole(userDateSessions);
+        }
 
         // Update the sessions for this user/date
         setTravelSessions((prev) => {
@@ -910,7 +1068,7 @@ export default function AttendanceList() {
               !(s.userId === userId && formatDateOnly(s.startTime) === date),
           );
           // Add new sessions
-          return [...filtered, ...userDateSessions];
+          return [...filtered, ...filteredSessions];
         });
 
         // Update grouped view
@@ -922,7 +1080,7 @@ export default function AttendanceList() {
           const existingSessionIds = new Set(
             group.sessions.map((s) => s.sessionId),
           );
-          const newSessions = userDateSessions.filter(
+          const newSessions = filteredSessions.filter(
             (s) => !existingSessionIds.has(s.sessionId),
           );
 
@@ -961,7 +1119,7 @@ export default function AttendanceList() {
 
         // Update sessions map
         const newCache: Record<string, TravelSession> = {};
-        userDateSessions.forEach((session) => {
+        filteredSessions.forEach((session) => {
           const key = `${session.userId}-${session.sessionId}`;
           newCache[key] = session;
         });
@@ -984,7 +1142,27 @@ export default function AttendanceList() {
   // Fetch only active sessions
   const fetchActiveSessionsOnly = async () => {
     try {
-      const res = await API.get("/admin/travel-sessions");
+      const params: any = {};
+
+      // Add role-based filters
+      if (currentUserInfo?.userRole) {
+        const userRole = currentUserInfo.userRole.toLowerCase();
+
+        if (!userRole.includes("admin") && !userRole.includes("hr")) {
+          if (userRole.includes("manager") && currentUserInfo.department) {
+            params.department = currentUserInfo.department;
+          }
+
+          if (
+            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
+            currentUserInfo.allocatedArea
+          ) {
+            params.allocatedArea = currentUserInfo.allocatedArea;
+          }
+        }
+      }
+
+      const res = await API.get("/admin/travel-sessions", { params });
       if (res.data.success) {
         const allSessions = res.data.data || [];
 
@@ -1984,6 +2162,7 @@ export default function AttendanceList() {
     switch (role) {
       case "admin":
       case "superadmin":
+      case "hr":
         badgeColor =
           "bg-gradient-to-r from-red-500/20 to-red-600/20 border-red-400/30 text-red-700 dark:text-red-400";
         icon = <FaUserShield className="text-sm" />;
@@ -1994,6 +2173,7 @@ export default function AttendanceList() {
         icon = <FaBuilding className="text-sm" />;
         break;
       case "zonalmanager":
+      case "zonal":
         badgeColor =
           "bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-400/30 text-green-700 dark:text-green-400";
         icon = <FaMapPin className="text-sm" />;
@@ -2047,10 +2227,11 @@ export default function AttendanceList() {
               {currentUserInfo?.userRole && (
                 <span className="ml-2 text-sm opacity-75">
                   (Viewing:{" "}
-                  {currentUserInfo.userRole === "manager"
-                    ? "My Department"
-                    : currentUserInfo.userRole === "zonalmanager"
-                      ? "My Area"
+                  {currentUserInfo.userRole.includes("manager") &&
+                  !currentUserInfo.userRole.includes("zonal")
+                    ? `My Department (${currentUserInfo.department || "Not set"})`
+                    : currentUserInfo.userRole.includes("zonal")
+                      ? `My Area (${currentUserInfo.allocatedArea || "Not set"})`
                       : "All"}
                   )
                 </span>
@@ -2220,6 +2401,7 @@ export default function AttendanceList() {
                   <option key={user.userId} value={user.userId.toString()}>
                     {user.username} ({user.employeeCode})
                     {user.department && ` - ${user.department}`}
+                    {user.allocatedArea && ` [${user.allocatedArea}]`}
                   </option>
                 ))}
               </select>
@@ -2759,6 +2941,11 @@ export default function AttendanceList() {
                               • {session.department}
                             </span>
                           )}
+                          {session.allocatedArea && (
+                            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                              [{session.allocatedArea}]
+                            </span>
+                          )}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
@@ -2857,7 +3044,6 @@ export default function AttendanceList() {
         </>
       )}
 
-      {/* Rest of the component remains the same... */}
       {/* Farmer Data Modal */}
       {showFarmerDataModal && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">

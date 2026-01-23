@@ -526,7 +526,7 @@ export const ChatInterface = () => {
                         : activeConversation.name}
                     </h3>
                     <span className="text-xs font-medium text-white/70 flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>{" "}
+                      <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>{" "}
                       Online
                     </span>
                   </div>

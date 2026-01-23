@@ -9,7 +9,6 @@ import {
   Image as ImageIcon,
   MoreVertical,
   ChevronDown,
-  ChevronUp,
   Phone,
   Video,
   Search,
@@ -349,13 +348,13 @@ export const ChatInterface = () => {
           </div>
           <div className="p-2 flex flex-col items-center">
             <a href={mapUrl} target="_blank" rel="noopener noreferrer">
-              <button className="mx-auto overflow-hidden relative w-32 h-8 bg-brand-500 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
+              <button className="mx-auto overflow-hidden relative w-32 h-8 bg-lantern-blue-600 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
                 <span className="flex items-center justify-center gap-1">
                   <MapPinned className="w-5 h-5" /> Open map
                 </span>
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
-                <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
-                <span className="absolute w-36 h-32 -top-8 -left-2 bg-green-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
+                <span className="absolute w-36 h-32 -top-8 -left-2 bg-blue-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
+                <span className="absolute w-36 h-32 -top-8 -left-2 bg-lantern-blue-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
                 <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-6 z-10">
                   <span className="flex items-center justify-center gap-1">
                     <Telescope className="w-5 h-5" /> Explore!
@@ -420,7 +419,7 @@ export const ChatInterface = () => {
             </div>
 
             <div className="flex items-center gap-1">
-              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-lime-400 to-green-500 p-0.5">
+              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-blue-400 to-lantern-blue-600 p-0.5">
                 <img
                   src={`https://ui-avatars.com/api/?name=${currentUser?.username}&background=random`}
                   alt="Me"
@@ -510,7 +509,7 @@ export const ChatInterface = () => {
                   >
                     <ArrowLeft className="h-6 w-6" />
                   </button>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-green-500 to-lime-700 text-white font-bold shadow-lg ring-2 ring-white/20">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-lantern-blue-600 to-blue-700 text-white font-bold shadow-lg ring-2 ring-white/20">
                     {activeConversation.type === "PERSONAL"
                       ? activeConversation.participants
                           .find((p) => p.user.id !== currentUser?.id)
@@ -551,59 +550,66 @@ export const ChatInterface = () => {
                   const isMe = msg.senderId === currentUser?.id;
                   const isDeleted = msg.isDeleted;
 
+                  // ✅ Check if this message has the active menu open
+                  const isMenuOpen = activeMenuId === msg.id;
+
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${
+                      // ✅ BUG FIX: Add 'z-50' if menu is open, otherwise let it be auto (or lower)
+                      // This brings the ENTIRE message container to the top of the stack
+                      className={`relative flex flex-col ${
                         isMe ? "items-end" : "items-start"
-                      } animate-in fade-in slide-in-from-bottom-2`}
+                      } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
                     >
                       {/* Message Bubble */}
                       <div
                         className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 shadow-lg backdrop-blur-md group ${
                           !isMe
-                            ? "bg-linear-to-br from-green-600/50 to-brand-600/50 text-white rounded-tl-none border border-white/20"
+                            ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
                             : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
                         }`}
                       >
+                        <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
+                          {isMe
+                            ? `${msg.sender.username} (You)`
+                            : msg.sender.username}
+                        </p>
                         {/* Reply Context */}
                         {!isDeleted && msg.replyTo && (
                           <div
-                            className={`mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
+                            className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
                               !isMe
                                 ? "border-white/50 bg-black/10"
-                                : "border-indigo-400 bg-white/5"
+                                : "border-lantern-blue-600 bg-white/5"
                             }`}
                           >
-                            <p className="font-bold mb-0.5">
-                              {msg.replyTo.senderId === currentUser?.id
-                                ? "You"
-                                : ""}
-                            </p>
+                            <span className="font-bold text-grey-600">
+                              {msg.replyTo?.sender.username || "User"}
+                            </span>
                             <p className="truncate">
                               {msg.replyTo.content || "Attachment"}
                             </p>
                           </div>
                         )}
-
                         {/* Attachments */}
                         {!isDeleted &&
                           msg.type !== "TEXT" &&
                           renderAttachment(msg)}
-
                         {/* Text Content */}
                         {!isDeleted && msg.content && msg.type === "TEXT" && (
                           <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
                             {msg.content}
                           </p>
                         )}
-
                         {msg.isDeleted && (
                           <p className="italic text-md opacity-60 flex items-center gap-2">
-                            <Ban className="h-5 w-5" /> Message deleted
+                            <Ban className="h-5 w-5" />{" "}
+                            {isMe
+                              ? "You deleted this message"
+                              : "This message was deleted"}
                           </p>
                         )}
-
                         <div
                           className={`mt-1 flex items-center justify-end gap-1 text-xs ${
                             !isMe ? "text-white/80" : "text-gray-100"
@@ -615,14 +621,9 @@ export const ChatInterface = () => {
                           {msg.isEdited && <span>(edited)</span>}
                           {isMe && <CheckCheck className="h-4 w-4" />}
                         </div>
-
                         {/* Dropdown Menu (Only for valid messages) */}
                         {!isDeleted && (
-                          <div
-                            className={`absolute top-0 ${
-                              isMe ? "right-1" : "right-1"
-                            } opacity-90 lg:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger`}
-                          >
+                          <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -632,19 +633,16 @@ export const ChatInterface = () => {
                               }}
                               className="p-1 rounded-full hover:bg-black/50 text-white/90"
                             >
-                              {activeMenuId ? (
-                                <ChevronUp className="h-6 w-6" />
-                              ) : (
-                                <ChevronDown className="h-6 w-6" />
-                              )}
+                              <ChevronDown className="h-6 w-6" />
                             </button>
 
                             {/* Popup Menu */}
-                            {activeMenuId === msg.id && (
+                            {isMenuOpen && (
                               <div
+                                // ✅ Ensure dropdown itself has a high z-index (though parent z-index does most of the work)
                                 className={`absolute top-9 ${
-                                  !!isMe && "right-0"
-                                } z-50 w-32 rounded-lg bg-black/20 shadow-xl backdrop-blur-xl text-gray-50 p-1 text-[16px] font-medium animate-in fade-in zoom-in-95 origin-top-left`}
+                                  isMe ? "right-0" : "left-0"
+                                } z-100 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-32 animate-in zoom-in-95 origin-top-right`}
                               >
                                 <button
                                   onClick={() => {
@@ -658,16 +656,18 @@ export const ChatInterface = () => {
                                 </button>
                                 {isMe && (
                                   <>
-                                    <button
-                                      onClick={() => {
-                                        setEditingMessage(msg);
-                                        setActiveMenuId(null);
-                                        textInputRef.current?.focus();
-                                      }}
-                                      className="w-full text-left px-4 py-2 hover:bg-indigo-200/40 rounded-md flex items-center gap-2"
-                                    >
-                                      <Edit2 className="h-3.5 w-3.5" /> Edit
-                                    </button>
+                                    {msg.type !== "LOCATION" && (
+                                      <button
+                                        onClick={() => {
+                                          setEditingMessage(msg);
+                                          setActiveMenuId(null);
+                                          textInputRef.current?.focus();
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-indigo-200/40 rounded-md flex items-center gap-2"
+                                      >
+                                        <Edit2 className="h-3.5 w-3.5" /> Edit
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => {
                                         handleDeleteMessage(msg.id);
@@ -695,8 +695,8 @@ export const ChatInterface = () => {
                 {/* Reply/Edit Preview Banner */}
                 {(replyingTo || editingMessage) && (
                   <div className="absolute bottom-full left-0 right-0 mx-4 md:mx-8 mb-2 p-3 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-between text-white animate-in slide-in-from-bottom-2">
-                    <div className="flex flex-col text-sm border-l-4 border-green-400 pl-3">
-                      <span className="font-bold text-green-300 mb-0.5">
+                    <div className="flex flex-col text-sm border-l-4 border-blue-300 pl-3">
+                      <span className="font-bold text-blue-300 mb-0.5">
                         {editingMessage
                           ? "Editing Message"
                           : `Replying to ${replyingTo?.sender.username}`}
@@ -751,7 +751,7 @@ export const ChatInterface = () => {
                           }}
                           className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 text-white/90 transition-colors group text-left w-full"
                         >
-                          <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 group-hover:bg-green-500 group-hover:text-white transition-all">
+                          <div className="h-8 w-8 rounded-full bg-lantern-yellow-400/20 flex items-center justify-center text-lantern-yellow-400 group-hover:bg-lantern-yellow-400 group-hover:text-white transition-all">
                             <MapPin className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
@@ -849,7 +849,7 @@ export const ChatInterface = () => {
                       disabled={!input.trim()}
                       className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all transform hover:scale-105 active:scale-95 ${
                         input.trim()
-                          ? "bg-linear-to-r from-green-300/50 to-green-500/30 text-white"
+                          ? "bg-linear-to-r from-blue-300/50 to-lantern-blue-600/30 text-white"
                           : "bg-white/10 text-white/30 cursor-not-allowed"
                       }`}
                     >

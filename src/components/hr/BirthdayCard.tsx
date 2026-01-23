@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import { useUserStore } from "../../store/useUserStore";
 import { User } from "../../types/userTypes";
+import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 const BirthdayCardList: React.FC = () => {
   const { isDarkMode } = useTheme(); // Removed unused themeConfig
@@ -207,12 +208,7 @@ const BirthdayCardList: React.FC = () => {
         {/* ✅ Logic: Check isLoading first, but prevent loading screen if data exists */}
         {isLoading && users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="relative mb-6">
-              <div className="w-20 h-20 rounded-full backdrop-blur-sm animate-spin border-4 border-transparent border-t-purple-500 border-r-pink-500"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl">🎂</span>
-              </div>
-            </div>
+            <LoadingAnimation />
             <p className="text-gray-600 dark:text-gray-300 font-medium">
               {t("home.Loading birthdays...") || "Loading birthdays..."}
             </p>

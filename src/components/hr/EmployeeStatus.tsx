@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { Users, Mail, Activity, CheckCircle, XCircle } from "lucide-react";
 // ✅ Import Zustand Store
 import { useUserStore } from "../../store/useUserStore";
+import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 // --- Helper Components ---
 const StatusPill = ({ status }: { status: string }) => {
@@ -294,12 +295,7 @@ const EmployeeStatus = () => {
           {/* Loading State */}
           {isLoading && users.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="relative mb-6">
-                <div className="w-16 h-16 rounded-full backdrop-blur-sm animate-spin border-4 border-transparent border-t-blue-500 border-r-indigo-500"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-500" />
-                </div>
-              </div>
+              <LoadingAnimation />
               <p className="text-gray-600 dark:text-gray-300 font-medium">
                 Loading active users...
               </p>

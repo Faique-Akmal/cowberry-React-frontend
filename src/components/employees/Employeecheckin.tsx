@@ -20,6 +20,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Loader from "../../pages/UiElements/Loader";
 import PageMeta from "../common/PageMeta";
+import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 interface CheckLog {
   userId: number;
@@ -720,7 +721,7 @@ const EmployeeCheckin = () => {
           animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2
           backdrop-blur-sm
         "></div> */}
-            <Loader />
+            <LoadingAnimation />
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Loading check logs...
             </p>

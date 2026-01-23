@@ -10,6 +10,7 @@ import { useUserStore } from "../../store/useUserStore";
 import API from "../../api/axios";
 import * as XLSX from "xlsx";
 import PageMeta from "../../components/common/PageMeta";
+import LoadingAnimation from "../UiElements/loadingAnimation";
 
 // Add UserRole type
 type UserRole = "HR" | "Manager" | "ZonalManager" | string;
@@ -1170,12 +1171,7 @@ const UserList: React.FC = () => {
                 flex-1
               "
               >
-                <div
-                  className="
-                  animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500
-                  backdrop-blur-sm mb-2 sm:mb-3
-                "
-                ></div>
+                <LoadingAnimation />
                 <span className="text-gray-600 dark:text-gray-300 text-sm">
                   Loading users...
                 </span>

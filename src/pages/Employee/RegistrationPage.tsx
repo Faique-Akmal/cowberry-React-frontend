@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 
 import { FaUserPlus, FaBuilding, FaUserTag, FaSpinner } from "react-icons/fa";
 import PageMeta from "../../components/common/PageMeta";
+import LoadingAnimation from "../UiElements/loadingAnimation";
 
 interface Department {
   departmentId: number;
@@ -341,11 +342,11 @@ export default function RegisterUserForm() {
 
   if (isLoadingData) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center h-64 mt-14">
         <div className="text-center">
-          <FaSpinner className="animate-spin text-4xl text-blue-500 mx-auto mb-4" />
+          <LoadingAnimation />
           <p className="text-gray-600 dark:text-gray-300">
-            Loading form data...
+            Loading Registration Form........
           </p>
         </div>
       </div>

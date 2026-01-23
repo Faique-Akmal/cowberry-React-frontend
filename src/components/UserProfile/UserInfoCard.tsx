@@ -4,6 +4,7 @@ import Alert from "../ui/alert/Alert";
 import { Modal } from "../ui/modal";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
+import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 interface UserProfile {
   id: number;
@@ -47,7 +48,7 @@ export default function UserInfoCard() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const { isOpen, openModal, closeModal } = useModal();
-  
+
   // Get userId from localStorage
   const [userId, setUserId] = useState<number | null>(null);
 
@@ -72,31 +73,38 @@ export default function UserInfoCard() {
       try {
         setIsLoading(true);
         setError("");
-        
+
         const response = await API.get(`/auth/me/${id}`);
-        
+
         if (response.data && response.data.user) {
           const userData = response.data.user;
           setUser(userData);
           setAddress(userData.address || "");
-          setFirstName(userData.firstName || userData.fullName?.split(' ')[0] || "");
-          setLastName(userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || "");
+          setFirstName(
+            userData.firstName || userData.fullName?.split(" ")[0] || "",
+          );
+          setLastName(
+            userData.lastName ||
+              userData.fullName?.split(" ").slice(1).join(" ") ||
+              "",
+          );
           setMobileNo(userData.mobileNo || "");
-          
+
           // Set department name from the department object
           if (userData.department && userData.department.name) {
             setUserDepartment(userData.department.name);
           }
-          
+
           localStorage.setItem(`user_${id}`, JSON.stringify(userData));
           toast.success("Profile loaded successfully!");
         } else {
           throw new Error("Invalid response structure");
         }
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || 
-                           error.message || 
-                           "Failed to load user profile";
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to load user profile";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -146,31 +154,35 @@ export default function UserInfoCard() {
       const response = await API.patch(`/auth/me/${userId}`, updateData, {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
       toast.success("Profile updated successfully!", { id: "save-user" });
-      
+
       if (response.data && response.data.user) {
         const updatedUser = response.data.user;
         setUser(updatedUser);
         setAddress(updatedUser.address || "");
-        setFirstName(updatedUser.firstName || updatedUser.fullName?.split(' ')[0] || "");
-        setLastName(updatedUser.lastName || updatedUser.fullName?.split(' ').slice(1).join(' ') || "");
+        setFirstName(
+          updatedUser.firstName || updatedUser.fullName?.split(" ")[0] || "",
+        );
+        setLastName(
+          updatedUser.lastName ||
+            updatedUser.fullName?.split(" ").slice(1).join(" ") ||
+            "",
+        );
         setMobileNo(updatedUser.mobileNo || "");
-        
+
         if (updatedUser.department && updatedUser.department.name) {
           setUserDepartment(updatedUser.department.name);
         }
-        
+
         localStorage.setItem(`user_${userId}`, JSON.stringify(updatedUser));
       }
-      
+
       closeModal();
     } catch (error: any) {
-    
-      
       if (error.response?.status === 404) {
         toast.error(`User with ID ${userId} not found`, { id: "save-user" });
         setError("User not found");
@@ -184,7 +196,9 @@ export default function UserInfoCard() {
         toast.error(error.message, { id: "save-user" });
         setError(error.message);
       } else {
-        toast.error("Failed to update profile. Please try again.", { id: "save-user" });
+        toast.error("Failed to update profile. Please try again.", {
+          id: "save-user",
+        });
         setError("Network error or server issue");
       }
     } finally {
@@ -195,8 +209,10 @@ export default function UserInfoCard() {
   const handleModalClose = () => {
     if (user) {
       setAddress(user.address || "");
-      setFirstName(user.firstName || user.fullName?.split(' ')[0] || "");
-      setLastName(user.lastName || user.fullName?.split(' ').slice(1).join(' ') || "");
+      setFirstName(user.firstName || user.fullName?.split(" ")[0] || "");
+      setLastName(
+        user.lastName || user.fullName?.split(" ").slice(1).join(" ") || "",
+      );
       setMobileNo(user.mobileNo || "");
     }
     setError("");
@@ -226,7 +242,7 @@ export default function UserInfoCard() {
   if (isLoading && !user) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent"></div>
+        <LoadingAnimation />
         <span className="ml-4 text-gray-600">Loading profile...</span>
       </div>
     );
@@ -249,7 +265,8 @@ export default function UserInfoCard() {
 
   return (
     <>
-      <div className="
+      <div
+        className="
         p-6
         rounded-2xl
         bg-white/40 dark:bg-gray-900/70
@@ -258,10 +275,11 @@ export default function UserInfoCard() {
         shadow-sm
         relative
         overflow-hidden
-      ">
+      "
+      >
         {/* Subtle background pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/10 dark:from-blue-900/5 dark:to-purple-900/5"></div>
-        
+
         {/* Main Content */}
         <div className="relative">
           {/* Header Section */}
@@ -274,12 +292,12 @@ export default function UserInfoCard() {
                 View and manage your profile details
               </p>
             </div>
-            
-             <div className="mt-8 pt-6  border-gray-200 dark:border-gray-700">
-            <button
-              onClick={openModal}
-              disabled={isLoading}
-              className="
+
+            <div className="mt-8 pt-6  border-gray-200 dark:border-gray-700">
+              <button
+                onClick={openModal}
+                disabled={isLoading}
+                className="
                 group
                 inline-flex items-center gap-3
                 px-5 py-3
@@ -294,8 +312,8 @@ export default function UserInfoCard() {
                 transition-all duration-200
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
-            >
-              {/* <div className="
+              >
+                {/* <div className="
                 p-2
                 rounded-lg
                 bg-blue-50 dark:bg-blue-900/20
@@ -306,62 +324,96 @@ export default function UserInfoCard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2v11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div> */}
-              Edit Profile
-            </button>
-          </div>
+                Edit Profile
+              </button>
+            </div>
           </div>
 
           {/* User Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
             {[
-              { label: "First Name", value: user.firstName || user.fullName?.split(' ')[0] || "N/A", type: "capitalize" },
-              { label: "Last Name", value: user.lastName || user.fullName?.split(' ').slice(1).join(' ') || "N/A", type: "capitalize" },
+              {
+                label: "First Name",
+                value: user.firstName || user.fullName?.split(" ")[0] || "N/A",
+                type: "capitalize",
+              },
+              {
+                label: "Last Name",
+                value:
+                  user.lastName ||
+                  user.fullName?.split(" ").slice(1).join(" ") ||
+                  "N/A",
+                type: "capitalize",
+              },
               { label: "Username", value: user.username || "N/A" },
               { label: "Email", value: user.email || "N/A" },
               { label: "Mobile No", value: user.mobileNo || "N/A" },
               { label: "Role", value: user.role || "N/A", type: "capitalize" },
-              { label: "Department", value: user.department?.name || userDepartment || "N/A", type: "capitalize" },
+              {
+                label: "Department",
+                value: user.department?.name || userDepartment || "N/A",
+                type: "capitalize",
+              },
               { label: "Employee Code", value: user.employeeCode || "N/A" },
-              { label: "Status", value: user.isActiveEmployee ? "Active" : "Inactive", type: "status" },
-              { label: "Joined Date", value: new Date(user.createdAt || user.birthDate).toLocaleDateString() }
+              {
+                label: "Status",
+                value: user.isActiveEmployee ? "Active" : "Inactive",
+                type: "status",
+              },
+              {
+                label: "Joined Date",
+                value: new Date(
+                  user.createdAt || user.birthDate,
+                ).toLocaleDateString(),
+              },
             ].map((item, index) => (
-              <div key={index} className="
+              <div
+                key={index}
+                className="
                 p-4
                 rounded-xl
                 bg-white/50 dark:bg-gray-800/40
                 border border-gray-100 dark:border-gray-700/50
                 hover:bg-white/70 dark:hover:bg-gray-800/50
                 transition-all duration-200
-              ">
+              "
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="
+                  <span
+                    className="
                     text-xs font-medium
                     text-gray-500 dark:text-gray-400
                     uppercase tracking-wider
-                  ">
+                  "
+                  >
                     {item.label}
                   </span>
                   {item.type === "status" && (
-                    <span className={`
+                    <span
+                      className={`
                       px-2.5 py-1
                       rounded-full
                       text-xs font-medium
-                      ${item.value === "Active"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      ${
+                        item.value === "Active"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                       }
-                    `}>
+                    `}
+                    >
                       {item.value}
                     </span>
                   )}
                 </div>
                 {item.type !== "status" && (
-                  <p className={`
+                  <p
+                    className={`
                     text-gray-900 dark:text-white
                     font-medium
                     ${item.type === "capitalize" ? "capitalize" : ""}
                     truncate
-                  `}>
+                  `}
+                  >
                     {item.value}
                   </p>
                 )}
@@ -371,22 +423,43 @@ export default function UserInfoCard() {
 
           {/* Full-width fields */}
           <div className="space-y-5">
-            <div className="
+            <div
+              className="
               p-5
               rounded-xl
               bg-white/50 dark:bg-gray-800/40
               border border-gray-100 dark:border-gray-700/50
-            ">
+            "
+            >
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white">Address</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Your complete residential address</p>
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    Address
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Your complete residential address
+                  </p>
                 </div>
               </div>
               <p className="text-gray-900 dark:text-white capitalize pl-11">
@@ -394,21 +467,37 @@ export default function UserInfoCard() {
               </p>
             </div>
 
-            <div className="
+            <div
+              className="
               p-5
               rounded-xl
               bg-white/50 dark:bg-gray-800/40
               border border-gray-100 dark:border-gray-700/50
-            ">
+            "
+            >
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <svg
+                    className="w-5 h-5 text-purple-600 dark:text-purple-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white">Date of Birth</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Your birth date</p>
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    Date of Birth
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Your birth date
+                  </p>
                 </div>
               </div>
               <p className="text-gray-900 dark:text-white pl-11">
@@ -422,36 +511,48 @@ export default function UserInfoCard() {
               </p>
             </div>
           </div>
-
-          
         </div>
       </div>
 
       {/* Edit Modal */}
-      <Modal 
-        isOpen={isOpen} 
+      <Modal
+        isOpen={isOpen}
         onClose={handleModalClose}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
-        <div className="
+        <div
+          className="
           relative w-full max-w-2xl max-h-[90vh]
           rounded-xl
           bg-white dark:bg-gray-900
           border border-gray-200 dark:border-gray-700
           shadow-xl
           overflow-hidden
-        ">
+        "
+        >
           {/* Header */}
-          <div className="
+          <div
+            className="
             px-6 py-5
             border-b border-gray-200 dark:border-gray-700
             bg-gray-50 dark:bg-gray-800/50
-          ">
+          "
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 </div>
                 <div>
@@ -472,8 +573,18 @@ export default function UserInfoCard() {
                   transition-colors duration-200
                 "
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -483,18 +594,32 @@ export default function UserInfoCard() {
           <div className="h-full max-h-[calc(90vh-80px)] overflow-y-auto">
             <div className="p-6 space-y-6">
               {/* User ID Badge */}
-              <div className="
+              <div
+                className="
                 inline-flex items-center gap-2
                 px-4 py-2
                 rounded-lg
                 bg-gray-50 dark:bg-gray-800/60
                 border border-gray-200 dark:border-gray-700
                 text-sm
-              ">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              "
+              >
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+                  />
                 </svg>
-                <span className="text-gray-600 dark:text-gray-400">User ID:</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  User ID:
+                </span>
                 <span className="font-mono font-medium text-gray-900 dark:text-white bg-white/50 dark:bg-gray-700/50 px-2 py-0.5 rounded">
                   {userId}
                 </span>
@@ -502,18 +627,30 @@ export default function UserInfoCard() {
 
               {/* Error Message */}
               {error && (
-                <div className="
+                <div
+                  className="
                   p-4
                   rounded-lg
                   bg-red-50 dark:bg-red-900/20
                   border border-red-200 dark:border-red-700/50
                   flex items-start gap-3
-                ">
-                  <svg className="w-5 h-5 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                "
+                >
+                  <svg
+                    className="w-5 h-5 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+                    <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                      {error}
+                    </p>
                   </div>
                 </div>
               )}
@@ -523,16 +660,31 @@ export default function UserInfoCard() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                     </div>
-                    <h5 className="font-medium text-gray-900 dark:text-white">Personal Information</h5>
+                    <h5 className="font-medium text-gray-900 dark:text-white">
+                      Personal Information
+                    </h5>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label
+                        htmlFor="firstName"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
                         First Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -556,9 +708,12 @@ export default function UserInfoCard() {
                         "
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label
+                        htmlFor="lastName"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
                         Last Name
                       </label>
                       <input
@@ -588,16 +743,31 @@ export default function UserInfoCard() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      <svg
+                        className="w-5 h-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
                       </svg>
                     </div>
-                    <h5 className="font-medium text-gray-900 dark:text-white">Contact Information</h5>
+                    <h5 className="font-medium text-gray-900 dark:text-white">
+                      Contact Information
+                    </h5>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label htmlFor="mobileNo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label
+                        htmlFor="mobileNo"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
                         Mobile Number <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
@@ -626,9 +796,12 @@ export default function UserInfoCard() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
                         Address <span className="text-red-500">*</span>
                       </label>
                       <textarea
@@ -657,12 +830,14 @@ export default function UserInfoCard() {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="
+                <div
+                  className="
                   pt-6
                   border-t border-gray-200 dark:border-gray-700
                   flex items-center gap-3 justify-end
-                ">
-                  <button 
+                "
+                >
+                  <button
                     type="button"
                     onClick={handleModalClose}
                     disabled={isSaving}
@@ -679,12 +854,22 @@ export default function UserInfoCard() {
                       flex items-center gap-2
                     "
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSaving}
                     className="
@@ -702,18 +887,30 @@ export default function UserInfoCard() {
                   >
                     {isSaving ? (
                       <>
-                        <span className="
+                        <span
+                          className="
                           animate-spin
                           w-4 h-4
                           border-2 border-white border-t-transparent
                           rounded-full
-                        "></span>
+                        "
+                        ></span>
                         <span>Saving...</span>
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                         <span>Save Changes</span>
                       </>

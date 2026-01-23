@@ -1,6 +1,7 @@
 // fully functional code for location fetcher
 // src/components/admin/TravelSessions.tsx
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+
 import API from "../../api/axios";
 import {
   MapContainer,
@@ -36,13 +37,12 @@ import {
   FaSpinner,
   FaChevronDown,
   FaPauseCircle,
-  FaUserShield,
-  FaBuilding,
 } from "react-icons/fa";
 
 import ImageZoom from "../../components/ImageZoom";
-import Loader from "../UiElements/Loader";
 import PageMeta from "../../components/common/PageMeta";
+
+import LoadingAnimation from "../UiElements/loadingAnimation";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -2404,8 +2404,9 @@ export default function AttendanceList() {
       {/* Sessions List - Conditional Rendering based on viewMode */}
       {isLoading && currentPage === 1 ? (
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Loader />
+          <div className="text-center mt-9 p-10">
+            <LoadingAnimation />
+
             <p className="text-gray-600 dark:text-gray-300">
               Loading travel sessions...
             </p>

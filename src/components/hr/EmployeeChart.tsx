@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import { useUserStore } from "../../store/useUserStore";
+import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 interface DepartmentCount {
   name: string;
@@ -158,17 +159,7 @@ export default function EmployeeChart() {
             : "rgba(255, 255, 255, 0.8)",
         }}
       >
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-linear-to-r from-blue-500 to-purple-500 blur-3xl"></div>
-          <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-linear-to-r from-green-500 to-teal-500 blur-3xl"></div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-6"></div>
-          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-            {t("LoadingChart") || "Loading chart data..."}
-          </p>
-        </div>
+        <LoadingAnimation />
       </div>
     );
 

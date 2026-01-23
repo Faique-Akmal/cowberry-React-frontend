@@ -386,7 +386,7 @@ export default function SignInForm() {
           `}
         >
           {/* Logo with bounce animation */}
-          <div className="w-60 h-60 mx-auto pt-16">
+          <div className="w-90 h-60 mx-auto">
             <img
               src="lantern-logo.png"
               alt="cowberry-logo"
@@ -409,7 +409,7 @@ export default function SignInForm() {
           </div>
 
           {/* Welcome text with enhanced dropping effect */}
-          <div className="flex items-center justify-center w-full h-10 pb-4">
+          <div className="flex items-center justify-center w-full h-10 pb-6">
             <h1
               className={`
                 text-2xl font-bold relative
@@ -514,7 +514,7 @@ export default function SignInForm() {
             }}
           >
             <form onSubmit={handleLogin}>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Email Input with animation */}
                 <div
                   className="capitalize space-y-2"

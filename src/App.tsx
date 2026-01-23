@@ -131,7 +131,7 @@ export default function App() {
       </Routes>
       {/* <ChatToggle /> */}
       <Toaster
-        position="bottom-right" // Options: 'top-center', 'bottom-right', etc.
+        position="bottom-right"
         reverseOrder={false}
         toastOptions={{
           // Global styling (Optional)

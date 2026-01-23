@@ -376,13 +376,6 @@ export default function AttendanceList() {
           allocatedArea = userData.allocated_area;
         }
 
-        console.log("Extracted user info:", {
-          userRole,
-          department,
-          allocatedArea,
-          rawUserData: userData,
-        });
-
         setCurrentUserInfo({
           userRole: userRole.toLowerCase(),
           department: department,
@@ -589,12 +582,10 @@ export default function AttendanceList() {
   const filterSessionsByRole = useCallback(
     (sessions: TravelSession[]): TravelSession[] => {
       if (!currentUserInfo?.userRole) {
-        console.log("No user role found, showing all sessions");
         return sessions;
       }
 
       const userRole = currentUserInfo.userRole.toLowerCase();
-      console.log(`Filtering sessions for role: ${userRole}`, currentUserInfo);
 
       // HR/Admin/SuperAdmin should see everything
       if (
@@ -602,7 +593,6 @@ export default function AttendanceList() {
         userRole.includes("superadmin") ||
         userRole.includes("hr")
       ) {
-        console.log("Admin/HR: Showing all sessions");
         return sessions;
       }
 
@@ -616,17 +606,12 @@ export default function AttendanceList() {
           return []; // Don't show anything if no department
         }
 
-        console.log(`Manager filtering by department: ${managerDepartment}`);
-
         // Filter sessions where session department matches manager's department
         const filtered = sessions.filter((session) => {
           const sessionDept = (session.department || "").toLowerCase().trim();
           return sessionDept === managerDepartment;
         });
 
-        console.log(
-          `Filtered sessions for manager: ${filtered.length} of ${sessions.length}`,
-        );
         return filtered;
       }
 
@@ -638,8 +623,6 @@ export default function AttendanceList() {
           return []; // Don't show anything if no area
         }
 
-        console.log(`ZonalManager filtering by area: ${zonalArea}`);
-
         // Filter sessions where session allocated area matches zonal manager's area
         const filtered = sessions.filter((session) => {
           const sessionArea = (session.allocatedArea || "")
@@ -648,13 +631,9 @@ export default function AttendanceList() {
           return sessionArea === zonalArea;
         });
 
-        console.log(
-          `Filtered sessions for zonal manager: ${filtered.length} of ${sessions.length}`,
-        );
         return filtered;
       }
 
-      console.log(`Unknown role: ${userRole}, showing all sessions`);
       return sessions;
     },
     [currentUserInfo],
@@ -664,12 +643,10 @@ export default function AttendanceList() {
   const filterUsersByRole = useCallback(
     (usersList: typeof users): typeof users => {
       if (!currentUserInfo?.userRole) {
-        console.log("No user role found, showing all users");
         return usersList;
       }
 
       const userRole = currentUserInfo.userRole.toLowerCase();
-      console.log(`Filtering users for role: ${userRole}`);
 
       // HR/Admin/SuperAdmin should see all users
       if (
@@ -695,9 +672,6 @@ export default function AttendanceList() {
           return userDept === managerDepartment;
         });
 
-        console.log(
-          `Filtered users for manager: ${filtered.length} of ${usersList.length}`,
-        );
         return filtered;
       }
 
@@ -714,9 +688,6 @@ export default function AttendanceList() {
           return userArea === zonalArea;
         });
 
-        console.log(
-          `Filtered users for zonal manager: ${filtered.length} of ${usersList.length}`,
-        );
         return filtered;
       }
 
@@ -908,8 +879,6 @@ export default function AttendanceList() {
         }
       }
 
-      console.log("Fetching sessions with params:", params);
-
       const res = await API.get<ApiPaginationResponse>(
         "/admin/travel-sessions",
         { params },
@@ -917,7 +886,6 @@ export default function AttendanceList() {
 
       if (res.data.success) {
         const sessions = res.data.data || [];
-        console.log(`Fetched ${sessions.length} sessions for page ${page}`);
 
         // Apply role-based filtering on frontend as well (double safety)
         let filteredSessions = sessions;
@@ -961,9 +929,7 @@ export default function AttendanceList() {
 
         // Apply role-based filtering to users
         const filteredUsers = filterUsersByRole(uniqueUsers);
-        console.log(
-          `Filtered users: ${filteredUsers.length} of ${uniqueUsers.length}`,
-        );
+
         setUsers(filteredUsers);
 
         // Update sessions map

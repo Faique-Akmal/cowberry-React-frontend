@@ -45,8 +45,10 @@ const getFullUrl = (path: string | undefined) => {
 };
 
 // --- Background Image ---
-const BG_IMAGE =
-  "https://cdn.magicdecor.in/com/2024/05/09154244/TV-Unit-Luxury-Floral-Pattern-Wallpaper-Design.jpg";
+// const BG_IMAGE =
+//   "https://cdn.magicdecor.in/com/2024/05/09154244/TV-Unit-Luxury-Floral-Pattern-Wallpaper-Design.jpg";
+
+const BG_IMAGE = "/lantern-logo.png";
 
 // --- Custom Hook for User List ---
 const useUserList = () => {
@@ -474,7 +476,7 @@ export const ChatInterface = () => {
                       alt="avatar"
                       className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
                     />
-                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-white/20"></span>
+                    {/* <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-white/20"></span> */}
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <div className="flex justify-between items-baseline">
@@ -525,10 +527,10 @@ export const ChatInterface = () => {
                           )?.user.username || "Chat"
                         : activeConversation.name}
                     </h3>
-                    <span className="text-xs font-medium text-white/70 flex items-center gap-1">
+                    {/* <span className="text-xs font-medium text-white/70 flex items-center gap-1">
                       <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>{" "}
                       Online
-                    </span>
+                    </span> */}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-white/70">

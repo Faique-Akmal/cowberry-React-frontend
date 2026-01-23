@@ -138,13 +138,13 @@ export default function App() {
           style: {
             borderRadius: "10px",
             background: "green",
-            color: "black",
+            color: "white",
             fontSize: "14px",
           },
           // Success specific style
           success: {
             style: {
-              background: "lantern-blue-600",
+              background: "var(--color-lantern-blue-600)",
             },
           },
           // Error specific style

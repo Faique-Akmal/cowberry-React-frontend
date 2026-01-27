@@ -39,6 +39,7 @@ import { ChatInterface } from "./components/chat/ChatInterface";
 import PrivacyPolicy from "./Privacy-policy/PrivacyPolicy";
 import AddRoleForm from "./admin/pages/AddRoles";
 import DepartmentManagement from "./admin/pages/AddDepartment";
+import CreateZonePage from "./components/hr/CreateZone";
 
 export default function App() {
   return (
@@ -72,6 +73,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/add-zones"
+            element={
+              <ProtectedRoute>
+                <CreateZonePage />
               </ProtectedRoute>
             }
           />

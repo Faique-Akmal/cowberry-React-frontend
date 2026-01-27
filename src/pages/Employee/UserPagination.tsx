@@ -1279,7 +1279,7 @@ const UserList: React.FC = () => {
                             Role
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                            Allocated Area
+                            Zones
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                             Department
@@ -1747,7 +1747,7 @@ const UserList: React.FC = () => {
                     <div className="mb-8">
                       <div>
                         <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Allocated Area
+                          Zones
                         </label>
                         <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <p className="text-gray-900 dark:text-white whitespace-pre-line text-base">
@@ -1998,7 +1998,7 @@ const UserList: React.FC = () => {
                   <div className="mb-8">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Allocated Area
+                        Zones
                       </label>
                       <input
                         type="text"

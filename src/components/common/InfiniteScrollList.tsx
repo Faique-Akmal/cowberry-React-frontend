@@ -1,6 +1,6 @@
 // components/InfiniteScrollList.tsx
 import { useEffect, useState, useRef, useCallback } from "react";
-import { AxiosGetUsers, axiosGetUsers } from "../../store/userStore";
+import { AxiosGetUsers, axiosGetUsers } from "../../services/userStore";
 import MemberSelect from "../form/MemberSelect";
 
 const LIMIT = 10;
@@ -10,7 +10,7 @@ interface Option {
   name: string;
 }
 
-interface Props{
+interface Props {
   selectedValues: string[];
   onChange?: (selected: string[]) => void;
 }
@@ -21,10 +21,9 @@ const InfiniteScrollList: React.FC<Props> = ({ selectedValues, onChange }) => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [userOptions, setUserOptions] = useState<Option[]>([]);
-
 
   const observer = useRef<IntersectionObserver | null>(null);
   // const lastItemRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +41,7 @@ const InfiniteScrollList: React.FC<Props> = ({ selectedValues, onChange }) => {
 
     try {
       const data = await axiosGetUsers(page, LIMIT, controller.signal);
-      if(data){
+      if (data) {
         setUsers((prev) => [...prev, ...data]);
         setHasMore(data?.length === LIMIT);
         setPage((prev) => prev + 1);
@@ -68,19 +67,18 @@ const InfiniteScrollList: React.FC<Props> = ({ selectedValues, onChange }) => {
 
       if (node) observer.current.observe(node);
     },
-    [loadItems, loading, hasMore]
+    [loadItems, loading, hasMore],
   );
 
   useEffect(() => {
-      if (users.length > 0) {
-        const transformed = users.map<Option>(user => ({
-          value: user?.id,
-          name: user?.username,
-        }));
-        setUserOptions(transformed);
-      }
-  
-    }, [users]);
+    if (users.length > 0) {
+      const transformed = users.map<Option>((user) => ({
+        value: user?.id,
+        name: user?.username,
+      }));
+      setUserOptions(transformed);
+    }
+  }, [users]);
 
   useEffect(() => {
     loadItems();
@@ -111,9 +109,7 @@ const InfiniteScrollList: React.FC<Props> = ({ selectedValues, onChange }) => {
         onChange={onChange}
         lastItemObserver={lastItemObserver}
       />
-      <p className="sr-only">
-        Selected Values: {selectedValues.join(", ")}
-      </p>
+      <p className="sr-only">Selected Values: {selectedValues.join(", ")}</p>
 
       {loading &&
         Array.from({ length: 3 }).map((_, i) => (

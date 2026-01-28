@@ -25,8 +25,8 @@ interface Role {
 }
 
 interface Zone {
-  _id: string;
-  id?: string;
+  zoneId: string;
+  id?: number;
   name: string;
   area?: string;
   city?: string;
@@ -37,6 +37,8 @@ interface Zone {
 
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     username: "",
     full_name: "",
     email: "",
@@ -46,6 +48,7 @@ export default function RegisterUserForm() {
     departmentId: "",
     address: "",
     allocatedArea: "",
+    zoneId: "", // Add this to store zoneId separately
     birthDate: "",
     profileImageUrl: "",
   });
@@ -63,6 +66,7 @@ export default function RegisterUserForm() {
   const [isLoadingZones, setIsLoadingZones] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -197,10 +201,10 @@ export default function RegisterUserForm() {
       }
 
       const validZones = zonesData
-        .filter((zone: any) => zone && (zone._id || zone.id) && zone.name)
+        .filter((zone: any) => zone && (zone.zoneId || zone.id) && zone.name)
         .map((zone: any) => ({
-          _id: zone._id || zone.id,
-          id: zone.id || zone._id,
+          zoneId: zone.zoneId || zone.id,
+          id: zone.id || zone.zoneId,
           name: zone.name,
           area: zone.area,
           city: zone.city,
@@ -238,7 +242,9 @@ export default function RegisterUserForm() {
           (zone.area &&
             zone.area.toLowerCase().includes(zoneSearch.toLowerCase())) ||
           (zone.city &&
-            zone.city.toLowerCase().includes(zoneSearch.toLowerCase())),
+            zone.city.toLowerCase().includes(zoneSearch.toLowerCase())) ||
+          (zone.zoneId &&
+            zone.zoneId.toLowerCase().includes(zoneSearch.toLowerCase())),
       );
       setFilteredZones(filtered);
     }
@@ -257,12 +263,16 @@ export default function RegisterUserForm() {
 
   // Handler for zone selection
   const handleZoneSelect = (zone: Zone) => {
-    const zoneDisplayName = `${zone.name}${zone.city ? `, ${zone.city}` : ""}${zone.area ? ` (${zone.area})` : ""}`;
+    // Update form data with zoneId
     setFormData((prev) => ({
       ...prev,
-      allocatedArea: zone._id, // Store zone ID
+      zoneId: zone.zoneId, // Store zoneId for API submission
+      // Store zone name for display
     }));
-    setZoneSearch(zoneDisplayName); // Display zone details in search box
+
+    // Update local state
+    setSelectedZone(zone);
+    setZoneSearch(zone.name); // Display zone name in search box
     setShowZoneDropdown(false);
   };
 
@@ -270,6 +280,16 @@ export default function RegisterUserForm() {
   const handleZoneSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setZoneSearch(value);
+
+    // Clear selection if search is changed
+    if (value !== selectedZone?.name) {
+      setSelectedZone(null);
+      setFormData((prev) => ({
+        ...prev,
+        zoneId: "",
+      }));
+    }
+
     if (!showZoneDropdown && value.trim() !== "") {
       setShowZoneDropdown(true);
     }
@@ -279,8 +299,9 @@ export default function RegisterUserForm() {
   const clearZoneSelection = () => {
     setFormData((prev) => ({
       ...prev,
-      allocatedArea: "",
+      zoneId: "",
     }));
+    setSelectedZone(null);
     setZoneSearch("");
     setShowZoneDropdown(false);
   };
@@ -391,9 +412,11 @@ export default function RegisterUserForm() {
     }
 
     try {
-      // Prepare payload
+      // Prepare payload according to your API requirements
       const payload = {
         username: formData.username.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         full_name: formData.full_name.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -401,10 +424,16 @@ export default function RegisterUserForm() {
         mobileNo: formData.mobileNo || null,
         departmentId: parseInt(formData.departmentId),
         address: formData.address || null,
-        allocatedArea: formData.allocatedArea || null,
+        allocatedArea: formData.allocatedArea || null, // Zone name
+        zoneId: formData.zoneId || null, // Zone ID for API
         birthDate: formData.birthDate || null,
         profileImageUrl: formData.profileImageUrl || null,
       };
+
+      // Remove allocatedArea if no zone is selected to match your API
+      if (!formData.zoneId) {
+        delete payload.zoneId;
+      }
 
       const response = await API.post("/auth/register", payload, {
         headers: {
@@ -422,6 +451,8 @@ export default function RegisterUserForm() {
         // Reset form
         setFormData({
           username: "",
+          firstName: "",
+          lastName: "",
           full_name: "",
           email: "",
           password: "",
@@ -429,10 +460,12 @@ export default function RegisterUserForm() {
           mobileNo: "",
           departmentId: "",
           allocatedArea: "",
+          zoneId: "",
           address: "",
           birthDate: "",
           profileImageUrl: "",
         });
+        setSelectedZone(null);
         setZoneSearch("");
         setShowUrlInput(false);
       }
@@ -488,8 +521,39 @@ export default function RegisterUserForm() {
               Personal Information
             </h3>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                First Name *
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Enter firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Choose a lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-2">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Full Name *
@@ -741,12 +805,25 @@ export default function RegisterUserForm() {
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Allocated Area
+              </label>
+              <input
+                type="text"
+                name="allocatedArea"
+                placeholder="Enter allocated area"
+                value={formData.allocatedArea}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
 
             {/* Allocated Area with Zone Search */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Allocated Area (Zone)
+                  Zone
                 </label>
                 {isLoadingZones && (
                   <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
@@ -762,7 +839,7 @@ export default function RegisterUserForm() {
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search for a zone..."
+                      placeholder="Search for a zone by name or zone ID..."
                       value={zoneSearch}
                       onChange={handleZoneSearchChange}
                       onFocus={() => setShowZoneDropdown(true)}
@@ -772,7 +849,8 @@ export default function RegisterUserForm() {
                       <button
                         type="button"
                         onClick={clearZoneSelection}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label="Clear selection"
                       >
                         ×
                       </button>
@@ -797,22 +875,19 @@ export default function RegisterUserForm() {
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                       />
                     </svg>
+                    Refresh
                   </button>
                 </div>
 
                 {/* Hidden input to store zone ID */}
-                <input
-                  type="hidden"
-                  name="allocatedArea"
-                  value={formData.allocatedArea}
-                />
+                <input type="hidden" name="zoneId" value={formData.zoneId} />
 
                 {/* Zone Dropdown */}
                 {showZoneDropdown && filteredZones.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {filteredZones.map((zone) => (
                       <div
-                        key={zone._id}
+                        key={zone.zoneId}
                         onClick={() => handleZoneSelect(zone)}
                         className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
                       >
@@ -825,15 +900,14 @@ export default function RegisterUserForm() {
                               {zone.name}
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {zone.area && <span>{zone.area}</span>}
-                              {zone.city && zone.area && ", "}
-                              {zone.city && <span>{zone.city}</span>}
-                              {zone.state && zone.city && ", "}
-                              {zone.state && <span>{zone.state}</span>}
+                              Zone ID: {zone.zoneId}
+                              {zone.area && <span> • {zone.area}</span>}
+                              {zone.city && <span> • {zone.city}</span>}
                             </div>
-                            {zone.pincode && (
+                            {zone.state && (
                               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                Pincode: {zone.pincode}
+                                {zone.state}{" "}
+                                {zone.pincode && `• ${zone.pincode}`}
                               </div>
                             )}
                           </div>
@@ -855,26 +929,30 @@ export default function RegisterUserForm() {
                   )}
               </div>
 
-              {formData.allocatedArea && (
+              {selectedZone && (
                 <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
                   <FaMapMarkerAlt />
-                  <span>Zone selected: {zoneSearch}</span>
+                  <span>
+                    Selected: {selectedZone.name} (Zone ID:{" "}
+                    {selectedZone.zoneId})
+                  </span>
                 </div>
               )}
 
               <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-                Search and select a zone to allocate to this user
+                Search and select a zone to allocate to this user. The zone name
+                will be displayed, but the Zone ID will be sent to the API.
               </p>
             </div>
 
             {/* Profile Image Section */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
                 Profile Image (Optional)
               </label>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                {/* Image Preview */}
+              
                 {formData.profileImageUrl ? (
                   <div className="relative">
                     <img
@@ -908,7 +986,7 @@ export default function RegisterUserForm() {
                   </div>
                 )}
 
-                {/* Image Picker Buttons */}
+             
                 <div className="flex flex-col sm:flex-row gap-3">
                   <label className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors inline-flex items-center justify-center gap-2">
                     <svg
@@ -956,7 +1034,7 @@ export default function RegisterUserForm() {
                 </div>
               </div>
 
-              {/* URL Input Field (Conditional) */}
+           
               {showUrlInput && (
                 <div className="mt-4">
                   <input
@@ -973,7 +1051,7 @@ export default function RegisterUserForm() {
               <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
                 Optional: Upload an image (max 5MB) or provide a URL
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 

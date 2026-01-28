@@ -5,8 +5,9 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-// ✅ Import Zustand Store
+// ✅ Import Zustand Stores
 import { useUserStore } from "../../store/useUserStore";
+import { useZoneStore } from "../../store/useZoneStore";
 import API from "../../api/axios";
 import * as XLSX from "xlsx";
 import PageMeta from "../../components/common/PageMeta";
@@ -15,6 +16,7 @@ import LoadingAnimation from "../UiElements/loadingAnimation";
 // Add UserRole type
 type UserRole = "HR" | "Manager" | "ZonalManager" | string;
 
+// Update User interface to match your backend response
 interface User {
   id: string;
   userId: string;
@@ -27,14 +29,27 @@ interface User {
   roleId: number;
   is_checkin: boolean;
   department: string;
+  departmentId?: number;
   profile_image?: string;
   date: string;
   is_online: boolean;
-  allocatedArea: string;
+  allocatedArea?: string;
   mobileNo: string;
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
+  zoneId?: string;
+  zoneName?: string;
+  zone?: {
+    id: number;
+    zoneId: string;
+    name: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode?: string;
+    description?: string;
+  };
 }
 
 interface CurrentUser {
@@ -43,6 +58,7 @@ interface CurrentUser {
   department?: string;
   departmentName?: string;
   allocatedArea?: string;
+  zoneId?: string;
 }
 
 interface Department {
@@ -56,6 +72,23 @@ interface Role {
   description: string;
 }
 
+// Update Zone interface based on API response
+interface Zone {
+  id: number;
+  zoneId: string;
+  name: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode?: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  _count?: {
+    employees: number;
+  };
+}
+
 interface EditUserForm {
   username: string;
   full_name: string;
@@ -65,13 +98,18 @@ interface EditUserForm {
   birthDate: string;
   profileImageUrl: string;
   departmentId: number;
+  departmentName: string;
+  zoneId: string;
+  zoneName: string;
   allocatedArea: string;
   roleId: number;
+  roleName: string;
 }
 
 const UserList: React.FC = () => {
-  // ✅ Access Store State & Actions
+  // ✅ Access Store States & Actions
   const { users, fetchUsers, isLoading, resetStore } = useUserStore();
+  const { zones, fetchZones } = useZoneStore();
 
   // Local UI States
   const [loadingMore, setLoadingMore] = useState(false);
@@ -80,11 +118,12 @@ const UserList: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // const [openDropdownUserId, setOpenDropdownUserId] = useState<string | null>(null);
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [roleFilter, setRoleFilter] = useState<string | "">("");
+  const [departmentFilter, setDepartmentFilter] = useState<string | "">("");
+  const [zoneFilter, setZoneFilter] = useState<string | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "online" | "offline">(
     "",
   );
@@ -105,8 +144,12 @@ const UserList: React.FC = () => {
     username: "",
     profileImageUrl: "",
     departmentId: 0,
+    departmentName: "",
+    zoneId: "",
+    zoneName: "",
     allocatedArea: "",
     roleId: 0,
+    roleName: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -114,6 +157,7 @@ const UserList: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(false);
+  const [loadingZones, setLoadingZones] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -125,10 +169,153 @@ const UserList: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Fetch Users on Mount using Store
+  // ✅ Enhanced fetchUsers function to include zone and department data
+  const fetchUsersWithDetails = useCallback(async () => {
+    try {
+      setLoadingMore(true);
+
+      const response = await API.get("/admin/users", {
+        params: {
+          page: currentPage,
+          limit: limit,
+          includeDetails: true,
+        },
+      });
+
+      if (response.data?.success && response.data?.data) {
+        const usersData = response.data.data.map((user: any) => {
+          const zoneData = user.zone || {};
+          return {
+            id: user.id?.toString() || user.userId?.toString() || "",
+            userId: user.userId?.toString() || user.id?.toString() || "",
+            name: user.name || user.username || "",
+            full_name:
+              user.fullName ||
+              user.full_name ||
+              user.name ||
+              user.username ||
+              "",
+            employee_code: user.employeeCode || user.employee_code || "",
+            username: user.username || "",
+            email: user.email || "",
+            role: user.role?.name || user.role || "",
+            roleId: user.roleId || user.role?.id || 0,
+            is_checkin: user.is_checkin || user.isCheckin || false,
+            department: user.department?.name || user.department || "",
+            departmentId: user.departmentId || user.department?.id || 0,
+            profile_image: user.profileImageUrl || user.profile_image || "",
+            date: user.createdAt || user.date || "",
+            is_online: user.is_online || user.isOnline || false,
+            allocatedArea: user.allocatedArea || zoneData.area || "",
+            mobileNo: user.mobileNo || user.mobile || "",
+            address: user.address || "",
+            birthDate: user.birthDate || "",
+            profileImageUrl: user.profileImageUrl || user.profile_image || "",
+            zoneId: zoneData.zoneId || user.zoneId || "",
+            zoneName: zoneData.name || user.zoneName || "",
+            zone: zoneData.id
+              ? {
+                  id: zoneData.id,
+                  zoneId: zoneData.zoneId || "",
+                  name: zoneData.name || "",
+                  area: zoneData.area || "",
+                  city: zoneData.city || "",
+                  state: zoneData.state || "",
+                  pincode: zoneData.pincode || "",
+                  description: zoneData.description || "",
+                }
+              : null,
+          };
+        });
+
+        useUserStore.setState({
+          users: usersData,
+          isLoading: false,
+        });
+
+        // Update pagination info
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.totalPages || 1);
+          setTotalUsersCount(
+            response.data.pagination.totalItems || usersData.length,
+          );
+          setHasMore(response.data.pagination.hasNextPage || false);
+        }
+      } else {
+        console.error("No data in response:", response.data);
+        useUserStore.setState({ isLoading: false });
+      }
+    } catch (error) {
+      console.error("Failed to fetch users with details:", error);
+      useUserStore.setState({ isLoading: false });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [currentPage]);
+
+  // ✅ Fetch Users on Mount using enhanced function
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchUsersWithDetails();
+  }, [fetchUsersWithDetails]);
+
+  // ✅ Fetch Zones on Mount
+  useEffect(() => {
+    const loadZones = async () => {
+      try {
+        setLoadingZones(true);
+        await fetchZones({ page: 1, limit: 100 });
+      } catch (error) {
+        console.error("Failed to fetch zones:", error);
+      } finally {
+        setLoadingZones(false);
+      }
+    };
+    loadZones();
+  }, [fetchZones]);
+
+  // Helper function to get zone details
+  const getZoneDetails = useCallback(
+    (zoneId: string): Zone | null => {
+      if (!zoneId) return null;
+      const zone = zones.find((z: Zone) => z.zoneId === zoneId);
+      return zone || null;
+    },
+    [zones],
+  );
+
+  // Helper function to get zone name
+  const getZoneName = useCallback(
+    (zoneId: string): string => {
+      if (!zoneId) return "Not Assigned";
+      const zone = getZoneDetails(zoneId);
+      return zone ? zone.name : "Zone Not Found";
+    },
+    [getZoneDetails],
+  );
+
+  // Helper function to get zone area
+  const getZoneArea = useCallback(
+    (zoneId: string): string => {
+      if (!zoneId) return "Not Assigned";
+      const zone = getZoneDetails(zoneId);
+      return zone ? zone.area : "Area Not Found";
+    },
+    [getZoneDetails],
+  );
+
+  // Helper function to get allocated area (user's allocated area, falls back to zone area)
+  const getAllocatedArea = useCallback(
+    (user: User): string => {
+      if (user.allocatedArea && user.allocatedArea.trim() !== "") {
+        return user.allocatedArea;
+      }
+      if (user.zoneId) {
+        return getZoneArea(user.zoneId);
+      }
+      return "Not Assigned";
+    },
+    [getZoneArea],
+  );
 
   // Helper function to normalize strings for comparison
   const normalizeString = (str: string | undefined): string => {
@@ -149,10 +336,11 @@ const UserList: React.FC = () => {
       const localId = localStorage.getItem("userId");
       const localRole = localStorage.getItem("userRole");
       const localDepartment = localStorage.getItem("department");
+      const localDepartmentId = localStorage.getItem("departmentId");
       const localAllocatedArea = localStorage.getItem("allocatedarea");
+      const localZoneId = localStorage.getItem("zoneId");
 
       if (localId && localRole) {
-        // Normalize role for consistency
         const normalizedRole = normalizeRole(localRole);
 
         setCurrentUser({
@@ -161,6 +349,7 @@ const UserList: React.FC = () => {
           department: localDepartment || undefined,
           departmentName: localDepartment || undefined,
           allocatedArea: localAllocatedArea || undefined,
+          zoneId: localZoneId || undefined,
         });
       }
     } catch (error) {
@@ -201,7 +390,7 @@ const UserList: React.FC = () => {
     [currentUser],
   );
 
-  // Check if current user can delete a specific user - NEW FUNCTION
+  // Check if current user can delete a specific user
   const canDeleteUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
@@ -260,10 +449,10 @@ const UserList: React.FC = () => {
         }
         case "zonalmanager":
         case "zonal manager": {
-          if (!currentUser.allocatedArea) return false;
-          const managerZone = normalizeString(currentUser.allocatedArea);
-          const userZone = normalizeString(user.allocatedArea);
-          return managerZone === userZone;
+          if (!currentUser.zoneId) return false;
+          const managerZoneId = normalizeString(currentUser.zoneId);
+          const userZoneId = normalizeString(user.zoneId || "");
+          return managerZoneId === userZoneId;
         }
         default:
           return true;
@@ -272,10 +461,10 @@ const UserList: React.FC = () => {
     [currentUser],
   );
 
-  // ✅ Filter & Sort Logic
+  // ✅ Enhanced Filter & Sort Logic
   const filteredUsers = useMemo(() => {
     const storeUsers = users as unknown as User[];
-    if (!storeUsers.length) return [];
+    if (!storeUsers || storeUsers.length === 0) return [];
 
     let result = [...storeUsers];
 
@@ -292,13 +481,33 @@ const UserList: React.FC = () => {
           user.full_name?.toLowerCase().includes(searchLower) ||
           user.name?.toLowerCase().includes(searchLower) ||
           user.employee_code?.toLowerCase().includes(searchLower) ||
-          user.employee_code?.includes(searchTerm.trim()),
+          user.employee_code?.includes(searchTerm.trim()) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          (user.zoneId && user.zoneId.toLowerCase().includes(searchLower)) ||
+          (user.zoneName &&
+            user.zoneName.toLowerCase().includes(searchLower)) ||
+          (user.department &&
+            user.department.toLowerCase().includes(searchLower)) ||
+          (user.role && user.role.toLowerCase().includes(searchLower)) ||
+          (user.mobileNo && user.mobileNo.includes(searchTerm.trim())) ||
+          (user.allocatedArea &&
+            user.allocatedArea.toLowerCase().includes(searchLower)),
       );
     }
 
     // Role Filtering
     if (roleFilter !== "") {
       result = result.filter((user) => user.role === roleFilter);
+    }
+
+    // Department Filtering
+    if (departmentFilter !== "") {
+      result = result.filter((user) => user.department === departmentFilter);
+    }
+
+    // Zone Filtering
+    if (zoneFilter !== "") {
+      result = result.filter((user) => user.zoneId === zoneFilter);
     }
 
     // Status Filtering
@@ -329,6 +538,8 @@ const UserList: React.FC = () => {
     canViewUser,
     searchTerm,
     roleFilter,
+    departmentFilter,
+    zoneFilter,
     statusFilter,
     sortOrder,
   ]);
@@ -388,14 +599,13 @@ const UserList: React.FC = () => {
     }
   }, []);
 
-  // Handle delete button click - NEW FUNCTION
+  // Handle delete button click
   const handleDeleteClick = (user: User) => {
     if (!canDeleteUser(user)) {
       alert("You don't have permission to delete this user.");
       return;
     }
 
-    // Prevent users from deleting themselves
     if (
       currentUser &&
       (currentUser.id === user.id || currentUser.id === user.userId)
@@ -408,7 +618,7 @@ const UserList: React.FC = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Handle delete confirmation - NEW FUNCTION
+  // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     if (!selectedUser) return;
 
@@ -418,7 +628,6 @@ const UserList: React.FC = () => {
       return;
     }
 
-    // Prevent users from deleting themselves
     if (
       currentUser &&
       (currentUser.id === selectedUser.id ||
@@ -438,9 +647,8 @@ const UserList: React.FC = () => {
         alert("User deleted successfully!");
         setIsDeleteModalOpen(false);
 
-        // Refresh the store
-        resetStore();
-        fetchUsers();
+        // Refresh data from API
+        await fetchUsersWithDetails();
       } else {
         alert(response.data?.message || "Failed to delete user");
       }
@@ -456,7 +664,7 @@ const UserList: React.FC = () => {
     }
   };
 
-  // Handle edit button click
+  // Handle edit button click - IMPROVED with zone fetching
   const handleEditClick = async (user: User) => {
     if (!canEditUser(user)) {
       alert("You don't have permission to edit this user.");
@@ -464,73 +672,113 @@ const UserList: React.FC = () => {
     }
 
     setSelectedUser(user);
-    const userId = user.id || user.userId;
 
     try {
-      // Fetch fresh details for editing
+      // Fetch fresh user data from API
+      const userId = user.id || user.userId;
       const response = await API.get(`/admin/users/${userId}`);
-      const userDetails = response.data?.data || response.data;
 
-      let departmentId = 0;
-      if (userDetails.department) {
-        const dept = departments.find(
-          (d) => d.name.toLowerCase() === userDetails.department.toLowerCase(),
-        );
-        departmentId = dept?.departmentId || 0;
+      if (response.data?.success && response.data?.data) {
+        const userData = response.data.data;
+
+        // Extract department information
+        let departmentId = 0;
+        let departmentName =
+          userData.department?.name || userData.department || "";
+
+        if (departmentName && departments.length === 0) {
+          await fetchDepartments();
+        }
+
+        if (departmentName && departments.length > 0) {
+          const dept = departments.find(
+            (d) => d.name.toLowerCase() === departmentName.toLowerCase(),
+          );
+          departmentId = dept?.departmentId || 0;
+        }
+
+        // Extract role information
+        let roleId = 0;
+        let roleName = userData.role?.name || userData.role || "";
+
+        if (roleName && roles.length === 0) {
+          await fetchRoles();
+        }
+
+        if (roleName && roles.length > 0) {
+          const role = roles.find(
+            (r) => r.name.toLowerCase() === roleName.toLowerCase(),
+          );
+          roleId = role?.id || 0;
+        }
+
+        // Extract zone information
+        const zoneData = userData.zone || {};
+        const zoneId = zoneData.zoneId || userData.zoneId || "";
+        let zoneName = zoneData.name || userData.zoneName || "";
+        let allocatedArea = userData.allocatedArea || "";
+
+        // If we have zoneId but zones not loaded, fetch zones
+        if (zoneId && zones.length === 0) {
+          await fetchZones({ page: 1, limit: 100 });
+        }
+
+        // If we have zoneId but not zoneName, get it from zones
+        if (zoneId && !zoneName && zones.length > 0) {
+          const zone = zones.find((z: Zone) => z.zoneId === zoneId);
+          if (zone) {
+            zoneName = zone.name;
+            // Only set allocatedArea from zone if user doesn't have one
+            if (!allocatedArea.trim()) {
+              allocatedArea = zone.area;
+            }
+          }
+        }
+
+        // Prepare the edit form with fresh API data
+        setEditForm({
+          full_name:
+            userData.fullName || userData.full_name || userData.name || "",
+          username: userData.username || "",
+          email: userData.email || "",
+          mobileNo: userData.mobileNo || userData.mobile || "",
+          address: userData.address || "",
+          allocatedArea: allocatedArea,
+          zoneId: zoneId,
+          zoneName: zoneName,
+          birthDate: userData.birthDate
+            ? new Date(userData.birthDate).toISOString().split("T")[0]
+            : "",
+          profileImageUrl:
+            userData.profileImageUrl || userData.profile_image || "",
+          departmentId: departmentId,
+          departmentName: departmentName,
+          roleId: roleId,
+          roleName: roleName,
+        });
+      } else {
+        throw new Error("Failed to fetch user data");
       }
-
-      let roleId = user.roleId || 0;
-      if (userDetails.role) {
-        const role = roles.find(
-          (r) => r.name.toLowerCase() === userDetails.role.toLowerCase(),
-        );
-        roleId = role?.id || user.roleId || 0;
-      }
-
-      setEditForm({
-        full_name:
-          userDetails.full_name || userDetails.name || user.full_name || "",
-        username: userDetails.username || user.username || user.name || "",
-        email: userDetails.email || user.email || "",
-        mobileNo: userDetails.mobileNo || user.mobileNo || "",
-        address: userDetails.address || user.address || "",
-        allocatedArea: userDetails.allocatedArea || user.allocatedArea || "",
-        birthDate: userDetails.birthDate
-          ? new Date(userDetails.birthDate).toISOString().split("T")[0]
-          : "",
-        profileImageUrl:
-          userDetails.profileImageUrl ||
-          userDetails.profile_image ||
-          user.profile_image ||
-          "",
-        departmentId: departmentId,
-        roleId: roleId,
-      });
     } catch (error) {
-      console.error("Failed to fetch user details, using list data:", error);
-      // Fallback
-      const department = departments.find(
-        (dept) => dept.name.toLowerCase() === user.department?.toLowerCase(),
-      );
-      const role = roles.find(
-        (r) =>
-          r.name.toLowerCase() === user.role?.toLowerCase() ||
-          r.id === user.roleId,
-      );
-
+      console.error("Failed to prepare edit form:", error);
+      // Fallback to existing user data
       setEditForm({
-        full_name: user.full_name || "",
-        username: user.username || user.name || "",
+        full_name: user.full_name || user.name || "",
+        username: user.username || "",
         email: user.email || "",
         mobileNo: user.mobileNo || "",
         address: user.address || "",
         allocatedArea: user.allocatedArea || "",
+        zoneId: user.zoneId || "",
+        zoneName: user.zoneName || "",
         birthDate: user.birthDate
           ? new Date(user.birthDate).toISOString().split("T")[0]
           : "",
-        profileImageUrl: user.profile_image || user.profileImageUrl || "",
-        departmentId: department?.departmentId || 0,
-        roleId: role?.id || user.roleId || 0,
+        profileImageUrl: user.profileImageUrl || user.profile_image || "",
+        departmentId: 0,
+        departmentName: user.department || "",
+        roleId: 0,
+        roleName: user.role || "",
       });
     }
 
@@ -543,13 +791,38 @@ const UserList: React.FC = () => {
     >,
   ) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]:
-        name === "departmentId" || name === "roleId"
-          ? parseInt(value) || 0
-          : value,
-    }));
+
+    if (name === "zoneId") {
+      // When zoneId changes, update zoneName but NOT allocatedArea
+      const selectedZone = zones.find((z: Zone) => z.zoneId === value);
+      setEditForm((prev) => ({
+        ...prev,
+        zoneId: value,
+        zoneName: selectedZone ? selectedZone.name : prev.zoneName,
+        // Do NOT update allocatedArea automatically - keep it separate
+      }));
+    } else if (name === "departmentId") {
+      const selectedDept = departments.find(
+        (d) => d.departmentId === parseInt(value),
+      );
+      setEditForm((prev) => ({
+        ...prev,
+        departmentId: parseInt(value) || 0,
+        departmentName: selectedDept ? selectedDept.name : prev.departmentName,
+      }));
+    } else if (name === "roleId") {
+      const selectedRole = roles.find((r) => r.id === parseInt(value));
+      setEditForm((prev) => ({
+        ...prev,
+        roleId: parseInt(value) || 0,
+        roleName: selectedRole ? selectedRole.name : prev.roleName,
+      }));
+    } else {
+      setEditForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -565,18 +838,33 @@ const UserList: React.FC = () => {
     setIsEditing(true);
 
     try {
-      const updateData = {
+      // Create update data object
+      const updateData: any = {
         username: editForm.username?.trim(),
         fullName: editForm.full_name.trim(),
         email: editForm.email.trim(),
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
-        birthDate: editForm.birthDate || null,
         allocatedArea: editForm.allocatedArea.trim() || null,
+        zoneId: editForm.zoneId.trim() || null,
+        birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
-        departmentId: Number(editForm.departmentId),
-        roleId: Number(editForm.roleId),
+        departmentId: Number(editForm.departmentId) || null,
+        roleId: Number(editForm.roleId) || null,
       };
+
+      // Remove empty fields
+      Object.keys(updateData).forEach((key) => {
+        if (
+          updateData[key] === null ||
+          updateData[key] === undefined ||
+          updateData[key] === ""
+        ) {
+          delete updateData[key];
+        }
+      });
+
+      console.log("Updating user with data:", updateData);
 
       const response = await API.put(`/admin/users/${userId}`, updateData);
       const result = response.data;
@@ -585,9 +873,13 @@ const UserList: React.FC = () => {
         alert("User updated successfully!");
         setIsEditModalOpen(false);
 
-        // ✅ REFRESH STORE: Invalidate cache and re-fetch to show updated data
-        resetStore();
-        fetchUsers();
+        // Refresh the data from API
+        await fetchUsersWithDetails();
+
+        // Also refresh zones if zone was changed
+        if (updateData.zoneId) {
+          await fetchZones({ page: 1, limit: 100 });
+        }
       } else {
         alert(result.message || "Failed to update user");
       }
@@ -614,25 +906,32 @@ const UserList: React.FC = () => {
         return;
       }
 
-      const excelData = usersToExport.map((user: User, index: number) => ({
-        "Sr. No": index + 1,
-        "Employee Code": user.employee_code || "N/A",
-        "Full Name": user.full_name || user.name || "N/A",
-        Username: user.username || "N/A",
-        Email: user.email || "N/A",
-        Role: user.role || "N/A",
-        Department: user.department || "N/A",
-        "Allocated Area": user.allocatedArea || "N/A",
-        "Mobile Number": user.mobileNo || "N/A",
-        Status: user.is_checkin ? "Online" : "Offline",
-        "Date Joined": user.date
-          ? new Date(user.date).toLocaleDateString()
-          : "N/A",
-        Address: user.address || "N/A",
-        "Birth Date": user.birthDate
-          ? new Date(user.birthDate).toLocaleDateString()
-          : "N/A",
-      }));
+      const excelData = usersToExport.map((user: User, index: number) => {
+        const zoneDetails = getZoneDetails(user.zoneId || "");
+        const allocatedArea = getAllocatedArea(user);
+
+        return {
+          "Sr. No": index + 1,
+          "Employee Code": user.employee_code || "N/A",
+          "Full Name": user.full_name || user.name || "N/A",
+          Username: user.username || "N/A",
+          Email: user.email || "N/A",
+          Role: user.role || "N/A",
+          Department: user.department || "N/A",
+          "Zone ID": user.zoneId || "N/A",
+          "Zone Name": zoneDetails?.name || user.zoneName || "N/A",
+          "Allocated Area": allocatedArea,
+          "Mobile Number": user.mobileNo || "N/A",
+          Status: user.is_checkin ? "Online" : "Offline",
+          "Date Joined": user.date
+            ? new Date(user.date).toLocaleDateString()
+            : "N/A",
+          Address: user.address || "N/A",
+          "Birth Date": user.birthDate
+            ? new Date(user.birthDate).toLocaleDateString()
+            : "N/A",
+        };
+      });
 
       const worksheet = XLSX.utils.json_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
@@ -700,7 +999,7 @@ const UserList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [searchTerm, roleFilter, departmentFilter, zoneFilter, statusFilter]);
 
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -709,6 +1008,8 @@ const UserList: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setRoleFilter("");
+    setDepartmentFilter("");
+    setZoneFilter("");
     setStatusFilter("");
   };
 
@@ -728,7 +1029,6 @@ const UserList: React.FC = () => {
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
-    // Reset form
     setEditForm({
       full_name: "",
       email: "",
@@ -737,9 +1037,13 @@ const UserList: React.FC = () => {
       address: "",
       birthDate: "",
       allocatedArea: "",
+      zoneId: "",
+      zoneName: "",
       profileImageUrl: "",
       departmentId: 0,
+      departmentName: "",
       roleId: 0,
+      roleName: "",
     });
   };
 
@@ -875,6 +1179,28 @@ const UserList: React.FC = () => {
     return `${baseKey}-${pageIndex}`;
   };
 
+  // Get unique departments for filter
+  const uniqueDepartments = useMemo(() => {
+    const deptSet = new Set<string>();
+    filteredUsers.forEach((user) => {
+      if (user.department) {
+        deptSet.add(user.department);
+      }
+    });
+    return Array.from(deptSet).sort();
+  }, [filteredUsers]);
+
+  // Get unique zones for filter
+  const uniqueZones = useMemo(() => {
+    const zoneSet = new Set<string>();
+    filteredUsers.forEach((user) => {
+      if (user.zoneId) {
+        zoneSet.add(user.zoneId);
+      }
+    });
+    return Array.from(zoneSet).sort();
+  }, [filteredUsers]);
+
   // Show loading for current user info
   if (loadingCurrentUser) {
     return (
@@ -889,7 +1215,6 @@ const UserList: React.FC = () => {
 
   return (
     <>
-      {" "}
       <PageMeta title="Users Directory" description="users list " />
       <div
         className="
@@ -924,7 +1249,7 @@ const UserList: React.FC = () => {
             Users Directory
           </h2>
 
-          {/* Filter Section */}
+          {/* Filter Section - Enhanced with more filters */}
           <div
             className="
           bg-linear-to-br from-white/40 to-white/20
@@ -937,11 +1262,11 @@ const UserList: React.FC = () => {
           shrink-0
         "
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-2">
               {/* Search Input */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Search Users (Name or Employee Code)
+                  Search Users
                 </label>
                 <div className="relative">
                   <div
@@ -968,7 +1293,7 @@ const UserList: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Search by name or employee code..."
+                    placeholder="Search by name, code, email, zone..."
                     value={searchTerm}
                     onChange={handleSearchChange}
                     className="
@@ -1003,11 +1328,7 @@ const UserList: React.FC = () => {
                 </label>
                 <select
                   value={roleFilter}
-                  onChange={(e) => {
-                    const value =
-                      e.target.value === "" ? "" : String(e.target.value);
-                    setRoleFilter(value);
-                  }}
+                  onChange={(e) => setRoleFilter(e.target.value)}
                   disabled={loadingRoles}
                   className="
                   w-full py-1.5 px-2
@@ -1021,11 +1342,13 @@ const UserList: React.FC = () => {
                   text-sm
                   transition-all duration-300
                   appearance-none
-                  bg-no-repeat bg-position-[right_0.5rem_center] bg-size-[0.75em]
                   disabled:opacity-50 disabled:cursor-not-allowed
                 "
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundSize: "0.75em",
                   }}
                 >
                   <option value="">All Roles</option>
@@ -1040,6 +1363,80 @@ const UserList: React.FC = () => {
                       </option>
                     ))
                   )}
+                </select>
+              </div>
+
+              {/* Department Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Filter by Department
+                </label>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="
+                  w-full py-1.5 px-2
+                  bg-white/50 dark:bg-gray-700/50
+                  backdrop-blur-sm
+                  border border-white/60 dark:border-gray-600/60
+                  rounded-lg
+                  text-gray-900 dark:text-gray-100
+                  focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                  focus:outline-none
+                  text-sm
+                  transition-all duration-300
+                  appearance-none
+                "
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundSize: "0.75em",
+                  }}
+                >
+                  <option value="">All Departments</option>
+                  {uniqueDepartments.map((dept) => (
+                    <option key={`dept-${dept}`} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Zone Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Filter by Zone
+                </label>
+                <select
+                  value={zoneFilter}
+                  onChange={(e) => setZoneFilter(e.target.value)}
+                  className="
+                  w-full py-1.5 px-2
+                  bg-white/50 dark:bg-gray-700/50
+                  backdrop-blur-sm
+                  border border-white/60 dark:border-gray-600/60
+                  rounded-lg
+                  text-gray-900 dark:text-gray-100
+                  focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                  focus:outline-none
+                  text-sm
+                  transition-all duration-300
+                  appearance-none
+                "
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundSize: "0.75em",
+                  }}
+                >
+                  <option value="">All Zones</option>
+                  {uniqueZones.map((zoneId) => (
+                    <option key={`zone-${zoneId}`} value={zoneId}>
+                      {zoneId}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1208,13 +1605,11 @@ const UserList: React.FC = () => {
                   users.length > 0 && (
                     <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
                       <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                        ⚠️ No users found in your allocated area.
+                        ⚠️ No users found in your zone.
                       </p>
                       <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                        Your allocated area:{" "}
-                        <strong>
-                          {currentUser.allocatedArea || "Not set"}
-                        </strong>
+                        Your zone ID:{" "}
+                        <strong>{currentUser.zoneId || "Not set"}</strong>
                       </p>
                       <p className="text-yellow-600 dark:text-yellow-400 text-xs">
                         Total users in system: {users.length}
@@ -1239,14 +1634,14 @@ const UserList: React.FC = () => {
                   overflow-x-auto
                 "
                 >
-                  {/* Desktop Table */}
+                  {/* Desktop Table - 9 columns including Department */}
                   <div className="hidden md:block min-w-full h-full">
                     <div className="h-full flex flex-col">
-                      {/* Table Header */}
+                      {/* Table Header - 9 columns */}
                       <div className="shrink-0 sticky top-0 z-10">
                         <div
                           className="
-      grid grid-cols-7
+      grid grid-cols-9
       px-2 md:px-4 py-3
       bg-gradient-to-r from-white/60 to-white/40
       dark:from-gray-800/60 dark:to-gray-900/40
@@ -1270,7 +1665,7 @@ const UserList: React.FC = () => {
                             </div>
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                            Employee Code
+                            Emp Code
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                             Email
@@ -1279,10 +1674,16 @@ const UserList: React.FC = () => {
                             Role
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                            Allocated Area
+                            Department
                           </div>
                           <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                            Department
+                            Zone ID
+                          </div>
+                          <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                            Zone Name
+                          </div>
+                          <div className="px-1 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                            Allocated Area
                           </div>
                         </div>
                       </div>
@@ -1296,6 +1697,9 @@ const UserList: React.FC = () => {
                               const canEdit = canEditUser(user);
                               const canDelete = canDeleteUser(user);
                               const canView = canViewUser(user);
+                              const zoneId = user.zoneId || "";
+                              const zoneName = getZoneName(zoneId);
+                              const allocatedArea = getAllocatedArea(user);
 
                               if (!canView) return null;
 
@@ -1303,7 +1707,7 @@ const UserList: React.FC = () => {
                                 <div
                                   key={userKey}
                                   className="
-    grid grid-cols-1 sm:grid-cols-7
+    grid grid-cols-1 sm:grid-cols-9
     gap-1 md:gap-2
     px-2 md:px-4 py-3
     hover:bg-white/30 dark:hover:bg-gray-800/30
@@ -1368,32 +1772,63 @@ const UserList: React.FC = () => {
                                     className="px-1 py-1 whitespace-nowrap cursor-pointer"
                                   >
                                     <span className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 backdrop-blur-sm truncate w-full">
-                                      {user.role}
+                                      {user.role || "N/A"}
                                     </span>
                                   </div>
 
+                                  {/* Department Column */}
                                   <div
                                     onClick={() => handleRowClick(user)}
                                     className="px-1 py-1 whitespace-nowrap cursor-pointer"
                                   >
-                                    <span className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate w-full">
-                                      {user.allocatedArea || "N/A"}
+                                    <span className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-indigo-100/50 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 backdrop-blur-sm truncate w-full">
+                                      {user.department || "N/A"}
                                     </span>
                                   </div>
 
+                                  {/* Zone ID Column */}
                                   <div
                                     onClick={() => handleRowClick(user)}
-                                    className="px-1 py-1 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+                                    className="px-1 py-1 whitespace-nowrap cursor-pointer"
                                   >
-                                    <div className="bg-white/40 dark:bg-gray-800/40 rounded px-2 md:px-3 py-1.5 backdrop-blur-sm truncate">
-                                      {user.department || "N/A"}
-                                    </div>
+                                    <span
+                                      className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-purple-100/50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 backdrop-blur-sm truncate w-full"
+                                      title={zoneId}
+                                    >
+                                      {zoneId || "Not Assigned"}
+                                    </span>
+                                  </div>
+
+                                  {/* Zone Name Column */}
+                                  <div
+                                    onClick={() => handleRowClick(user)}
+                                    className="px-1 py-1 whitespace-nowrap cursor-pointer"
+                                  >
+                                    <span
+                                      className="inline-flex items-center truncate justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-green-100/50 dark:bg-green-900/30 text-green-800 dark:text-green-300 backdrop-blur-sm truncate w-full"
+                                      title={zoneName}
+                                    >
+                                      {zoneName}
+                                    </span>
+                                  </div>
+
+                                  {/* Allocated Area Column - Shows user's allocatedArea or zone area */}
+                                  <div
+                                    onClick={() => handleRowClick(user)}
+                                    className="px-1 py-1 whitespace-nowrap cursor-pointer"
+                                  >
+                                    <span
+                                      className="inline-flex items-center justify-center px-2 md:px-3 py-1 rounded-lg text-xs font-medium bg-yellow-100/50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 backdrop-blur-sm truncate w-full"
+                                      title={allocatedArea}
+                                    >
+                                      {allocatedArea}
+                                    </span>
                                   </div>
                                 </div>
                               );
                             })
                           ) : (
-                            <div className="col-span-8 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
+                            <div className="col-span-9 px-2 py-6 text-center bg-linear-to-br from-white/30 to-white/10 dark:from-gray-800/30 dark:to-gray-900/10">
                               <div className="p-4 rounded-xl bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 inline-block max-w-[90%]">
                                 <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-br from-gray-200/50 to-gray-300/30 dark:from-gray-700/50 dark:to-gray-800/30 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl flex items-center justify-center">
                                   <svg
@@ -1415,17 +1850,11 @@ const UserList: React.FC = () => {
                                 </p>
                                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                   {currentUser?.role === "manager"
-                                    ? `No users found in your department (${
-                                        currentUser.departmentName ||
-                                        currentUser.department ||
-                                        "Not set"
-                                      })`
+                                    ? `No users found in your department (${currentUser.departmentName || currentUser.department || "Not set"})`
                                     : currentUser &&
                                         (currentUser.role === "zonalmanager" ||
                                           currentUser.role === "zonal manager")
-                                      ? `No users found in your zone (${
-                                          currentUser.allocatedArea || "Not set"
-                                        })`
+                                      ? `No users found in your zone (${currentUser.zoneId || "Not set"})`
                                       : "Try adjusting your search or filter criteria"}
                                 </p>
                               </div>
@@ -1457,6 +1886,9 @@ const UserList: React.FC = () => {
                         const canEdit = canEditUser(user);
                         const canDelete = canDeleteUser(user);
                         const canView = canViewUser(user);
+                        const zoneId = user.zoneId || "";
+                        const zoneName = getZoneName(zoneId);
+                        const allocatedArea = getAllocatedArea(user);
 
                         if (!canView) return null;
 
@@ -1494,7 +1926,7 @@ const UserList: React.FC = () => {
                                 </div>
                               </div>
                               <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                                {user.role}
+                                {user.role || "N/A"}
                               </span>
                             </div>
 
@@ -1514,19 +1946,37 @@ const UserList: React.FC = () => {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Area
+                                    Department
                                   </p>
                                   <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                                    {user.allocatedArea || "N/A"}
+                                    {user.department || "N/A"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Zone ID
+                                  </p>
+                                  <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                                    {zoneId || "Not Assigned"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Zone Name
+                                  </p>
+                                  <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                                    {zoneName}
                                   </p>
                                 </div>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  Department
+                                  Allocated Area
                                 </p>
-                                <p className="text-sm text-gray-900 dark:text-gray-100">
-                                  {user.department || "N/A"}
+                                <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                                  {allocatedArea}
                                 </p>
                               </div>
                             </div>
@@ -1535,11 +1985,7 @@ const UserList: React.FC = () => {
                             <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/30 dark:border-gray-700/30">
                               <div className="flex items-center space-x-2">
                                 <span
-                                  className={`w-2 h-2 rounded-full ${
-                                    user.is_checkin
-                                      ? "bg-green-500"
-                                      : "bg-red-500"
-                                  }`}
+                                  className={`w-2 h-2 rounded-full ${user.is_checkin ? "bg-green-500" : "bg-red-500"}`}
                                 ></span>
                                 <span className="text-xs text-gray-600 dark:text-gray-400">
                                   {user.is_checkin ? "Online" : "Offline"}
@@ -1644,12 +2090,12 @@ const UserList: React.FC = () => {
                 <div className="p-6">
                   <div className="mb-8">
                     <div className="flex items-center space-x-4">
-                      {selectedUser.profile_image ||
-                      selectedUser.profileImageUrl ? (
+                      {selectedUser.profileImageUrl ||
+                      selectedUser.profile_image ? (
                         <img
                           src={
-                            selectedUser.profile_image ||
-                            selectedUser.profileImageUrl
+                            selectedUser.profileImageUrl ||
+                            selectedUser.profile_image
                           }
                           alt={
                             selectedUser.full_name || selectedUser.name || "N/A"
@@ -1743,21 +2189,7 @@ const UserList: React.FC = () => {
                     </div>
                   )}
 
-                  {selectedUser.allocatedArea && (
-                    <div className="mb-8">
-                      <div>
-                        <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Allocated Area
-                        </label>
-                        <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                          <p className="text-gray-900 dark:text-white whitespace-pre-line text-base">
-                            {selectedUser.allocatedArea || "NA"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+                  {/* Department & Role Information */}
                   <div className="mb-8">
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                       Role & Department
@@ -1769,7 +2201,7 @@ const UserList: React.FC = () => {
                         </label>
                         <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <p className="text-gray-900 dark:text-white text-base">
-                            {selectedUser.department || "NA"}
+                            {selectedUser.department || "N/A"}
                           </p>
                         </div>
                       </div>
@@ -1779,7 +2211,46 @@ const UserList: React.FC = () => {
                         </label>
                         <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <p className="text-gray-900 dark:text-white text-base">
-                            {selectedUser.role}
+                            {selectedUser.role || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zone Information Section */}
+                  <div className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      Zone & Location Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Zone ID
+                        </label>
+                        <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <p className="text-gray-900 dark:text-white text-base">
+                            {selectedUser.zoneId || "Not Assigned"}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Zone Name
+                        </label>
+                        <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <p className="text-gray-900 dark:text-white text-base">
+                            {getZoneName(selectedUser.zoneId || "")}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Allocated Area
+                        </label>
+                        <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <p className="text-gray-900 dark:text-white text-base">
+                            {getAllocatedArea(selectedUser)}
                           </p>
                         </div>
                       </div>
@@ -1867,7 +2338,7 @@ const UserList: React.FC = () => {
           </div>
         )}
 
-        {/* Edit User Modal */}
+        {/* Edit User Modal - UPDATED with separate allocatedArea field */}
         {isEditModalOpen && selectedUser && canEditUser(selectedUser) && (
           <div className="fixed inset-0 z-50 bg-black/70">
             <div className="bg-white dark:bg-gray-900 w-full h-full flex flex-col overflow-hidden">
@@ -1996,45 +2467,8 @@ const UserList: React.FC = () => {
                   </div>
 
                   <div className="mb-8">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Allocated Area
-                      </label>
-                      <input
-                        type="text"
-                        name="allocatedArea"
-                        value={editForm.allocatedArea}
-                        onChange={handleEditFormChange}
-                        className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        placeholder="Enter allocated area"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-8">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                      Profile & Preferences
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Profile Image URL
-                        </label>
-                        <input
-                          type="url"
-                          name="profileImageUrl"
-                          value={editForm.profileImageUrl}
-                          onChange={handleEditFormChange}
-                          className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          placeholder="https://example.com/profile.jpg"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-12">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                      Role & Department
+                      Department & Role
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -2108,6 +2542,101 @@ const UserList: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      Zone Assignment
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Zone *
+                        </label>
+                        {loadingZones ? (
+                          <div className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Loading zones...
+                            </p>
+                          </div>
+                        ) : zones.length === 0 ? (
+                          <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                            <p className="text-red-600 dark:text-red-400">
+                              Failed to load zones. Please refresh.
+                            </p>
+                          </div>
+                        ) : (
+                          <select
+                            name="zoneId"
+                            value={editForm.zoneId}
+                            onChange={handleEditFormChange}
+                            required
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                          >
+                            <option value="">Select Zone</option>
+                            {zones.map((zone: Zone) => (
+                              <option
+                                key={`zone-${zone.id}`}
+                                value={zone.zoneId}
+                              >
+                                {zone.zoneId} - {zone.name} ({zone.area},{" "}
+                                {zone.city})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Allocated Area
+                        </label>
+                        <input
+                          type="text"
+                          name="allocatedArea"
+                          value={editForm.allocatedArea}
+                          onChange={handleEditFormChange}
+                          className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          placeholder="Enter allocated area (optional)"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {editForm.zoneId && zones.length > 0
+                            ? `Zone area: ${getZoneArea(editForm.zoneId)}`
+                            : "Leave empty to use zone area"}
+                        </p>
+                      </div>
+                    </div>
+                    {editForm.zoneId && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-xs text-blue-600 dark:text-blue-300">
+                          Selected Zone: <strong>{editForm.zoneName}</strong> (
+                          {editForm.zoneId})
+                          <br />
+                          Zone Area:{" "}
+                          <strong>{getZoneArea(editForm.zoneId)}</strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      Profile & Preferences
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Profile Image URL
+                        </label>
+                        <input
+                          type="url"
+                          name="profileImageUrl"
+                          value={editForm.profileImageUrl}
+                          onChange={handleEditFormChange}
+                          className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          placeholder="https://example.com/profile.jpg"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </form>
 
@@ -2129,8 +2658,10 @@ const UserList: React.FC = () => {
                       isEditing ||
                       loadingDepartments ||
                       loadingRoles ||
+                      loadingZones ||
                       departments.length === 0 ||
-                      roles.length === 0
+                      roles.length === 0 ||
+                      zones.length === 0
                     }
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
                   >
@@ -2167,7 +2698,7 @@ const UserList: React.FC = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal - NEW MODAL */}
+        {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && selectedUser && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden">
@@ -2229,7 +2760,7 @@ const UserList: React.FC = () => {
                           Role
                         </p>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedUser.role}
+                          {selectedUser.role || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -2247,6 +2778,30 @@ const UserList: React.FC = () => {
                       </p>
                       <p className="font-medium text-gray-900 dark:text-white truncate">
                         {selectedUser.email || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Zone ID
+                      </p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {selectedUser.zoneId || "Not Assigned"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Zone Name
+                      </p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {getZoneName(selectedUser.zoneId || "")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Allocated Area
+                      </p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {getAllocatedArea(selectedUser)}
                       </p>
                     </div>
                   </div>

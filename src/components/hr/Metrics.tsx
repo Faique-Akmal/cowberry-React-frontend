@@ -32,10 +32,10 @@ export default function Metrics() {
       employee: users.filter(
         (user) =>
           checkRole(user.role, "fieldemployee") ||
-          checkRole(user.role, "employee")
+          checkRole(user.role, "employee"),
       ).length,
       department_head: users.filter((user) =>
-        checkRole(user.role, "department_head")
+        checkRole(user.role, "department_head"),
       ).length,
       manager: users.filter((user) => checkRole(user.role, "manager")).length,
       hr: users.filter((user) => checkRole(user.role, "hr")).length,
@@ -111,7 +111,7 @@ export default function Metrics() {
           "from-purple-50/50 to-transparent dark:from-purple-950/20 dark:to-transparent",
       },
     ],
-    [t, stats]
+    [t, stats],
   );
 
   // ✅ Skeleton Loading Logic
@@ -175,8 +175,7 @@ export default function Metrics() {
                         before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br ${card.gradient}
                         overflow-hidden group
                     `}
-          style={
-            currentGlassStyle}
+          style={currentGlassStyle}
         >
           {/* Optional: Subtle background pattern */}
           <div className="absolute inset-0 opacity-5 dark:opacity-10">

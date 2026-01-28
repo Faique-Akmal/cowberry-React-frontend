@@ -133,6 +133,12 @@ const AppSidebar: React.FC = () => {
       role: ["admin", "hr"],
     },
     {
+      icon: <MdOutlineAdd />,
+      name: t("Add Zones"),
+      path: "/add-zones",
+      role: ["admin", "hr"],
+    },
+    {
       icon: <MdAnnouncement />,
       name: t("menu.announcement"),
       path: "/announcementList",

@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import API from "../../api/axios";
 import toast from "react-hot-toast";
-
-import { FaUserPlus, FaBuilding, FaUserTag, FaSpinner } from "react-icons/fa";
+import {
+  FaUserPlus,
+  FaBuilding,
+  FaUserTag,
+  FaSpinner,
+  FaMapMarkerAlt,
+  FaSearch,
+} from "react-icons/fa";
 import PageMeta from "../../components/common/PageMeta";
 import LoadingAnimation from "../UiElements/loadingAnimation";
 
@@ -18,8 +24,21 @@ interface Role {
   roleName?: string;
 }
 
+interface Zone {
+  zoneId: string;
+  id?: number;
+  name: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  description?: string;
+}
+
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     username: "",
     full_name: "",
     email: "",
@@ -29,17 +48,25 @@ export default function RegisterUserForm() {
     departmentId: "",
     address: "",
     allocatedArea: "",
+    zoneId: "", // Add this to store zoneId separately
     birthDate: "",
     profileImageUrl: "",
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [filteredZones, setFilteredZones] = useState<Zone[]>([]);
+  const [zoneSearch, setZoneSearch] = useState("");
+  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingZones, setIsLoadingZones] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -57,7 +84,7 @@ export default function RegisterUserForm() {
   const userRole = currentUser?.role;
   const userDepartmentId = currentUser?.departmentId;
 
-  // Fetch departments and roles from API
+  // Fetch departments, roles, and zones from API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -65,27 +92,22 @@ export default function RegisterUserForm() {
 
         // Fetch departments
         const deptResponse = await API.get("/departments/static_departments");
-
         let departmentsData: Department[] = [];
 
         if (Array.isArray(deptResponse.data)) {
-          // If the API returns an array directly
           departmentsData = deptResponse.data;
         } else if (
           deptResponse.data?.departments &&
           Array.isArray(deptResponse.data.departments)
         ) {
-          // If the API returns { departments: [] }
           departmentsData = deptResponse.data.departments;
         } else if (
           deptResponse.data?.data &&
           Array.isArray(deptResponse.data.data)
         ) {
-          // If the API returns { data: [] }
           departmentsData = deptResponse.data.data;
         }
 
-        // Ensure we have the correct structure
         const validDepartments = departmentsData
           .filter(
             (dept: any) => dept && (dept.departmentId || dept.id) && dept.name,
@@ -99,27 +121,22 @@ export default function RegisterUserForm() {
 
         // Fetch roles
         const roleResponse = await API.get("/roles/static_roles");
-
         let rolesData: Role[] = [];
 
         if (Array.isArray(roleResponse.data)) {
-          // If the API returns an array directly
           rolesData = roleResponse.data;
         } else if (
           roleResponse.data?.roles &&
           Array.isArray(roleResponse.data.roles)
         ) {
-          // If the API returns { roles: [] }
           rolesData = roleResponse.data.roles;
         } else if (
           roleResponse.data?.data &&
           Array.isArray(roleResponse.data.data)
         ) {
-          // If the API returns { data: [] }
           rolesData = roleResponse.data.data;
         }
 
-        // Ensure we have the correct structure
         const validRoles = rolesData
           .filter((role: any) => role && (role.name || role.roleName))
           .map((role: any) => ({
@@ -128,6 +145,9 @@ export default function RegisterUserForm() {
           }));
 
         setRoles(validRoles);
+
+        // Fetch zones
+        await fetchZones();
       } catch (error: any) {
         console.error("Error fetching data:", error);
         if (error.response?.status === 404) {
@@ -141,9 +161,9 @@ export default function RegisterUserForm() {
         } else {
           toast.error("Failed to load departments and roles");
         }
-        // Set empty arrays to prevent blocking the form
         setDepartments([]);
         setRoles([]);
+        setZones([]);
       } finally {
         setIsLoadingData(false);
       }
@@ -151,6 +171,84 @@ export default function RegisterUserForm() {
 
     fetchData();
   }, []);
+
+  // Function to fetch zones
+  const fetchZones = async () => {
+    try {
+      setIsLoadingZones(true);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast.error("Authentication required to fetch zones");
+        return;
+      }
+
+      const response = await API.get("/auth/zones", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      let zonesData: Zone[] = [];
+
+      if (Array.isArray(response.data)) {
+        zonesData = response.data;
+      } else if (response.data?.zones && Array.isArray(response.data.zones)) {
+        zonesData = response.data.zones;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        zonesData = response.data.data;
+      }
+
+      const validZones = zonesData
+        .filter((zone: any) => zone && (zone.zoneId || zone.id) && zone.name)
+        .map((zone: any) => ({
+          zoneId: zone.zoneId || zone.id,
+          id: zone.id || zone.zoneId,
+          name: zone.name,
+          area: zone.area,
+          city: zone.city,
+          state: zone.state,
+          pincode: zone.pincode,
+          description: zone.description,
+        }));
+
+      setZones(validZones);
+      setFilteredZones(validZones);
+    } catch (error: any) {
+      console.error("Error fetching zones:", error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        toast.error("Authentication required to access zones");
+      } else if (error.response?.status === 404) {
+        toast.error("Zones endpoint not found");
+      } else {
+        toast.error("Failed to load zones");
+      }
+      setZones([]);
+      setFilteredZones([]);
+    } finally {
+      setIsLoadingZones(false);
+    }
+  };
+
+  // Filter zones based on search input
+  useEffect(() => {
+    if (zoneSearch.trim() === "") {
+      setFilteredZones(zones);
+    } else {
+      const filtered = zones.filter(
+        (zone) =>
+          zone.name.toLowerCase().includes(zoneSearch.toLowerCase()) ||
+          (zone.area &&
+            zone.area.toLowerCase().includes(zoneSearch.toLowerCase())) ||
+          (zone.city &&
+            zone.city.toLowerCase().includes(zoneSearch.toLowerCase())) ||
+          (zone.zoneId &&
+            zone.zoneId.toLowerCase().includes(zoneSearch.toLowerCase())),
+      );
+      setFilteredZones(filtered);
+    }
+  }, [zoneSearch, zones]);
 
   // Handler for input changes
   const handleChange = (
@@ -163,20 +261,63 @@ export default function RegisterUserForm() {
     }));
   };
 
+  // Handler for zone selection
+  const handleZoneSelect = (zone: Zone) => {
+    // Update form data with zoneId
+    setFormData((prev) => ({
+      ...prev,
+      zoneId: zone.zoneId, // Store zoneId for API submission
+      // Store zone name for display
+    }));
+
+    // Update local state
+    setSelectedZone(zone);
+    setZoneSearch(zone.name); // Display zone name in search box
+    setShowZoneDropdown(false);
+  };
+
+  // Handler for zone search input change
+  const handleZoneSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setZoneSearch(value);
+
+    // Clear selection if search is changed
+    if (value !== selectedZone?.name) {
+      setSelectedZone(null);
+      setFormData((prev) => ({
+        ...prev,
+        zoneId: "",
+      }));
+    }
+
+    if (!showZoneDropdown && value.trim() !== "") {
+      setShowZoneDropdown(true);
+    }
+  };
+
+  // Clear zone selection
+  const clearZoneSelection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      zoneId: "",
+    }));
+    setSelectedZone(null);
+    setZoneSearch("");
+    setShowZoneDropdown(false);
+  };
+
   // Handler for file upload
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error("File size too large. Maximum size is 5MB.");
         return;
       }
 
-      // Check file type
       if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/)) {
         toast.error(
           "Invalid file type. Please upload an image (JPEG, PNG, GIF, WebP).",
@@ -184,7 +325,6 @@ export default function RegisterUserForm() {
         return;
       }
 
-      // Convert to base64 for immediate preview
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64Image = e.target?.result as string;
@@ -232,7 +372,6 @@ export default function RegisterUserForm() {
       return;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast.error("Please enter a valid email address.");
@@ -241,7 +380,6 @@ export default function RegisterUserForm() {
       return;
     }
 
-    // Mobile number validation (if provided)
     if (
       formData.mobileNo &&
       !/^\d{10}$/.test(formData.mobileNo.replace(/\D/g, ""))
@@ -252,7 +390,6 @@ export default function RegisterUserForm() {
       return;
     }
 
-    // Password validation
     if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long.");
       setIsError(true);
@@ -260,7 +397,6 @@ export default function RegisterUserForm() {
       return;
     }
 
-    // Validate department selection
     if (!formData.departmentId) {
       toast.error("Please select a department.");
       setIsError(true);
@@ -268,7 +404,6 @@ export default function RegisterUserForm() {
       return;
     }
 
-    // Validate role selection
     if (!formData.role) {
       toast.error("Please select a role.");
       setIsError(true);
@@ -277,9 +412,11 @@ export default function RegisterUserForm() {
     }
 
     try {
-      // Prepare payload according to API requirements
+      // Prepare payload according to your API requirements
       const payload = {
         username: formData.username.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         full_name: formData.full_name.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -287,12 +424,17 @@ export default function RegisterUserForm() {
         mobileNo: formData.mobileNo || null,
         departmentId: parseInt(formData.departmentId),
         address: formData.address || null,
-        allocatedArea: formData.allocatedArea || null,
+        allocatedArea: formData.allocatedArea || null, // Zone name
+        zoneId: formData.zoneId || null, // Zone ID for API
         birthDate: formData.birthDate || null,
         profileImageUrl: formData.profileImageUrl || null,
       };
 
-      // Make POST request to the correct endpoint
+      // Remove allocatedArea if no zone is selected to match your API
+      if (!formData.zoneId) {
+        delete payload.zoneId;
+      }
+
       const response = await API.post("/auth/register", payload, {
         headers: {
           "Content-Type": "application/json",
@@ -306,11 +448,11 @@ export default function RegisterUserForm() {
         setMessage(responseData.message || "User registered successfully!");
         setIsError(false);
 
-        // Send email to the newly registered user
-
         // Reset form
         setFormData({
           username: "",
+          firstName: "",
+          lastName: "",
           full_name: "",
           email: "",
           password: "",
@@ -318,12 +460,13 @@ export default function RegisterUserForm() {
           mobileNo: "",
           departmentId: "",
           allocatedArea: "",
+          zoneId: "",
           address: "",
           birthDate: "",
           profileImageUrl: "",
         });
-
-        // Hide URL input if it's open
+        setSelectedZone(null);
+        setZoneSearch("");
         setShowUrlInput(false);
       }
     } catch (error: any) {
@@ -354,19 +497,20 @@ export default function RegisterUserForm() {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded  shadow-lg  backdrop-blur-2xl">
+    <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg backdrop-blur-2xl">
       <PageMeta
         title="Employee Registration"
         description="Register a new employee"
       />
+
       {/* Header */}
-      <div className="text-center mb-10  border-2xl white bg-blur   ">
+      <div className="text-center mb-10 border-2xl white bg-blur">
         <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800 dark:text-gray-200">
           User Registration
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 ">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Personal Information Section */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -377,8 +521,39 @@ export default function RegisterUserForm() {
               Personal Information
             </h3>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                First Name *
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Enter firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Choose a lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-2">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Full Name *
@@ -437,16 +612,60 @@ export default function RegisterUserForm() {
               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Password *
               </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="At least 6 characters"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="At least 6 characters"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
                 Password must be at least 6 characters long
               </p>
@@ -585,28 +804,155 @@ export default function RegisterUserForm() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
-
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Allocated Area
               </label>
               <input
                 type="text"
                 name="allocatedArea"
-                placeholder="Enter allocatedArea"
+                placeholder="Enter allocated area"
                 value={formData.allocatedArea}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
 
-            {/* Profile Image Section */}
+            {/* Allocated Area with Zone Search */}
             <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Zone
+                </label>
+                {isLoadingZones && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <FaSpinner className="animate-spin" />
+                    Loading zones...
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search for a zone by name or zone ID..."
+                      value={zoneSearch}
+                      onChange={handleZoneSearchChange}
+                      onFocus={() => setShowZoneDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {zoneSearch && (
+                      <button
+                        type="button"
+                        onClick={clearZoneSelection}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label="Clear selection"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fetchZones()}
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2"
+                    title="Refresh zones"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Hidden input to store zone ID */}
+                <input type="hidden" name="zoneId" value={formData.zoneId} />
+
+                {/* Zone Dropdown */}
+                {showZoneDropdown && filteredZones.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredZones.map((zone) => (
+                      <div
+                        key={zone.zoneId}
+                        onClick={() => handleZoneSelect(zone)}
+                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                            <FaMapMarkerAlt className="text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">
+                              {zone.name}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              Zone ID: {zone.zoneId}
+                              {zone.area && <span> • {zone.area}</span>}
+                              {zone.city && <span> • {zone.city}</span>}
+                            </div>
+                            {zone.state && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                {zone.state}{" "}
+                                {zone.pincode && `• ${zone.pincode}`}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No zones found message */}
+                {showZoneDropdown &&
+                  zoneSearch &&
+                  filteredZones.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        No zones found matching "{zoneSearch}"
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {selectedZone && (
+                <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <FaMapMarkerAlt />
+                  <span>
+                    Selected: {selectedZone.name} (Zone ID:{" "}
+                    {selectedZone.zoneId})
+                  </span>
+                </div>
+              )}
+
+              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                Search and select a zone to allocate to this user. The zone name
+                will be displayed, but the Zone ID will be sent to the API.
+              </p>
+            </div>
+
+            {/* Profile Image Section */}
+            {/* <div>
               <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
                 Profile Image (Optional)
               </label>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                {/* Image Preview */}
+              
                 {formData.profileImageUrl ? (
                   <div className="relative">
                     <img
@@ -640,7 +986,7 @@ export default function RegisterUserForm() {
                   </div>
                 )}
 
-                {/* Image Picker Buttons */}
+             
                 <div className="flex flex-col sm:flex-row gap-3">
                   <label className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors inline-flex items-center justify-center gap-2">
                     <svg
@@ -688,7 +1034,7 @@ export default function RegisterUserForm() {
                 </div>
               </div>
 
-              {/* URL Input Field (Conditional) */}
+           
               {showUrlInput && (
                 <div className="mt-4">
                   <input
@@ -705,7 +1051,7 @@ export default function RegisterUserForm() {
               <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
                 Optional: Upload an image (max 5MB) or provide a URL
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 

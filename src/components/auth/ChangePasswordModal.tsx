@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { axiosPostChangePassword } from "../../store/userStore";
+import { axiosPostChangePassword } from "../../services/userStore";
 import toast from "react-hot-toast";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useTranslation } from "react-i18next";
@@ -9,9 +9,9 @@ interface ChangePasswordModalProps {
   userId: number;
 }
 
-const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ 
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   onClose,
-  userId 
+  userId,
 }) => {
   const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -53,7 +53,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       setTimeout(() => {
         handleClose();
       }, 1500);
-
     } catch (error: any) {
       console.error("Error:", error);
 
@@ -91,16 +90,15 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   // Prevent body scroll when modal is open
   useState(() => {
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   });
 
   return (
-  <div className="fixed inset-0 z-50 top-90 flex items-center justify-center bg-black bg-opacity-50">
-     
-      <div 
+    <div className="fixed inset-0 z-50 top-90 flex items-center justify-center bg-black bg-opacity-50">
+      <div
         className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl mx-auto animate-fade-in"
         onClick={(e) => e.stopPropagation()} // Prevent click from closing modal
       >
@@ -139,7 +137,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               className="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-500 hover:text-gray-700"
               disabled={loading}
-              aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showCurrentPassword ? "Hide password" : "Show password"
+              }
             >
               {showCurrentPassword ? (
                 <EyeIcon className="size-5" />

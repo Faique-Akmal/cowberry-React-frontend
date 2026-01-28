@@ -54,6 +54,12 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
   </div>
 );
 
+// Helper function to normalize strings for comparison
+const normalizeString = (str: string | null | undefined): string => {
+  if (!str) return "";
+  return str.trim().toLowerCase();
+};
+
 // --- Main Component ---
 const EmployeeStatus = () => {
   const { isDarkMode } = useTheme();
@@ -64,18 +70,103 @@ const EmployeeStatus = () => {
   const [visibleCount, setVisibleCount] = useState(15);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Get user role, department and allocated area from localStorage
+  const userRole = localStorage.getItem("userRole");
+  const userDepartment = localStorage.getItem("department");
+  const userAllocatedArea = localStorage.getItem("allocatedarea");
+
+  // Debug logging (remove in production)
+  useEffect(() => {
+    console.log("Current user role:", userRole);
+    console.log("User department:", userDepartment);
+    console.log("User allocated area:", userAllocatedArea);
+    console.log(
+      "All users:",
+      users.map((u) => ({
+        name: u.name,
+        department: u.department,
+        allocatedArea: u.allocatedArea,
+      })),
+    );
+  }, [userRole, userDepartment, userAllocatedArea, users]);
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Filter users based on role with strict comparison
+  const filteredUsers = useMemo(() => {
+    if (!userRole) {
+      console.log("No user role found, showing all users");
+      return users;
+    }
+
+    const normalizedUserRole = normalizeString(userRole);
+    const normalizedUserDepartment = normalizeString(userDepartment);
+    const normalizedUserAllocatedArea = normalizeString(userAllocatedArea);
+
+    console.log("Normalized user role:", normalizedUserRole);
+    console.log("Normalized user department:", normalizedUserDepartment);
+    console.log("Normalized user allocated area:", normalizedUserAllocatedArea);
+
+    let filtered = users;
+
+    if (normalizedUserRole === "manager") {
+      if (!normalizedUserDepartment) {
+        console.log(
+          "Manager role but no department specified, showing no users",
+        );
+        return [];
+      }
+
+      filtered = users.filter((user) => {
+        const userDept = normalizeString(user.department);
+        const isMatch = userDept === normalizedUserDepartment;
+
+        console.log(
+          `User: ${user.name}, Department: ${userDept}, Match: ${isMatch}`,
+        );
+        return isMatch;
+      });
+
+      console.log("Manager filtered users:", filtered);
+    } else if (normalizedUserRole === "zonalmanager") {
+      if (!normalizedUserAllocatedArea) {
+        console.log(
+          "Zonal Manager role but no allocated area specified, showing no users",
+        );
+        return [];
+      }
+
+      filtered = users.filter((user) => {
+        const userArea = normalizeString(user.allocatedArea);
+        const isMatch = userArea === normalizedUserAllocatedArea;
+
+        console.log(`User: ${user.name}, Area: ${userArea}, Match: ${isMatch}`);
+        return isMatch;
+      });
+
+      console.log("Zonal Manager filtered users:", filtered);
+    } else if (
+      normalizedUserRole === "admin" ||
+      normalizedUserRole === "superadmin"
+    ) {
+      console.log("Admin/SuperAdmin role, showing all users");
+      filtered = users;
+    }
+
+    console.log("Final filtered users count:", filtered.length);
+    return filtered;
+  }, [users, userRole, userDepartment, userAllocatedArea]);
+
   const { onlineUsers, totalUsersCount, activeUsersCount } = useMemo(() => {
-    const online = users.filter((user) => user.is_checkin === true);
+    const online = filteredUsers.filter((user) => user.is_checkin === true);
     return {
       onlineUsers: online,
       activeUsersCount: online.length,
-      totalUsersCount: users.length,
+      totalUsersCount: filteredUsers.length,
     };
-  }, [users]);
+  }, [filteredUsers]);
 
   const visibleUsers = useMemo(() => {
     return onlineUsers.slice(0, visibleCount);
@@ -323,7 +414,9 @@ const EmployeeStatus = () => {
                 </div>
               </div>
               <p className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-3">
-                All Quiet Zone
+                {filteredUsers.length === 0
+                  ? "No Employees Found"
+                  : "All Quiet Zone"}
               </p>
               <p
                 className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto backdrop-blur-sm p-3 rounded-xl"
@@ -331,7 +424,9 @@ const EmployeeStatus = () => {
                   background: "rgba(255, 255, 255, 0.05)",
                 }}
               >
-                No employees are currently online. Check back later for updates.
+                {filteredUsers.length === 0
+                  ? `No employees found for your ${userRole?.toLowerCase() === "manager" ? "department" : "allocated area"}.`
+                  : "No employees are currently online. Check back later for updates."}
               </p>
             </div>
           )}
@@ -512,7 +607,7 @@ const EmployeeStatus = () => {
               >
                 <span className="w-2 h-2 bg-linear-to-r from-blue-400 to-indigo-400 rounded-full"></span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Showing all {onlineUsers.length} online users
+                  Showing {onlineUsers.length} online users
                 </span>
               </div>
             </div>

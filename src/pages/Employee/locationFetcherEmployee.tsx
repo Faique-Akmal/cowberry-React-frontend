@@ -3023,14 +3023,14 @@ export default function AttendanceList() {
                     <p className="text-xs opacity-80">Sessions</p>
                     <p className="font-bold">{farmerTravelData.length}</p>
                   </div>
-                  {farmerTravelData.length > 0 && (
+                  {/* {farmerTravelData.length > 0 && (
                     <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
                       <p className="text-xs opacity-80">Showing</p>
                       <p className="font-bold">
                         1-{Math.min(farmerTravelData.length, 10)}
                       </p>
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <button
@@ -3311,7 +3311,7 @@ export default function AttendanceList() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 backdrop-blur-sm border-t border-white/10 dark:border-gray-700/50 p-4 flex-shrink-0">
+            {/* <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 backdrop-blur-sm border-t border-white/10 dark:border-gray-700/50 p-4 flex-shrink-0">
               <div className="flex justify-between items-center">
                 <div className="text-sm text-gray-600 dark:text-gray-300">
                   Showing {farmerTravelData.length} session
@@ -3335,7 +3335,7 @@ export default function AttendanceList() {
                   </button>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

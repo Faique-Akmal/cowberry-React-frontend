@@ -30,15 +30,19 @@ import {
 } from "../../types/user.types";
 
 import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
-import FilterSection from "../../pages/UserList/filterSection";
-import UserTable from "../../pages/UserList/userTable";
-import Pagination from "../../pages/UserList/pagination";
+
+// import FilterSection from "../../pages/UserList/filterSection";
+// import UserTable from "../../pages/UserList/userTable";
+// import Pagination from "../../pages/UserList/pagination";
 import EditUserModal from "../../pages/UserList/EditUserModal";
 import DeleteUserModal from "../../pages/UserList/DeleteUserModal"; // ADD THIS IMPORT
 import { useUserFilters } from "../../hooks/useUserFilters";
 import { useUserPermissions } from "../../hooks/useUserPermissions";
 import UserCard from "../../pages/UserList/UserCard";
 import UserDetailsModal from "../../pages/UserList/UserDetailsModal";
+import Pagination from "../../pages/UserList/Pagination";
+import UserTable from "../../pages/UserList/UserTable";
+import FilterSection from "../../pages/UserList/FilterSection";
 
 const UserList: React.FC = () => {
   // ✅ Access Store States & Actions
@@ -401,6 +405,7 @@ const UserList: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Handle edit button click - IMPROVED with zone fetching
   const handleEditClick = async (user: User) => {
     if (!canEditUser(user)) {
       alert("You don't have permission to edit this user.");
@@ -451,6 +456,7 @@ const UserList: React.FC = () => {
         // Extract zone information
         const zoneData = userData.zone || {};
         const zoneId = zoneData.zoneId || userData.zoneId || "";
+        const zoneDatabaseId = zoneData.id || userData.zone?.id || 0; // Get the integer ID
         let zoneName = zoneData.name || userData.zoneName || "";
         let allocatedArea = userData.allocatedArea || "";
 
@@ -464,6 +470,7 @@ const UserList: React.FC = () => {
           const zone = zones.find((z: Zone) => z.zoneId === zoneId);
           if (zone) {
             zoneName = zone.name;
+            // Only set allocatedArea from zone if user doesn't have one
             if (!allocatedArea.trim()) {
               allocatedArea = zone.area;
             }
@@ -480,6 +487,7 @@ const UserList: React.FC = () => {
           address: userData.address || "",
           allocatedArea: allocatedArea,
           zoneId: zoneId,
+          zoneDatabaseId: zoneDatabaseId, // Make sure this is set correctly
           zoneName: zoneName,
           birthDate: userData.birthDate
             ? new Date(userData.birthDate).toISOString().split("T")[0]
@@ -505,6 +513,7 @@ const UserList: React.FC = () => {
         address: user.address || "",
         allocatedArea: user.allocatedArea || "",
         zoneId: user.zoneId || "",
+        zoneDatabaseId: user.zoneDatabaseId || 0,
         zoneName: user.zoneName || "",
         birthDate: user.birthDate
           ? new Date(user.birthDate).toISOString().split("T")[0]
@@ -591,11 +600,14 @@ const UserList: React.FC = () => {
     const { name, value } = e.target;
 
     if (name === "zoneId") {
+      // When zoneId changes, update zoneDatabaseId and zoneName
       const selectedZone = zones.find((z: Zone) => z.zoneId === value);
       setEditForm((prev) => ({
         ...prev,
         zoneId: value,
+        zoneDatabaseId: selectedZone ? selectedZone.id : 0, // Make sure this is set
         zoneName: selectedZone ? selectedZone.name : prev.zoneName,
+        // Do NOT update allocatedArea automatically - keep it separate
       }));
     } else if (name === "departmentId") {
       const selectedDept = departments.find(
@@ -621,6 +633,7 @@ const UserList: React.FC = () => {
     }
   };
 
+  // FIXED: Updated handleEditSubmit to send correct zoneId (integer)
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -637,12 +650,12 @@ const UserList: React.FC = () => {
       // Create update data object
       const updateData: any = {
         username: editForm.username?.trim(),
-        fullName: editForm.full_name.trim(),
+        full_name: editForm.full_name.trim(), // Changed from fullName to full_name
         email: editForm.email.trim(),
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
         allocatedArea: editForm.allocatedArea.trim() || null,
-        zoneId: editForm.zoneId.trim() || null,
+        zoneId: editForm.zoneDatabaseId || null, // Send the integer zone database ID - CORRECT
         birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
         departmentId: Number(editForm.departmentId) || null,
@@ -659,6 +672,16 @@ const UserList: React.FC = () => {
           delete updateData[key];
         }
       });
+
+      // Ensure zoneId is an integer if it exists
+      if (updateData.zoneId !== null && updateData.zoneId !== undefined) {
+        updateData.zoneId = parseInt(updateData.zoneId);
+
+        // If zoneId is 0 or invalid, set to null
+        if (isNaN(updateData.zoneId) || updateData.zoneId <= 0) {
+          updateData.zoneId = null;
+        }
+      }
 
       console.log("Updating user with data:", updateData);
 
@@ -696,20 +719,21 @@ const UserList: React.FC = () => {
 
   // Function to export users to Excel
   const exportToExcel = async () => {
+    console.log("Export clicked - filteredUsers length:", filteredUsers.length); // Add this
+
     try {
       setExporting(true);
       const usersToExport = filteredUsers;
 
       if (usersToExport.length === 0) {
-        alert("No users to export");
+        alert(
+          `No users to export. Total users: ${users.length}, Filtered: ${filteredUsers.length}`,
+        );
+        setExporting(false);
         return;
       }
 
-      // Import the export function
-      const { exportUsersToExcel } = await import("../../utils/excel.export");
-      await exportUsersToExcel(usersToExport, zones);
-
-      alert(`Exported ${usersToExport.length} users successfully`);
+      // ... rest of your export code
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       alert("Failed to export users. Please try again.");

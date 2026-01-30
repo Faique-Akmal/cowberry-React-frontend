@@ -67,7 +67,6 @@ interface TravelSession {
   startOdometer: string;
   endOdometer: string;
   totalDistance: number;
-  logs: LocationLog[];
   department?: string;
   allocatedArea?: string;
 }
@@ -167,6 +166,30 @@ interface UserInfo {
   userRole?: string;
   department?: string;
   allocatedArea?: string;
+}
+
+// Interface for logs API response
+interface SessionLogsResponse {
+  success: boolean;
+  sessionInfo: {
+    sessionId: number;
+    userId: number;
+    username: string;
+    employeeCode: string;
+    startTime: string;
+    endTime: string;
+    totalLogs: number;
+  };
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    totalLogs: number;
+    logsInPage: number;
+  };
+  data: LocationLog[];
 }
 
 // Glassmorphism CSS classes
@@ -275,15 +298,22 @@ export default function AttendanceList() {
   const [showLogMarkersMulti, setShowLogMarkersMulti] = useState(true);
   const [showPauseMarkers, setShowPauseMarkers] = useState(true);
 
-  // NEW: State for all sessions and farmer data
+  // State for all sessions and farmer data
   const [allSessions, setAllSessions] = useState<TravelSession[]>([]);
   const [allFarmerData, setAllFarmerData] = useState<Record<string, any>>({});
   const [isLoadingAllSessions, setIsLoadingAllSessions] = useState(false);
 
-  // NEW: Current user info from localStorage
+  // Current user info from localStorage
   const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
 
-  // NEW: Custom icons for markers
+  // NEW: State for session logs
+  const [sessionLogs, setSessionLogs] = useState<Record<number, LocationLog[]>>(
+    {},
+  );
+  const [loadingLogs, setLoadingLogs] = useState<Record<number, boolean>>({});
+  const [logsPagination, setLogsPagination] = useState<Record<number, any>>({});
+
+  // Custom icons for markers
   const customIcons = {
     startIcon: new L.Icon({
       iconUrl:
@@ -327,7 +357,7 @@ export default function AttendanceList() {
     }),
   };
 
-  // NEW: Get current user info from localStorage - FIXED VERSION
+  // Get current user info from localStorage
   useEffect(() => {
     const getUserInfo = () => {
       try {
@@ -444,6 +474,45 @@ export default function AttendanceList() {
     [],
   );
 
+  // Function to fetch logs for a specific session
+  const fetchSessionLogs = async (sessionId: number, page: number = 1) => {
+    setLoadingLogs((prev) => ({ ...prev, [sessionId]: true }));
+
+    try {
+      const response = await API.get<SessionLogsResponse>(
+        `/admin/travel-sessions/${sessionId}/logs`,
+        {
+          params: { page, limit: 100 },
+        },
+      );
+
+      if (response.data.success) {
+        const logs = response.data.data;
+
+        // Update session logs
+        setSessionLogs((prev) => ({
+          ...prev,
+          [sessionId]:
+            page === 1 ? logs : [...(prev[sessionId] || []), ...logs],
+        }));
+
+        // Store pagination info
+        setLogsPagination((prev) => ({
+          ...prev,
+          [sessionId]: response.data.pagination,
+        }));
+
+        return logs;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch logs for session ${sessionId}:`, error);
+    } finally {
+      setLoadingLogs((prev) => ({ ...prev, [sessionId]: false }));
+    }
+
+    return [];
+  };
+
   // Group sessions by user and date with correct sorting
   const groupSessionsByUserAndDate = useCallback(
     (sessions: TravelSession[]): GroupedSession[] => {
@@ -474,7 +543,7 @@ export default function AttendanceList() {
             activeSessions: session.endTime ? 0 : 1,
             startTime: session.startTime,
             endTime: session.endTime || session.startTime,
-            totalPoints: session.logs?.length || 0,
+            totalPoints: sessionLogs[session.sessionId]?.length || 0,
             isLoading: false,
             hasMoreSessions: false,
             allSessionsLoaded: true,
@@ -502,7 +571,8 @@ export default function AttendanceList() {
 
             existingGroup.totalSessions += 1;
             existingGroup.activeSessions += session.endTime ? 0 : 1;
-            existingGroup.totalPoints += session.logs?.length || 0;
+            existingGroup.totalPoints +=
+              sessionLogs[session.sessionId]?.length || 0;
 
             if (
               new Date(session.startTime) < new Date(existingGroup.startTime)
@@ -530,7 +600,7 @@ export default function AttendanceList() {
         };
       });
 
-      // NEW: Sort groups by latest session time of each user
+      // Sort groups by latest session time of each user
       return groups.sort((a, b) => {
         // Get the latest session start time for each group
         const getLatestSessionTime = (group: GroupedSession): Date => {
@@ -549,7 +619,7 @@ export default function AttendanceList() {
         return bLatestTime.getTime() - aLatestTime.getTime();
       });
     },
-    [formatDateOnly, calculateAdjustedGroupDistance],
+    [formatDateOnly, calculateAdjustedGroupDistance, sessionLogs],
   );
 
   // Calculate duration in hours and minutes
@@ -578,7 +648,7 @@ export default function AttendanceList() {
     }
   }, [currentUserInfo]);
 
-  // NEW: Filter sessions based on user role - FIXED VERSION
+  // Filter sessions based on user role
   const filterSessionsByRole = useCallback(
     (sessions: TravelSession[]): TravelSession[] => {
       if (!currentUserInfo?.userRole) {
@@ -639,7 +709,7 @@ export default function AttendanceList() {
     [currentUserInfo],
   );
 
-  // NEW: Filter users based on user role - FIXED VERSION
+  // Filter users based on user role
   const filterUsersByRole = useCallback(
     (usersList: typeof users): typeof users => {
       if (!currentUserInfo?.userRole) {
@@ -745,7 +815,7 @@ export default function AttendanceList() {
     };
   }, [autoRefresh, activeSessionsOnly]);
 
-  // NEW: Load all sessions for export (with pagination)
+  // Load all sessions for export (with pagination)
   const loadAllSessionsForExport = async () => {
     setIsLoadingAllSessions(true);
     try {
@@ -791,7 +861,7 @@ export default function AttendanceList() {
     }
   };
 
-  // NEW: Load farmer data for all sessions
+  // Load farmer data for all sessions
   const loadAllFarmerData = async (userIds: number[], dates: string[]) => {
     const farmerDataMap: Record<string, any> = {};
 
@@ -840,7 +910,7 @@ export default function AttendanceList() {
     }
   };
 
-  // Fetch all travel sessions with pagination - UPDATED VERSION
+  // Fetch all travel sessions with pagination
   const fetchTravelSessions = async (
     page: number = 1,
     append: boolean = false,
@@ -1394,12 +1464,13 @@ export default function AttendanceList() {
   // IMPROVED: Build polyline path with gap handling and smoothing
   const buildPolylinePath = useCallback(
     (session: TravelSession): [number, number][] => {
+      const logs = sessionLogs[session.sessionId] || [];
       const path: [number, number][] = [];
 
-      if (!session || !session.logs || session.logs.length === 0) return path;
+      if (logs.length === 0) return path;
 
       // Sort logs by timestamp to ensure chronological order
-      const sortedLogs = [...session.logs].sort(
+      const sortedLogs = [...logs].sort(
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
@@ -1421,7 +1492,7 @@ export default function AttendanceList() {
       // Apply smoothing to make the path look more natural
       return smoothPath(path);
     },
-    [isValidCoordinate, parseCoordinate, smoothPath],
+    [isValidCoordinate, parseCoordinate, smoothPath, sessionLogs],
   );
 
   const getMapCenter = useCallback(
@@ -1437,8 +1508,9 @@ export default function AttendanceList() {
       }
 
       // Fallback to logs if available
-      if (session.logs && session.logs.length > 0) {
-        const validLogs = session.logs.filter((log) =>
+      const logs = sessionLogs[session.sessionId] || [];
+      if (logs.length > 0) {
+        const validLogs = logs.filter((log) =>
           isValidCoordinate(log.latitude, log.longitude),
         );
 
@@ -1458,7 +1530,7 @@ export default function AttendanceList() {
       // Default fallback
       return [21.1702, 72.8311];
     },
-    [isValidCoordinate, parseCoordinate],
+    [isValidCoordinate, parseCoordinate, sessionLogs],
   );
 
   const getMapZoom = useCallback(
@@ -1484,16 +1556,15 @@ export default function AttendanceList() {
       }
 
       // Add log points
-      if (session.logs) {
-        session.logs.forEach((log) => {
-          if (isValidCoordinate(log.latitude, log.longitude)) {
-            validPoints.push([
-              parseCoordinate(log.latitude),
-              parseCoordinate(log.longitude),
-            ]);
-          }
-        });
-      }
+      const logs = sessionLogs[session.sessionId] || [];
+      logs.forEach((log) => {
+        if (isValidCoordinate(log.latitude, log.longitude)) {
+          validPoints.push([
+            parseCoordinate(log.latitude),
+            parseCoordinate(log.longitude),
+          ]);
+        }
+      });
 
       if (validPoints.length < 2) return 13;
 
@@ -1510,65 +1581,74 @@ export default function AttendanceList() {
       if (maxRange > 0.005) return 15;
       return 16;
     },
-    [isValidCoordinate, parseCoordinate],
+    [isValidCoordinate, parseCoordinate, sessionLogs],
   );
 
-  // Replace the existing detectPauses function with this:
-  const detectPauses = useCallback((logs: LocationLog[]): PauseInterval[] => {
-    if (!logs || logs.length < 2) return [];
+  // Detect pauses function using logs from sessionLogs state
+  const detectPauses = useCallback(
+    (sessionId: number): PauseInterval[] => {
+      const logs = sessionLogs[sessionId] || [];
+      if (logs.length < 2) return [];
 
-    const pauses: PauseInterval[] = [];
-    let currentPause: PauseInterval | null = null;
+      const pauses: PauseInterval[] = [];
+      let currentPause: PauseInterval | null = null;
 
-    for (let i = 0; i < logs.length; i++) {
-      const log = logs[i];
+      for (let i = 0; i < logs.length; i++) {
+        const log = logs[i];
 
-      // Check if this log has pause flag set to true
-      if (log.pause === true) {
-        // If we're not in a pause interval, start one
-        if (!currentPause) {
-          currentPause = {
-            start: log,
-            end: log,
-            durationMinutes: 0,
-          };
-        } else {
-          // Update the end of the current pause
-          currentPause.end = log;
+        // Check if this log has pause flag set to true
+        if (log.pause === true) {
+          // If we're not in a pause interval, start one
+          if (!currentPause) {
+            currentPause = {
+              start: log,
+              end: log,
+              durationMinutes: 0,
+            };
+          } else {
+            // Update the end of the current pause
+            currentPause.end = log;
+          }
+        } else if (currentPause) {
+          // Calculate duration when pause ends
+          const startTime = new Date(currentPause.start.timestamp);
+          const endTime = new Date(currentPause.end.timestamp);
+          currentPause.durationMinutes =
+            (endTime.getTime() - startTime.getTime()) / 60000;
+
+          // Only add if duration is meaningful (>= 1 minute)
+          if (currentPause.durationMinutes >= 1) {
+            pauses.push(currentPause);
+          }
+          currentPause = null;
         }
-      } else if (currentPause) {
-        // Calculate duration when pause ends
+      }
+
+      // Handle case where last log is still in pause
+      if (currentPause) {
         const startTime = new Date(currentPause.start.timestamp);
         const endTime = new Date(currentPause.end.timestamp);
         currentPause.durationMinutes =
           (endTime.getTime() - startTime.getTime()) / 60000;
 
-        // Only add if duration is meaningful (>= 1 minute)
         if (currentPause.durationMinutes >= 1) {
           pauses.push(currentPause);
         }
-        currentPause = null;
       }
-    }
 
-    // Handle case where last log is still in pause
-    if (currentPause) {
-      const startTime = new Date(currentPause.start.timestamp);
-      const endTime = new Date(currentPause.end.timestamp);
-      currentPause.durationMinutes =
-        (endTime.getTime() - startTime.getTime()) / 60000;
+      return pauses;
+    },
+    [sessionLogs],
+  );
 
-      if (currentPause.durationMinutes >= 1) {
-        pauses.push(currentPause);
-      }
-    }
-
-    return pauses;
-  }, []);
-
-  const openMap = (session: TravelSession) => {
+  const openMap = async (session: TravelSession) => {
     setMapView(session);
     setLastUpdateTime(new Date());
+
+    // Fetch logs for this session if not already loaded
+    if (!sessionLogs[session.sessionId]) {
+      await fetchSessionLogs(session.sessionId, 1);
+    }
   };
 
   const closeMap = () => {
@@ -1580,11 +1660,37 @@ export default function AttendanceList() {
   };
 
   const openMultiSessionMap = useCallback(
-    (group: GroupedSession) => {
+    async (group: GroupedSession) => {
+      // Set the multi-session view immediately
+      setMultiSessionMapView({
+        userId: group.userId,
+        username: group.username,
+        employeeCode: group.employeeCode,
+        date: group.date,
+        sessions: group.sessions.sort(
+          (a, b) =>
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+        ),
+        center: [21.1702, 72.8311], // Default center
+        zoom: 13, // Default zoom
+      });
+
+      // Fetch logs for all sessions in the group
+      const logPromises = group.sessions.map((session) => {
+        if (!sessionLogs[session.sessionId]) {
+          return fetchSessionLogs(session.sessionId, 1);
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(logPromises);
+
+      // Recalculate center and zoom after logs are loaded
       const allPoints: [number, number][] = [];
 
-      // Collect all valid coordinates from all sessions
       group.sessions.forEach((session) => {
+        const logs = sessionLogs[session.sessionId] || [];
+
         // Add start point
         if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
           allPoints.push([
@@ -1602,16 +1708,14 @@ export default function AttendanceList() {
         }
 
         // Add log points
-        if (session.logs) {
-          session.logs.forEach((log) => {
-            if (isValidCoordinate(log.latitude, log.longitude)) {
-              allPoints.push([
-                parseCoordinate(log.latitude),
-                parseCoordinate(log.longitude),
-              ]);
-            }
-          });
-        }
+        logs.forEach((log) => {
+          if (isValidCoordinate(log.latitude, log.longitude)) {
+            allPoints.push([
+              parseCoordinate(log.latitude),
+              parseCoordinate(log.longitude),
+            ]);
+          }
+        });
       });
 
       let center: [number, number] = [21.1702, 72.8311];
@@ -1635,22 +1739,20 @@ export default function AttendanceList() {
         else zoom = 16;
       }
 
-      setMultiSessionMapView({
-        userId: group.userId,
-        username: group.username,
-        employeeCode: group.employeeCode,
-        date: group.date,
-        sessions: group.sessions.sort(
-          (a, b) =>
-            new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-        ),
-        center,
-        zoom,
-      });
+      // Update the multi-session view with calculated center and zoom
+      setMultiSessionMapView((prev) =>
+        prev
+          ? {
+              ...prev,
+              center,
+              zoom,
+            }
+          : null,
+      );
 
       setLastUpdateTime(new Date());
     },
-    [isValidCoordinate, parseCoordinate],
+    [isValidCoordinate, parseCoordinate, sessionLogs],
   );
 
   const closeMultiSessionMap = () => {
@@ -1750,7 +1852,37 @@ export default function AttendanceList() {
     0,
   );
 
-  // NEW: Enhanced exportToCSV function using cached data
+  // Build session polyline path for multi-session view
+  const buildSessionPolylinePath = useCallback(
+    (session: TravelSession): [number, number][] => {
+      const logs = sessionLogs[session.sessionId] || [];
+      const path: [number, number][] = [];
+
+      if (logs.length === 0) return path;
+
+      // Sort logs by timestamp to ensure chronological order
+      const sortedLogs = [...logs].sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+
+      // Collect all valid coordinates
+      sortedLogs.forEach((log) => {
+        if (isValidCoordinate(log.latitude, log.longitude)) {
+          path.push([
+            parseCoordinate(log.latitude),
+            parseCoordinate(log.longitude),
+          ]);
+        }
+      });
+
+      // Apply smoothing to make the path look more natural
+      return smoothPath(path);
+    },
+    [isValidCoordinate, parseCoordinate, smoothPath, sessionLogs],
+  );
+
+  // Enhanced exportToCSV function using cached data
   const exportToCSV = async () => {
     try {
       setIsExporting(true);
@@ -1846,7 +1978,7 @@ export default function AttendanceList() {
         ).toFixed(2);
 
         const totalPauses = group.sessions.reduce((sum, session) => {
-          const pauses = detectPauses(session.logs || []);
+          const pauses = detectPauses(session.sessionId);
           return sum + pauses.length;
         }, 0);
 
@@ -2052,35 +2184,6 @@ export default function AttendanceList() {
       setIsExporting(false);
     }
   };
-
-  // Build session polyline path for multi-session view
-  const buildSessionPolylinePath = useCallback(
-    (session: TravelSession): [number, number][] => {
-      const path: [number, number][] = [];
-
-      if (!session || !session.logs || session.logs.length === 0) return path;
-
-      // Sort logs by timestamp to ensure chronological order
-      const sortedLogs = [...session.logs].sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
-
-      // Collect all valid coordinates
-      sortedLogs.forEach((log) => {
-        if (isValidCoordinate(log.latitude, log.longitude)) {
-          path.push([
-            parseCoordinate(log.latitude),
-            parseCoordinate(log.longitude),
-          ]);
-        }
-      });
-
-      // Apply smoothing to make the path look more natural
-      return smoothPath(path);
-    },
-    [isValidCoordinate, parseCoordinate, smoothPath],
-  );
 
   const renderOdometerImage = (imageData: string) => {
     if (!imageData || imageData.trim() === "") {
@@ -3023,14 +3126,6 @@ export default function AttendanceList() {
                     <p className="text-xs opacity-80">Sessions</p>
                     <p className="font-bold">{farmerTravelData.length}</p>
                   </div>
-                  {/* {farmerTravelData.length > 0 && (
-                    <div className="text-center backdrop-blur-sm bg-white/10 px-3 py-2 rounded-lg">
-                      <p className="text-xs opacity-80">Showing</p>
-                      <p className="font-bold">
-                        1-{Math.min(farmerTravelData.length, 10)}
-                      </p>
-                    </div>
-                  )} */}
                 </div>
 
                 <button
@@ -3309,33 +3404,6 @@ export default function AttendanceList() {
                 </div>
               )}
             </div>
-
-            {/* Modal Footer */}
-            {/* <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 backdrop-blur-sm border-t border-white/10 dark:border-gray-700/50 p-4 flex-shrink-0">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  Showing {farmerTravelData.length} session
-                  {farmerTravelData.length !== 1 ? "s" : ""}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      alert("Export functionality to be implemented");
-                    }}
-                    className={`px-4 py-2 ${glassmorphismClasses.button.primary} rounded-xl font-medium flex items-center gap-2`}
-                  >
-                    <FaDownload />
-                    Export Data
-                  </button>
-                  <button
-                    onClick={closeFarmerDataModal}
-                    className={`px-6 py-2 ${glassmorphismClasses.button.outline} rounded-xl font-medium`}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div> */}
           </div>
         </div>
       )}
@@ -3404,6 +3472,16 @@ export default function AttendanceList() {
 
             {/* Map Container */}
             <div className="flex-1 relative">
+              {multiSessionMapView.sessions.some(
+                (session) => loadingLogs[session.sessionId],
+              ) && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                  <div className="text-white text-center">
+                    <FaSpinner className="animate-spin text-2xl mx-auto mb-2" />
+                    <p>Loading session logs...</p>
+                  </div>
+                </div>
+              )}
               <MapContainer
                 center={multiSessionMapView.center}
                 zoom={multiSessionMapView.zoom}
@@ -3541,7 +3619,7 @@ export default function AttendanceList() {
                 {showPauseMarkers &&
                   multiSessionMapView.sessions.map((session, sessionIndex) => {
                     // Only detect pauses based on backend pause flags
-                    const pauses = detectPauses(session.logs || []);
+                    const pauses = detectPauses(session.sessionId);
                     return pauses.map((pause, pauseIndex) => {
                       const pauseLog = pause.start;
                       if (
@@ -3641,10 +3719,6 @@ export default function AttendanceList() {
                                       <span>Session Color</span>
                                     </div>
                                   </div>
-
-                                  {/* <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
-                                    <strong>Backend Detected Pause</strong>
-                                  </div> */}
                                 </div>
                               </div>
                             </Popup>
@@ -3656,24 +3730,23 @@ export default function AttendanceList() {
                   })}
                 {/* Log points markers for each session */}
                 {showLogMarkersMulti &&
-                  multiSessionMapView.sessions.map(
-                    (session, sessionIndex) =>
-                      session.logs &&
-                      session.logs.slice(0, 50).map((log, logIndex) => {
-                        // Limit to 50 points per session for performance
-                        if (isValidCoordinate(log.latitude, log.longitude)) {
-                          const isPausePoint = log.pause;
+                  multiSessionMapView.sessions.map((session, sessionIndex) => {
+                    const logs = sessionLogs[session.sessionId] || [];
+                    return logs.slice(0, 50).map((log, logIndex) => {
+                      // Limit to 50 points per session for performance
+                      if (isValidCoordinate(log.latitude, log.longitude)) {
+                        const isPausePoint = log.pause;
 
-                          return (
-                            <Marker
-                              key={`log-${session.sessionId}-${log.id || logIndex}`}
-                              position={[
-                                parseCoordinate(log.latitude),
-                                parseCoordinate(log.longitude),
-                              ]}
-                              icon={L.divIcon({
-                                className: "custom-marker",
-                                html: `
+                        return (
+                          <Marker
+                            key={`log-${session.sessionId}-${log.id || logIndex}`}
+                            position={[
+                              parseCoordinate(log.latitude),
+                              parseCoordinate(log.longitude),
+                            ]}
+                            icon={L.divIcon({
+                              className: "custom-marker",
+                              html: `
                               <div style="
                                 width: 8px;
                                 height: 8px;
@@ -3684,55 +3757,52 @@ export default function AttendanceList() {
                                 cursor: pointer;
                               "></div>
                             `,
-                                iconSize: [8, 8],
-                                iconAnchor: [4, 4],
-                              })}
-                            >
-                              <Popup>
-                                <div className="text-sm min-w-[200px]">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full"
-                                      style={{
-                                        backgroundColor:
-                                          getSessionColor(sessionIndex),
-                                      }}
-                                    ></div>
-                                    <strong>
-                                      Session #{session.sessionId} - Point #
-                                      {logIndex + 1}
-                                    </strong>
+                              iconSize: [8, 8],
+                              iconAnchor: [4, 4],
+                            })}
+                          >
+                            <Popup>
+                              <div className="text-sm min-w-[200px]">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{
+                                      backgroundColor:
+                                        getSessionColor(sessionIndex),
+                                    }}
+                                  ></div>
+                                  <strong>
+                                    Session #{session.sessionId} - Point #
+                                    {logIndex + 1}
+                                  </strong>
+                                </div>
+                                <div className="space-y-1">
+                                  <div>
+                                    <strong>Time:</strong>{" "}
+                                    {formatDateTime(log.timestamp)}
                                   </div>
-                                  <div className="space-y-1">
-                                    <div>
-                                      <strong>Time:</strong>{" "}
-                                      {formatDateTime(log.timestamp)}
-                                    </div>
-                                    <div>
-                                      <strong>Coordinates:</strong>{" "}
-                                      {parseCoordinate(log.latitude).toFixed(6)}
-                                      ,{" "}
-                                      {parseCoordinate(log.longitude).toFixed(
-                                        6,
-                                      )}
-                                    </div>
-                                    <div>
-                                      <strong>Speed:</strong>{" "}
-                                      {log.speed ? `${log.speed} km/h` : "N/A"}
-                                    </div>
-                                    <div>
-                                      <strong>Status:</strong>{" "}
-                                      {isPausePoint ? "⏸️ Pause" : "Moving"}
-                                    </div>
+                                  <div>
+                                    <strong>Coordinates:</strong>{" "}
+                                    {parseCoordinate(log.latitude).toFixed(6)},{" "}
+                                    {parseCoordinate(log.longitude).toFixed(6)}
+                                  </div>
+                                  <div>
+                                    <strong>Speed:</strong>{" "}
+                                    {log.speed ? `${log.speed} km/h` : "N/A"}
+                                  </div>
+                                  <div>
+                                    <strong>Status:</strong>{" "}
+                                    {isPausePoint ? "⏸️ Pause" : "Moving"}
                                   </div>
                                 </div>
-                              </Popup>
-                            </Marker>
-                          );
-                        }
-                        return null;
-                      }),
-                  )}
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      }
+                      return null;
+                    });
+                  })}
               </MapContainer>
             </div>
           </div>
@@ -3767,13 +3837,6 @@ export default function AttendanceList() {
                     <FaMapPin />
                     {showLogMarkers ? "Hide Log Points" : "Show Log Points"}
                   </button>
-                  {/* <button
-                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
-                    className={`px-4 py-2 backdrop-blur-sm rounded-lg flex items-center gap-2 ${showPauseMarkers ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
-                  >
-                    <FaPauseCircle />
-                    {showPauseMarkers ? 'Hide Pause Points' : 'Show Pause Points'}
-                  </button> */}
                   <button
                     onClick={closeMap}
                     className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all"
@@ -3785,6 +3848,14 @@ export default function AttendanceList() {
             </div>
 
             <div className="flex-1 relative">
+              {loadingLogs[mapView.sessionId] && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                  <div className="text-white text-center">
+                    <FaSpinner className="animate-spin text-2xl mx-auto mb-2" />
+                    <p>Loading session logs...</p>
+                  </div>
+                </div>
+              )}
               <MapContainer
                 center={getMapCenter(mapView)}
                 zoom={getMapZoom(mapView)}
@@ -3892,10 +3963,9 @@ export default function AttendanceList() {
 
                 {/* Pause markers */}
                 {showPauseMarkers &&
-                  mapView.logs &&
                   (() => {
                     // Only detect pauses based on backend pause flags
-                    const pauses = detectPauses(mapView.logs);
+                    const pauses = detectPauses(mapView.sessionId);
                     return pauses.map((pause, pauseIndex) => {
                       const pauseLog = pause.start;
                       if (
@@ -3996,22 +4066,22 @@ export default function AttendanceList() {
 
                 {/* Log points markers */}
                 {showLogMarkers &&
-                  mapView.logs &&
-                  mapView.logs.map((log, logIndex) => {
-                    if (isValidCoordinate(log.latitude, log.longitude)) {
-                      const logDate = new Date(log.timestamp);
-                      const isPausePoint = log.pause === true;
+                  (() => {
+                    const logs = sessionLogs[mapView.sessionId] || [];
+                    return logs.map((log, logIndex) => {
+                      if (isValidCoordinate(log.latitude, log.longitude)) {
+                        const isPausePoint = log.pause === true;
 
-                      return (
-                        <Marker
-                          key={`log-${log.id || logIndex}`}
-                          position={[
-                            parseCoordinate(log.latitude),
-                            parseCoordinate(log.longitude),
-                          ]}
-                          icon={L.divIcon({
-                            className: "custom-marker",
-                            html: `
+                        return (
+                          <Marker
+                            key={`log-${log.id || logIndex}`}
+                            position={[
+                              parseCoordinate(log.latitude),
+                              parseCoordinate(log.longitude),
+                            ]}
+                            icon={L.divIcon({
+                              className: "custom-marker",
+                              html: `
                             <div style="
                               width: 12px;
                               height: 12px;
@@ -4022,62 +4092,63 @@ export default function AttendanceList() {
                               cursor: pointer;
                             "></div>
                           `,
-                            iconSize: [12, 12],
-                            iconAnchor: [6, 6],
-                          })}
-                        >
-                          <Popup>
-                            <div className="text-sm min-w-[200px]">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{
-                                    backgroundColor: isPausePoint
-                                      ? "#FFA500"
-                                      : "#6366F1",
-                                  }}
-                                ></div>
-                                <strong>
-                                  {isPausePoint
-                                    ? "⏸️ Pause Point"
-                                    : "📍 Log Point"}
-                                </strong>
-                              </div>
-                              <div className="space-y-1">
-                                <div>
-                                  <strong>Time:</strong>{" "}
-                                  {formatDateTime(log.timestamp)}
+                              iconSize: [12, 12],
+                              iconAnchor: [6, 6],
+                            })}
+                          >
+                            <Popup>
+                              <div className="text-sm min-w-[200px]">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{
+                                      backgroundColor: isPausePoint
+                                        ? "#FFA500"
+                                        : "#6366F1",
+                                    }}
+                                  ></div>
+                                  <strong>
+                                    {isPausePoint
+                                      ? "⏸️ Pause Point"
+                                      : "📍 Log Point"}
+                                  </strong>
                                 </div>
-                                <div>
-                                  <strong>Coordinates:</strong>{" "}
-                                  {parseCoordinate(log.latitude).toFixed(6)},{" "}
-                                  {parseCoordinate(log.longitude).toFixed(6)}
-                                </div>
-                                <div>
-                                  <strong>Speed:</strong>{" "}
-                                  {log.speed ? `${log.speed} km/h` : "N/A"}
-                                </div>
-                                <div>
-                                  <strong>Battery:</strong>{" "}
-                                  {log.battery ? `${log.battery}%` : "N/A"}
-                                </div>
-                                <div>
-                                  <strong>Point #:</strong> {logIndex + 1} of{" "}
-                                  {mapView.logs.length}
-                                </div>
-                                {log.pause && (
-                                  <div className="text-amber-600 font-medium">
-                                    ⏸️ Pause detected
+                                <div className="space-y-1">
+                                  <div>
+                                    <strong>Time:</strong>{" "}
+                                    {formatDateTime(log.timestamp)}
                                   </div>
-                                )}
+                                  <div>
+                                    <strong>Coordinates:</strong>{" "}
+                                    {parseCoordinate(log.latitude).toFixed(6)},{" "}
+                                    {parseCoordinate(log.longitude).toFixed(6)}
+                                  </div>
+                                  <div>
+                                    <strong>Speed:</strong>{" "}
+                                    {log.speed ? `${log.speed} km/h` : "N/A"}
+                                  </div>
+                                  <div>
+                                    <strong>Battery:</strong>{" "}
+                                    {log.battery ? `${log.battery}%` : "N/A"}
+                                  </div>
+                                  <div>
+                                    <strong>Point #:</strong> {logIndex + 1} of{" "}
+                                    {logs.length}
+                                  </div>
+                                  {log.pause && (
+                                    <div className="text-amber-600 font-medium">
+                                      ⏸️ Pause detected
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    }
-                    return null;
-                  })}
+                            </Popup>
+                          </Marker>
+                        );
+                      }
+                      return null;
+                    });
+                  })()}
               </MapContainer>
             </div>
           </div>

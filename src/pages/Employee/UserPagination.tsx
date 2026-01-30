@@ -2700,145 +2700,308 @@ const UserList: React.FC = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && selectedUser && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden">
+          <div className="fixed inset-0 z-[9999] bg-black/70">
+            <div className="bg-white dark:bg-gray-900 w-full h-full flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="bg-red-50 dark:bg-red-900/20 px-6 py-4 border-b border-red-100 dark:border-red-800">
-                <div className="flex items-center">
-                  <div className="mr-3">
-                    <svg
-                      className="w-6 h-6 text-red-600 dark:text-red-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                  </div>
+              <div className="flex items-center justify-between border-b border-red-100 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-6 py-4 shrink-0">
+                <div className="flex items-center gap-3">
+                  <svg
+                    className="w-6 h-6 text-red-600 dark:text-red-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
                   <h2 className="text-xl font-bold text-red-700 dark:text-red-300">
                     Delete User
                   </h2>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    • Confirm deletion of user account
+                  </span>
                 </div>
+                <button
+                  onClick={closeDeleteModal}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  disabled={deleting}
+                >
+                  <svg
+                    className="w-6 h-6 text-gray-500 dark:text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
 
-              {/* Content */}
-              <div className="p-6">
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Are you sure you want to delete this user? This action cannot
-                  be undone.
-                </p>
-
-                {/* User Details */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6">
-                  <div className="flex items-center mb-4">
-                    <div className="h-12 w-12 rounded-lg bg-lantern-blue-600 flex items-center justify-center text-white text-lg font-bold mr-3">
-                      {(
-                        selectedUser.full_name?.charAt(0) ||
-                        selectedUser.name?.charAt(0) ||
-                        "?"
-                      ).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {selectedUser.full_name || selectedUser.name || "N/A"}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {selectedUser.employee_code || "No employee code"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-w-4xl mx-auto">
+                  {/* Warning Banner */}
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <svg
+                        className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        />
+                      </svg>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Role
-                        </p>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedUser.role || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Department
-                        </p>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedUser.department || "N/A"}
+                        <h3 className="font-bold text-red-800 dark:text-red-300 text-lg mb-1">
+                          Permanent Action Required
+                        </h3>
+                        <p className="text-red-700 dark:text-red-400">
+                          This will permanently delete the user account and all
+                          associated data including access logs, permissions,
+                          and activity history. This action cannot be undone.
                         </p>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Email
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {selectedUser.email || "N/A"}
-                      </p>
+                  </div>
+
+                  {/* User Information Section */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      User Information
+                    </h3>
+
+                    {/* User Profile Card */}
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 mb-6">
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className="h-16 w-16 rounded-lg bg-lantern-blue-600 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                          {(
+                            selectedUser.full_name?.charAt(0) ||
+                            selectedUser.name?.charAt(0) ||
+                            "?"
+                          ).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                            {selectedUser.full_name ||
+                              selectedUser.name ||
+                              "N/A"}
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-400 mb-3">
+                            {selectedUser.employee_code || "No employee code"}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium">
+                              {selectedUser.role || "N/A"}
+                            </span>
+                            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm font-medium">
+                              {selectedUser.department || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Contact Information */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">
+                            Contact Information
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                Email Address
+                              </p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {selectedUser.email || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Zone Information */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">
+                            Zone Information
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                Zone ID
+                              </p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {selectedUser.zoneId || "Not Assigned"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                Zone Name
+                              </p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {getZoneName(selectedUser.zoneId || "")}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                Allocated Area
+                              </p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {getAllocatedArea(selectedUser)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Zone ID
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {selectedUser.zoneId || "Not Assigned"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Zone Name
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {getZoneName(selectedUser.zoneId || "")}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Allocated Area
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {getAllocatedArea(selectedUser)}
-                      </p>
+
+                    {/* User ID Section */}
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            User ID
+                          </p>
+                          <p className="font-mono text-gray-900 dark:text-white font-medium">
+                            {selectedUser.id || selectedUser._id || "N/A"}
+                          </p>
+                        </div>
+                        {selectedUser.createdAt && (
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              Account Created
+                            </p>
+                            <p className="text-gray-900 dark:text-white">
+                              {new Date(
+                                selectedUser.createdAt,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Warning Message */}
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-6">
-                  <div className="flex">
-                    <svg
-                      className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      This will permanently delete the user account and all
-                      associated data.
-                    </p>
+                  {/* Impact Warning Section */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      Impact of Deletion
+                    </h3>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <svg
+                          className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div>
+                          <ul className="text-yellow-700 dark:text-yellow-300 space-y-2">
+                            <li className="flex items-start gap-2">
+                              <span className="text-yellow-600 dark:text-yellow-400 mt-1">
+                                •
+                              </span>
+                              <span>
+                                All user data will be permanently removed from
+                                the system
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-yellow-600 dark:text-yellow-400 mt-1">
+                                •
+                              </span>
+                              <span>
+                                Access permissions and credentials will be
+                                revoked immediately
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-yellow-600 dark:text-yellow-400 mt-1">
+                                •
+                              </span>
+                              <span>
+                                Any ongoing sessions and tasks will be
+                                terminated
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-yellow-600 dark:text-yellow-400 mt-1">
+                                •
+                              </span>
+                              <span>
+                                This action is irreversible and cannot be
+                                recovered
+                              </span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confirmation Note */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <svg
+                        className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <div>
+                        <p className="text-blue-700 dark:text-blue-300">
+                          <strong>
+                            Please review all information carefully
+                          </strong>{" "}
+                          before proceeding with deletion. Make sure this is the
+                          correct user account and you understand the
+                          consequences of this action.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-                <div className="flex justify-end space-x-3">
+              <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
+                <div className="flex justify-end space-x-4">
                   <button
                     type="button"
                     onClick={closeDeleteModal}
                     disabled={deleting}
-                    className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -2846,7 +3009,7 @@ const UserList: React.FC = () => {
                     type="button"
                     onClick={handleDeleteConfirm}
                     disabled={deleting}
-                    className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center min-w-[100px]"
+                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
                   >
                     {deleting ? (
                       <>

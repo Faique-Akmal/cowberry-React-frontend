@@ -7,19 +7,14 @@ import UserPagination from "../Employee/UserPagination";
 export default function AllUsers() {
   return (
     <>
-    
-    
-      <div >
-      
-         
-         <UserPagination/>
+      <div>
+        <UserPagination />
 
         {/* <ComponentCard title="Basic Table 1">
           {/* <BasicTableOne /> */}
-          {/* <UserPagination/>
+        {/* <UserPagination/>
        
-        </ComponentCard> */} 
-
+        </ComponentCard> */}
       </div>
     </>
   );

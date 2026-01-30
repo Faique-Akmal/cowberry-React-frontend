@@ -38,7 +38,8 @@ interface User {
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
-  zoneId?: string;
+  zoneId?: string; // This is zone.zoneId (string like "DEL001")
+  zoneDatabaseId?: number; // This is the actual foreign key (zone.id)
   zoneName?: string;
   zone?: {
     id: number;
@@ -99,7 +100,8 @@ interface EditUserForm {
   profileImageUrl: string;
   departmentId: number;
   departmentName: string;
-  zoneId: string;
+  zoneId: string; // This is zone.zoneId (string)
+  zoneDatabaseId: number; // This is zone.id (integer foreign key)
   zoneName: string;
   allocatedArea: string;
   roleId: number;
@@ -146,6 +148,7 @@ const UserList: React.FC = () => {
     departmentId: 0,
     departmentName: "",
     zoneId: "",
+    zoneDatabaseId: 0,
     zoneName: "",
     allocatedArea: "",
     roleId: 0,
@@ -212,6 +215,7 @@ const UserList: React.FC = () => {
             birthDate: user.birthDate || "",
             profileImageUrl: user.profileImageUrl || user.profile_image || "",
             zoneId: zoneData.zoneId || user.zoneId || "",
+            zoneDatabaseId: zoneData.id || user.zone?.id || 0,
             zoneName: zoneData.name || user.zoneName || "",
             zone: zoneData.id
               ? {
@@ -715,6 +719,7 @@ const UserList: React.FC = () => {
         // Extract zone information
         const zoneData = userData.zone || {};
         const zoneId = zoneData.zoneId || userData.zoneId || "";
+        const zoneDatabaseId = zoneData.id || userData.zone?.id || 0;
         let zoneName = zoneData.name || userData.zoneName || "";
         let allocatedArea = userData.allocatedArea || "";
 
@@ -745,6 +750,7 @@ const UserList: React.FC = () => {
           address: userData.address || "",
           allocatedArea: allocatedArea,
           zoneId: zoneId,
+          zoneDatabaseId: zoneDatabaseId,
           zoneName: zoneName,
           birthDate: userData.birthDate
             ? new Date(userData.birthDate).toISOString().split("T")[0]
@@ -770,6 +776,7 @@ const UserList: React.FC = () => {
         address: user.address || "",
         allocatedArea: user.allocatedArea || "",
         zoneId: user.zoneId || "",
+        zoneDatabaseId: user.zoneDatabaseId || 0,
         zoneName: user.zoneName || "",
         birthDate: user.birthDate
           ? new Date(user.birthDate).toISOString().split("T")[0]
@@ -793,11 +800,12 @@ const UserList: React.FC = () => {
     const { name, value } = e.target;
 
     if (name === "zoneId") {
-      // When zoneId changes, update zoneName but NOT allocatedArea
+      // When zoneId changes, update zoneDatabaseId and zoneName
       const selectedZone = zones.find((z: Zone) => z.zoneId === value);
       setEditForm((prev) => ({
         ...prev,
         zoneId: value,
+        zoneDatabaseId: selectedZone ? selectedZone.id : 0,
         zoneName: selectedZone ? selectedZone.name : prev.zoneName,
         // Do NOT update allocatedArea automatically - keep it separate
       }));
@@ -825,6 +833,7 @@ const UserList: React.FC = () => {
     }
   };
 
+  // FIXED: Updated handleEditSubmit to send correct zoneId (integer)
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -841,12 +850,12 @@ const UserList: React.FC = () => {
       // Create update data object
       const updateData: any = {
         username: editForm.username?.trim(),
-        fullName: editForm.full_name.trim(),
+        full_name: editForm.full_name.trim(), // Changed from fullName to full_name
         email: editForm.email.trim(),
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
         allocatedArea: editForm.allocatedArea.trim() || null,
-        zoneId: editForm.zoneId.trim() || null,
+        zoneId: editForm.zoneDatabaseId || null, // Send the integer zone database ID
         birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
         departmentId: Number(editForm.departmentId) || null,
@@ -866,7 +875,10 @@ const UserList: React.FC = () => {
 
       console.log("Updating user with data:", updateData);
 
-      const response = await API.put(`/admin/users/${userId}`, updateData);
+      const response = await API.put(
+        `/admin/usersUpdate/${userId}`,
+        updateData,
+      );
       const result = response.data;
 
       if (result.success) {
@@ -1038,6 +1050,7 @@ const UserList: React.FC = () => {
       birthDate: "",
       allocatedArea: "",
       zoneId: "",
+      zoneDatabaseId: 0,
       zoneName: "",
       profileImageUrl: "",
       departmentId: 0,
@@ -2269,18 +2282,10 @@ const UserList: React.FC = () => {
                         <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <div className="flex items-center">
                             <span
-                              className={`w-3 h-3 rounded-full mr-3 ${
-                                selectedUser.is_checkin
-                                  ? "bg-green-500"
-                                  : "bg-red-500"
-                              }`}
+                              className={`w-3 h-3 rounded-full mr-3 ${selectedUser.is_checkin ? "bg-green-500" : "bg-red-500"}`}
                             ></span>
                             <p
-                              className={`font-medium text-base ${
-                                selectedUser.is_checkin
-                                  ? "text-green-600 dark:text-green-400"
-                                  : "text-red-600 dark:text-red-400"
-                              }`}
+                              className={`font-medium text-base ${selectedUser.is_checkin ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                             >
                               {selectedUser.is_checkin ? "Online" : "Offline"}
                             </p>

@@ -2,24 +2,22 @@
 // import ComponentCard from "../../components/common/ComponentCard";
 // import PageMeta from "../../components/common/PageMeta";
 // import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
-import UserPagination from "../Employee/UserPagination";
+import UserList from "../../components/employees/UserList";
+// import UserPagination from "../Employee/UserPagination";
 
 export default function AllUsers() {
   return (
     <>
-    
-    
-      <div >
-      
-         
-         <UserPagination/>
+      <div>
+        <UserList />
+
+        {/* <UserPagination/> */}
 
         {/* <ComponentCard title="Basic Table 1">
           {/* <BasicTableOne /> */}
-          {/* <UserPagination/>
+        {/* <UserPagination/>
        
-        </ComponentCard> */} 
-
+        </ComponentCard> */}
       </div>
     </>
   );

@@ -184,10 +184,10 @@ const DepartmentManagement: React.FC = () => {
 
   if (!adminToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 backdrop-blur-xl py-12 px-4">
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-md mx-auto">
-          <div className="glass-card p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-sm">
+            <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg
                 className="w-8 h-8 text-red-500"
                 fill="none"
@@ -202,7 +202,7 @@ const DepartmentManagement: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Access Required
             </h2>
             <p className="text-gray-600 mb-6">
@@ -215,13 +215,13 @@ const DepartmentManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 backdrop-blur-xl py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-black">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 Department Management
               </h1>
               <p className="text-gray-600 mt-2">
@@ -229,7 +229,7 @@ const DepartmentManagement: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-              <div className="glass-card px-4 py-2 flex items-center">
+              <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 flex items-center shadow-sm">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 <span className="text-sm text-gray-600">
                   {departments.length} Departments
@@ -242,7 +242,7 @@ const DepartmentManagement: React.FC = () => {
         {/* Alert Messages */}
         <div className="mb-6 space-y-4">
           {error && (
-            <div className="glass-card border-l-4 border-red-500 bg-gradient-to-r from-red-50/50 to-red-100/30 backdrop-blur-xl animate-fadeIn">
+            <div className="border-l-4 border-red-500 bg-red-50 rounded-lg animate-fadeIn">
               <div className="p-4 flex items-start">
                 <div className="flex-shrink-0">
                   <svg
@@ -266,7 +266,7 @@ const DepartmentManagement: React.FC = () => {
           )}
 
           {success && (
-            <div className="glass-card border-l-4 border-green-500 bg-gradient-to-r from-green-50/50 to-green-100/30 backdrop-blur-xl animate-fadeIn">
+            <div className="border-l-4 border-green-500 bg-green-50 rounded-lg animate-fadeIn">
               <div className="p-4 flex items-start">
                 <div className="flex-shrink-0">
                   <svg
@@ -293,9 +293,9 @@ const DepartmentManagement: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Section - Add Department */}
           <div className="lg:col-span-4">
-            <div className="glass-card p-6 lg:p-8 h-full">
-              <div className="flex items-center mb-8 pb-6 border-b border-white/20">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 shadow-lg">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 lg:p-8 h-full">
+              <div className="flex items-center mb-8 pb-6 border-b border-gray-200">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
                   <svg
                     className="w-6 h-6 text-blue-600"
                     fill="none"
@@ -335,7 +335,7 @@ const DepartmentManagement: React.FC = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="glass-input w-full pl-12 pr-4 py-3 rounded-xl"
+                      className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter department name"
                       disabled={loading}
                     />
@@ -371,7 +371,7 @@ const DepartmentManagement: React.FC = () => {
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={4}
-                      className="glass-input w-full pl-12 pr-4 py-3 rounded-xl resize-none"
+                      className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       placeholder="Describe the department's purpose and responsibilities"
                       disabled={loading}
                     />
@@ -397,7 +397,7 @@ const DepartmentManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-lantern-blue-600 hover:bg-green-950 text-white w-full py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
                       <>
@@ -446,13 +446,13 @@ const DepartmentManagement: React.FC = () => {
               </form>
 
               {/* Stats Card */}
-              <div className="mt-8 pt-6 border-t border-white/20">
-                <div className="grid grid-cols-1 ">
-                  <div className="glass-card p-2 w-full">
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="grid grid-cols-1">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 w-full">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center mr-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
                         <svg
-                          className="w-5 h-5 text-green-900"
+                          className="w-5 h-5 text-gray-700"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -480,10 +480,10 @@ const DepartmentManagement: React.FC = () => {
 
           {/* Right Section - Departments List */}
           <div className="lg:col-span-8">
-            <div className="glass-card p-6 lg:p-8 h-full">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/20">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 lg:p-8 h-full">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
                     <svg
                       className="w-6 h-6 text-blue-600"
                       fill="none"
@@ -511,7 +511,7 @@ const DepartmentManagement: React.FC = () => {
                   <button
                     onClick={fetchDepartments}
                     disabled={fetching}
-                    className="glass-button bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 py-2 px-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg flex items-center justify-center text-sm"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center text-sm"
                   >
                     <svg
                       className={`w-4 h-4 mr-2 ${fetching ? "animate-spin" : ""}`}
@@ -534,10 +534,10 @@ const DepartmentManagement: React.FC = () => {
               {fetching ? (
                 <div className="text-center py-16">
                   <div className="relative inline-block">
-                    <div className="w-20 h-20 border-4 border-blue-100 rounded-full"></div>
+                    <div className="w-20 h-20 border-4 border-gray-100 rounded-full"></div>
                     <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-pulse"></div>
+                      <div className="w-8 h-8 bg-blue-500 rounded-full animate-pulse"></div>
                     </div>
                   </div>
                   <p className="text-gray-500 mt-6 font-medium">
@@ -546,7 +546,7 @@ const DepartmentManagement: React.FC = () => {
                 </div>
               ) : departments.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg
                       className="w-12 h-12 text-gray-400"
                       fill="none"
@@ -567,21 +567,21 @@ const DepartmentManagement: React.FC = () => {
                   <p className="text-gray-500 mb-6">
                     Get started by creating your first department
                   </p>
-                  <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto"></div>
+                  <div className="w-16 h-1 bg-gray-300 rounded-full mx-auto"></div>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                   {departments.map((department) => (
                     <div
                       key={department.departmentId}
-                      className="glass-card border border-white/30 hover:border-white/50 transition-all duration-300 hover:shadow-lg"
+                      className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-300"
                     >
                       <div className="p-5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                                <span className="text-green-900 font-bold text-lg">
+                              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span className="text-gray-700 font-bold text-lg">
                                   {department.departmentId}
                                 </span>
                               </div>
@@ -601,7 +601,7 @@ const DepartmentManagement: React.FC = () => {
                                 handleDeleteDepartment(department.departmentId)
                               }
                               disabled={deletingId === department.departmentId}
-                              className="glass-button bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                              className="bg-red-50 hover:bg-red-100 text-red-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                             >
                               {deletingId === department.departmentId ? (
                                 <span className="flex items-center justify-center">
@@ -656,7 +656,7 @@ const DepartmentManagement: React.FC = () => {
 
               {/* Summary */}
               {!fetching && departments.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-white/20">
+                <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-gray-600">
                     <div className="flex items-center">
                       <svg
@@ -703,78 +703,23 @@ const DepartmentManagement: React.FC = () => {
           animation: fadeIn 0.3s ease-out;
         }
 
-        .glass-card {
-          background: rgba(255, 255, 255, 0.25);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 20px;
-          box-shadow: 
-            0 8px 32px 0 rgba(31, 38, 135, 0.1),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-          transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-          box-shadow: 
-            0 12px 40px 0 rgba(31, 38, 135, 0.15),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-        }
-
-        .glass-button {
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 14px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .glass-button:active {
-          transform: translateY(0);
-        }
-
-        .glass-input {
-          background: rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 14px;
-          transition: all 0.3s ease;
-        }
-
-        .glass-input:focus {
-          background: rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(59, 130, 246, 0.5);
-          box-shadow: 
-            0 0 0 3px rgba(59, 130, 246, 0.1),
-            0 4px 20px rgba(59, 130, 246, 0.1);
-        }
-
-        .glass-input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
         /* Custom scrollbar */
         ::-webkit-scrollbar {
           width: 6px;
         }
 
         ::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
+          background: #f1f1f1;
           border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.3);
+          background: #888;
           border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.5);
+          background: #555;
         }
 
         @media (max-width: 640px) {

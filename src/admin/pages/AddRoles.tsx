@@ -188,10 +188,10 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
 
   if (!adminToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50/30 via-purple-50/20 to-pink-50/30 backdrop-blur-xl py-12 px-4">
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-md mx-auto">
-          <div className="glass-card p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-sm">
+            <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg
                 className="w-8 h-8 text-amber-500"
                 fill="none"
@@ -206,7 +206,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Authentication Required
             </h2>
             <p className="text-gray-600 mb-6">
@@ -214,7 +214,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
             </p>
             <button
               onClick={() => (window.location.href = "/login")}
-              className="glass-button bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white w-full py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25"
+              className="bg-amber-600 hover:bg-amber-700 text-white w-full py-3 rounded-lg font-medium transition-colors duration-300"
             >
               Go to Login
             </button>
@@ -225,13 +225,13 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50/30 via-purple-50/20 to-pink-50/30 backdrop-blur-xl py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-black bg-clip-text ">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 Role Management
               </h1>
               <p className="text-gray-600 mt-2">
@@ -244,7 +244,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
         {/* Alert Messages */}
         <div className="mb-8 space-y-4">
           {error && (
-            <div className="glass-card border-l-4 border-rose-500 bg-gradient-to-r from-rose-50/50 to-rose-100/30 backdrop-blur-xl animate-fadeIn">
+            <div className="border-l-4 border-rose-500 bg-rose-50 rounded-lg animate-fadeIn">
               <div className="p-5 flex items-start">
                 <div className="flex-shrink-0">
                   <svg
@@ -268,7 +268,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
           )}
 
           {success && (
-            <div className="glass-card border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 backdrop-blur-xl animate-fadeIn">
+            <div className="border-l-4 border-emerald-500 bg-emerald-50 rounded-lg animate-fadeIn">
               <div className="p-5 flex items-start">
                 <div className="flex-shrink-0">
                   <svg
@@ -295,12 +295,12 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Add Role Form */}
           <div>
-            <div className="glass-card p-6 lg:p-8 mb-8">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 lg:p-8 mb-8">
               <div className="mb-8">
                 <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex items-center justify-center mr-5 shadow-lg">
+                  <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mr-5">
                     <svg
-                      className="w-7 h-7 text-black"
+                      className="w-7 h-7 text-indigo-600"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -339,7 +339,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="glass-input w-full pl-12 pr-4 py-3 rounded-xl"
+                      className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., Moderator, Editor, Admin"
                       disabled={loading}
                     />
@@ -375,7 +375,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
-                      className="glass-input w-full pl-12 pr-4 py-3 rounded-xl"
+                      className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Describe role permissions and scope"
                       disabled={loading}
                     />
@@ -401,7 +401,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="hover:bg-cowberry-green-600 bg-lantern-blue-600 text-white w-full py-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -451,10 +451,10 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
             </div>
 
             {/* Stats Card */}
-            <div className="glass-card p-6">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mr-4">
                     <svg
                       className="w-6 h-6 text-emerald-600"
                       fill="none"
@@ -481,7 +481,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                 <button
                   onClick={() => fetchRoles(adminToken)}
                   disabled={loadingRoles}
-                  className="glass-button bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 py-2 px-4 rounded-xl font-medium transition-all duration-300 hover:shadow-lg flex items-center"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors duration-300 flex items-center"
                 >
                   <svg
                     className={`w-4 h-4 mr-2 ${loadingRoles ? "animate-spin" : ""}`}
@@ -499,9 +499,9 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   {loadingRoles ? "Loading..." : "Refresh"}
                 </button>
               </div>
-              <div className="mt-4 w-full bg-gray-200/50 rounded-full h-2">
+              <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-lantern-blue-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(roles.length * 10, 100)}%` }}
                 ></div>
               </div>
@@ -510,12 +510,12 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
 
           {/* Roles List */}
           <div>
-            <div className="glass-card p-6 lg:p-8 h-full">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 lg:p-8 h-full">
               <div className="mb-8">
                 <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mr-5 shadow-lg">
+                  <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mr-5">
                     <svg
-                      className="w-7 h-7 text-black"
+                      className="w-7 h-7 text-purple-600"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -543,10 +543,10 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               {loadingRoles ? (
                 <div className="py-16 text-center">
                   <div className="relative inline-block">
-                    <div className="w-20 h-20 border-4 border-indigo-100 rounded-full"></div>
-                    <div className="w-20 h-20 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                    <div className="w-20 h-20 border-4 border-gray-100 rounded-full"></div>
+                    <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-400 to-purple-600 rounded-full animate-pulse"></div>
+                      <div className="w-8 h-8 bg-blue-500 rounded-full animate-pulse"></div>
                     </div>
                   </div>
                   <p className="text-gray-500 mt-6 font-medium">
@@ -555,7 +555,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                 </div>
               ) : roles.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg
                       className="w-12 h-12 text-gray-400"
                       fill="none"
@@ -576,14 +576,14 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   <p className="text-gray-500 mb-6">
                     Create your first role to get started
                   </p>
-                  <div className="w-16 h-1 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full mx-auto"></div>
+                  <div className="w-16 h-1 bg-gray-300 rounded-full mx-auto"></div>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                   {roles.map((role) => (
                     <div
                       key={role.id}
-                      className="glass-card border border-white/30 hover:border-white/50 transition-all duration-300 hover:shadow-lg"
+                      className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-300"
                     >
                       <div className="p-5">
                         <div className="flex justify-between items-start">
@@ -594,7 +594,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                                   {role.name}
                                 </h4>
                                 <div className="flex items-center mt-1">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium  text-black">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                     ID: {role.id}
                                   </span>
                                 </div>
@@ -608,7 +608,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                             <button
                               onClick={() => handleDeleteRole(role.id)}
                               disabled={deletingRoleId === role.id}
-                              className="glass-button bg-gradient-to-r from-rose-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-600 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {deletingRoleId === role.id ? (
                                 <span className="flex items-center">
@@ -663,8 +663,6 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
             </div>
           </div>
         </div>
-
-        {/* Instructions Card */}
       </div>
 
       {/* Add these styles to your global CSS or a style tag */}
@@ -684,78 +682,23 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
           animation: fadeIn 0.3s ease-out;
         }
 
-        .glass-card {
-          background: rgba(255, 255, 255, 0.25);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 20px;
-          box-shadow:
-            0 8px 32px 0 rgba(31, 38, 135, 0.1),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-          transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-          box-shadow:
-            0 12px 40px 0 rgba(31, 38, 135, 0.15),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-        }
-
-        .glass-button {
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 14px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .glass-button:active {
-          transform: translateY(0);
-        }
-
-        .glass-input {
-          background: rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 14px;
-          transition: all 0.3s ease;
-        }
-
-        .glass-input:focus {
-          background: rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(99, 102, 241, 0.5);
-          box-shadow:
-            0 0 0 3px rgba(99, 102, 241, 0.1),
-            0 4px 20px rgba(99, 102, 241, 0.1);
-        }
-
-        .glass-input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
         /* Custom scrollbar */
         ::-webkit-scrollbar {
           width: 6px;
         }
 
         ::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
+          background: #f1f1f1;
           border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.3);
+          background: #888;
           border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.5);
+          background: #555;
         }
 
         @media (max-width: 640px) {

@@ -719,7 +719,7 @@ const UserList: React.FC = () => {
 
   // Function to export users to Excel
   const exportToExcel = async () => {
-    console.log("Export clicked - filteredUsers length:", filteredUsers.length); // Add this
+    console.log("Export clicked - filteredUsers length:", filteredUsers.length);
 
     try {
       setExporting(true);
@@ -733,15 +733,20 @@ const UserList: React.FC = () => {
         return;
       }
 
-      // ... rest of your export code
-    } catch (error) {
+      // Import the export function
+      const { exportUsersToExcel } = await import("../../utils/excel.export");
+
+      // Call the export function with both users and zones
+      const fileName = await exportUsersToExcel(usersToExport, zones);
+
+      console.log(`Exported ${usersToExport.length} users to ${fileName}`);
+    } catch (error: any) {
       console.error("Error exporting to Excel:", error);
-      alert("Failed to export users. Please try again.");
+      alert(`Failed to export users: ${error.message || "Please try again."}`);
     } finally {
       setExporting(false);
     }
   };
-
   // Infinite Scroll Observer
   useEffect(() => {
     if (!sentinelRef.current || !hasMore || loadingMore) return;
@@ -842,8 +847,9 @@ const UserList: React.FC = () => {
             loadingRoles={loadingRoles}
             onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
-            onExport={exportToExcel}
+            exportToExcel={exportToExcel}
             exporting={exporting}
+            onExport={exportToExcel}
             filteredUsersLength={filteredUsers.length}
             paginatedUsersLength={paginatedUsers.length}
             currentPage={currentPage}

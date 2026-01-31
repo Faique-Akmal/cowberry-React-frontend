@@ -13,7 +13,6 @@ export const exportUsersToExcel = async (users: User[], zones: Zone[]) => {
       const allocatedArea = getAllocatedArea(user, zones);
 
       return {
-        "Sr. No": index + 1,
         "Employee Code": user.employee_code || "N/A",
         "Full Name": user.full_name || user.name || "N/A",
         Username: user.username || "N/A",
@@ -24,7 +23,7 @@ export const exportUsersToExcel = async (users: User[], zones: Zone[]) => {
         "Zone Name": zoneDetails?.name || user.zoneName || "N/A",
         "Allocated Area": allocatedArea,
         "Mobile Number": user.mobileNo || "N/A",
-        Status: user.is_checkin ? "Online" : "Offline",
+
         "Date Joined": user.date
           ? new Date(user.date).toLocaleDateString()
           : "N/A",

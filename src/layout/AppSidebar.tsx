@@ -120,12 +120,12 @@ const AppSidebar: React.FC = () => {
       path: "/user-register",
       role: ["admin", "hr"],
     },
-    // {
-    //   icon: <MdOutlineAdd />,
-    //   name: t("Add Role"),
-    //   path: "/add-role",
-    //   role: ["admin", "hr"],
-    // },
+    {
+      icon: <MdOutlineAdd />,
+      name: t("Leaves Management"),
+      path: "/get-leaves",
+      role: ["admin", "hr", "manager", "zonalmanager"],
+    },
     // {
     //   icon: <MdOutlineAdd />,
     //   name: t("Add department"),

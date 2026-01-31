@@ -8,6 +8,11 @@ import {
   FaSpinner,
   FaMapMarkerAlt,
   FaSearch,
+  FaEnvelope,
+  FaIdBadge,
+  FaBriefcase,
+  FaCalendarAlt,
+  FaUsers,
 } from "react-icons/fa";
 import PageMeta from "../../components/common/PageMeta";
 import LoadingAnimation from "../UiElements/loadingAnimation";
@@ -35,6 +40,24 @@ interface Zone {
   description?: string;
 }
 
+interface Employee {
+  id: number;
+  fullName: string;
+  email: string;
+  employeeCode: string;
+  designation?: string | null;
+  mobileNo: string;
+  role: string;
+  department: string | { name: string };
+  zone?: {
+    id: number;
+    zoneId: string;
+    name: string;
+    area: string;
+    city: string;
+  } | null;
+}
+
 export default function RegisterUserForm() {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -45,10 +68,15 @@ export default function RegisterUserForm() {
     password: "",
     role: "",
     mobileNo: "",
+    designation: "",
+    joiningDate: "",
+    employmentType: "Permanent",
+    reporteeId: "",
+    hrManagerId: "",
     departmentId: "",
     address: "",
     allocatedArea: "",
-    zoneId: "", // Add this to store zoneId separately
+    zoneId: "",
     birthDate: "",
     profileImageUrl: "",
   });
@@ -57,16 +85,32 @@ export default function RegisterUserForm() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [filteredZones, setFilteredZones] = useState<Zone[]>([]);
+  const [reportees, setReportees] = useState<Employee[]>([]);
+  const [hrManagers, setHrManagers] = useState<Employee[]>([]);
+  const [filteredReportees, setFilteredReportees] = useState<Employee[]>([]);
+  const [filteredHrManagers, setFilteredHrManagers] = useState<Employee[]>([]);
   const [zoneSearch, setZoneSearch] = useState("");
+  const [reporteeSearch, setReporteeSearch] = useState("");
+  const [hrManagerSearch, setHrManagerSearch] = useState("");
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
+  const [showReporteeDropdown, setShowReporteeDropdown] = useState(false);
+  const [showHrManagerDropdown, setShowHrManagerDropdown] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoadingZones, setIsLoadingZones] = useState(false);
+  const [isLoadingReportees, setIsLoadingReportees] = useState(false);
+  const [isLoadingHrManagers, setIsLoadingHrManagers] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
+  const [selectedReportee, setSelectedReportee] = useState<Employee | null>(
+    null,
+  );
+  const [selectedHrManager, setSelectedHrManager] = useState<Employee | null>(
+    null,
+  );
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -84,7 +128,17 @@ export default function RegisterUserForm() {
   const userRole = currentUser?.role;
   const userDepartmentId = currentUser?.departmentId;
 
-  // Fetch departments, roles, and zones from API
+  // Employment type options
+  const employmentTypes = [
+    "Permanent",
+    "Contractual",
+    "Temporary",
+    "Intern",
+    "Freelance",
+    "Probation",
+  ];
+
+  // Fetch departments, roles, zones, reportees, and HR managers from API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -148,6 +202,10 @@ export default function RegisterUserForm() {
 
         // Fetch zones
         await fetchZones();
+
+        // Fetch reportees and HR managers
+        await fetchReportees();
+        await fetchHrManagers();
       } catch (error: any) {
         console.error("Error fetching data:", error);
         if (error.response?.status === 404) {
@@ -159,11 +217,13 @@ export default function RegisterUserForm() {
         } else if (error.message === "Network Error") {
           toast.error("Network error. Please check your connection.");
         } else {
-          toast.error("Failed to load departments and roles");
+          toast.error("Failed to load data");
         }
         setDepartments([]);
         setRoles([]);
         setZones([]);
+        setReportees([]);
+        setHrManagers([]);
       } finally {
         setIsLoadingData(false);
       }
@@ -231,6 +291,128 @@ export default function RegisterUserForm() {
     }
   };
 
+  // Function to fetch reportees
+  const fetchReportees = async () => {
+    try {
+      setIsLoadingReportees(true);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast.error("Authentication required to fetch reportees");
+        return;
+      }
+
+      const response = await API.get("/leaves/dropdown/reportees", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      let reporteesData: Employee[] = [];
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        reporteesData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        reporteesData = response.data;
+      }
+
+      const validReportees = reporteesData
+        .filter((emp: any) => emp && emp.id && emp.email && emp.fullName)
+        .map((emp: any) => ({
+          id: emp.id,
+          fullName: emp.fullName,
+          email: emp.email,
+          employeeCode: emp.employeeCode,
+          designation: emp.designation,
+          mobileNo: emp.mobileNo,
+          role: emp.role,
+          department:
+            typeof emp.department === "string"
+              ? emp.department
+              : emp.department?.name || "",
+          zone: emp.zone,
+        }));
+
+      setReportees(validReportees);
+      setFilteredReportees(validReportees);
+    } catch (error: any) {
+      console.error("Error fetching reportees:", error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        toast.error("Authentication required to access reportees");
+      } else if (error.response?.status === 404) {
+        toast.error("Reportees endpoint not found");
+      } else {
+        toast.error("Failed to load reportees");
+      }
+      setReportees([]);
+      setFilteredReportees([]);
+    } finally {
+      setIsLoadingReportees(false);
+    }
+  };
+
+  // Function to fetch HR managers
+  const fetchHrManagers = async () => {
+    try {
+      setIsLoadingHrManagers(true);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast.error("Authentication required to fetch HR managers");
+        return;
+      }
+
+      const response = await API.get("/leaves/dropdown/hr-managers", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      let hrManagersData: Employee[] = [];
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        hrManagersData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        hrManagersData = response.data;
+      }
+
+      const validHrManagers = hrManagersData
+        .filter((emp: any) => emp && emp.id && emp.email && emp.fullName)
+        .map((emp: any) => ({
+          id: emp.id,
+          fullName: emp.fullName,
+          email: emp.email,
+          employeeCode: emp.employeeCode,
+          designation: emp.designation,
+          mobileNo: emp.mobileNo,
+          role: emp.role || "HR Manager", // Default role for HR managers
+          department:
+            typeof emp.department === "string"
+              ? emp.department
+              : emp.department?.name || "",
+          zone: emp.zone,
+        }));
+
+      setHrManagers(validHrManagers);
+      setFilteredHrManagers(validHrManagers);
+    } catch (error: any) {
+      console.error("Error fetching HR managers:", error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        toast.error("Authentication required to access HR managers");
+      } else if (error.response?.status === 404) {
+        toast.error("HR managers endpoint not found");
+      } else {
+        toast.error("Failed to load HR managers");
+      }
+      setHrManagers([]);
+      setFilteredHrManagers([]);
+    } finally {
+      setIsLoadingHrManagers(false);
+    }
+  };
+
   // Filter zones based on search input
   useEffect(() => {
     if (zoneSearch.trim() === "") {
@@ -250,6 +432,38 @@ export default function RegisterUserForm() {
     }
   }, [zoneSearch, zones]);
 
+  // Filter reportees based on search input
+  useEffect(() => {
+    if (reporteeSearch.trim() === "") {
+      setFilteredReportees(reportees);
+    } else {
+      const filtered = reportees.filter(
+        (emp) =>
+          emp.email.toLowerCase().includes(reporteeSearch.toLowerCase()) ||
+          emp.fullName.toLowerCase().includes(reporteeSearch.toLowerCase()) ||
+          emp.employeeCode.toLowerCase().includes(reporteeSearch.toLowerCase()),
+      );
+      setFilteredReportees(filtered);
+    }
+  }, [reporteeSearch, reportees]);
+
+  // Filter HR managers based on search input
+  useEffect(() => {
+    if (hrManagerSearch.trim() === "") {
+      setFilteredHrManagers(hrManagers);
+    } else {
+      const filtered = hrManagers.filter(
+        (emp) =>
+          emp.email.toLowerCase().includes(hrManagerSearch.toLowerCase()) ||
+          emp.fullName.toLowerCase().includes(hrManagerSearch.toLowerCase()) ||
+          emp.employeeCode
+            .toLowerCase()
+            .includes(hrManagerSearch.toLowerCase()),
+      );
+      setFilteredHrManagers(filtered);
+    }
+  }, [hrManagerSearch, hrManagers]);
+
   // Handler for input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -263,17 +477,42 @@ export default function RegisterUserForm() {
 
   // Handler for zone selection
   const handleZoneSelect = (zone: Zone) => {
-    // Update form data with zoneId
     setFormData((prev) => ({
       ...prev,
-      zoneId: zone.zoneId, // Store zoneId for API submission
-      // Store zone name for display
+      zoneId: zone.zoneId,
     }));
-
-    // Update local state
     setSelectedZone(zone);
-    setZoneSearch(zone.name); // Display zone name in search box
+    setZoneSearch(zone.name);
     setShowZoneDropdown(false);
+  };
+
+  // Handler for reportee selection
+
+  const handleReporteeSelect = (employee: Employee) => {
+    console.log("Selected Reportee:", employee);
+    const newFormData = {
+      ...formData,
+      reporteeId: employee.id.toString(),
+    };
+    console.log("Updated form data with reportee:", newFormData);
+    setFormData(newFormData);
+    setSelectedReportee(employee);
+    setReporteeSearch(`${employee.email} (${employee.employeeCode})`);
+    setShowReporteeDropdown(false);
+  };
+
+  // Update the handler for HR manager selection
+  const handleHrManagerSelect = (employee: Employee) => {
+    console.log("Selected HR Manager:", employee);
+    const newFormData = {
+      ...formData,
+      hrManagerId: employee.id.toString(),
+    };
+    console.log("Updated form data with HR manager:", newFormData);
+    setFormData(newFormData);
+    setSelectedHrManager(employee);
+    setHrManagerSearch(`${employee.email} (${employee.employeeCode})`);
+    setShowHrManagerDropdown(false);
   };
 
   // Handler for zone search input change
@@ -281,7 +520,6 @@ export default function RegisterUserForm() {
     const value = e.target.value;
     setZoneSearch(value);
 
-    // Clear selection if search is changed
     if (value !== selectedZone?.name) {
       setSelectedZone(null);
       setFormData((prev) => ({
@@ -292,6 +530,51 @@ export default function RegisterUserForm() {
 
     if (!showZoneDropdown && value.trim() !== "") {
       setShowZoneDropdown(true);
+    }
+  };
+
+  // Handler for reportee search input change
+  const handleReporteeSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setReporteeSearch(value);
+
+    if (
+      value !== `${selectedReportee?.email} (${selectedReportee?.employeeCode})`
+    ) {
+      setSelectedReportee(null);
+      setFormData((prev) => ({
+        ...prev,
+        reporteeId: "",
+      }));
+    }
+
+    if (!showReporteeDropdown && value.trim() !== "") {
+      setShowReporteeDropdown(true);
+    }
+  };
+
+  // Handler for HR manager search input change
+  const handleHrManagerSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setHrManagerSearch(value);
+
+    if (
+      value !==
+      `${selectedHrManager?.email} (${selectedHrManager?.employeeCode})`
+    ) {
+      setSelectedHrManager(null);
+      setFormData((prev) => ({
+        ...prev,
+        hrManagerId: "",
+      }));
+    }
+
+    if (!showHrManagerDropdown && value.trim() !== "") {
+      setShowHrManagerDropdown(true);
     }
   };
 
@@ -306,58 +589,50 @@ export default function RegisterUserForm() {
     setShowZoneDropdown(false);
   };
 
-  // Handler for file upload
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error("File size too large. Maximum size is 5MB.");
-        return;
-      }
-
-      if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/)) {
-        toast.error(
-          "Invalid file type. Please upload an image (JPEG, PNG, GIF, WebP).",
-        );
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Image = e.target?.result as string;
-        setFormData((prev) => ({
-          ...prev,
-          profileImageUrl: base64Image,
-        }));
-        toast.success("Image uploaded successfully!");
-      };
-      reader.onerror = () => {
-        toast.error("Failed to read image file.");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handler for removing image
-  const handleImageChange = (value: string) => {
+  // Clear reportee selection
+  const clearReporteeSelection = () => {
     setFormData((prev) => ({
       ...prev,
-      profileImageUrl: value,
+      reporteeId: "",
     }));
-    if (!value) {
-      toast("Image removed", { icon: "🗑️" });
-    }
+    setSelectedReportee(null);
+    setReporteeSearch("");
+    setShowReporteeDropdown(false);
+  };
+
+  // Clear HR manager selection
+  const clearHrManagerSelection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      hrManagerId: "",
+    }));
+    setSelectedHrManager(null);
+    setHrManagerSearch("");
+    setShowHrManagerDropdown(false);
   };
 
   // Handler for form submission
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
     setIsError(false);
     setIsLoading(true);
+
+    // Debug: Log the form data before submission
+    console.log("Form data before submission:", formData);
+    console.log(
+      "Reportee ID:",
+      formData.reporteeId,
+      "Type:",
+      typeof formData.reporteeId,
+    );
+    console.log(
+      "HR Manager ID:",
+      formData.hrManagerId,
+      "Type:",
+      typeof formData.hrManagerId,
+    );
 
     // Basic validation
     if (
@@ -412,7 +687,7 @@ export default function RegisterUserForm() {
     }
 
     try {
-      // Prepare payload according to your API requirements
+      // Prepare payload according to new API requirements
       const payload = {
         username: formData.username.trim(),
         firstName: formData.firstName.trim(),
@@ -422,18 +697,23 @@ export default function RegisterUserForm() {
         password: formData.password,
         role: formData.role,
         mobileNo: formData.mobileNo || null,
+        designation: formData.designation || null,
+        joiningDate: formData.joiningDate || null,
+        employmentType: formData.employmentType,
+        reporteeId: formData.reporteeId ? parseInt(formData.reporteeId) : null,
+        hrManagerId: formData.hrManagerId
+          ? parseInt(formData.hrManagerId)
+          : null,
         departmentId: parseInt(formData.departmentId),
         address: formData.address || null,
-        allocatedArea: formData.allocatedArea || null, // Zone name
-        zoneId: formData.zoneId || null, // Zone ID for API
+        allocatedArea: formData.allocatedArea || null,
+        zoneId: formData.zoneId || null,
         birthDate: formData.birthDate || null,
         profileImageUrl: formData.profileImageUrl || null,
       };
 
-      // Remove allocatedArea if no zone is selected to match your API
-      if (!formData.zoneId) {
-        delete payload.zoneId;
-      }
+      // Debug: Log the payload before sending
+      console.log("Payload being sent:", payload);
 
       const response = await API.post("/auth/register", payload, {
         headers: {
@@ -450,23 +730,32 @@ export default function RegisterUserForm() {
 
         // Reset form
         setFormData({
-          username: "",
           firstName: "",
           lastName: "",
+          username: "",
           full_name: "",
           email: "",
           password: "",
           role: "",
           mobileNo: "",
+          designation: "",
+          joiningDate: "",
+          employmentType: "Permanent",
+          reporteeId: "",
+          hrManagerId: "",
           departmentId: "",
+          address: "",
           allocatedArea: "",
           zoneId: "",
-          address: "",
           birthDate: "",
           profileImageUrl: "",
         });
         setSelectedZone(null);
+        setSelectedReportee(null);
+        setSelectedHrManager(null);
         setZoneSearch("");
+        setReporteeSearch("");
+        setHrManagerSearch("");
         setShowUrlInput(false);
       }
     } catch (error: any) {
@@ -497,7 +786,7 @@ export default function RegisterUserForm() {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg backdrop-blur-2xl">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg backdrop-blur-2xl">
       <PageMeta
         title="Employee Registration"
         description="Register a new employee"
@@ -529,7 +818,7 @@ export default function RegisterUserForm() {
               <input
                 type="text"
                 name="firstName"
-                placeholder="Enter firstName"
+                placeholder="Enter first name"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
@@ -544,16 +833,14 @@ export default function RegisterUserForm() {
               <input
                 type="text"
                 name="lastName"
-                placeholder="Choose a lastName"
+                placeholder="Enter last name"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-2">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Full Name *
@@ -756,6 +1043,353 @@ export default function RegisterUserForm() {
           </div>
         </div>
 
+        {/* Employment Information Section */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
+            Employment Information
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900">
+                  <FaBriefcase className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Designation
+                </label>
+              </div>
+              <input
+                type="text"
+                name="designation"
+                placeholder="Enter designation"
+                value={formData.designation}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900">
+                  <FaCalendarAlt className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Joining Date
+                </label>
+              </div>
+              <input
+                type="date"
+                name="joiningDate"
+                value={formData.joiningDate}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900">
+                  <FaBriefcase className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Employment Type
+                </label>
+              </div>
+              <select
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              >
+                {employmentTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Reporting Structure Section */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
+            Reporting Structure
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Reportee Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Reportee
+                </label>
+                {isLoadingReportees && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <FaSpinner className="animate-spin" />
+                    Loading reportees...
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search for reportee by email or name..."
+                      value={reporteeSearch}
+                      onChange={handleReporteeSearchChange}
+                      onFocus={() => setShowReporteeDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {reporteeSearch && (
+                      <button
+                        type="button"
+                        onClick={clearReporteeSelection}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label="Clear selection"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fetchReportees()}
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2"
+                    title="Refresh reportees"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Hidden input to store reportee ID */}
+                <input
+                  type="hidden"
+                  name="reporteeId"
+                  value={formData.reporteeId}
+                />
+
+                {/* Reportee Dropdown */}
+                {showReporteeDropdown && filteredReportees.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredReportees.map((employee) => (
+                      <div
+                        key={employee.id}
+                        onClick={() => handleReporteeSelect(employee)}
+                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                            <FaEnvelope className="text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">
+                              {employee.fullName}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {employee.email}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center gap-2">
+                              <span className="flex items-center gap-1">
+                                <FaIdBadge className="w-3 h-3" />
+                                {employee.employeeCode}
+                              </span>
+                              <span>•</span>
+                              <span>{employee.department}</span>
+                              {employee.role && (
+                                <>
+                                  <span>•</span>
+                                  <span>{employee.role}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No reportees found message */}
+                {showReporteeDropdown &&
+                  reporteeSearch &&
+                  filteredReportees.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        No reportees found matching "{reporteeSearch}"
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {selectedReportee && (
+                <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <FaUsers />
+                  <span>
+                    Selected: {selectedReportee.fullName} (
+                    {selectedReportee.email}) - ID: {selectedReportee.id}
+                  </span>
+                </div>
+              )}
+
+              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                Search and select a reportee for the user
+              </p>
+            </div>
+
+            {/* HR Manager Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  HR Manager
+                </label>
+                {isLoadingHrManagers && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <FaSpinner className="animate-spin" />
+                    Loading HR managers...
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search for HR manager by email or name..."
+                      value={hrManagerSearch}
+                      onChange={handleHrManagerSearchChange}
+                      onFocus={() => setShowHrManagerDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {hrManagerSearch && (
+                      <button
+                        type="button"
+                        onClick={clearHrManagerSelection}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label="Clear selection"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fetchHrManagers()}
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2"
+                    title="Refresh HR managers"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Hidden input to store HR manager ID */}
+                <input
+                  type="hidden"
+                  name="hrManagerId"
+                  value={formData.hrManagerId}
+                />
+
+                {/* HR Manager Dropdown */}
+                {showHrManagerDropdown && filteredHrManagers.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredHrManagers.map((employee) => (
+                      <div
+                        key={employee.id}
+                        onClick={() => handleHrManagerSelect(employee)}
+                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                            <FaUsers className="text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">
+                              {employee.fullName}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {employee.email}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center gap-2">
+                              <span className="flex items-center gap-1">
+                                <FaIdBadge className="w-3 h-3" />
+                                {employee.employeeCode}
+                              </span>
+                              <span>•</span>
+                              <span>{employee.department}</span>
+                              {employee.role && (
+                                <>
+                                  <span>•</span>
+                                  <span>{employee.role}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No HR managers found message */}
+                {showHrManagerDropdown &&
+                  hrManagerSearch &&
+                  filteredHrManagers.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        No HR managers found matching "{hrManagerSearch}"
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {selectedHrManager && (
+                <div className="mt-2 text-sm text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                  <FaUsers />
+                  <span>
+                    Selected: {selectedHrManager.fullName} (
+                    {selectedHrManager.email}) - ID: {selectedHrManager.id}
+                  </span>
+                </div>
+              )}
+              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                Search and select an HR manager for the user
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Additional Information Section */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
@@ -819,7 +1453,7 @@ export default function RegisterUserForm() {
               />
             </div>
 
-            {/* Allocated Area with Zone Search */}
+            {/* Zone Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -940,118 +1574,9 @@ export default function RegisterUserForm() {
               )}
 
               <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-                Search and select a zone to allocate to this user. The zone name
-                will be displayed, but the Zone ID will be sent to the API.
+                Search and select a zone to allocate to this user
               </p>
             </div>
-
-            {/* Profile Image Section */}
-            {/* <div>
-              <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
-                Profile Image (Optional)
-              </label>
-
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              
-                {formData.profileImageUrl ? (
-                  <div className="relative">
-                    <img
-                      src={formData.profileImageUrl}
-                      alt="Profile preview"
-                      className="w-24 h-24 rounded-lg object-cover border border-gray-300 dark:border-gray-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleImageChange("")}
-                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <svg
-                      className="w-8 h-8 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                )}
-
-             
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <label className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors inline-flex items-center justify-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                      />
-                    </svg>
-                    <span>Upload Image</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowUrlInput(!showUrlInput)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors inline-flex items-center justify-center gap-2"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                      />
-                    </svg>
-                    <span>Enter URL</span>
-                  </button>
-                </div>
-              </div>
-
-           
-              {showUrlInput && (
-                <div className="mt-4">
-                  <input
-                    type="url"
-                    name="profileImageUrl"
-                    placeholder="https://example.com/profile.jpg"
-                    value={formData.profileImageUrl}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  />
-                </div>
-              )}
-
-              <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
-                Optional: Upload an image (max 5MB) or provide a URL
-              </p>
-            </div> */}
           </div>
         </div>
 

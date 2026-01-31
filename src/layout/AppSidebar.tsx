@@ -120,23 +120,35 @@ const AppSidebar: React.FC = () => {
       path: "/user-register",
       role: ["admin", "hr"],
     },
+    // {
+    //   icon: <MdOutlineAdd />,
+    //   name: t("Add Role"),
+    //   path: "/add-role",
+    //   role: ["admin", "hr"],
+    // },
+    // {
+    //   icon: <MdOutlineAdd />,
+    //   name: t("Add department"),
+    //   path: "/add-department",
+    // },
+    // {
+    //   icon: <MdOutlineAdd />,
+    //   name: t("Add Zones"),
+    //   path: "/add-zones",
+    //   role: ["admin", "hr"],
+    // },
     {
       icon: <MdOutlineAdd />,
-      name: t("Add Role"),
-      path: "/add-role",
-      role: ["admin", "hr"],
-    },
-    {
-      icon: <MdOutlineAdd />,
-      name: t("Add department"),
-      path: "/add-department",
-      role: ["admin", "hr"],
-    },
-    {
-      icon: <MdOutlineAdd />,
-      name: t("Add Zones"),
-      path: "/add-zones",
-      role: ["admin", "hr"],
+      name: t("Add / Manage"),
+      subItems: [
+        { name: t("Add Zones"), path: "/add-zones", role: ["admin", "hr"] },
+        {
+          name: t("Add department"),
+          path: "/add-department",
+          role: ["admin", "hr"],
+        },
+        { name: t("Add Role"), path: "/add-role", role: ["admin", "hr"] },
+      ],
     },
     {
       icon: <MdAnnouncement />,

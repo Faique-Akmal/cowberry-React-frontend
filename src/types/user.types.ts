@@ -12,6 +12,7 @@ export interface User {
   email: string;
   role: string;
   roleId: number;
+  reporteeId?: number;
   is_checkin: boolean;
   department: string;
   departmentId?: number;
@@ -81,6 +82,7 @@ export interface EditUserForm {
   mobileNo: string;
   address: string;
   birthDate: string;
+  reporteeId?: number;
   profileImageUrl: string;
   departmentId: number;
   departmentName: string;

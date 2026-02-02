@@ -161,3 +161,23 @@ export interface LeavesResponse {
     adminInfo: AdminInfo;
   };
 }
+
+export interface ApproveRejectLeaveRequest {
+  action: "APPROVE" | "REJECT";
+  comments: string;
+}
+
+export interface ApproveRejectLeaveResponse {
+  success: boolean;
+  message: string;
+  data: Leave;
+}
+
+export interface LocalStorageUser {
+  id: number;
+  role: string;
+  department?: string;
+  name?: string;
+  email?: string;
+  employeeCode?: string;
+}

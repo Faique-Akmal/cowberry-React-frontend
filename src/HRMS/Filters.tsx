@@ -74,7 +74,6 @@ const Filters: React.FC<FiltersProps> = ({
   const handleSearchApply = () => {
     console.log("Applying search:", tempSearch);
     onFilterChange("search", tempSearch);
-    onApplyFilters();
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -87,22 +86,12 @@ const Filters: React.FC<FiltersProps> = ({
     console.log("Clearing search");
     setTempSearch("");
     onFilterChange("search", "");
-    onApplyFilters();
   };
 
   // Sync tempSearch with filters.search when filters change externally
   useEffect(() => {
     setTempSearch(filters.search);
   }, [filters.search]);
-
-  // Debug log for search
-  useEffect(() => {
-    console.log("Search state:", {
-      tempSearch,
-      filtersSearch: filters.search,
-      shouldApply: tempSearch !== filters.search,
-    });
-  }, [tempSearch, filters.search]);
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -147,7 +136,7 @@ const Filters: React.FC<FiltersProps> = ({
               onClick={handleSearchApply}
               className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 whitespace-nowrap"
             >
-              Search
+              Apply Search
             </button>
           </div>
           <div className="text-xs text-gray-500 mt-1">
@@ -155,7 +144,7 @@ const Filters: React.FC<FiltersProps> = ({
           </div>
           {tempSearch && tempSearch !== filters.search && (
             <div className="text-xs text-yellow-600 mt-1">
-              Press Enter or click Search to apply
+              Note: Click "Apply All Filters" below to refresh results
             </div>
           )}
         </div>
@@ -170,7 +159,6 @@ const Filters: React.FC<FiltersProps> = ({
             onChange={(e) => {
               console.log("Status changed to:", e.target.value);
               onFilterChange("status", e.target.value);
-              onApplyFilters();
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
@@ -192,7 +180,6 @@ const Filters: React.FC<FiltersProps> = ({
             onChange={(e) => {
               console.log("Leave type changed to:", e.target.value);
               onFilterChange("leaveType", e.target.value);
-              onApplyFilters();
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
@@ -218,7 +205,6 @@ const Filters: React.FC<FiltersProps> = ({
                 value={filters.departmentId}
                 onChange={(e) => {
                   onFilterChange("departmentId", e.target.value);
-                  onApplyFilters();
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
@@ -241,7 +227,6 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.zoneId}
               onChange={(e) => {
                 onFilterChange("zoneId", e.target.value);
-                onApplyFilters();
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -263,7 +248,6 @@ const Filters: React.FC<FiltersProps> = ({
               value={filters.userId}
               onChange={(e) => {
                 onFilterChange("userId", e.target.value);
-                onApplyFilters();
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -287,7 +271,6 @@ const Filters: React.FC<FiltersProps> = ({
                 value={filters.startDate}
                 onChange={(e) => {
                   onFilterChange("startDate", e.target.value);
-                  onApplyFilters();
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -301,7 +284,6 @@ const Filters: React.FC<FiltersProps> = ({
                 value={filters.endDate}
                 onChange={(e) => {
                   onFilterChange("endDate", e.target.value);
-                  onApplyFilters();
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

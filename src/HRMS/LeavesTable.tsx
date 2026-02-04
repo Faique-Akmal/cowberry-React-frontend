@@ -10,6 +10,7 @@ interface LeavesTableProps {
     action: "APPROVE" | "REJECT",
     comments: string,
   ) => void;
+  managerDepartmentName?: string;
 }
 
 const LeavesTable: React.FC<LeavesTableProps> = ({
@@ -17,6 +18,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
   userRole,
   currentUserId,
   onApproveReject,
+  managerDepartmentName,
 }) => {
   const [selectedLeave, setSelectedLeave] = useState<number | null>(null);
   const [comments, setComments] = useState("");
@@ -103,21 +105,19 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
       hrStatus: leave.hrStatus,
       reporteeStatus: leave.reporteeStatus,
       userDepartment: leave.user?.department,
+      managerDepartmentName,
     });
 
-    // If userRole is not loaded yet, cannot take action
     if (!userRole || currentUserId === 0) {
       console.log("No user role or ID found:", { userRole, currentUserId });
       return false;
     }
 
-    if (userRole === "HR") {
-      // HR can approve any leave where HR status is pending
+    if (userRole.toLowerCase() === "hr") {
       const can = leave.hrStatus === "PENDING";
       console.log("HR can take action:", can);
       return can;
-    } else if (userRole === "ZONAL_MANAGER") {
-      // Zonal manager can only approve leaves where they are the reportee
+    } else if (userRole.toLowerCase() === "zonal_manager") {
       const can =
         leave.reporteeStatus === "PENDING" &&
         leave.reportee?.id === currentUserId;
@@ -127,12 +127,20 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
         currentUserId,
       });
       return can;
-    } else if (userRole === "MANAGER") {
-      // Manager can approve leaves where reportee status is pending
-      // Note: Department check is done in the API permission check in LeavesPage
-      const can = leave.reporteeStatus === "PENDING";
+    } else if (userRole.toLowerCase() === "manager") {
+      const isFromDepartment = managerDepartmentName
+        ? leave.user?.department === managerDepartmentName
+        : true;
+      const can =
+        leave.reporteeStatus === "PENDING" &&
+        leave.reportee?.id === currentUserId &&
+        isFromDepartment;
       console.log("MANAGER can take action:", can, {
         reporteeStatus: leave.reporteeStatus,
+        isFromDepartment,
+        managerDepartmentName,
+        leaveDepartment: leave.user?.department,
+        isReportee: leave.reportee?.id === currentUserId,
       });
       return can;
     }
@@ -184,6 +192,10 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                           <div className="text-xs text-gray-400">
                             {leave.user?.department || "N/A"} •{" "}
                             {leave.user?.zone || "N/A"}
+                          </div>
+                          <div className="text-xs text-blue-600 mt-1">
+                            Reportee: {leave.reportee?.name || "N/A"} (
+                            {leave.reportee?.employeeCode || "N/A"})
                           </div>
                         </div>
                       </div>
@@ -264,16 +276,6 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                           }`}
                         >
                           Reject
-                        </button>
-                        <button
-                          className="px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                          onClick={() => {
-                            console.log("View details for leave:", leave);
-                            // You can add a view details modal or page navigation here
-                            alert(`Viewing details for leave ID: ${leave.id}`);
-                          }}
-                        >
-                          View Details
                         </button>
                       </div>
                     </td>

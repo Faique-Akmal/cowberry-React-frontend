@@ -58,8 +58,8 @@ const LeavesPage: React.FC = () => {
     const userRole = localStorage.getItem("userRole");
     const userId = localStorage.getItem("userId");
     const userName = localStorage.getItem("userName");
-    const userDepartment = localStorage.getItem("userDepartment");
-    const userEmployeeCode = localStorage.getItem("userEmployeeCode");
+    const userDepartment = localStorage.getItem("department");
+    const userEmployeeCode = localStorage.getItem("employee_code");
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -89,7 +89,7 @@ const LeavesPage: React.FC = () => {
       setUserData(userData);
 
       // Store manager's department name directly
-      if (userRole === "MANAGER" && userDepartment) {
+      if (userRole.toLowerCase() === "manager" && userDepartment) {
         setManagerDepartmentName(userDepartment);
         console.log("Manager's department from localStorage:", userDepartment);
       }
@@ -114,13 +114,12 @@ const LeavesPage: React.FC = () => {
     }
   }, [pagination.currentPage]);
 
-  // Fetch leaves when filters change
+  // Fetch leaves when filters change - with debouncing
   useEffect(() => {
     if (userData && !initialLoadRef.current) {
-      // Debounce to prevent too many API calls
       const timeoutId = setTimeout(() => {
         fetchLeaves();
-      }, 300);
+      }, 500);
 
       return () => clearTimeout(timeoutId);
     }
@@ -153,10 +152,10 @@ const LeavesPage: React.FC = () => {
       if (filters.leaveType) params.leaveType = filters.leaveType;
       if (filters.search) params.search = filters.search;
       if (filters.departmentId)
-        params.departmentId = Number(filters.departmentId); // Convert to number if needed
-      if (filters.zoneId) params.zoneId = Number(filters.zoneId); // Convert to number if needed
-      if (filters.userId) params.userId = Number(filters.userId); // Convert to number if needed
-      if (filters.year) params.year = Number(filters.year); // Convert to number if needed
+        params.departmentId = Number(filters.departmentId);
+      if (filters.zoneId) params.zoneId = Number(filters.zoneId);
+      if (filters.userId) params.userId = Number(filters.userId);
+      if (filters.year) params.year = Number(filters.year);
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
@@ -167,30 +166,20 @@ const LeavesPage: React.FC = () => {
         managerDepartmentName,
       );
 
-      // ========== IMPORTANT: For Manager and Zonal Manager, filter by reportee ID ==========
-      if (userData.role === "MANAGER" || userData.role === "ZONAL_MANAGER") {
-        // Always filter by reportee ID for both roles
-        params.reporteeId = userData.id;
-        console.log("Filtering leaves by reportee ID:", userData.id);
+      if (userData.role === "MANAGER") {
+        console.log("Manager filtering by department:", managerDepartmentName);
 
-        // For manager, also filter by department if available
-        if (userData.role === "MANAGER" && managerDepartmentName) {
+        if (managerDepartmentName) {
           params.departmentName = managerDepartmentName;
-          console.log(
-            "Manager also filtering by department:",
-            managerDepartmentName,
-          );
         }
+      } else if (userData.role === "ZONAL_MANAGER") {
+        console.log("Zonal manager filtering - they should be the reportee");
       }
 
       console.log(
         "Fetching leaves with params:",
         JSON.stringify(params, null, 2),
       );
-
-      // Log the full request URL for debugging
-      const fullUrl = `/leaves/admin/all-leaves?${new URLSearchParams(params).toString()}`;
-      console.log("Full URL:", fullUrl);
 
       try {
         const response = await API.get<LeavesResponse>(
@@ -200,14 +189,13 @@ const LeavesPage: React.FC = () => {
               Authorization: `Bearer ${token}`,
             },
             params,
-            // Add timeout and error handling
-            timeout: 30000, // 30 seconds timeout
+            timeout: 30000,
           },
         );
 
         if (response.data.success) {
           let fetchedLeaves = response.data.data.leaves;
-          console.log("Leaves fetched:", fetchedLeaves.length);
+          console.log("Total leaves fetched from API:", fetchedLeaves.length);
 
           // Ensure statistics object exists with defaults
           const defaultStatistics = {
@@ -222,49 +210,80 @@ const LeavesPage: React.FC = () => {
           let statisticsData =
             response.data.data.statistics || defaultStatistics;
 
-          // ========== CRITICAL FIX: Additional frontend filtering ==========
-          if (
-            userData.role === "MANAGER" ||
-            userData.role === "ZONAL_MANAGER"
-          ) {
-            // Filter leaves where the current user is the reportee
+          // ========== CRITICAL FIX: Frontend filtering for managers ==========
+          if (userData.role === "MANAGER") {
+            // Manager should see leaves where:
+            // 1. They are the reportee of the employee
+            // 2. Leave is from their department
+            // 3. Reportee status is pending
             const filteredLeaves = fetchedLeaves.filter((leave) => {
+              // Check if manager is the reportee
               const isReportee = leave.reportee?.id === userData.id;
-              console.log(
-                `Leave ${leave.id}: Reportee ID=${leave.reportee?.id}, Is Reportee=${isReportee}`,
-              );
-              return isReportee;
+
+              // Check if leave is from manager's department
+              const isFromDepartment = managerDepartmentName
+                ? leave.user?.department === managerDepartmentName
+                : true;
+
+              // Check if manager needs to take action
+              const needsAction = leave.reporteeStatus === "PENDING";
+
+              const shouldShow = isReportee && isFromDepartment && needsAction;
+
+              if (shouldShow) {
+                console.log(`Manager can see leave ${leave.id}:`, {
+                  employee: leave.user?.name,
+                  department: leave.user?.department,
+                  reportee: leave.reportee?.name,
+                  reporteeStatus: leave.reporteeStatus,
+                });
+              }
+
+              return shouldShow;
             });
 
             console.log(
-              `After reportee filtering: ${filteredLeaves.length} leaves where user is reportee`,
+              `After manager filtering: ${filteredLeaves.length} leaves where user is reportee for ${managerDepartmentName} department pending approval`,
             );
 
-            // For manager, also filter by department
-            if (userData.role === "MANAGER" && managerDepartmentName) {
-              const departmentFilteredLeaves = filteredLeaves.filter(
-                (leave) => {
-                  const employeeDepartment = leave.user?.department;
-                  return employeeDepartment === managerDepartmentName;
-                },
-              );
-              console.log(
-                `After department filtering: ${departmentFilteredLeaves.length} leaves from ${managerDepartmentName} department`,
-              );
-              setLeaves(departmentFilteredLeaves);
-            } else {
-              setLeaves(filteredLeaves);
-            }
+            setLeaves(filteredLeaves);
 
-            // Update statistics with filtered data
+            // Update statistics based on filtered leaves
             statisticsData = {
               ...statisticsData,
-              total:
-                userData.role === "MANAGER" && managerDepartmentName
-                  ? filteredLeaves.filter(
-                      (l) => l.user?.department === managerDepartmentName,
-                    ).length
-                  : filteredLeaves.length,
+              total: filteredLeaves.length,
+            };
+          } else if (userData.role === "ZONAL_MANAGER") {
+            // Zonal manager should see leaves where:
+            // 1. They are the reportee of the employee
+            // 2. Reportee status is pending
+            const filteredLeaves = fetchedLeaves.filter((leave) => {
+              const isReportee = leave.reportee?.id === userData.id;
+              const needsAction = leave.reporteeStatus === "PENDING";
+
+              const shouldShow = isReportee && needsAction;
+
+              if (shouldShow) {
+                console.log(`Zonal Manager can see leave ${leave.id}:`, {
+                  employee: leave.user?.name,
+                  reportee: leave.reportee?.name,
+                  reporteeStatus: leave.reporteeStatus,
+                });
+              }
+
+              return shouldShow;
+            });
+
+            console.log(
+              `After zonal manager filtering: ${filteredLeaves.length} leaves where user is reportee and pending approval`,
+            );
+
+            setLeaves(filteredLeaves);
+
+            // Update statistics
+            statisticsData = {
+              ...statisticsData,
+              total: filteredLeaves.length,
             };
           } else {
             // HR can see all leaves without filtering
@@ -287,20 +306,12 @@ const LeavesPage: React.FC = () => {
           );
           setError(null);
         } else {
-          // Handle API success: false case
           setError(response.data.message || "Failed to fetch leaves");
         }
       } catch (apiError: any) {
-        // Handle API-specific errors
         console.error("API Error details:", apiError);
 
         if (apiError.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.error("API Error Response:", apiError.response.data);
-          console.error("API Error Status:", apiError.response.status);
-          console.error("API Error Headers:", apiError.response.headers);
-
           if (apiError.response.status === 401) {
             setError("Authentication failed. Please log in again.");
           } else if (apiError.response.status === 403) {
@@ -317,17 +328,14 @@ const LeavesPage: React.FC = () => {
             );
           }
         } else if (apiError.request) {
-          // The request was made but no response was received
           console.error("No response received:", apiError.request);
           setError("No response from server. Please check your connection.");
         } else {
-          // Something happened in setting up the request that triggered an Error
           console.error("Error setting up request:", apiError.message);
           setError(`Request error: ${apiError.message}`);
         }
       }
     } catch (err: any) {
-      // Catch any unexpected errors
       console.error("Unexpected error in fetchLeaves:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
@@ -340,7 +348,6 @@ const LeavesPage: React.FC = () => {
       ...prev,
       [key]: value,
     }));
-    // Reset to page 1 when filter changes
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
 
@@ -382,48 +389,99 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Authorization check
+      // Authorization check - FIXED LOGIC
       let hasPermission = false;
       let statusToCheck = "";
       let permissionMessage = "";
 
-      if (userData.role === "HR") {
+      // Normalize the role for comparison
+      const userRole = userData.role?.toUpperCase() || "";
+
+      console.log("Authorization check:", {
+        originalRole: userData.role,
+        normalizedRole: userRole,
+        userId: userData.id,
+        managerDepartmentName: managerDepartmentName,
+        leaveReporteeId: leave.reportee?.id,
+        leaveUserId: leave.user?.id,
+        hrStatus: leave.hrStatus,
+        reporteeStatus: leave.reporteeStatus,
+        leaveDepartment: leave.user?.department,
+      });
+
+      if (userRole === "HR") {
+        // HR can approve any leave where HR status is pending
         hasPermission = leave.hrStatus === "PENDING";
         statusToCheck = "HR";
         permissionMessage = "HR can approve any pending leave";
-      } else if (userData.role === "MANAGER") {
-        // Check if employee is in manager's department AND manager is their reportee
-        const isSameDepartment =
-          leave.user?.department === managerDepartmentName;
-        const isReportee = leave.reportee?.id === userData.id;
-        const isPending = leave.reporteeStatus === "PENDING";
 
-        hasPermission = isSameDepartment && isReportee && isPending;
-        statusToCheck = "Reportee";
+        console.log("HR permission check:", {
+          hasPermission,
+          hrStatus: leave.hrStatus,
+        });
+      } else if (userRole === "MANAGER") {
+        // FIX: Check if managerDepartmentName is loaded
+        if (!managerDepartmentName) {
+          permissionMessage =
+            "Manager department not loaded. Please refresh the page.";
+          console.error("Manager department name is empty!");
+        } else {
+          const isReportee = leave.reportee?.id === userData.id;
+          const isSameDepartment =
+            leave.user?.department === managerDepartmentName;
+          const isPending = leave.reporteeStatus === "PENDING";
 
-        if (!isSameDepartment) {
-          permissionMessage = `Manager can only approve leaves from ${managerDepartmentName} department. This leave is from ${leave.user?.department || "unknown"} department.`;
-        } else if (!isReportee) {
-          permissionMessage =
-            "Manager can only approve leaves where they are the direct reportee.";
-        } else if (!isPending) {
-          permissionMessage =
-            "This leave is not pending for reportee approval.";
+          hasPermission = isReportee && isSameDepartment && isPending;
+          statusToCheck = "Reportee";
+
+          console.log("Manager permission check:", {
+            isReportee,
+            isSameDepartment,
+            isPending,
+            hasPermission,
+            managerId: userData.id,
+            leaveReporteeId: leave.reportee?.id,
+            leaveDepartment: leave.user?.department,
+            managerDepartment: managerDepartmentName,
+          });
+
+          if (!isReportee) {
+            permissionMessage = `You are not the reportee for this employee. Reportee is: ${leave.reportee?.name || "Unknown"}`;
+          } else if (!isSameDepartment) {
+            permissionMessage = `Manager can only approve leaves from ${managerDepartmentName} department. This leave is from ${leave.user?.department || "unknown"} department.`;
+          } else if (!isPending) {
+            permissionMessage =
+              "This leave is not pending for reportee approval.";
+          }
         }
-      } else if (userData.role === "ZONAL_MANAGER") {
+      } else if (userRole === "ZONAL_MANAGER") {
+        // Zonal manager can approve leaves where:
+        // 1. They are the reportee of the employee
+        // 2. Reportee status is pending
+
         const isReportee = leave.reportee?.id === userData.id;
         const isPending = leave.reporteeStatus === "PENDING";
+
         hasPermission = isReportee && isPending;
         statusToCheck = "Reportee";
 
+        console.log("Zonal Manager permission check:", {
+          isReportee,
+          isPending,
+          hasPermission,
+          zonalManagerId: userData.id,
+          leaveReporteeId: leave.reportee?.id,
+        });
+
         if (!isReportee) {
-          permissionMessage = `Zonal manager can only approve leaves where they are the reportee (ID: ${userData.id})`;
+          permissionMessage = `You are not the reportee for this employee. Reportee is: ${leave.reportee?.name || "Unknown"}`;
         } else if (!isPending) {
           permissionMessage =
             "This leave is not pending for reportee approval.";
         }
       } else {
         permissionMessage = `Unknown role: ${userData.role}`;
+        console.log("Unknown role:", userData.role);
       }
 
       if (!hasPermission) {
@@ -448,6 +506,12 @@ const LeavesPage: React.FC = () => {
         );
         return;
       }
+
+      console.log("Sending approval/reject request:", {
+        leaveId,
+        action,
+        comments,
+      });
 
       const response = await API.put(
         `/leaves/approve-reject/${leaveId}`,
@@ -506,13 +570,13 @@ const LeavesPage: React.FC = () => {
   const getDisplayTitle = () => {
     if (userData?.role === "HR") {
       return "View and manage all leaves";
-    } else if (userData?.role === "MANAGER") {
+    } else if (userData?.role === "Manager") {
       if (managerDepartmentName) {
-        return `Viewing leaves for your reportees in ${managerDepartmentName} department`;
+        return `Viewing pending leaves for approval in ${managerDepartmentName} department where you are the reportee`;
       }
-      return "Viewing leaves for your reportees";
+      return "Viewing pending leaves for your approval";
     } else if (userData?.role === "ZONAL_MANAGER") {
-      return "Viewing leaves for your reportees";
+      return "Viewing pending leaves where you are the reportee";
     }
     return "View leaves";
   };
@@ -565,7 +629,9 @@ const LeavesPage: React.FC = () => {
         {(userData?.role === "MANAGER" ||
           userData?.role === "ZONAL_MANAGER") && (
           <div className="mt-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded inline-block">
-            Reportee Restricted: Only showing leaves where you are the reportee
+            {userData?.role === "MANAGER"
+              ? "Department & Reportee Restricted: Only showing pending leaves from your department where you are the reportee"
+              : "Reportee Restricted: Only showing pending leaves where you are the reportee"}
           </div>
         )}
 
@@ -605,7 +671,11 @@ const LeavesPage: React.FC = () => {
           {(userData?.role === "MANAGER" ||
             userData?.role === "ZONAL_MANAGER") && (
             <span className="ml-4 text-blue-600">
-              (Filtered to your reportees)
+              (
+              {userData?.role === "MANAGER"
+                ? "From your department where you are reportee"
+                : "Where you are reportee"}
+              )
             </span>
           )}
           {userData?.role === "MANAGER" && managerDepartmentName && (

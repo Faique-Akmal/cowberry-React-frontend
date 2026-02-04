@@ -40,6 +40,7 @@ import PrivacyPolicy from "./Privacy-policy/PrivacyPolicy";
 import AddRoleForm from "./admin/pages/AddRoles";
 import DepartmentManagement from "./admin/pages/AddDepartment";
 import CreateZonePage from "./components/hr/CreateZone";
+import LeavesPage from "./HRMS/LeavesPage";
 
 export default function App() {
   return (
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/add-department" element={<DepartmentManagement />} />
 
           <Route path="/user-register" element={<RegistrationPage />} />
+          <Route path="/get-leaves" element={<LeavesPage />} />
           <Route
             path="/employeecheckin"
             element={

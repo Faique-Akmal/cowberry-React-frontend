@@ -1,6 +1,7 @@
 export interface User {
   id: number;
   name: string;
+  fullName: string;
   email: string;
   employeeCode: string;
   designation: string;
@@ -35,6 +36,9 @@ export interface Leave {
   status: string;
   reporteeStatus: string;
   hrStatus: string;
+  reporteeId: number;
+
+  hrManagerId: number;
   reporteeComments: string | null;
   hrComments: string | null;
   reporteeActionAt: string | null;
@@ -47,6 +51,7 @@ export interface Leave {
   reportee: {
     id: number;
     name: string;
+
     email: string;
     employeeCode: string;
     designation: string;

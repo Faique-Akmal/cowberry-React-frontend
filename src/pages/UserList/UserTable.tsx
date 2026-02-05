@@ -40,13 +40,9 @@ const UserTable: React.FC<UserTableProps> = ({
     return true; // Default to viewing all users
   };
 
-  const defaultHandleRowClick = (user: User): void => {
-    console.log("User clicked:", user);
-  };
+  const defaultHandleRowClick = (user: User): void => {};
 
-  const defaultToggleSortOrder = (): void => {
-    console.log("Toggle sort order");
-  };
+  const defaultToggleSortOrder = (): void => {};
 
   const defaultGetUserKey = (user: User, index: number): string => {
     const userId = user.id || user.userId;

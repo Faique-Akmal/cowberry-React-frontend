@@ -373,7 +373,6 @@ const CreateZonePage: React.FC = () => {
 
   const handleEditZone = (zone: ZoneItem) => {
     // Implement edit functionality
-    console.log("Edit zone:", zone);
   };
 
   return (

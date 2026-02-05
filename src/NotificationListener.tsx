@@ -16,9 +16,7 @@ const NotificationListener = () => {
 
     const socket = new WebSocket(socketUrl);
 
-    socket.onopen = () => {
-      // console.log("✅ WebSocket connection established.");
-    };
+    socket.onopen = () => {};
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

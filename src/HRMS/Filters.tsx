@@ -72,7 +72,6 @@ const Filters: React.FC<FiltersProps> = ({
   }, [users, userRole, filters.departmentId, departments]);
 
   const handleSearchApply = () => {
-    console.log("Applying search:", tempSearch);
     onFilterChange("search", tempSearch);
   };
 
@@ -83,7 +82,6 @@ const Filters: React.FC<FiltersProps> = ({
   };
 
   const handleSearchClear = () => {
-    console.log("Clearing search");
     setTempSearch("");
     onFilterChange("search", "");
   };
@@ -157,7 +155,6 @@ const Filters: React.FC<FiltersProps> = ({
           <select
             value={filters.status}
             onChange={(e) => {
-              console.log("Status changed to:", e.target.value);
               onFilterChange("status", e.target.value);
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -178,7 +175,6 @@ const Filters: React.FC<FiltersProps> = ({
           <select
             value={filters.leaveType}
             onChange={(e) => {
-              console.log("Leave type changed to:", e.target.value);
               onFilterChange("leaveType", e.target.value);
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

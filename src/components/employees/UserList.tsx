@@ -495,6 +495,7 @@ const UserList: React.FC = () => {
           profileImageUrl:
             userData.profileImageUrl || userData.profile_image || "",
           departmentId: departmentId,
+          HRMANAGERId: userData.hrManagerId || 0,
           departmentName: departmentName,
           roleId: roleId,
           roleName: roleName,
@@ -658,6 +659,8 @@ const UserList: React.FC = () => {
         zoneId: editForm.zoneDatabaseId || null, // Send the integer zone database ID - CORRECT
         birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
+        hrManagerId: editForm.hrManagerId,
+        reporteeId: editForm.reporteeId,
         departmentId: Number(editForm.departmentId) || null,
         roleId: Number(editForm.roleId) || null,
       };
@@ -682,8 +685,6 @@ const UserList: React.FC = () => {
           updateData.zoneId = null;
         }
       }
-
-      console.log("Updating user with data:", updateData);
 
       const response = await API.put(
         `/admin/usersUpdate/${userId}`,
@@ -719,8 +720,6 @@ const UserList: React.FC = () => {
 
   // Function to export users to Excel
   const exportToExcel = async () => {
-    console.log("Export clicked - filteredUsers length:", filteredUsers.length);
-
     try {
       setExporting(true);
       const usersToExport = filteredUsers;
@@ -738,8 +737,6 @@ const UserList: React.FC = () => {
 
       // Call the export function with both users and zones
       const fileName = await exportUsersToExcel(usersToExport, zones);
-
-      console.log(`Exported ${usersToExport.length} users to ${fileName}`);
     } catch (error: any) {
       console.error("Error exporting to Excel:", error);
       alert(`Failed to export users: ${error.message || "Please try again."}`);
@@ -848,9 +845,9 @@ const UserList: React.FC = () => {
             onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             exportToExcel={exportToExcel}
+            filteredUsersLength={filteredUsers.length}
             exporting={exporting}
             onExport={exportToExcel}
-            filteredUsersLength={filteredUsers.length}
             paginatedUsersLength={paginatedUsers.length}
             currentPage={currentPage}
             totalPages={totalPages}

@@ -43,8 +43,39 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ statistics }) => {
   const safeCurrentYear = statistics.currentYear || {
     pending: { count: 0, totalDays: 0 },
   };
+
+  // Ensure byStatus and byType are properly formatted
   const safeByStatus = statistics.byStatus || {};
   const safeByType = statistics.byType || {};
+
+  // Function to safely get status display name
+  const getStatusDisplayName = (status: any): string => {
+    if (typeof status === "string") return status;
+    if (status && typeof status === "object" && "name" in status) {
+      return String(status.name);
+    }
+    return String(status);
+  };
+
+  // Function to safely get type display name
+  const getTypeDisplayName = (type: any): string => {
+    if (typeof type === "string") return type;
+    if (type && typeof type === "object" && "name" in type) {
+      return String(type.name);
+    }
+    return String(type);
+  };
+
+  // Function to safely get count and days
+  const getCountAndDays = (data: any) => {
+    if (data && typeof data === "object") {
+      return {
+        count: data.count || 0,
+        totalDays: data.totalDays || 0,
+      };
+    }
+    return { count: 0, totalDays: 0 };
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -78,21 +109,29 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ statistics }) => {
         <h3 className="text-lg font-semibold text-gray-700 mb-2">By Status</h3>
         <div className="space-y-2">
           {Object.entries(safeByStatus).length > 0 ? (
-            Object.entries(safeByStatus).map(([status, data]) => (
-              <div key={status} className="flex justify-between items-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${statusColors[status] || "bg-gray-100 text-gray-800"}`}
+            Object.entries(safeByStatus).map(([statusKey, data]) => {
+              const displayName = getStatusDisplayName(statusKey);
+              const { count, totalDays } = getCountAndDays(data);
+
+              return (
+                <div
+                  key={displayName}
+                  className="flex justify-between items-center"
                 >
-                  {status}
-                </span>
-                <div className="text-right">
-                  <div className="font-medium">{data?.count || 0}</div>
-                  <div className="text-xs text-gray-600">
-                    {data?.totalDays || 0} days
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${statusColors[displayName] || "bg-gray-100 text-gray-800"}`}
+                  >
+                    {displayName}
+                  </span>
+                  <div className="text-right">
+                    <div className="font-medium">{count}</div>
+                    <div className="text-xs text-gray-600">
+                      {totalDays} days
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center text-gray-500 text-sm py-2">
               No status data available
@@ -105,21 +144,29 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ statistics }) => {
         <h3 className="text-lg font-semibold text-gray-700 mb-2">By Type</h3>
         <div className="space-y-2">
           {Object.entries(safeByType).length > 0 ? (
-            Object.entries(safeByType).map(([type, data]) => (
-              <div key={type} className="flex justify-between items-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${typeColors[type] || "bg-gray-100 text-gray-800"}`}
+            Object.entries(safeByType).map(([typeKey, data]) => {
+              const displayName = getTypeDisplayName(typeKey);
+              const { count, totalDays } = getCountAndDays(data);
+
+              return (
+                <div
+                  key={displayName}
+                  className="flex justify-between items-center"
                 >
-                  {type}
-                </span>
-                <div className="text-right">
-                  <div className="font-medium">{data?.count || 0}</div>
-                  <div className="text-xs text-gray-600">
-                    {data?.totalDays || 0} days
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${typeColors[displayName] || "bg-gray-100 text-gray-800"}`}
+                  >
+                    {displayName}
+                  </span>
+                  <div className="text-right">
+                    <div className="font-medium">{count}</div>
+                    <div className="text-xs text-gray-600">
+                      {totalDays} days
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center text-gray-500 text-sm py-2">
               No type data available

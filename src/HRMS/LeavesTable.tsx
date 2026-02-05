@@ -97,17 +97,6 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
   };
 
   const canTakeAction = (leave: Leave) => {
-    console.log("Checking canTakeAction for leave:", {
-      leaveId: leave.id,
-      userRole,
-      currentUserId,
-      reporteeId: leave.reportee?.id,
-      hrStatus: leave.hrStatus,
-      reporteeStatus: leave.reporteeStatus,
-      userDepartment: leave.user?.department,
-      managerDepartmentName,
-    });
-
     if (!userRole || currentUserId === 0) {
       console.log("No user role or ID found:", { userRole, currentUserId });
       return false;
@@ -117,15 +106,18 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
       const can = leave.hrStatus === "PENDING";
       console.log("HR can take action:", can);
       return can;
-    } else if (userRole.toLowerCase() === "zonal_manager") {
+    } else if (userRole.toLowerCase() === "zonalmanager") {
       const can =
         leave.reporteeStatus === "PENDING" &&
-        leave.reportee?.id === currentUserId;
-      console.log("ZONAL_MANAGER can take action:", can, {
+        (leave.reportee?.id === currentUserId ||
+          leave.reporteeId === currentUserId);
+      console.log("Zonal Manager can take action:", can, {
         reporteeStatus: leave.reporteeStatus,
-        reporteeId: leave.reportee?.id,
-        currentUserId,
+        isReportee:
+          leave.reportee?.id === currentUserId ||
+          leave.reporteeId === currentUserId,
       });
+
       return can;
     } else if (userRole.toLowerCase() === "manager") {
       const isFromDepartment = managerDepartmentName
@@ -133,7 +125,8 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
         : true;
       const can =
         leave.reporteeStatus === "PENDING" &&
-        leave.reportee?.id === currentUserId &&
+        (leave.reportee?.id === currentUserId ||
+          leave.reporteeId === currentUserId) &&
         isFromDepartment;
       console.log("MANAGER can take action:", can, {
         reporteeStatus: leave.reporteeStatus,
@@ -147,6 +140,66 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
 
     console.log("Default: cannot take action - unknown role:", userRole);
     return false;
+  };
+
+  // Helper function to safely get display name
+  const getDisplayName = (item: any): string => {
+    if (!item) return "N/A";
+    if (typeof item === "string") return item;
+    if (typeof item === "object" && item !== null) {
+      // Check if it's a user object with name property
+      if ("name" in item && typeof item.name === "string") {
+        return item.name;
+      }
+      // If it's an object without name, stringify it for debugging
+      console.warn("Unexpected object structure:", item);
+      return String(item);
+    }
+    return String(item);
+  };
+
+  // Helper function to safely get employee code
+  const getEmployeeCode = (item: any): string => {
+    if (!item) return "N/A";
+    if (typeof item === "object" && item !== null) {
+      if ("employeeCode" in item && typeof item.employeeCode === "string") {
+        return item.employeeCode;
+      }
+    }
+    return "N/A";
+  };
+
+  // Helper function to safely get designation
+  const getDesignation = (item: any): string => {
+    if (!item) return "N/A";
+    if (typeof item === "object" && item !== null) {
+      if ("designation" in item && typeof item.designation === "string") {
+        return item.designation;
+      }
+    }
+    return "N/A";
+  };
+
+  // Helper function to safely get department
+  const getDepartment = (item: any): string => {
+    if (!item) return "N/A";
+    if (typeof item === "object" && item !== null) {
+      if ("department" in item && typeof item.department === "string") {
+        return item.department;
+      }
+    }
+    return "N/A";
+  };
+
+  // Helper function to safely get zone
+  const getZone = (item: any): string => {
+    if (!item) return "N/A";
+    if (typeof item === "object" && item !== null) {
+      if ("zone" in item && typeof item.zone === "string") {
+        return item.zone;
+      }
+    }
+    return "N/A";
   };
 
   return (
@@ -175,27 +228,38 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                 const canAction = canTakeAction(leave);
                 console.log(`Leave ${leave.id} canAction:`, canAction);
 
+                // Safely extract user info
+                const userName = getDisplayName(
+                  leave.user.fullName || leave.user,
+                );
+                const userEmployeeCode = getEmployeeCode(leave.user);
+                const userDesignation = getDesignation(leave.user);
+                const userDepartment = getDepartment(leave.user);
+                const userZone = getZone(leave.user);
+
+                // Safely extract reportee info
+                const reporteeName = getDisplayName(leave.reportee);
+                const reporteeEmployeeCode = getEmployeeCode(leave.reportee);
+
                 return (
                   <tr key={leave.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {leave.user?.name || "N/A"}
+                            {userName}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {leave.user?.employeeCode || "N/A"}
+                            {userEmployeeCode}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {leave.user?.designation || "N/A"}
+                            {userDesignation}
                           </div>
                           <div className="text-xs text-gray-400">
-                            {leave.user?.department || "N/A"} •{" "}
-                            {leave.user?.zone || "N/A"}
+                            {userDepartment} • {userZone}
                           </div>
                           <div className="text-xs text-blue-600 mt-1">
-                            Reportee: {leave.reportee?.name || "N/A"} (
-                            {leave.reportee?.employeeCode || "N/A"})
+                            Reportee: {reporteeName} ({reporteeEmployeeCode})
                           </div>
                         </div>
                       </div>

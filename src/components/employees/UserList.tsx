@@ -845,9 +845,9 @@ const UserList: React.FC = () => {
             onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             exportToExcel={exportToExcel}
+            filteredUsersLength={filteredUsers.length}
             exporting={exporting}
             onExport={exportToExcel}
-            filteredUsersLength={filteredUsers.length}
             paginatedUsersLength={paginatedUsers.length}
             currentPage={currentPage}
             totalPages={totalPages}

@@ -345,26 +345,36 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Authorization check - FIXED LOGIC
+      // Authorization check - SIMPLIFIED AND FIXED
       let hasPermission = false;
       let statusToCheck = "";
       let permissionMessage = "";
 
       // Normalize the role for comparison
-      const userRole = userData.role?.toUpperCase() || "";
+      const userRole = userData.role.toUpperCase();
+
+      // Debug information
+      console.log("Authorization Check:", {
+        userRole,
+        userId: userData.id,
+        leaveReporteeId: leave.reporteeId,
+        leaveReporteeObject: leave.reportee,
+        reporteeStatus: leave.reporteeStatus,
+        hrStatus: leave.hrStatus,
+      });
 
       if (userRole === "HR") {
         // HR can approve any leave where HR status is pending
         hasPermission = leave.hrStatus === "PENDING";
         statusToCheck = "HR";
-        permissionMessage = "HR can approve any pending leave";
-
-        console.log("HR permission check:", {
-          hasPermission,
-          hrStatus: leave.hrStatus,
-        });
-      } else if (userRole.toLowerCase() === "manager") {
-        const isReportee = leave.reportee?.id === userData.id;
+        permissionMessage = hasPermission
+          ? "HR can approve this leave"
+          : "HR can only approve leaves with PENDING HR status";
+      } else if (userRole === "MANAGER") {
+        // Manager can approve if they are the reportee AND leave is pending for reportee approval
+        const isReportee =
+          leave.reporteeId === userData.id ||
+          leave.reportee?.id === userData.id;
         const isFromDepartment = managerDepartmentName
           ? leave.user?.department === managerDepartmentName
           : true;
@@ -374,26 +384,32 @@ const LeavesPage: React.FC = () => {
         statusToCheck = "Reportee";
 
         if (!isReportee) {
-          permissionMessage = `You are not the reportee for this employee. Reportee is: ${leave.reportee?.name || "Unknown"}`;
+          permissionMessage = `You are not the reportee for this employee. Reportee ID: ${leave.reporteeId || leave.reportee?.id}, Your ID: ${userData.id}`;
         } else if (!isFromDepartment) {
           permissionMessage = `Manager can only approve leaves from ${managerDepartmentName} department. This leave is from ${leave.user?.department || "unknown"} department.`;
         } else if (!isPending) {
           permissionMessage =
             "This leave is not pending for reportee approval.";
+        } else {
+          permissionMessage = "Manager can approve this leave";
         }
-      } else if (userRole.toLowerCase() === "zonalmanager") {
+      } else if (userRole === "ZONALMANAGER") {
         // Zonal managers can approve leaves where they are the reportee
-        const isReportee = leave.reporteeId === userData.id;
+        const isReportee =
+          leave.reporteeId === userData.id ||
+          leave.reportee?.id === userData.id;
         const isPending = leave.reporteeStatus === "PENDING";
 
         hasPermission = isReportee && isPending;
         statusToCheck = "Reportee";
 
         if (!isReportee) {
-          permissionMessage = `You are not the reportee for this employee. Reportee is: ${leave.reportee?.name || "Unknown"}`;
+          permissionMessage = `You are not the reportee for this employee. Reportee ID: ${leave.reporteeId || leave.reportee?.id}, Your ID: ${userData.id}`;
         } else if (!isPending) {
           permissionMessage =
             "This leave is not pending for reportee approval.";
+        } else {
+          permissionMessage = "Zonal Manager can approve this leave";
         }
       } else {
         permissionMessage = `Unknown role: ${userData.role}`;
@@ -427,6 +443,8 @@ const LeavesPage: React.FC = () => {
         leaveId,
         action,
         comments,
+        userRole,
+        userId: userData.id,
       });
 
       const response = await API.put(

@@ -109,8 +109,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
     } else if (userRole.toLowerCase() === "zonalmanager") {
       const can =
         leave.reporteeStatus === "PENDING" &&
-        (leave.reportee?.id === currentUserId ||
-          leave.reporteeId === currentUserId);
+        leave.reportee?.id === currentUserId;
       console.log("Zonal Manager can take action:", can, {
         reporteeStatus: leave.reporteeStatus,
         isReportee:

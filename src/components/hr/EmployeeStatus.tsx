@@ -76,19 +76,7 @@ const EmployeeStatus = () => {
   const userAllocatedArea = localStorage.getItem("allocatedarea");
 
   // Debug logging (remove in production)
-  useEffect(() => {
-    console.log("Current user role:", userRole);
-    console.log("User department:", userDepartment);
-    console.log("User allocated area:", userAllocatedArea);
-    console.log(
-      "All users:",
-      users.map((u) => ({
-        name: u.name,
-        department: u.department,
-        allocatedArea: u.allocatedArea,
-      })),
-    );
-  }, [userRole, userDepartment, userAllocatedArea, users]);
+  useEffect(() => {}, [userRole, userDepartment, userAllocatedArea, users]);
 
   useEffect(() => {
     fetchUsers();
@@ -97,7 +85,6 @@ const EmployeeStatus = () => {
   // Filter users based on role with strict comparison
   const filteredUsers = useMemo(() => {
     if (!userRole) {
-      console.log("No user role found, showing all users");
       return users;
     }
 
@@ -105,17 +92,10 @@ const EmployeeStatus = () => {
     const normalizedUserDepartment = normalizeString(userDepartment);
     const normalizedUserAllocatedArea = normalizeString(userAllocatedArea);
 
-    console.log("Normalized user role:", normalizedUserRole);
-    console.log("Normalized user department:", normalizedUserDepartment);
-    console.log("Normalized user allocated area:", normalizedUserAllocatedArea);
-
     let filtered = users;
 
     if (normalizedUserRole === "manager") {
       if (!normalizedUserDepartment) {
-        console.log(
-          "Manager role but no department specified, showing no users",
-        );
         return [];
       }
 
@@ -123,18 +103,10 @@ const EmployeeStatus = () => {
         const userDept = normalizeString(user.department);
         const isMatch = userDept === normalizedUserDepartment;
 
-        console.log(
-          `User: ${user.name}, Department: ${userDept}, Match: ${isMatch}`,
-        );
         return isMatch;
       });
-
-      console.log("Manager filtered users:", filtered);
     } else if (normalizedUserRole === "zonalmanager") {
       if (!normalizedUserAllocatedArea) {
-        console.log(
-          "Zonal Manager role but no allocated area specified, showing no users",
-        );
         return [];
       }
 
@@ -142,20 +114,15 @@ const EmployeeStatus = () => {
         const userArea = normalizeString(user.allocatedArea);
         const isMatch = userArea === normalizedUserAllocatedArea;
 
-        console.log(`User: ${user.name}, Area: ${userArea}, Match: ${isMatch}`);
         return isMatch;
       });
-
-      console.log("Zonal Manager filtered users:", filtered);
     } else if (
       normalizedUserRole === "admin" ||
       normalizedUserRole === "superadmin"
     ) {
-      console.log("Admin/SuperAdmin role, showing all users");
       filtered = users;
     }
 
-    console.log("Final filtered users count:", filtered.length);
     return filtered;
   }, [users, userRole, userDepartment, userAllocatedArea]);
 

@@ -70,12 +70,6 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
   };
 
   const handleActionClick = (leaveId: number, action: "APPROVE" | "REJECT") => {
-    console.log("Action clicked:", {
-      leaveId,
-      action,
-      userRole,
-      currentUserId,
-    });
     setSelectedLeave(leaveId);
     setActionType(action);
     setComments("");
@@ -84,11 +78,6 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
 
   const handleConfirmAction = () => {
     if (selectedLeave && actionType) {
-      console.log("Confirming action:", {
-        selectedLeave,
-        actionType,
-        comments,
-      });
       onApproveReject(selectedLeave, actionType, comments);
       setShowModal(false);
       setSelectedLeave(null);
@@ -98,24 +87,17 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
 
   const canTakeAction = (leave: Leave) => {
     if (!userRole || currentUserId === 0) {
-      console.log("No user role or ID found:", { userRole, currentUserId });
       return false;
     }
 
     if (userRole.toLowerCase() === "hr") {
       const can = leave.hrStatus === "PENDING";
-      console.log("HR can take action:", can);
+
       return can;
     } else if (userRole.toLowerCase() === "zonalmanager") {
       const can =
         leave.reporteeStatus === "PENDING" &&
         leave.reportee?.id === currentUserId;
-      console.log("Zonal Manager can take action:", can, {
-        reporteeStatus: leave.reporteeStatus,
-        isReportee:
-          leave.reportee?.id === currentUserId ||
-          leave.reporteeId === currentUserId,
-      });
 
       return can;
     } else if (userRole.toLowerCase() === "manager") {
@@ -127,17 +109,10 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
         (leave.reportee?.id === currentUserId ||
           leave.reporteeId === currentUserId) &&
         isFromDepartment;
-      console.log("MANAGER can take action:", can, {
-        reporteeStatus: leave.reporteeStatus,
-        isFromDepartment,
-        managerDepartmentName,
-        leaveDepartment: leave.user?.department,
-        isReportee: leave.reportee?.id === currentUserId,
-      });
+
       return can;
     }
 
-    console.log("Default: cannot take action - unknown role:", userRole);
     return false;
   };
 
@@ -225,7 +200,6 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {leaves.map((leave) => {
                 const canAction = canTakeAction(leave);
-                console.log(`Leave ${leave.id} canAction:`, canAction);
 
                 // Safely extract user info
                 const userName = getDisplayName(

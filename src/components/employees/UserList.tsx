@@ -683,8 +683,6 @@ const UserList: React.FC = () => {
         }
       }
 
-      console.log("Updating user with data:", updateData);
-
       const response = await API.put(
         `/admin/usersUpdate/${userId}`,
         updateData,
@@ -719,8 +717,6 @@ const UserList: React.FC = () => {
 
   // Function to export users to Excel
   const exportToExcel = async () => {
-    console.log("Export clicked - filteredUsers length:", filteredUsers.length);
-
     try {
       setExporting(true);
       const usersToExport = filteredUsers;
@@ -738,8 +734,6 @@ const UserList: React.FC = () => {
 
       // Call the export function with both users and zones
       const fileName = await exportUsersToExcel(usersToExport, zones);
-
-      console.log(`Exported ${usersToExport.length} users to ${fileName}`);
     } catch (error: any) {
       console.error("Error exporting to Excel:", error);
       alert(`Failed to export users: ${error.message || "Please try again."}`);

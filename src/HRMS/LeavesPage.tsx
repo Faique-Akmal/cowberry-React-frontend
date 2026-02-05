@@ -91,7 +91,6 @@ const LeavesPage: React.FC = () => {
       // Store manager's department name directly
       if (userRole.toLowerCase() === "manager" && userDepartment) {
         setManagerDepartmentName(userDepartment);
-        console.log("Manager's department from localStorage:", userDepartment);
       }
     } catch (error) {
       console.error("Error parsing user data:", error);
@@ -159,13 +158,6 @@ const LeavesPage: React.FC = () => {
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
-      console.log("User role:", userData.role);
-      console.log("User ID:", userData.id);
-      console.log(
-        "Manager department from localStorage:",
-        managerDepartmentName,
-      );
-
       try {
         let endpoint = "/leaves/admin/all-leaves";
         let response: any;
@@ -178,8 +170,6 @@ const LeavesPage: React.FC = () => {
           // For manager and zonal manager, use the reportee API
           endpoint = `/leaves/reportee/${userData.id}`;
 
-          console.log("Using reportee API:", endpoint);
-
           response = await API.get<LeavesResponse>(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -189,7 +179,6 @@ const LeavesPage: React.FC = () => {
           });
         } else {
           // For HR and other roles, use the admin API
-          console.log("Using admin API for role:", userData.role);
 
           response = await API.get<LeavesResponse>(endpoint, {
             headers: {
@@ -202,7 +191,6 @@ const LeavesPage: React.FC = () => {
 
         if (response.data.success) {
           const fetchedLeaves = response.data.data.leaves;
-          console.log("Total leaves fetched from API:", fetchedLeaves.length);
 
           // Ensure statistics object exists with defaults
           const defaultStatistics = {
@@ -354,14 +342,6 @@ const LeavesPage: React.FC = () => {
       const userRole = userData.role.toUpperCase();
 
       // Debug information
-      console.log("Authorization Check:", {
-        userRole,
-        userId: userData.id,
-        leaveReporteeId: leave.reporteeId,
-        leaveReporteeObject: leave.reportee,
-        reporteeStatus: leave.reporteeStatus,
-        hrStatus: leave.hrStatus,
-      });
 
       if (userRole === "HR") {
         // HR can approve any leave where HR status is pending
@@ -413,7 +393,6 @@ const LeavesPage: React.FC = () => {
         }
       } else {
         permissionMessage = `Unknown role: ${userData.role}`;
-        console.log("Unknown role:", userData.role);
       }
 
       if (!hasPermission) {
@@ -438,14 +417,6 @@ const LeavesPage: React.FC = () => {
         );
         return;
       }
-
-      console.log("Sending approval/reject request:", {
-        leaveId,
-        action,
-        comments,
-        userRole,
-        userId: userData.id,
-      });
 
       const response = await API.put(
         `/leaves/approve-reject/${leaveId}`,

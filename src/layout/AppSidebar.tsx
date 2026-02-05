@@ -19,7 +19,6 @@ import { useSidebar } from "../context/SidebarContext";
 import { MdAnnouncement } from "react-icons/md";
 import SidebarWidget from "./SidebarWidget";
 // import { MdAppRegistration } from "react-icons/md";
-import { FaTasks } from "react-icons/fa";
 // import { FaHouseChimneyUser } from "react-icons/fa6";
 import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
@@ -96,12 +95,7 @@ const AppSidebar: React.FC = () => {
       path: "/chat",
       role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
     },
-    {
-      icon: <UserCircleIcon />,
-      name: t("menu.profile"),
-      path: "/profile",
-      role: ["admin", "employee", "zonalmanager", "manager", "hr"],
-    },
+
     {
       icon: <UserCircleIcon />,
       name: t("menu.EmployeeCheckin"),

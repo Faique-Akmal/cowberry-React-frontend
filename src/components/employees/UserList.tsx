@@ -495,6 +495,7 @@ const UserList: React.FC = () => {
           profileImageUrl:
             userData.profileImageUrl || userData.profile_image || "",
           departmentId: departmentId,
+          HRMANAGERId: userData.hrManagerId || 0,
           departmentName: departmentName,
           roleId: roleId,
           roleName: roleName,
@@ -658,6 +659,8 @@ const UserList: React.FC = () => {
         zoneId: editForm.zoneDatabaseId || null, // Send the integer zone database ID - CORRECT
         birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
+        hrManagerId: editForm.hrManagerId,
+        reporteeId: editForm.reporteeId,
         departmentId: Number(editForm.departmentId) || null,
         roleId: Number(editForm.roleId) || null,
       };

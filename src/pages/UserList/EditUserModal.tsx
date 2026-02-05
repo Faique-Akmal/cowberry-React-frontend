@@ -28,7 +28,6 @@ interface EditUserModalProps {
   onClose: () => void;
 }
 
-// Define types for manager data
 interface Manager {
   id: number;
   full_name: string;
@@ -72,14 +71,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     onSubmit(e);
   };
 
-  // Fetch HR Managers
   useEffect(() => {
     const fetchHrManagers = async () => {
       setLoadingHrManagers(true);
       try {
         const response = await API.get("/leaves/dropdown/hr-managers");
         const data = response.data;
-
         if (data.success && Array.isArray(data.data)) {
           setHrManagers(data.data);
         } else if (Array.isArray(data)) {
@@ -87,23 +84,19 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         }
       } catch (error) {
         console.error("Error fetching HR managers:", error);
-        // Fallback data for testing
       } finally {
         setLoadingHrManagers(false);
       }
     };
-
     fetchHrManagers();
   }, []);
 
-  // Fetch Reporting Managers
   useEffect(() => {
     const fetchReportingManagers = async () => {
       setLoadingReportingManagers(true);
       try {
         const response = await API.get("/leaves/dropdown/reportees");
         const data = response.data;
-
         if (data.success && Array.isArray(data.data)) {
           setReportingManagers(data.data);
         } else if (Array.isArray(data)) {
@@ -115,25 +108,23 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         setLoadingReportingManagers(false);
       }
     };
-
     fetchReportingManagers();
   }, []);
 
-  // Initialize search values
   useEffect(() => {
-    if (user.hrManager) {
-      setHrManagerSearch(user.hrManager.name || user.hrManager.full_name || "");
+    if (user.hr_manager) {
+      setHrManagerSearch(user.hr_manager.fullName || "");
     } else if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
       if (hrManager) {
         setHrManagerSearch(hrManager.full_name || hrManager.name || "");
       }
+    } else {
+      setHrManagerSearch("");
     }
 
     if (user.reportee) {
-      setReportingManagerSearch(
-        user.reportee.name || user.reportee.full_name || "",
-      );
+      setReportingManagerSearch(user.reportee.fullName || "");
     } else if (editForm.reporteeId) {
       const reportee = reportingManagers.find(
         (m) => m.id === editForm.reporteeId,
@@ -141,6 +132,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       if (reportee) {
         setReportingManagerSearch(reportee.full_name || reportee.name || "");
       }
+    } else {
+      setReportingManagerSearch("");
     }
   }, [
     user,
@@ -150,7 +143,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     reportingManagers,
   ]);
 
-  // Filter managers based on search
   const filteredHrManagers = hrManagers.filter(
     (manager) =>
       (manager.full_name || manager.name || "")
@@ -175,15 +167,30 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         .includes(reportingManagerSearch.toLowerCase()),
   );
 
-  // Get selected manager names
-  const selectedHrManager = hrManagers.find(
-    (m) => m.id === (editForm.hrManagerId || user.hrManagerId),
-  );
-  const selectedReportingManager = reportingManagers.find(
-    (m) => m.id === (editForm.reporteeId || user.reporteeId),
-  );
+  const getSelectedHrManagerName = () => {
+    if (user.hr_manager) {
+      return user.hr_manager.fullName || "";
+    }
+    if (editForm.hrManagerId) {
+      const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
+      return hrManager ? hrManager.full_name || hrManager.name || "" : "";
+    }
+    return hrManagerSearch;
+  };
 
-  // Handle HR Manager selection
+  const getSelectedReportingManagerName = () => {
+    if (user.reportee) {
+      return user.reportee.fullName || "";
+    }
+    if (editForm.reporteeId) {
+      const reportee = reportingManagers.find(
+        (m) => m.id === editForm.reporteeId,
+      );
+      return reportee ? reportee.full_name || reportee.name || "" : "";
+    }
+    return reportingManagerSearch;
+  };
+
   const handleHrManagerSelect = (manager: Manager) => {
     const event = {
       target: {
@@ -191,13 +198,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         value: manager.id,
       },
     } as React.ChangeEvent<HTMLInputElement>;
-
     onFormChange(event);
     setShowHrManagerDropdown(false);
     setHrManagerSearch(manager.full_name || manager.name || "");
   };
 
-  // Handle Reporting Manager selection
   const handleReportingManagerSelect = (manager: Manager) => {
     const event = {
       target: {
@@ -205,13 +210,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         value: manager.id,
       },
     } as React.ChangeEvent<HTMLInputElement>;
-
     onFormChange(event);
     setShowReportingManagerDropdown(false);
     setReportingManagerSearch(manager.full_name || manager.name || "");
   };
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -227,7 +230,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         setShowReportingManagerDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -237,7 +239,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden rounded-xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -267,8 +268,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </svg>
           </button>
         </div>
-
-        {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="mb-8">
@@ -276,7 +275,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 Basic Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Full Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name *
@@ -291,7 +289,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter full name"
                   />
                 </div>
-                {/* Username */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Username
@@ -306,7 +303,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter username"
                   />
                 </div>
-                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email Address *
@@ -321,7 +317,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter email address"
                   />
                 </div>
-                {/* Mobile */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Mobile Number
@@ -335,7 +330,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter mobile number"
                   />
                 </div>
-                {/* Birth Date */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Birth Date
@@ -348,8 +342,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
-
-                {/* HR Manager */}
                 <div className="relative" ref={hrManagerRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     HR Manager
@@ -357,7 +349,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      value={hrManagerSearch}
+                      value={getSelectedHrManagerName()}
                       onChange={(e) => {
                         setHrManagerSearch(e.target.value);
                         setShowHrManagerDropdown(true);
@@ -390,7 +382,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                       </div>
                     )}
                   </div>
-
                   {showHrManagerDropdown && !loadingHrManagers && (
                     <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredHrManagers.length > 0 ? (
@@ -399,7 +390,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             key={`hr-${manager.id}`}
                             onClick={() => handleHrManagerSelect(manager)}
                             className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                              editForm.hrManagerId === manager.id
+                              editForm.hrManagerId === manager.id ||
+                              user.hr_manager?.id === manager.id
                                 ? "bg-blue-50 dark:bg-blue-900/20"
                                 : ""
                             }`}
@@ -424,14 +416,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                       )}
                     </div>
                   )}
-                  {editForm.hrManagerId && (
+                  {(editForm.hrManagerId || user.hr_manager) && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected HR Manager ID: {editForm.hrManagerId}
+                      Selected HR Manager ID:{" "}
+                      {editForm.hrManagerId || user.hr_manager?.id}
                     </p>
                   )}
                 </div>
-
-                {/* Reporting Manager */}
                 <div className="relative" ref={reportingManagerRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Reporting Manager
@@ -439,7 +430,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      value={reportingManagerSearch}
+                      value={getSelectedReportingManagerName()}
                       onChange={(e) => {
                         setReportingManagerSearch(e.target.value);
                         setShowReportingManagerDropdown(true);
@@ -472,7 +463,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                       </div>
                     )}
                   </div>
-
                   {showReportingManagerDropdown &&
                     !loadingReportingManagers && (
                       <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -484,7 +474,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                                 handleReportingManagerSelect(manager)
                               }
                               className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                                editForm.reporteeId === manager.id
+                                editForm.reporteeId === manager.id ||
+                                user.reportee?.id === manager.id
                                   ? "bg-blue-50 dark:bg-blue-900/20"
                                   : ""
                               }`}
@@ -509,16 +500,15 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                         )}
                       </div>
                     )}
-                  {editForm.reporteeId && (
+                  {(editForm.reporteeId || user.reportee) && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected Reporting Manager ID: {editForm.reporteeId}
+                      Selected Reporting Manager ID:{" "}
+                      {editForm.reporteeId || user.reportee?.id}
                     </p>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Address Section */}
             <div className="mb-8">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -534,14 +524,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 />
               </div>
             </div>
-
-            {/* Department & Role */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Department & Role
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Department dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Department *
@@ -578,7 +565,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     </select>
                   )}
                 </div>
-                {/* Role dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Role *
@@ -614,8 +600,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Zone Assignment */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Zone Assignment
@@ -685,8 +669,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Profile & Preferences */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Profile & Preferences
@@ -708,8 +690,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Footer */}
           <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
             <div className="flex justify-end space-x-4">
               <button

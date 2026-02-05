@@ -114,7 +114,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              {t("header.Edit profile")}
+              Profile
             </DropdownItem>
           </li>
 

@@ -12,7 +12,7 @@ export interface User {
   email: string;
   role: string;
   roleId: number;
-  reporteeId?: number;
+
   is_checkin: boolean;
   department: string;
   departmentId?: number;
@@ -24,6 +24,10 @@ export interface User {
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
+  hrManager?: HRManager;
+  hrManagerId?: number;
+  reportee?: Reportee;
+  reporteeId?: number;
   zoneId?: string;
   zoneName?: string;
   zone?: {
@@ -82,7 +86,8 @@ export interface EditUserForm {
   mobileNo: string;
   address: string;
   birthDate: string;
-  reporteeId?: number;
+  reporteeId?: number | null;
+  hrManagerId?: number | null;
   profileImageUrl: string;
   departmentId: number;
   departmentName: string;
@@ -108,4 +113,29 @@ export interface PaginationState {
   totalUsersCount: number;
   hasMore: boolean;
   limit: number;
+}
+
+export interface HRManager {
+  id: number;
+  name: string;
+  email: string;
+  employeeCode: string;
+  designation: string | null;
+  mobileNo: string;
+  department: {
+    name: string;
+  };
+  zone: any;
+}
+
+export interface Reportee {
+  id: number;
+  name: string;
+  email: string;
+  employeeCode: string;
+  designation: string | null;
+  mobileNo: string;
+  role: string;
+  department: string;
+  zone: any;
 }

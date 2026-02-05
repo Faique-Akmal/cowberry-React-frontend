@@ -489,12 +489,11 @@ export default function RegisterUserForm() {
   // Handler for reportee selection
 
   const handleReporteeSelect = (employee: Employee) => {
-    console.log("Selected Reportee:", employee);
     const newFormData = {
       ...formData,
       reporteeId: employee.id.toString(),
     };
-    console.log("Updated form data with reportee:", newFormData);
+
     setFormData(newFormData);
     setSelectedReportee(employee);
     setReporteeSearch(`${employee.email} (${employee.employeeCode})`);
@@ -503,12 +502,11 @@ export default function RegisterUserForm() {
 
   // Update the handler for HR manager selection
   const handleHrManagerSelect = (employee: Employee) => {
-    console.log("Selected HR Manager:", employee);
     const newFormData = {
       ...formData,
       hrManagerId: employee.id.toString(),
     };
-    console.log("Updated form data with HR manager:", newFormData);
+
     setFormData(newFormData);
     setSelectedHrManager(employee);
     setHrManagerSearch(`${employee.email} (${employee.employeeCode})`);
@@ -620,19 +618,6 @@ export default function RegisterUserForm() {
     setIsLoading(true);
 
     // Debug: Log the form data before submission
-    console.log("Form data before submission:", formData);
-    console.log(
-      "Reportee ID:",
-      formData.reporteeId,
-      "Type:",
-      typeof formData.reporteeId,
-    );
-    console.log(
-      "HR Manager ID:",
-      formData.hrManagerId,
-      "Type:",
-      typeof formData.hrManagerId,
-    );
 
     // Basic validation
     if (
@@ -713,7 +698,6 @@ export default function RegisterUserForm() {
       };
 
       // Debug: Log the payload before sending
-      console.log("Payload being sent:", payload);
 
       const response = await API.post("/auth/register", payload, {
         headers: {

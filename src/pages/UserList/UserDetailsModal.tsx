@@ -182,6 +182,95 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               </div>
             </div>
 
+            {/* Reporting Information Section */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                Reporting Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    HR Manager
+                  </label>
+                  <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    {user.hrManager ? (
+                      <div>
+                        <p className="text-gray-900 dark:text-white text-base font-medium">
+                          {user.hrManager.name || "N/A"}
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                          {user.hrManager.email || ""}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                            ID: {user.hrManager.id}
+                          </span>
+                          {user.hrManager.employeeCode && (
+                            <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
+                              Code: {user.hrManager.employeeCode}
+                            </span>
+                          )}
+                        </div>
+                        {user.hrManagerId && (
+                          <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">
+                            HR Manager ID: {user.hrManagerId}
+                          </p>
+                        )}
+                      </div>
+                    ) : user.hrManagerId ? (
+                      <p className="text-gray-900 dark:text-white text-base">
+                        ID: {user.hrManagerId}
+                      </p>
+                    ) : (
+                      <p className="text-gray-900 dark:text-white text-base">
+                        Not Assigned
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Reportee
+                  </label>
+                  <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    {user.reportee ? (
+                      <div>
+                        <p className="text-gray-900 dark:text-white text-base font-medium">
+                          {user.reportee.name || "N/A"}
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                          {user.reportee.email || ""}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                            ID: {user.reportee.id}
+                          </span>
+                          {user.reportee.employeeCode && (
+                            <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
+                              Code: {user.reportee.employeeCode}
+                            </span>
+                          )}
+                        </div>
+                        {user.reporteeId && (
+                          <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">
+                            Reportee ID: {user.reporteeId}
+                          </p>
+                        )}
+                      </div>
+                    ) : user.reporteeId ? (
+                      <p className="text-gray-900 dark:text-white text-base">
+                        ID: {user.reporteeId}
+                      </p>
+                    ) : (
+                      <p className="text-gray-900 dark:text-white text-base">
+                        Not Assigned
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Zone Information Section */}
             <div className="mb-8">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">

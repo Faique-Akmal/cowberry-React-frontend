@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Zone,
@@ -7,7 +7,7 @@ import {
   EditUserForm,
 } from "../../types/user.types";
 import { getZoneArea } from "../../utils/user.helpers";
-// import { getZoneArea } from "../utils/user.helpers";
+import API from "../../api/axios";
 
 interface EditUserModalProps {
   user: User;
@@ -28,6 +28,17 @@ interface EditUserModalProps {
   onClose: () => void;
 }
 
+// Define types for manager data
+interface Manager {
+  id: number;
+  full_name: string;
+  name?: string;
+  email: string;
+  employee_code?: string;
+  employeeCode?: string;
+  username?: string;
+}
+
 const EditUserModal: React.FC<EditUserModalProps> = ({
   user,
   editForm,
@@ -42,10 +53,186 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   onSubmit,
   onClose,
 }) => {
+  const [hrManagers, setHrManagers] = useState<Manager[]>([]);
+  const [reportingManagers, setReportingManagers] = useState<Manager[]>([]);
+  const [loadingHrManagers, setLoadingHrManagers] = useState(false);
+  const [loadingReportingManagers, setLoadingReportingManagers] =
+    useState(false);
+  const [showHrManagerDropdown, setShowHrManagerDropdown] = useState(false);
+  const [showReportingManagerDropdown, setShowReportingManagerDropdown] =
+    useState(false);
+  const [hrManagerSearch, setHrManagerSearch] = useState("");
+  const [reportingManagerSearch, setReportingManagerSearch] = useState("");
+
+  const hrManagerRef = useRef<HTMLDivElement>(null);
+  const reportingManagerRef = useRef<HTMLDivElement>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(e);
   };
+
+  // Fetch HR Managers
+  useEffect(() => {
+    const fetchHrManagers = async () => {
+      setLoadingHrManagers(true);
+      try {
+        const response = await API.get("/leaves/dropdown/hr-managers");
+        const data = response.data;
+
+        if (data.success && Array.isArray(data.data)) {
+          setHrManagers(data.data);
+        } else if (Array.isArray(data)) {
+          setHrManagers(data);
+        }
+      } catch (error) {
+        console.error("Error fetching HR managers:", error);
+        // Fallback data for testing
+      } finally {
+        setLoadingHrManagers(false);
+      }
+    };
+
+    fetchHrManagers();
+  }, []);
+
+  // Fetch Reporting Managers
+  useEffect(() => {
+    const fetchReportingManagers = async () => {
+      setLoadingReportingManagers(true);
+      try {
+        const response = await API.get("/leaves/dropdown/reportees");
+        const data = response.data;
+
+        if (data.success && Array.isArray(data.data)) {
+          setReportingManagers(data.data);
+        } else if (Array.isArray(data)) {
+          setReportingManagers(data);
+        }
+      } catch (error) {
+        console.error("Error fetching reporting managers:", error);
+      } finally {
+        setLoadingReportingManagers(false);
+      }
+    };
+
+    fetchReportingManagers();
+  }, []);
+
+  // Initialize search values
+  useEffect(() => {
+    if (user.hrManager) {
+      setHrManagerSearch(user.hrManager.name || user.hrManager.full_name || "");
+    } else if (editForm.hrManagerId) {
+      const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
+      if (hrManager) {
+        setHrManagerSearch(hrManager.full_name || hrManager.name || "");
+      }
+    }
+
+    if (user.reportee) {
+      setReportingManagerSearch(
+        user.reportee.name || user.reportee.full_name || "",
+      );
+    } else if (editForm.reporteeId) {
+      const reportee = reportingManagers.find(
+        (m) => m.id === editForm.reporteeId,
+      );
+      if (reportee) {
+        setReportingManagerSearch(reportee.full_name || reportee.name || "");
+      }
+    }
+  }, [
+    user,
+    editForm.hrManagerId,
+    editForm.reporteeId,
+    hrManagers,
+    reportingManagers,
+  ]);
+
+  // Filter managers based on search
+  const filteredHrManagers = hrManagers.filter(
+    (manager) =>
+      (manager.full_name || manager.name || "")
+        .toLowerCase()
+        .includes(hrManagerSearch.toLowerCase()) ||
+      manager.email?.toLowerCase().includes(hrManagerSearch.toLowerCase()) ||
+      (manager.employee_code || manager.employeeCode || "")
+        .toLowerCase()
+        .includes(hrManagerSearch.toLowerCase()),
+  );
+
+  const filteredReportingManagers = reportingManagers.filter(
+    (manager) =>
+      (manager.full_name || manager.name || "")
+        .toLowerCase()
+        .includes(reportingManagerSearch.toLowerCase()) ||
+      manager.email
+        ?.toLowerCase()
+        .includes(reportingManagerSearch.toLowerCase()) ||
+      (manager.employee_code || manager.employeeCode || "")
+        .toLowerCase()
+        .includes(reportingManagerSearch.toLowerCase()),
+  );
+
+  // Get selected manager names
+  const selectedHrManager = hrManagers.find(
+    (m) => m.id === (editForm.hrManagerId || user.hrManagerId),
+  );
+  const selectedReportingManager = reportingManagers.find(
+    (m) => m.id === (editForm.reporteeId || user.reporteeId),
+  );
+
+  // Handle HR Manager selection
+  const handleHrManagerSelect = (manager: Manager) => {
+    const event = {
+      target: {
+        name: "hrManagerId",
+        value: manager.id,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onFormChange(event);
+    setShowHrManagerDropdown(false);
+    setHrManagerSearch(manager.full_name || manager.name || "");
+  };
+
+  // Handle Reporting Manager selection
+  const handleReportingManagerSelect = (manager: Manager) => {
+    const event = {
+      target: {
+        name: "reporteeId",
+        value: manager.id,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onFormChange(event);
+    setShowReportingManagerDropdown(false);
+    setReportingManagerSearch(manager.full_name || manager.name || "");
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        hrManagerRef.current &&
+        !hrManagerRef.current.contains(event.target as Node)
+      ) {
+        setShowHrManagerDropdown(false);
+      }
+      if (
+        reportingManagerRef.current &&
+        !reportingManagerRef.current.contains(event.target as Node)
+      ) {
+        setShowReportingManagerDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -89,6 +276,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 Basic Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Full Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name *
@@ -103,6 +291,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter full name"
                   />
                 </div>
+                {/* Username */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Username
@@ -117,6 +306,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter username"
                   />
                 </div>
+                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email Address *
@@ -131,6 +321,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter email address"
                   />
                 </div>
+                {/* Mobile */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Mobile Number
@@ -144,6 +335,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     placeholder="Enter mobile number"
                   />
                 </div>
+                {/* Birth Date */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Birth Date
@@ -156,9 +348,177 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
+
+                {/* HR Manager */}
+                <div className="relative" ref={hrManagerRef}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    HR Manager
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={hrManagerSearch}
+                      onChange={(e) => {
+                        setHrManagerSearch(e.target.value);
+                        setShowHrManagerDropdown(true);
+                      }}
+                      onFocus={() => setShowHrManagerDropdown(true)}
+                      placeholder="Search HR Manager..."
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-10"
+                    />
+                    {loadingHrManagers && (
+                      <div className="absolute right-3 top-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {showHrManagerDropdown && !loadingHrManagers && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredHrManagers.length > 0 ? (
+                        filteredHrManagers.map((manager) => (
+                          <div
+                            key={`hr-${manager.id}`}
+                            onClick={() => handleHrManagerSelect(manager)}
+                            className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                              editForm.hrManagerId === manager.id
+                                ? "bg-blue-50 dark:bg-blue-900/20"
+                                : ""
+                            }`}
+                          >
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {manager.full_name || manager.name || "Unknown"}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {manager.email} •{" "}
+                              {manager.employee_code ||
+                                manager.employeeCode ||
+                                "No code"}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                          {hrManagerSearch
+                            ? "No HR managers found"
+                            : "Start typing to search..."}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {editForm.hrManagerId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected HR Manager ID: {editForm.hrManagerId}
+                    </p>
+                  )}
+                </div>
+
+                {/* Reporting Manager */}
+                <div className="relative" ref={reportingManagerRef}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Reporting Manager
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={reportingManagerSearch}
+                      onChange={(e) => {
+                        setReportingManagerSearch(e.target.value);
+                        setShowReportingManagerDropdown(true);
+                      }}
+                      onFocus={() => setShowReportingManagerDropdown(true)}
+                      placeholder="Search Reporting Manager..."
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-10"
+                    />
+                    {loadingReportingManagers && (
+                      <div className="absolute right-3 top-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {showReportingManagerDropdown &&
+                    !loadingReportingManagers && (
+                      <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredReportingManagers.length > 0 ? (
+                          filteredReportingManagers.map((manager) => (
+                            <div
+                              key={`reporting-${manager.id}`}
+                              onClick={() =>
+                                handleReportingManagerSelect(manager)
+                              }
+                              className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                                editForm.reporteeId === manager.id
+                                  ? "bg-blue-50 dark:bg-blue-900/20"
+                                  : ""
+                              }`}
+                            >
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {manager.full_name || manager.name || "Unknown"}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {manager.email} •{" "}
+                                {manager.employee_code ||
+                                  manager.employeeCode ||
+                                  "No code"}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                            {reportingManagerSearch
+                              ? "No reporting managers found"
+                              : "Start typing to search..."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  {editForm.reporteeId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected Reporting Manager ID: {editForm.reporteeId}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Address Section */}
             <div className="mb-8">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -175,11 +535,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               </div>
             </div>
 
+            {/* Department & Role */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Department & Role
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Department dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Department *
@@ -216,6 +578,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     </select>
                   )}
                 </div>
+                {/* Role dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Role *
@@ -252,6 +615,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               </div>
             </div>
 
+            {/* Zone Assignment */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Zone Assignment
@@ -322,6 +686,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               )}
             </div>
 
+            {/* Profile & Preferences */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                 Profile & Preferences
@@ -343,62 +708,61 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               </div>
             </div>
           </div>
-        </form>
 
-        {/* Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isEditing}
-              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={
-                isEditing ||
-                loadingDepartments ||
-                loadingRoles ||
-                loadingZones ||
-                departments.length === 0 ||
-                roles.length === 0 ||
-                zones.length === 0
-              }
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
-            >
-              {isEditing ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Updating...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
+          {/* Footer */}
+          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isEditing}
+                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  isEditing ||
+                  loadingDepartments ||
+                  loadingRoles ||
+                  loadingZones ||
+                  departments.length === 0 ||
+                  roles.length === 0 ||
+                  zones.length === 0
+                }
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+              >
+                {isEditing ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Updating...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

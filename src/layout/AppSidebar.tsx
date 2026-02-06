@@ -228,7 +228,7 @@ const AppSidebar: React.FC = () => {
             return null;
 
           return (
-            <li key={nav.name} onClick={toggleMobileSidebar}>
+            <li key={nav.name}>
               {visibleSubItems ? (
                 <button
                   onClick={() => handleSubmenuToggle(index, menuType)}
@@ -251,7 +251,11 @@ const AppSidebar: React.FC = () => {
                 </button>
               ) : (
                 nav.path && (
-                  <Link to={nav.path} className="menu-item group">
+                  <Link
+                    to={nav.path}
+                    onClick={toggleMobileSidebar}
+                    className="menu-item group"
+                  >
                     <span className="menu-item-icon-size">{nav.icon}</span>
                     {(isExpanded || isHovered || isMobileOpen) && (
                       <span className="menu-item-text">{nav.name}</span>
@@ -279,6 +283,7 @@ const AppSidebar: React.FC = () => {
                       <li key={subItem.name}>
                         <Link
                           to={subItem.path}
+                          onClick={toggleMobileSidebar}
                           className={`menu-dropdown-item ${
                             isActive(subItem.path)
                               ? "menu-dropdown-item-active"

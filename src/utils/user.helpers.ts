@@ -3,7 +3,12 @@ import { User, Zone } from "../types/user.types";
 // Helper function to normalize strings for comparison
 export const normalizeString = (str: string | undefined): string => {
   if (!str) return "";
-  return str.trim().toLowerCase().replace(/\s+/g, " ");
+  return str
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // Remove accents
 };
 
 // Helper function to normalize role names

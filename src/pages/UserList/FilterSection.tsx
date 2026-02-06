@@ -1,59 +1,69 @@
+// FilterSection.tsx
 import React, { useState } from "react";
-import { Role } from "../../types/user.types";
+import { Role, Zone, FilterState } from "../../types/user.types"; // ADD FilterState import
 
 interface FilterSectionProps {
-  searchTerm: string;
-  roleFilter: string;
-  departmentFilter: string;
-  zoneFilter: string;
+  filterState: FilterState; // ✅ Add this
   uniqueDepartments: string[];
   uniqueZones: string[];
   roles: Role[];
   loadingRoles: boolean;
-  filteredUsers: any[];
-  paginatedUsers: any[];
+  filteredUsersLength: number;
+  paginatedUsersLength: number;
   currentPage: number;
   totalPages: number;
-  filteredUsersLength: number;
   exporting: boolean;
-  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setRoleFilter: (value: string) => void;
-  setDepartmentFilter: (value: string) => void;
-  setZoneFilter: (value: string) => void;
-  clearFilters: () => void;
-  exportToExcel: () => void;
+  onFilterChange: (key: keyof FilterState, value: any) => void; // ✅ Add this
+  onClearFilters: () => void; // ✅ This should be a function
+  onExport: () => void;
 }
 
 const FilterSection: React.FC<FilterSectionProps> = ({
-  searchTerm,
-  roleFilter,
-  departmentFilter,
-  zoneFilter,
+  filterState, // ✅ Get the whole filter state
   uniqueDepartments = [],
   uniqueZones = [],
   roles = [],
   loadingRoles,
-  filteredUsers = [],
-  paginatedUsers = [],
+  filteredUsersLength,
+  paginatedUsersLength,
   currentPage,
   totalPages,
   exporting,
-  handleSearchChange,
-  setRoleFilter,
-  setDepartmentFilter,
-  setZoneFilter,
-  clearFilters,
-  exportToExcel,
+  onFilterChange,
+  onClearFilters,
+  onExport,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Calculate counts safely
-  const filteredCount = filteredUsers?.length || 0;
-  const paginatedCount = paginatedUsers?.length || 0;
+  // Use the passed values
+  const filteredCount = filteredUsersLength || 0;
+  const paginatedCount = paginatedUsersLength || 0;
+
+  // Create handler functions that call onFilterChange
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFilterChange("searchTerm", e.target.value);
+  };
+
+  const handleRoleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange("roleFilter", e.target.value);
+  };
+
+  const handleDepartmentFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange("departmentFilter", e.target.value);
+  };
+
+  const handleZoneFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange("zoneFilter", e.target.value);
+  };
+
+  // Clear search input
+  const clearSearch = () => {
+    onFilterChange("searchTerm", "");
+  };
 
   return (
     <>
-      {/* Mobile Toggle Button - Only visible on small screens */}
+      {/* Mobile Toggle Button */}
       <div className="sm:hidden mb-3">
         <button
           onClick={() => setIsVisible(!isVisible)}
@@ -108,17 +118,13 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               <input
                 type="text"
                 placeholder="Search by name, code, email, zone..."
-                value={searchTerm}
+                value={filterState.searchTerm}
                 onChange={handleSearchChange}
                 className="w-full pl-8 pr-2 py-1.5 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/50 focus:border-transparent focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 text-sm transition-all duration-300"
               />
-              {searchTerm && (
+              {filterState.searchTerm && (
                 <button
-                  onClick={() =>
-                    handleSearchChange({
-                      target: { value: "" },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
+                  onClick={clearSearch}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   ✕
@@ -133,8 +139,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               Filter by Role
             </label>
             <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              value={filterState.roleFilter}
+              onChange={handleRoleFilterChange}
               disabled={loadingRoles}
               className="w-full py-1.5 px-2 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/50 focus:border-transparent focus:outline-none text-sm transition-all duration-300 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
@@ -165,8 +171,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               Filter by Department
             </label>
             <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
+              value={filterState.departmentFilter}
+              onChange={handleDepartmentFilterChange}
               className="w-full py-1.5 px-2 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/50 focus:border-transparent focus:outline-none text-sm transition-all duration-300 appearance-none"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
@@ -190,8 +196,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               Filter by Zone
             </label>
             <select
-              value={zoneFilter}
-              onChange={(e) => setZoneFilter(e.target.value)}
+              value={filterState.zoneFilter}
+              onChange={handleZoneFilterChange}
               className="w-full py-1.5 px-2 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/50 focus:border-transparent focus:outline-none text-sm transition-all duration-300 appearance-none"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E")`,
@@ -219,7 +225,10 @@ const FilterSection: React.FC<FilterSectionProps> = ({
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
-              onClick={clearFilters}
+              onClick={() => {
+                console.log("Clear filters button clicked");
+                onClearFilters();
+              }}
               className="px-3 py-1.5 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 text-gray-700 dark:text-gray-300 rounded-lg hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-xs flex items-center justify-center"
             >
               <svg
@@ -239,7 +248,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             </button>
 
             <button
-              onClick={exportToExcel}
+              onClick={onExport}
+              disabled={exporting}
               className="px-3 py-1.5 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-xs flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {exporting ? (

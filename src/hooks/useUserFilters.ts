@@ -1,93 +1,114 @@
+// hooks/useUserFilters.ts
 import { useMemo } from "react";
-import { User, FilterState } from "../types/user.types";
-import { useUserPermissions } from "./useUserPermissions";
+import { User, CurrentUser, FilterState } from "../types/user.types";
+import { normalizeString, normalizeRole } from "../utils/user.helpers";
 
 export const useUserFilters = (
   users: User[],
-  currentUser: any,
+  currentUser: CurrentUser | null,
   filterState: FilterState,
-) => {
-  const { canViewUser } = useUserPermissions(currentUser);
-
-  const filteredUsers = useMemo(() => {
+): User[] => {
+  return useMemo(() => {
     if (!users || users.length === 0) return [];
 
-    let result = [...users];
+    let filtered = [...users];
 
-    // Permission Filtering
+    // 1. Apply role-based permissions first
     if (currentUser) {
-      result = result.filter((user) => canViewUser(user));
+      switch (currentUser.role) {
+        case "manager":
+          filtered = filtered.filter(
+            (user) =>
+              normalizeString(user.department) ===
+                normalizeString(currentUser.department) ||
+              (user.department && currentUser.department
+                ? user.department
+                    .toLowerCase()
+                    .includes(currentUser.department.toLowerCase())
+                : false),
+          );
+          break;
+        case "zonalmanager":
+        case "zonal manager":
+          if (currentUser.zoneId) {
+            filtered = filtered.filter(
+              (user) => user.zoneId === currentUser.zoneId,
+            );
+          }
+          break;
+        default:
+          // HR and other roles can see all users
+          break;
+      }
     }
 
-    const {
-      searchTerm,
-      roleFilter,
-      departmentFilter,
-      zoneFilter,
-      statusFilter,
-      sortOrder,
-    } = filterState;
+    // 2. Apply search filter
+    if (filterState.searchTerm.trim()) {
+      const searchTerm = normalizeString(filterState.searchTerm);
+      filtered = filtered.filter((user) => {
+        const name = normalizeString(user.full_name || user.name);
+        const email = normalizeString(user.email);
+        const employeeCode = normalizeString(user.employee_code);
+        const department = normalizeString(user.department);
+        const role = normalizeRole(user.role);
+        const zoneId = user.zoneId || "";
 
-    // Search Filtering
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      result = result.filter(
-        (user) =>
-          user.full_name?.toLowerCase().includes(searchLower) ||
-          user.name?.toLowerCase().includes(searchLower) ||
-          user.employee_code?.toLowerCase().includes(searchLower) ||
-          user.employee_code?.includes(searchTerm.trim()) ||
-          user.email?.toLowerCase().includes(searchLower) ||
-          (user.zoneId && user.zoneId.toLowerCase().includes(searchLower)) ||
-          (user.zoneName &&
-            user.zoneName.toLowerCase().includes(searchLower)) ||
-          (user.department &&
-            user.department.toLowerCase().includes(searchLower)) ||
-          (user.role && user.role.toLowerCase().includes(searchLower)) ||
-          (user.mobileNo && user.mobileNo.includes(searchTerm.trim())) ||
-          (user.allocatedArea &&
-            user.allocatedArea.toLowerCase().includes(searchLower)),
-      );
-    }
-
-    // Role Filtering
-    if (roleFilter !== "") {
-      result = result.filter((user) => user.role === roleFilter);
-    }
-
-    // Department Filtering
-    if (departmentFilter !== "") {
-      result = result.filter((user) => user.department === departmentFilter);
-    }
-
-    // Zone Filtering
-    if (zoneFilter !== "") {
-      result = result.filter((user) => user.zoneId === zoneFilter);
-    }
-
-    // Status Filtering
-    if (statusFilter !== "") {
-      result = result.filter((user) => {
-        if (statusFilter === "online") return user.is_checkin;
-        if (statusFilter === "offline") return !user.is_checkin;
-        return true;
+        return (
+          name.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          employeeCode.includes(searchTerm) ||
+          department.includes(searchTerm) ||
+          role.includes(searchTerm) ||
+          zoneId.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       });
     }
 
-    // Sorting
-    result.sort((a, b) => {
-      const nameA = (a.full_name || a.name || "").toLowerCase();
-      const nameB = (b.full_name || b.name || "").toLowerCase();
+    // 3. Apply role filter
+    if (filterState.roleFilter) {
+      filtered = filtered.filter(
+        (user) =>
+          normalizeRole(user.role) === normalizeRole(filterState.roleFilter),
+      );
+    }
 
-      if (sortOrder === "asc") {
+    // 4. Apply department filter
+    if (filterState.departmentFilter) {
+      filtered = filtered.filter(
+        (user) =>
+          normalizeString(user.department) ===
+          normalizeString(filterState.departmentFilter),
+      );
+    }
+
+    // 5. Apply zone filter
+    if (filterState.zoneFilter) {
+      filtered = filtered.filter(
+        (user) => user.zoneId === filterState.zoneFilter,
+      );
+    }
+
+    // 6. Apply status filter
+    if (filterState.statusFilter) {
+      if (filterState.statusFilter === "online") {
+        filtered = filtered.filter((user) => user.is_checkin);
+      } else if (filterState.statusFilter === "offline") {
+        filtered = filtered.filter((user) => !user.is_checkin);
+      }
+    }
+
+    // 7. Apply sorting
+    filtered.sort((a, b) => {
+      const nameA = normalizeString(a.full_name || a.name);
+      const nameB = normalizeString(b.full_name || b.name);
+
+      if (filterState.sortOrder === "asc") {
         return nameA.localeCompare(nameB);
       } else {
         return nameB.localeCompare(nameA);
       }
     });
 
-    return result;
-  }, [users, currentUser, canViewUser, filterState]);
-
-  return filteredUsers;
+    return filtered;
+  }, [users, currentUser, filterState]);
 };

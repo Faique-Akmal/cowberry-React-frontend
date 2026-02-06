@@ -375,6 +375,9 @@ const UserList: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    console.log("Clearing all filters...");
+
+    // Reset ALL filter states
     setFilterState({
       searchTerm: "",
       sortOrder: "asc",
@@ -383,6 +386,14 @@ const UserList: React.FC = () => {
       zoneFilter: "",
       statusFilter: "",
     });
+
+    // Reset pagination to page 1
+    setPaginationState((prev) => ({
+      ...prev,
+      currentPage: 1,
+    }));
+
+    console.log("Filters cleared successfully");
   };
 
   const handleToggleSortOrder = () => {
@@ -900,13 +911,13 @@ const UserList: React.FC = () => {
             uniqueDepartments={uniqueDepartments}
             uniqueZones={uniqueZones}
             loadingRoles={loadingRoles}
-            onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             exportToExcel={exportToExcel}
-            filteredUsersLength={filteredUsers.length}
+            onFilterChange={handleFilterChange}
             exporting={exporting}
             onExport={exportToExcel}
             paginatedUsersLength={paginatedUsers.length}
+            filteredUsersLength={filteredUsers.length}
             currentPage={currentPage}
             totalPages={totalPages}
           />

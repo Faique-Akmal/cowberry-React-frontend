@@ -375,8 +375,6 @@ const UserList: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    console.log("Clearing all filters...");
-
     // Reset ALL filter states
     setFilterState({
       searchTerm: "",
@@ -392,8 +390,6 @@ const UserList: React.FC = () => {
       ...prev,
       currentPage: 1,
     }));
-
-    console.log("Filters cleared successfully");
   };
 
   const handleToggleSortOrder = () => {
@@ -801,13 +797,18 @@ const UserList: React.FC = () => {
         return;
       }
 
-      // Import the export function
+      // Import the export function dynamically
       const { exportUsersToExcel } = await import("../../utils/excel.export");
 
       // Call the export function with both users and zones
       const fileName = await exportUsersToExcel(usersToExport, zones);
+
+      // Show success message
+      alert(`Users exported successfully to ${fileName}`);
     } catch (error: any) {
       console.error("Error exporting to Excel:", error);
+      console.error("Error details:", error.message, error.stack);
+
       alert(`Failed to export users: ${error.message || "Please try again."}`);
     } finally {
       setExporting(false);

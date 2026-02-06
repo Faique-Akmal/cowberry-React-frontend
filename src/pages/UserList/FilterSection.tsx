@@ -226,7 +226,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
-                console.log("Clear filters button clicked");
+              
                 onClearFilters();
               }}
               className="px-3 py-1.5 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 text-gray-700 dark:text-gray-300 rounded-lg hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-xs flex items-center justify-center"

@@ -112,8 +112,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   }, []);
 
   useEffect(() => {
-    if (user.hr_manager) {
-      setHrManagerSearch(user.hr_manager.fullName || "");
+    if (user.hrManager) {
+      setHrManagerSearch(user.hrManager.fullName || "");
     } else if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
       if (hrManager) {
@@ -168,8 +168,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   );
 
   const getSelectedHrManagerName = () => {
-    if (user.hr_manager) {
-      return user.hr_manager.fullName || "";
+    if (user.hrManager) {
+      return user.hrManager.fullName || "";
     }
     if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
@@ -391,7 +391,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             onClick={() => handleHrManagerSelect(manager)}
                             className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
                               editForm.hrManagerId === manager.id ||
-                              user.hr_manager?.id === manager.id
+                              user.hrManager?.id === manager.id
                                 ? "bg-blue-50 dark:bg-blue-900/20"
                                 : ""
                             }`}
@@ -416,10 +416,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                       )}
                     </div>
                   )}
-                  {(editForm.hrManagerId || user.hr_manager) && (
+                  {(editForm.hrManagerId || user.hrManager) && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected HR Manager ID:{" "}
-                      {editForm.hrManagerId || user.hr_manager?.id}
+                      Selected HR Manager name: {user.hrManager?.name}
                     </p>
                   )}
                 </div>
@@ -502,8 +501,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     )}
                   {(editForm.reporteeId || user.reportee) && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected Reporting Manager ID:{" "}
-                      {editForm.reporteeId || user.reportee?.id}
+                      Selected Reportee name: {user.reportee?.name}
                     </p>
                   )}
                 </div>

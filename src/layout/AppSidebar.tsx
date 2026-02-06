@@ -42,7 +42,13 @@ type NavItem = {
 
 const AppSidebar: React.FC = () => {
   const { themeConfig } = useTheme();
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const {
+    isExpanded,
+    isMobileOpen,
+    isHovered,
+    setIsHovered,
+    toggleMobileSidebar,
+  } = useSidebar();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -222,7 +228,7 @@ const AppSidebar: React.FC = () => {
             return null;
 
           return (
-            <li key={nav.name}>
+            <li key={nav.name} onClick={toggleMobileSidebar}>
               {visibleSubItems ? (
                 <button
                   onClick={() => handleSubmenuToggle(index, menuType)}

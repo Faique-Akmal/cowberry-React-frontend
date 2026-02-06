@@ -281,6 +281,10 @@ const UserList: React.FC = () => {
             profileImageUrl: user.profileImageUrl || user.profile_image || "",
             zoneId: zoneData.zoneId || user.zoneId || "",
             zoneName: zoneData.name || user.zoneName || "",
+            hrManagerId: user.hrManagerId || null,
+            reporteeId: user.reporteeId || null,
+            hrManager: user.hrManager || null,
+            reportee: user.reportee || null,
             zone: zoneData.id
               ? {
                   id: zoneData.id,
@@ -371,6 +375,7 @@ const UserList: React.FC = () => {
   };
 
   const handleClearFilters = () => {
+    // Reset ALL filter states
     setFilterState({
       searchTerm: "",
       sortOrder: "asc",
@@ -379,6 +384,12 @@ const UserList: React.FC = () => {
       zoneFilter: "",
       statusFilter: "",
     });
+
+    // Reset pagination to page 1
+    setPaginationState((prev) => ({
+      ...prev,
+      currentPage: 1,
+    }));
   };
 
   const handleToggleSortOrder = () => {
@@ -396,13 +407,67 @@ const UserList: React.FC = () => {
     }
   };
 
-  const handleRowClick = (user: User) => {
+  // In your UserList component, update the handleRowClick function to fetch user details:
+  const handleRowClick = async (user: User) => {
     if (!canViewUser(user)) {
       alert("You don't have permission to view this user.");
       return;
     }
-    setSelectedUser(user);
-    setIsModalOpen(true);
+
+    try {
+      // Fetch fresh user details from API
+      const userId = user.id || user.userId;
+      const response = await API.get(`/admin/users/${userId}`);
+
+      if (response.data?.success && response.data?.data) {
+        const userData = response.data.data;
+
+        // Map the API response to your User type
+        const detailedUser: User = {
+          id: userData.id?.toString() || userData.userId?.toString() || "",
+          userId: userData.userId?.toString() || userData.id?.toString() || "",
+          name: userData.name || userData.username || "",
+          full_name:
+            userData.fullName || userData.full_name || userData.name || "",
+          employee_code: userData.employeeCode || userData.employee_code || "",
+          username: userData.username || "",
+          email: userData.email || "",
+          role: userData.role?.name || userData.role || "",
+          roleId: userData.roleId || userData.role?.id || 0,
+          is_checkin: userData.is_checkin || userData.isCheckin || false,
+          department: userData.department?.name || userData.department || "",
+          departmentId: userData.departmentId || userData.department?.id || 0,
+          profile_image:
+            userData.profileImageUrl || userData.profile_image || "",
+          date: userData.createdAt || userData.date || "",
+          is_online: userData.is_online || userData.isOnline || false,
+          allocatedArea: userData.allocatedArea || "",
+          mobileNo: userData.mobileNo || userData.mobile || "",
+          address: userData.address || "",
+          birthDate: userData.birthDate || "",
+          profileImageUrl:
+            userData.profileImageUrl || userData.profile_image || "",
+          zoneId: userData.zone?.zoneId || userData.zoneId || "",
+          zoneName: userData.zone?.name || userData.zoneName || "",
+          hrManagerId: user.hrManagerId,
+          reporteeId: user.reporteeId,
+          hrManager: user.hrManager || null,
+          reportee: user.reportee || null,
+
+          zone: userData.zone || null,
+        };
+
+        setSelectedUser(detailedUser);
+        setIsModalOpen(true);
+      } else {
+        throw new Error("Failed to fetch user details");
+      }
+    } catch (error) {
+      console.error("Failed to fetch user details:", error);
+      // Fallback to basic user data
+      setSelectedUser(user);
+      setIsModalOpen(true);
+    }
   };
 
   // Handle edit button click - IMPROVED with zone fetching
@@ -732,13 +797,18 @@ const UserList: React.FC = () => {
         return;
       }
 
-      // Import the export function
+      // Import the export function dynamically
       const { exportUsersToExcel } = await import("../../utils/excel.export");
 
       // Call the export function with both users and zones
       const fileName = await exportUsersToExcel(usersToExport, zones);
+
+      // Show success message
+      alert(`Users exported successfully to ${fileName}`);
     } catch (error: any) {
       console.error("Error exporting to Excel:", error);
+      console.error("Error details:", error.message, error.stack);
+
       alert(`Failed to export users: ${error.message || "Please try again."}`);
     } finally {
       setExporting(false);
@@ -842,13 +912,13 @@ const UserList: React.FC = () => {
             uniqueDepartments={uniqueDepartments}
             uniqueZones={uniqueZones}
             loadingRoles={loadingRoles}
-            onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             exportToExcel={exportToExcel}
-            filteredUsersLength={filteredUsers.length}
+            onFilterChange={handleFilterChange}
             exporting={exporting}
             onExport={exportToExcel}
             paginatedUsersLength={paginatedUsers.length}
+            filteredUsersLength={filteredUsers.length}
             currentPage={currentPage}
             totalPages={totalPages}
           />

@@ -80,9 +80,9 @@ export interface Zone {
 export interface FilterUser {
   id: number;
   name: string;
-  employeeCode: string;
-  designation: string;
-  department: string;
+  employeeCode?: string;
+  designation?: string;
+  department?: string;
 }
 
 export interface Statistics {

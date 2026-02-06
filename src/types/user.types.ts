@@ -24,10 +24,14 @@ export interface User {
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
-  hrManager?: HRManager;
+
   hrManagerId?: number;
-  reportee?: Reportee;
+
   reporteeId?: number;
+
+  hrManager?: HRManager | null;
+  reportee?: Reportee | null;
+
   zoneId?: string;
   zoneName?: string;
   zone?: {

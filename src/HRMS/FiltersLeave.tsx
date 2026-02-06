@@ -34,7 +34,7 @@ const Filters: React.FC<FiltersProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tempSearch, setTempSearch] = useState(filters.search);
-  const [filteredUsers, setFilteredUsers] = useState<FilterUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<FilterUser[]>(users);
 
   const statusOptions = [
     { value: "", label: "All Status" },
@@ -53,25 +53,55 @@ const Filters: React.FC<FiltersProps> = ({
   ];
 
   // Filter users based on role and department
-  useEffect(() => {
+  // Update your filter logic to be completely safe:
+  const filterUsers = () => {
+    let filtered = [...users];
+
+    // 1. Apply role-based filtering
     if (userRole === "MANAGER" && filters.departmentId) {
       const department = departments.find(
         (d) => d.id.toString() === filters.departmentId,
       );
       if (department) {
-        const filtered = users.filter(
-          (user) => user.department === department.name,
-        );
-        setFilteredUsers(filtered);
+        filtered = filtered.filter((user) => {
+          const userDept = user.department || "";
+          return userDept === department.name;
+        });
       } else {
-        setFilteredUsers([]);
+        filtered = [];
       }
-    } else {
-      setFilteredUsers(users);
     }
-  }, [users, userRole, filters.departmentId, departments]);
+
+    // 2. Apply search filtering
+    if (tempSearch && tempSearch.trim()) {
+      const searchTerm = tempSearch.toLowerCase().trim();
+
+      filtered = filtered.filter((user) => {
+        // Get safe string values
+        const name = (user.name || "").toLowerCase();
+        const empCode = (user.employeeCode || "").toLowerCase();
+        const designation = (user.designation || "").toLowerCase();
+
+        // Check if any field contains the search term
+        return (
+          name.includes(searchTerm) ||
+          empCode.includes(searchTerm) ||
+          designation.includes(searchTerm)
+        );
+      });
+    }
+
+    return filtered;
+  };
+
+  // Then in useEffect:
+  useEffect(() => {
+    const filtered = filterUsers();
+    setFilteredUsers(filtered);
+  }, [users, userRole, filters.departmentId, departments, tempSearch]);
 
   const handleSearchApply = () => {
+    // Just update the filter state, don't trigger API
     onFilterChange("search", tempSearch);
   };
 
@@ -84,6 +114,12 @@ const Filters: React.FC<FiltersProps> = ({
   const handleSearchClear = () => {
     setTempSearch("");
     onFilterChange("search", "");
+  };
+
+  // Remove or modify the debounced search effect
+  const handleSearchChange = (value: string) => {
+    setTempSearch(value);
+    // Don't call onFilterChange here - only when Apply is clicked
   };
 
   // Sync tempSearch with filters.search when filters change externally
@@ -115,7 +151,7 @@ const Filters: React.FC<FiltersProps> = ({
               <input
                 type="text"
                 value={tempSearch}
-                onChange={(e) => setTempSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Search by name, employee code, designation..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -138,13 +174,8 @@ const Filters: React.FC<FiltersProps> = ({
             </button>
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Search by: name, employee code, or designation
+            {filteredUsers.length} employees match your search
           </div>
-          {tempSearch && tempSearch !== filters.search && (
-            <div className="text-xs text-yellow-600 mt-1">
-              Note: Click "Apply All Filters" below to refresh results
-            </div>
-          )}
         </div>
 
         {/* Status */}

@@ -280,7 +280,7 @@ const AppSidebar: React.FC = () => {
                 >
                   <ul className="mt-2 space-y-1 ml-9">
                     {visibleSubItems.map((subItem) => (
-                      <li key={subItem.name} onClick={toggleMobileSidebar}>
+                      <li key={subItem.name}>
                         <Link
                           to={subItem.path}
                           onClick={toggleMobileSidebar}

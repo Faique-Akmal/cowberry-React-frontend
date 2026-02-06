@@ -90,7 +90,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
       return false;
     }
 
-    if (userRole.toLowerCase() === "hr") {
+    if (userRole.toLowerCase() === "hr" || userRole.toLowerCase() === "admin") {
       const can = leave.hrStatus === "PENDING";
 
       return can;

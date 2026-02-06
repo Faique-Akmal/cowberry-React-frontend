@@ -297,7 +297,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                       <div className="flex items-start space-x-3">
                         <div>
                           <p className="text-gray-900 dark:text-white text-base font-medium">
-                            {user.reportee?.name || "Reportee"}
+                            {user.reportee?.name ||
+                              user.reporteeId ||
+                              "Reportee"}
                           </p>
                           {user.reportee?.id && (
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">

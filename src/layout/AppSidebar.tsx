@@ -228,7 +228,7 @@ const AppSidebar: React.FC = () => {
             return null;
 
           return (
-            <li key={nav.name} onClick={toggleMobileSidebar}>
+            <li key={nav.name}>
               {visibleSubItems ? (
                 <button
                   onClick={() => handleSubmenuToggle(index, menuType)}
@@ -276,7 +276,7 @@ const AppSidebar: React.FC = () => {
                 >
                   <ul className="mt-2 space-y-1 ml-9">
                     {visibleSubItems.map((subItem) => (
-                      <li key={subItem.name}>
+                      <li key={subItem.name} onClick={toggleMobileSidebar}>
                         <Link
                           to={subItem.path}
                           className={`menu-dropdown-item ${

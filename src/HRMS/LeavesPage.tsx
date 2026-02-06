@@ -354,7 +354,10 @@ const LeavesPage: React.FC = () => {
 
       // Debug information
 
-      if (userRole === "HR") {
+      if (
+        userRole.toLowerCase() === "hr" ||
+        userRole.toLowerCase() === "admin"
+      ) {
         // HR can approve any leave where HR status is pending
         hasPermission = leave.hrStatus === "PENDING";
         statusToCheck = "HR";
@@ -484,7 +487,7 @@ const LeavesPage: React.FC = () => {
 
   // Get display title based on role
   const getDisplayTitle = () => {
-    if (userData?.role === "HR") {
+    if (userData?.role === "HR" || userData?.role.toLowerCase() === "admin") {
       return "View and manage all leaves";
     } else if (userData?.role === "Manager") {
       if (managerDepartmentName) {

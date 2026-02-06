@@ -9,12 +9,13 @@ import {
   LocalStorageUser,
 } from "../types/leaves";
 import LeavesTable from "./LeavesTable";
-import Filters from "./Filters";
+import Filters from "./FiltersLeave";
 import StatisticsPanel from "./StatisticsPanel";
 import API from "../api/axios";
 
 const LeavesPage: React.FC = () => {
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -140,16 +141,16 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Build query parameters
+      // Build query parameters - REMOVE search from params
       let params: any = {
         page: pagination.currentPage,
         limit: pagination.itemsPerPage,
       };
 
-      // Add filters only if they have values
+      // Add filters only if they have values - DON'T include search
       if (filters.status) params.status = filters.status;
       if (filters.leaveType) params.leaveType = filters.leaveType;
-      if (filters.search) params.search = filters.search;
+      // REMOVE THIS LINE: if (filters.search) params.search = filters.search;
       if (filters.departmentId)
         params.departmentId = Number(filters.departmentId);
       if (filters.zoneId) params.zoneId = Number(filters.zoneId);
@@ -179,7 +180,6 @@ const LeavesPage: React.FC = () => {
           });
         } else {
           // For HR and other roles, use the admin API
-
           response = await API.get<LeavesResponse>(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -191,6 +191,40 @@ const LeavesPage: React.FC = () => {
 
         if (response.data.success) {
           const fetchedLeaves = response.data.data.leaves;
+
+          // Store ALL fetched leaves in a separate state for client-side filtering
+          setAllLeaves(fetchedLeaves); // Add this line
+
+          // Apply client-side search filter if search exists
+          let filteredLeaves = fetchedLeaves;
+
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            filteredLeaves = fetchedLeaves.filter((leave) => {
+              const userName = leave.user?.name || "";
+              const employeeCode = leave.user?.employeeCode || "";
+              const designation = leave.user?.designation || "";
+
+              return (
+                userName.toLowerCase().includes(searchLower) ||
+                employeeCode.toLowerCase().includes(searchLower) ||
+                designation.toLowerCase().includes(searchLower)
+              );
+            });
+          }
+
+          // Apply manager department filter after search filter
+          if (userData.role.toLowerCase() === "MANAGER") {
+            if (managerDepartmentName) {
+              filteredLeaves = filteredLeaves.filter((leave) => {
+                const isFromDepartment =
+                  leave.user?.department === managerDepartmentName;
+                return isFromDepartment;
+              });
+            }
+          }
+
+          setLeaves(filteredLeaves);
 
           // Ensure statistics object exists with defaults
           const defaultStatistics = {
@@ -205,34 +239,11 @@ const LeavesPage: React.FC = () => {
           let statisticsData =
             response.data.data.statistics || defaultStatistics;
 
-          if (userData.role.toLowerCase() === "MANAGER") {
-            // For managers, filter leaves by their department if needed
-            if (managerDepartmentName) {
-              const filteredLeaves = fetchedLeaves.filter((leave) => {
-                const isFromDepartment =
-                  leave.user?.department === managerDepartmentName;
-
-                return isFromDepartment;
-              });
-
-              setLeaves(filteredLeaves);
-
-              // Update statistics based on filtered leaves
-              statisticsData = {
-                ...statisticsData,
-                total: filteredLeaves.length,
-              };
-            } else {
-              // If no department name, show all leaves from the reportee API
-              setLeaves(fetchedLeaves);
-            }
-          } else if (userData.role.toLowerCase() === "zonalmanager") {
-            // Zonal managers see all leaves from the reportee API
-            setLeaves(fetchedLeaves);
-          } else {
-            // HR can see all leaves without filtering
-            setLeaves(fetchedLeaves);
-          }
+          // Update statistics based on filtered leaves
+          statisticsData = {
+            ...statisticsData,
+            total: filteredLeaves.length,
+          };
 
           setStatistics(statisticsData);
           setDepartments(response.data.data.filters?.departments || []);
@@ -263,8 +274,13 @@ const LeavesPage: React.FC = () => {
           } else if (apiError.response.status === 404) {
             setError("The requested resource was not found.");
           } else if (apiError.response.status === 500) {
+            // If it's still 500, check if it's because of other parameters
+            console.error(
+              "Server 500 error. Check if backend supports these filters:",
+              params,
+            );
             setError(
-              "Server error. Please try again later or contact support.",
+              "Server error. Please try with fewer filters or contact support.",
             );
           } else {
             setError(
@@ -297,12 +313,7 @@ const LeavesPage: React.FC = () => {
 
   const handleApplyFilters = () => {
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
-    try {
-      fetchLeaves();
-    } catch (error) {
-      console.error("Error applying filters:", error);
-      setError("Failed to apply filters. Please try again.");
-    }
+    fetchLeaves(); // This will apply all current filters
   };
 
   const handlePageChange = (page: number) => {

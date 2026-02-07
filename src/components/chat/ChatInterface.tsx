@@ -393,10 +393,6 @@ export const ChatInterface = () => {
     );
   };
 
-  console.log(" :::::::::::::::: ");
-  console.log("messages ::::: ", messages);
-  console.log(" :::::::::::::::: ");
-
   return (
     <div
       className="relative flex h-screen w-full items-center justify-center bg-cover bg-center overflow-hidden font-sans"

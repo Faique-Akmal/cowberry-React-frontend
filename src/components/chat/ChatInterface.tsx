@@ -393,6 +393,10 @@ export const ChatInterface = () => {
     );
   };
 
+  console.log(" :::::::::::::::: ");
+  console.log("messages ::::: ", messages);
+  console.log(" :::::::::::::::: ");
+
   return (
     <div
       className="relative flex h-screen w-full items-center justify-center bg-cover bg-center overflow-hidden font-sans"
@@ -587,7 +591,7 @@ export const ChatInterface = () => {
                             }`}
                           >
                             <span className="font-bold text-grey-600">
-                              {msg.replyTo?.sender.username || "User"}
+                              {msg.replyTo?.sender?.username || "User"}
                             </span>
                             <p className="truncate">
                               {msg.replyTo.content || "Attachment"}

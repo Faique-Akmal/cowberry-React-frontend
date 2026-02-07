@@ -30,7 +30,7 @@ interface EditUserModalProps {
 
 interface Manager {
   id: number;
-  full_name: string;
+  fullName: string;
   name?: string;
   email: string;
   employee_code?: string;
@@ -117,7 +117,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     } else if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
       if (hrManager) {
-        setHrManagerSearch(hrManager.full_name || hrManager.name || "");
+        setHrManagerSearch(hrManager.fullName || hrManager.name || "");
       }
     } else {
       setHrManagerSearch("");
@@ -130,7 +130,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         (m) => m.id === editForm.reporteeId,
       );
       if (reportee) {
-        setReportingManagerSearch(reportee.full_name || reportee.name || "");
+        setReportingManagerSearch(reportee.fullName || reportee.name || "");
       }
     } else {
       setReportingManagerSearch("");
@@ -145,7 +145,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const filteredHrManagers = hrManagers.filter(
     (manager) =>
-      (manager.full_name || manager.name || "")
+      (manager.fullName || manager.name || "")
         .toLowerCase()
         .includes(hrManagerSearch.toLowerCase()) ||
       manager.email?.toLowerCase().includes(hrManagerSearch.toLowerCase()) ||
@@ -156,7 +156,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const filteredReportingManagers = reportingManagers.filter(
     (manager) =>
-      (manager.full_name || manager.name || "")
+      (manager.fullName || manager.name || "")
         .toLowerCase()
         .includes(reportingManagerSearch.toLowerCase()) ||
       manager.email
@@ -169,24 +169,24 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const getSelectedHrManagerName = () => {
     if (user.hrManager) {
-      return user.hrManager.fullName || "";
+      return user.hrManager.name || "";
     }
     if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
-      return hrManager ? hrManager.full_name || hrManager.name || "" : "";
+      return hrManager ? hrManager.fullName || hrManager.name || "" : "";
     }
     return hrManagerSearch;
   };
 
   const getSelectedReportingManagerName = () => {
     if (user.reportee) {
-      return user.reportee.fullName || "";
+      return user.reportee.name || "";
     }
     if (editForm.reporteeId) {
       const reportee = reportingManagers.find(
         (m) => m.id === editForm.reporteeId,
       );
-      return reportee ? reportee.full_name || reportee.name || "" : "";
+      return reportee ? reportee.fullName || reportee.name || "" : "";
     }
     return reportingManagerSearch;
   };
@@ -200,7 +200,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     } as React.ChangeEvent<HTMLInputElement>;
     onFormChange(event);
     setShowHrManagerDropdown(false);
-    setHrManagerSearch(manager.full_name || manager.name || "");
+    setHrManagerSearch(manager.fullName || manager.name || "");
   };
 
   const handleReportingManagerSelect = (manager: Manager) => {
@@ -212,7 +212,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     } as React.ChangeEvent<HTMLInputElement>;
     onFormChange(event);
     setShowReportingManagerDropdown(false);
-    setReportingManagerSearch(manager.full_name || manager.name || "");
+    setReportingManagerSearch(manager.fullName || manager.name || "");
   };
 
   useEffect(() => {
@@ -245,7 +245,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               Edit User
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {user.full_name || user.name || "N/A"}
+              {user.fullName || user.name || "N/A"}
             </p>
           </div>
           <button
@@ -281,8 +281,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    name="full_name"
-                    value={editForm.full_name}
+                    name="fullName"
+                    value={editForm.fullName}
                     onChange={onFormChange}
                     required
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -397,7 +397,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             }`}
                           >
                             <div className="font-medium text-gray-900 dark:text-white">
-                              {manager.full_name || manager.name || "Unknown"}
+                              {manager.fullName || manager.name || "Unknown"}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
                               {manager.email} •{" "}
@@ -481,7 +481,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                               }`}
                             >
                               <div className="font-medium text-gray-900 dark:text-white">
-                                {manager.full_name || manager.name || "Unknown"}
+                                {manager.fullName || "Unknown"}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {manager.email} •{" "}

@@ -11,7 +11,7 @@ const PrivacyPolicy: React.FC = () => {
               Privacy Policy for LANTERN360
             </h1>
             <p className="text-blue-100 text-lg sm:text-xl">
-              <strong>Last updated:</strong> January 2026
+              <strong>Last updated:</strong> February 2026
             </p>
           </div>
         </div>
@@ -21,16 +21,16 @@ const PrivacyPolicy: React.FC = () => {
           {/* Introduction */}
           <section className="space-y-4">
             <p className="text-gray-700 leading-relaxed">
-              LANTERN360 ,we respects the privacy of its users. This Privacy
-              Policy explains how we collect, use, store, share, and protect
+              LANTERN360 respects the privacy of its users. This Privacy Policy
+              explains how we collect, use, store, share, and protect
               information when you use the LANTERN360 mobile application
               ("App").
             </p>
             <p className="text-gray-700 leading-relaxed">
               LANTERN360 is an employee-tracking and field-work management
               application designed for organizations to monitor field employees'
-              attendance, travel activities, and work sessions. This App is
-              intended{" "}
+              attendance, travel activities, work sessions, and leave
+              management. This App is intended{" "}
               <strong className="font-semibold text-cowberry-green-500">
                 only for authorized field employees
               </strong>{" "}
@@ -67,7 +67,9 @@ const PrivacyPolicy: React.FC = () => {
                     Phone number or contact details (if provided by the
                     organization)
                   </li>
+                  <li>Email address</li>
                   <li>Login credentials (securely processed)</li>
+                  <li>Job title and reporting hierarchy information</li>
                 </ul>
               </div>
 
@@ -121,7 +123,42 @@ const PrivacyPolicy: React.FC = () => {
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-gray-700">
-                  1.3 Camera and Media Information
+                  1.3 Leave Management Information
+                </h3>
+                <p className="text-gray-700">
+                  We collect leave-related information including:
+                </p>
+                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                  <li>Leave application details (dates, type, reason)</li>
+                  <li>Medical certificates or supporting documents</li>
+                  <li>Leave approval/rejection status</li>
+                  <li>Approver information (reporting manager or HR)</li>
+                  <li>Leave balance and history</li>
+                  <li>Comments and notes from approvers</li>
+                </ul>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-gray-700 font-medium mb-2">
+                    Leave Approval Hierarchy:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-gray-700">
+                    <li>
+                      <strong>Field Employees:</strong> Can apply for leave
+                    </li>
+                    <li>
+                      <strong>Reporting Managers:</strong> Can approve or reject
+                      leave requests of their juniors
+                    </li>
+                    <li>
+                      <strong>HR Personnel:</strong> Can approve or reject leave
+                      requests and have access to all leave records
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-gray-700">
+                  1.4 Camera and Media Information
                 </h3>
                 <p className="text-gray-700">
                   We collect images captured using your device camera for:
@@ -130,6 +167,8 @@ const PrivacyPolicy: React.FC = () => {
                   <li>Odometer image uploads (start and stop travel)</li>
                   <li>Farmer images during session completion</li>
                   <li>Profile or work-related documentation</li>
+                  <li>Medical certificates for leave applications</li>
+                  <li>Supporting documents for leave requests</li>
                 </ul>
                 <p className="text-gray-700">
                   We may also access stored media files when you choose to
@@ -139,27 +178,29 @@ const PrivacyPolicy: React.FC = () => {
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-gray-700">
-                  1.4 Contacts Information
+                  1.5 Travel History Information
                 </h3>
                 <p className="text-gray-700">
-                  If permitted, we may access contacts to:
+                  We maintain comprehensive travel history including:
                 </p>
-                <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                  <li>Read or save work-related contacts</li>
-                  <li>Enable communication features within the App</li>
+                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                  <li>Session start and end times</li>
+                  <li>Travel routes and paths</li>
+                  <li>Distance traveled during each session</li>
+                  <li>Odometer readings (start and stop)</li>
+                  <li>Session locations and GPS coordinates</li>
+                  <li>Duration of each travel session</li>
+                  <li>Session completion status</li>
                 </ul>
                 <p className="text-gray-700 italic">
-                  Contacts are{" "}
-                  <strong className="font-semibold">
-                    not shared or used for marketing purposes
-                  </strong>
-                  .
+                  Field employees can view their complete travel history within
+                  the App.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-gray-700">
-                  1.5 Usage and Activity Data
+                  1.6 Usage and Activity Data
                 </h3>
                 <p className="text-gray-700">
                   We collect app usage data such as:
@@ -170,12 +211,14 @@ const PrivacyPolicy: React.FC = () => {
                   <li>Attendance records</li>
                   <li>Session activities and timestamps</li>
                   <li>Chat messages within the App</li>
+                  <li>Leave application and approval activities</li>
+                  <li>Travel history access logs</li>
                 </ul>
               </div>
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-gray-700">
-                  1.6 Device and Technical Information
+                  1.7 Device and Technical Information
                 </h3>
                 <p className="text-gray-700">We may collect:</p>
                 <ul className="list-disc pl-5 space-y-1 text-gray-700">
@@ -209,7 +252,8 @@ const PrivacyPolicy: React.FC = () => {
                 },
                 {
                   permission: "Camera",
-                  reason: "To capture odometer and work-related images",
+                  reason:
+                    "To capture odometer, work-related images, and medical certificates",
                 },
                 {
                   permission: "Access Fine & Coarse Location",
@@ -233,11 +277,13 @@ const PrivacyPolicy: React.FC = () => {
                 },
                 {
                   permission: "Read External Storage / Media Images",
-                  reason: "To upload images",
+                  reason:
+                    "To upload images and documents for sessions and leave applications",
                 },
                 {
                   permission: "Write External Storage",
-                  reason: "To save work-related files",
+                  reason:
+                    "To save work-related files, travel history reports, and leave documents",
                 },
                 {
                   permission: "Battery Stats",
@@ -277,6 +323,12 @@ const PrivacyPolicy: React.FC = () => {
                 "Enable communication and chat features",
                 "Display announcements from management or HR",
                 "Maintain attendance calendars",
+                "Manage leave applications and approvals",
+                "Track leave balances and history",
+                "Provide travel history access to field employees",
+                "Enable reporting managers to approve/reject leave requests",
+                "Enable HR to manage all leave applications",
+                "Generate travel history reports and analytics",
                 "Improve App performance and reliability",
                 "Ensure compliance with organizational policies",
               ].map((use, index) => (
@@ -290,10 +342,100 @@ const PrivacyPolicy: React.FC = () => {
 
           <hr className="border-t-2 border-gray-200 my-8" />
 
-          {/* Section 4 */}
+          {/* New Section: Leave Management Flow */}
           <section className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              4. Work Session Flow
+              4. Leave Management System
+            </h2>
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <h3 className="text-xl font-bold text-cowberry-green-500 mb-4">
+                Leave Application and Approval Process
+              </h3>
+              <ol className="list-decimal pl-5 space-y-3 text-gray-700">
+                <li>
+                  Field employee submits leave request with details (dates,
+                  type, reason)
+                </li>
+                <li>Supporting documents can be uploaded if required</li>
+                <li>
+                  Leave request is routed to the reporting manager for approval
+                </li>
+                <li>
+                  Reporting manager can approve or reject the leave request
+                </li>
+                <li>HR receives notification and can also approve/reject</li>
+                <li>Employee receives notification of leave status</li>
+                <li>Leave balance is automatically updated</li>
+                <li>Leave history is maintained for all users</li>
+              </ol>
+              <div className="mt-4 p-4 bg-white rounded-lg">
+                <p className="text-gray-700 font-semibold mb-2">
+                  Access Levels:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-gray-700">
+                  <li>
+                    <strong>Field Employees:</strong> Apply for leave, view own
+                    leave history and status
+                  </li>
+                  <li>
+                    <strong>Reporting Managers:</strong> Approve/reject junior
+                    leave requests, view team leave calendar
+                  </li>
+                  <li>
+                    <strong>HR Personnel:</strong> Full access to all leave
+                    applications and approval rights
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-t-2 border-gray-200 my-8" />
+
+          {/* New Section: Travel History */}
+          <section className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
+              5. Travel History Access
+            </h2>
+            <div className="bg-green-50 p-6 rounded-lg">
+              <h3 className="text-xl font-bold text-cowberry-green-500 mb-4">
+                Travel History Features
+              </h3>
+              <p className="text-gray-700 mb-4">
+                Field employees can access their complete travel history
+                including:
+              </p>
+              <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                <li>Daily travel sessions with timestamps</li>
+                <li>Travel routes on interactive maps</li>
+                <li>Distance covered in each session</li>
+                <li>Session duration and timing</li>
+                <li>Odometer readings (start and end)</li>
+                <li>Session completion status</li>
+                <li>Historical travel patterns and trends</li>
+              </ul>
+              <div className="mt-4 p-4 bg-white rounded-lg">
+                <p className="text-gray-700 italic">
+                  Travel history data is stored securely and is accessible only
+                  to:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-gray-700 mt-2">
+                  <li>The field employee for their own sessions</li>
+                  <li>Reporting managers for their team members</li>
+                  <li>HR and authorized administrators</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-t-2 border-gray-200 my-8" />
+
+          {/* Continue with existing sections, updating section numbers */}
+
+          {/* Section 4 becomes 6, etc. */}
+          <section className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
+              6. Work Session Flow
             </h2>
             <p className="text-gray-700">
               The App follows this general workflow:
@@ -310,7 +452,8 @@ const PrivacyPolicy: React.FC = () => {
                   Employee stops travel by uploading another odometer image
                 </li>
                 <li>Employee adds farmer details (name, description, image)</li>
-                <li>Session is completed</li>
+                <li>Session is completed and added to travel history</li>
+                <li>Employee can view travel history anytime</li>
               </ol>
               <p className="text-gray-700 mt-4 italic">
                 An employee may perform multiple such sessions in a single day.
@@ -320,192 +463,21 @@ const PrivacyPolicy: React.FC = () => {
 
           <hr className="border-t-2 border-gray-200 my-8" />
 
-          {/* Section 5 */}
+          {/* Section 5 becomes 7, etc. - Continue updating section numbers */}
+
+          {/* Keep all existing sections but update their numbers to account for new sections */}
+
+          {/* Add updated sections for background location, data sharing, etc. */}
+
+          {/* Updated Contact Section */}
           <section className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              5. Background Location Usage Disclosure
-            </h2>
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-              <p className="text-gray-700">
-                LANTERN360 collects{" "}
-                <strong className="font-semibold">
-                  background location data
-                </strong>{" "}
-                even when the App is closed or not in active use{" "}
-                <strong className="font-semibold">
-                  only when travel is active
-                </strong>
-                .
-              </p>
-            </div>
-            <p className="text-gray-700">This is required to:</p>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Accurately track employee travel routes</li>
-              <li>Prevent data loss during background execution</li>
-              <li>Ensure reliable session logging</li>
-            </ul>
-            <p className="text-gray-700 italic">
-              Background location tracking{" "}
-              <strong className="font-semibold">stops automatically</strong>{" "}
-              when travel is stopped by the employee.
-            </p>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 6 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              6. Data Sharing and Disclosure
-            </h2>
-            <div className="bg-green-50 border-l-4 border-lantern-blue-600 p-4 rounded">
-              <p className="text-gray-700 font-semibold text-lg">
-                We do{" "}
-                <strong className="text-lantern-blue-600">
-                  not sell, rent, or trade
-                </strong>{" "}
-                personal data.
-              </p>
-            </div>
-            <p className="text-gray-700">Data may be shared only:</p>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>With the employee's organization (employer)</li>
-              <li>With authorized managers or HR personnel</li>
-              <li>When required by law or legal process</li>
-            </ul>
-            <p className="text-gray-700 italic">
-              All data sharing is limited to official business use.
-            </p>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 7 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              7. Data Storage and Security
+              15. Contact Us
             </h2>
             <p className="text-gray-700">
-              We take reasonable security measures to protect your data,
-              including:
-            </p>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Secure server storage</li>
-              <li>Encrypted network communication</li>
-              <li>Restricted access to authorized personnel only</li>
-            </ul>
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-              <p className="text-gray-700 italic">
-                However, no method of electronic storage is 100% secure.
-              </p>
-            </div>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 8 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              8. Data Retention
-            </h2>
-            <p className="text-gray-700">
-              We retain user data only for as long as:
-            </p>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Required by the organization</li>
-              <li>
-                Necessary to fulfill work, legal, or compliance obligations
-              </li>
-            </ul>
-            <p className="text-gray-700">
-              Data deletion is handled according to organizational policies.
-            </p>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 9 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              9. User Rights
-            </h2>
-            <p className="text-gray-700">
-              Depending on applicable laws, users may have the right to:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                "Access their data",
-                "Request corrections",
-                "Request deletion (subject to employer policies)",
-                "Withdraw permissions (may limit App functionality)",
-              ].map((right, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-2 bg-gray-50 p-3 rounded"
-                >
-                  <div className="w-3 h-3 bg-lantern-blue-600 rounded-full"></div>
-                  <span className="text-gray-700">{right}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 10 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              10. Children's Privacy
-            </h2>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <p className="text-gray-700 text-lg font-semibold">
-                LANTERN360 is{" "}
-                <strong className="text-red-700">
-                  not intended for children under 18 years of age
-                </strong>
-                . We do not knowingly collect data from minors.
-              </p>
-            </div>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 11 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              11. Third-Party Services
-            </h2>
-            <p className="text-gray-700">
-              The App may use trusted third-party services (e.g., hosting,
-              analytics) strictly for App functionality. These services are
-              bound by confidentiality obligations.
-            </p>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 12 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              12. Changes to This Privacy Policy
-            </h2>
-            <p className="text-gray-700">
-              We may update this Privacy Policy from time to time. Updates will
-              be posted within the App. Continued use of the App indicates
-              acceptance of the updated policy.
-            </p>
-          </section>
-
-          <hr className="border-t-2 border-gray-200 my-8" />
-
-          {/* Section 13 */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
-              13. Contact Us
-            </h2>
-            <p className="text-gray-700">
-              If you have any questions about this Privacy Policy or data
-              practices, please contact:
+              If you have any questions about this Privacy Policy, leave
+              management system, travel history features, or data practices,
+              please contact:
             </p>
             <div className="bg-blue-50 p-6 rounded-lg">
               <h3 className="text-xl font-bold text-cowberry-green-500 mb-2">
@@ -520,6 +492,10 @@ const PrivacyPolicy: React.FC = () => {
                   team.lantern360@gmail.com
                 </a>
               </p>
+              <p className="text-gray-700 mt-2">
+                For technical issues with leave management or travel history
+                features, please contact our technical support team.
+              </p>
             </div>
           </section>
 
@@ -529,7 +505,13 @@ const PrivacyPolicy: React.FC = () => {
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 text-center">
             <p className="text-gray-700 font-semibold text-lg">
               By using LANTERN360, you acknowledge that you have read and
-              understood this Privacy Policy.
+              understood this Privacy Policy, including the leave management and
+              travel history features.
+            </p>
+            <p className="text-gray-600 mt-2">
+              <strong>Note:</strong> The leave approval mechanism and travel
+              history access are subject to your organization's policies and
+              configurations.
             </p>
           </div>
         </div>

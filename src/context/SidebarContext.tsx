@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
 type SidebarContextType = {
+  isMobile: boolean;
   isExpanded: boolean;
   isMobileOpen: boolean;
   isHovered: boolean;
@@ -55,6 +56,8 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const toggleMobileSidebar = () => {
+    if (!isMobile) return;
+
     setIsMobileOpen((prev) => !prev);
   };
 
@@ -65,6 +68,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <SidebarContext.Provider
       value={{
+        isMobile,
         isExpanded: isMobile ? false : isExpanded,
         isMobileOpen,
         isHovered,

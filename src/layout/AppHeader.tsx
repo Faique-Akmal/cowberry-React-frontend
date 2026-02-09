@@ -1,24 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-// import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
-
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+import { useTheme } from "../context/ThemeContext";
 // import LangToggleButton from "../components/common/LangToggleButton";
 // import AnnouncementNotification from "../pages/AnnouncementNotification";
 // import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
-import { useTheme } from "../context/ThemeContext";
-import { Link } from "react-router";
-
+// import { Link } from "react-router";
 // import { useTranslation } from "react-i18next";
 
 const AppHeader: React.FC = () => {
   const { themeConfig } = useTheme();
-  // const { t } = useTranslation();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const { isMobile, isMobileOpen, toggleSidebar, toggleMobileSidebar } =
+    useSidebar();
+  // const { t } = useTranslation();
+  // const [searchQuery, setSearchQuery] = useState("");
+  // const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,7 +69,7 @@ const AppHeader: React.FC = () => {
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
           >
-            {isMobileOpen ? <>&#x2715;</> : <>&#9776;</>}
+            {isMobile && isMobileOpen ? <>&#x2715;</> : <>&#9776;</>}
           </button>
 
           {/* Logo */}

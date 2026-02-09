@@ -1,28 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
 import { PiUsersThreeBold } from "react-icons/pi";
 import {
-  CalenderIcon,
+  // CalenderIcon,
   ChatIcon,
   ChevronDownIcon,
   GridIcon,
   PlugInIcon,
   UserCircleIcon,
 } from "../icons";
-
 import { IoPersonAddOutline } from "react-icons/io5";
-
 import { MdOutlineAdd } from "react-icons/md";
-
 import { useSidebar } from "../context/SidebarContext";
 import { MdAnnouncement } from "react-icons/md";
 import SidebarWidget from "./SidebarWidget";
-// import { MdAppRegistration } from "react-icons/md";
-// import { FaHouseChimneyUser } from "react-icons/fa6";
 import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
+// import { FaHouseChimneyUser } from "react-icons/fa6";
+// import { MdAppRegistration } from "react-icons/md";
 
 type SubItem = {
   name: string;
@@ -44,6 +40,7 @@ const AppSidebar: React.FC = () => {
   const { themeConfig } = useTheme();
   const {
     isExpanded,
+    isMobile,
     isMobileOpen,
     isHovered,
     setIsHovered,
@@ -329,7 +326,21 @@ const AppSidebar: React.FC = () => {
             !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
           } px-5`}
         >
-          <img src="lantern-banner.png" alt="Logo" width={170} height={0} />
+          {isExpanded || isHovered || isMobile ? (
+            <img
+              src="lantern-banner.png"
+              alt="Logo"
+              className="object-cover"
+              width={170}
+            />
+          ) : (
+            <img
+              src="lantern-logo.png"
+              alt="Logo"
+              className="object-cover"
+              width={170}
+            />
+          )}
         </div>
 
         {/* Scrollable Area */}

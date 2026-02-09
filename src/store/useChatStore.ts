@@ -21,7 +21,8 @@ interface ChatState {
   // Real-time Update Actions
   addMessage: (message: Message) => void;
   updateMessage: (messageId: number, updates: Partial<Message>) => void;
-
+  getMessageById: (id: number) => Message | undefined;
+  
   // Add/Update Conversation in Sidebar
   addOrUpdateConversation: (conversation: Conversation) => void;
   removeConversation: (conversationId: number) => void;
@@ -30,7 +31,7 @@ interface ChatState {
   setEditingMessage: (message: Message | null) => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   activeConversation: null,
   messages: [],
@@ -39,9 +40,12 @@ export const useChatStore = create<ChatState>((set) => ({
   editingMessage: null,
 
   setConversations: (conversations) => set({ conversations }),
+
   setActiveConversation: (conversation) =>
     set({ activeConversation: conversation }),
+
   setMessages: (messages) => set({ messages }),
+
   setCurrentUser: (user) => set({ currentUser: user }),
 
   addMessage: (message) =>
@@ -97,6 +101,12 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setReplyingTo: (message) =>
     set({ replyingTo: message, editingMessage: null }),
+
   setEditingMessage: (message) =>
     set({ editingMessage: message, replyingTo: null }),
+
+  getMessageById: (id) => {
+    const { messages } = get();
+    return messages.find((msg) => msg.id === id)
+  },
 }));

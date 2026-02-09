@@ -186,3 +186,70 @@ export interface LocalStorageUser {
   email?: string;
   employeeCode?: string;
 }
+
+export interface LeaveRequest {
+  id: number;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string;
+  emergencyContact: string;
+  addressDuringLeave: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reporteeStatus: "PENDING" | "APPROVED" | "REJECTED";
+  hrStatus: "PENDING" | "APPROVED" | "REJECTED";
+  reporteeComments: string | null;
+  hrComments: string | null;
+  reporteeActionAt: string | null;
+  hrActionAt: string | null;
+  documentUrl: string | null;
+  documentName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // reportee: Reportee;
+  // hrManager: HRManager;
+}
+
+export interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface LeaveResponse {
+  success: boolean;
+  message: string;
+  data: {
+    leaveRequests: LeaveRequest[];
+    pagination: Pagination;
+  };
+}
+
+export interface UserLeaveDetails {
+  id: number;
+  fullName: string;
+  email: string;
+  employeeCode: string;
+  designation: string;
+  isActiveEmployee: boolean;
+  role: string;
+  department: string;
+  zone: string | null;
+  city: string | null;
+  financialYear: number;
+  leaves: Leaves;
+}
+
+export interface APIResponse {
+  success: boolean;
+  message: string;
+  data: {
+    financialYear: number;
+    users: UserLeaveDetails[];
+    pagination: Pagination;
+    summary: Summary;
+  };
+}

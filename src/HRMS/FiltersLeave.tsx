@@ -53,7 +53,6 @@ const Filters: React.FC<FiltersProps> = ({
   ];
 
   // Filter users based on role and department
-  // Update your filter logic to be completely safe:
   const filterUsers = () => {
     let filtered = [...users];
 
@@ -101,8 +100,12 @@ const Filters: React.FC<FiltersProps> = ({
   }, [users, userRole, filters.departmentId, departments, tempSearch]);
 
   const handleSearchApply = () => {
-    // Just update the filter state, don't trigger API
+    // Update the filter state and trigger API call
     onFilterChange("search", tempSearch);
+    // Trigger full filter refresh
+    setTimeout(() => {
+      onApplyFilters();
+    }, 100);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -114,6 +117,9 @@ const Filters: React.FC<FiltersProps> = ({
   const handleSearchClear = () => {
     setTempSearch("");
     onFilterChange("search", "");
+    setTimeout(() => {
+      onApplyFilters();
+    }, 100);
   };
 
   // Remove or modify the debounced search effect

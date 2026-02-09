@@ -41,6 +41,9 @@ import AddRoleForm from "./admin/pages/AddRoles";
 import DepartmentManagement from "./admin/pages/AddDepartment";
 import CreateZonePage from "./components/hr/CreateZone";
 import LeavesPage from "./HRMS/LeavesPage";
+import LeaveApplicationPage from "./HRMS/NewLeaveApplication";
+import LeaveStatus from "./HRMS/GetSelfLeaves";
+import LeaveBalancePage from "./HRMS/EmployeeLeaveBalance";
 
 export default function App() {
   return (
@@ -92,6 +95,14 @@ export default function App() {
 
           <Route path="/user-register" element={<RegistrationPage />} />
           <Route path="/get-leaves" element={<LeavesPage />} />
+          <Route path="/new-leaves" element={<LeaveApplicationPage />} />
+          <Route path="/employeeleave-balance" element={<LeaveBalancePage />} />
+          <Route
+            path="/getself-leaves"
+            element={
+              <LeaveStatus token={localStorage.getItem("token") || ""} />
+            }
+          />
           <Route
             path="/employeecheckin"
             element={

@@ -610,25 +610,6 @@ const LeaveApplicationPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Important Notes */}
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-              <h3 className="font-semibold text-yellow-800 mb-2">
-                Important Notes:
-              </h3>
-              <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
-                <li>Sick leave cannot be backdated</li>
-                <li>
-                  Half day leave is applicable for single day only - select
-                  either First Half or Second Half
-                </li>
-                <li>All applications are subject to approval</li>
-                <li>
-                  Submit your application at least 2 days in advance when
-                  possible
-                </li>
-              </ul>
-            </div>
-
             {/* Form Actions */}
             <div className="flex justify-end space-x-4">
               <button

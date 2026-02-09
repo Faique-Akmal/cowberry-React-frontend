@@ -227,3 +227,29 @@ export interface LeaveResponse {
     pagination: Pagination;
   };
 }
+
+export interface UserLeaveDetails {
+  id: number;
+  fullName: string;
+  email: string;
+  employeeCode: string;
+  designation: string;
+  isActiveEmployee: boolean;
+  role: string;
+  department: string;
+  zone: string | null;
+  city: string | null;
+  financialYear: number;
+  leaves: Leaves;
+}
+
+export interface APIResponse {
+  success: boolean;
+  message: string;
+  data: {
+    financialYear: number;
+    users: UserLeaveDetails[];
+    pagination: Pagination;
+    summary: Summary;
+  };
+}

@@ -333,55 +333,55 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
 
       {/* Leaves Table */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="">
-          <table className="max-w-2xl divide-y divide-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
                   Type
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
                   Period
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
-                  Duration
+                  Days
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Reason
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
-                  Overall Status
+                  Status
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
-                  Reportee Status
+                  Reportee
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
-                  HR Status
+                  HR
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
                 >
                   Applied On
                 </th>
@@ -393,75 +393,75 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                   key={leave.id}
                   className="hover:bg-gray-50 transition-colors"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(
                         leave.leaveType,
                       )}`}
                     >
                       {leave.leaveType}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {formatDate(leave.startDate)}
                     </div>
-                    <div className="text-sm text-gray-500">to</div>
+                    <div className="text-xs text-gray-500">to</div>
                     <div className="text-sm font-medium text-gray-900">
                       {formatDate(leave.endDate)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 font-medium">
                       {leave.totalDays} day{leave.totalDays !== 1 ? "s" : ""}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div
-                      className="text-sm text-gray-900 max-w-xs truncate"
+                      className="text-sm text-gray-900 max-w-[200px] truncate"
                       title={leave.reason}
                     >
                       {leave.reason}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
                         leave.status,
                       )}`}
                     >
                       {leave.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
                           leave.reporteeStatus,
                         )} mb-1`}
                       >
                         {leave.reporteeStatus}
                       </span>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 truncate max-w-[100px]">
                         {leave.reportee?.fullName || "N/A"}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
                           leave.hrStatus,
                         )} mb-1`}
                       >
                         {leave.hrStatus}
                       </span>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 truncate max-w-[100px]">
                         {leave.hrManager?.fullName || "N/A"}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(leave.createdAt)}
                   </td>
                 </tr>
@@ -472,8 +472,8 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
 
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex items-center justify-between">
+          <div className="px-4 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-gray-700">
                 Page{" "}
                 <span className="font-medium">{pagination.currentPage}</span> of{" "}
@@ -483,7 +483,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                 <button
                   onClick={() => handlePageChange(pagination.currentPage - 1)}
                   disabled={!pagination.hasPrevPage}
-                  className={`px-4 py-2 text-sm font-medium rounded-md ${
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
                     pagination.hasPrevPage
                       ? "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -494,7 +494,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                 <button
                   onClick={() => handlePageChange(pagination.currentPage + 1)}
                   disabled={!pagination.hasNextPage}
-                  className={`px-4 py-2 text-sm font-medium rounded-md ${
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
                     pagination.hasNextPage
                       ? "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"

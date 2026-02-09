@@ -5,24 +5,19 @@ interface ChatState {
   activeConversation: Conversation | null;
   messages: Message[];
   currentUser: User | null;
-
-  // New States for UI Actions
   replyingTo: Message | null;
   editingMessage: Message | null;
-
-  // Actions
   setActiveConversation: (conversation: Conversation) => void;
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   updateMessage: (messageId: number, updates: Partial<Message>) => void;
   setCurrentUser: (user: User) => void;
-
-  // New Actions
+  getMessageById: (id: number) => Message | undefined
   setReplyingTo: (message: Message | null) => void;
   setEditingMessage: (message: Message | null) => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   activeConversation: null,
   messages: [],
   currentUser: null,
@@ -51,7 +46,13 @@ export const useChatStore = create<ChatState>((set) => ({
   setCurrentUser: (user) => set({ currentUser: user }),
 
   setReplyingTo: (message) =>
-    set({ replyingTo: message, editingMessage: null }), // Clear edit if replying
+    set({ replyingTo: message, editingMessage: null }), 
+
   setEditingMessage: (message) =>
-    set({ editingMessage: message, replyingTo: null }), // Clear reply if editing
+    set({ editingMessage: message, replyingTo: null }), 
+
+  getMessageById: (id) => {
+    const { messages } = get();
+    return messages.find((msg) => msg.id === id)
+  },
 }));

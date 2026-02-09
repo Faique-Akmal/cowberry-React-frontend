@@ -23,7 +23,9 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
   const [selectedLeave, setSelectedLeave] = useState<number | null>(null);
   const [comments, setComments] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [actionType, setActionType] = useState<"APPROVE" | "REJECT">("APPROVE");
+  const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | "CANCEL">(
+    "APPROVE",
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,7 +71,10 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
     }
   };
 
-  const handleActionClick = (leaveId: number, action: "APPROVE" | "REJECT") => {
+  const handleActionClick = (
+    leaveId: number,
+    action: "APPROVE" | "REJECT" | "CANCEL",
+  ) => {
     setSelectedLeave(leaveId);
     setActionType(action);
     setComments("");
@@ -314,6 +319,17 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                         >
                           Reject
                         </button>
+                        <button
+                          onClick={() => handleActionClick(leave.id, "CANCEL")}
+                          disabled={!canAction}
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            canAction
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 cursor-pointer"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          Cancelled
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -337,7 +353,12 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {actionType === "APPROVE" ? "Approve" : "Reject"} Leave
+                {actionType === "APPROVE"
+                  ? "Approve"
+                  : actionType === "REJECT"
+                    ? "Reject"
+                    : "Cancel"}{" "}
+                Leave
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Please add comments for your action:

@@ -12,6 +12,8 @@ import LeavesTable from "./LeavesTable";
 import Filters from "./FiltersLeave";
 import StatisticsPanel from "./StatisticsPanel";
 import API from "../api/axios";
+import Loader from "../pages/UiElements/Loader";
+import Button from "../components/ui/button/Button";
 
 const LeavesPage: React.FC = () => {
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -22,6 +24,7 @@ const LeavesPage: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [users, setUsers] = useState<FilterUser[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -322,7 +325,7 @@ const LeavesPage: React.FC = () => {
 
   const handleApproveReject = async (
     leaveId: number,
-    action: "APPROVE" | "REJECT",
+    action: "APPROVE" | "REJECT" | "CANCEL",
     comments: string,
   ) => {
     if (!userData) {
@@ -504,8 +507,9 @@ const LeavesPage: React.FC = () => {
   if (!userData && !error) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <div className="ml-4">Loading user data...</div>
+        {/* <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="ml-4">Loading user data...</div> */}
+        <Loader />
       </div>
     );
   }
@@ -539,9 +543,40 @@ const LeavesPage: React.FC = () => {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Leaves Management
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Leaves Management
+          </h1>
+
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => (window.location.href = "/getself-leaves")}
+              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-cowberry-green-700 transition-colors"
+            >
+              Show My Leaves
+            </button>
+
+            <button
+              onClick={() => (window.location.href = "/new-leaves")}
+              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-lantern-blue-700 transition-colors"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Leave Application
+            </button>
+          </div>
+        </div>
 
         <p className="text-gray-600 mt-2">{getDisplayTitle()}</p>
 

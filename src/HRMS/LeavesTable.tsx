@@ -7,7 +7,7 @@ interface LeavesTableProps {
   currentUserId: number;
   onApproveReject: (
     leaveId: number,
-    action: "APPROVE" | "REJECT",
+    action: "APPROVE" | "REJECT" | "CANCEL",
     comments: string,
   ) => void;
   managerDepartmentName?: string;
@@ -23,7 +23,9 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
   const [selectedLeave, setSelectedLeave] = useState<number | null>(null);
   const [comments, setComments] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [actionType, setActionType] = useState<"APPROVE" | "REJECT">("APPROVE");
+  const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | "CANCEL">(
+    "APPROVE",
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,7 +71,10 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
     }
   };
 
-  const handleActionClick = (leaveId: number, action: "APPROVE" | "REJECT") => {
+  const handleActionClick = (
+    leaveId: number,
+    action: "APPROVE" | "REJECT" | "CANCEL",
+  ) => {
     setSelectedLeave(leaveId);
     setActionType(action);
     setComments("");
@@ -90,27 +95,86 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
       return false;
     }
 
-    if (userRole.toLowerCase() === "hr" || userRole.toLowerCase() === "admin") {
-      const can = leave.hrStatus === "PENDING";
+    // DISABLE ALL ACTIONS if leave is REJECTED by anyone
+    if (
+      leave.status === "REJECTED" ||
+      leave.hrStatus === "REJECTED" ||
+      leave.reporteeStatus === "REJECTED"
+    ) {
+      return false;
+    }
 
-      return can;
-    } else if (userRole.toLowerCase() === "zonalmanager") {
-      const can =
-        leave.reporteeStatus === "PENDING" &&
-        leave.reportee?.id === currentUserId;
+    // DISABLE ALL ACTIONS if leave is CANCELLED
+    if (leave.status === "CANCELLED") {
+      return false;
+    }
 
-      return can;
-    } else if (userRole.toLowerCase() === "manager") {
+    const userRoleUpper = userRole.toUpperCase();
+
+    // HR cannot approve their own leaves
+    if (userRoleUpper === "HR") {
+      if (leave.user?.id === currentUserId) {
+        return false; // HR cannot approve their own leaves
+      }
+    }
+
+    if (userRoleUpper === "HR" || userRoleUpper === "ADMIN") {
+      // HR/Admin can only act if HR status is pending AND not rejected by reportee
+      const isHrPending = leave.hrStatus === "PENDING";
+      const isNotRejected = leave.reporteeStatus !== "REJECTED";
+      return isHrPending && isNotRejected;
+    } else if (userRoleUpper === "ZONALMANAGER") {
+      // Zonal Manager can only act if they are reportee AND status is pending for reportee
+      const isReportee =
+        leave.reportee?.id === currentUserId ||
+        leave.reporteeId === currentUserId;
+      const isPending = leave.reporteeStatus === "PENDING";
+      return isReportee && isPending;
+    } else if (userRoleUpper === "MANAGER") {
+      // Manager can only act if they are reportee, from same department, AND status is pending for reportee
+      const isReportee =
+        leave.reportee?.id === currentUserId ||
+        leave.reporteeId === currentUserId;
       const isFromDepartment = managerDepartmentName
         ? leave.user?.department === managerDepartmentName
         : true;
-      const can =
-        leave.reporteeStatus === "PENDING" &&
-        (leave.reportee?.id === currentUserId ||
-          leave.reporteeId === currentUserId) &&
-        isFromDepartment;
+      const isPending = leave.reporteeStatus === "PENDING";
+      return isReportee && isFromDepartment && isPending;
+    }
 
-      return can;
+    return false;
+  };
+
+  // Check if Cancel button should be enabled (only for approved leaves)
+  const canCancelLeave = (leave: Leave) => {
+    if (!userRole || currentUserId === 0) {
+      return false;
+    }
+
+    // Cannot cancel if already rejected or cancelled
+    if (leave.status === "REJECTED" || leave.status === "CANCELLED") {
+      return false;
+    }
+
+    // Only APPROVED leaves can be cancelled
+    if (leave.status !== "APPROVED") {
+      return false;
+    }
+
+    const userRoleUpper = userRole.toUpperCase();
+
+    if (userRoleUpper === "HR" || userRoleUpper === "ADMIN") {
+      // HR/Admin can cancel any approved leave (if they approved it or anyone else)
+      return leave.hrStatus === "APPROVED";
+    } else if (
+      userRoleUpper === "MANAGER" ||
+      userRoleUpper === "ZONALMANAGER"
+    ) {
+      // Managers can only cancel leaves they approved
+      const isReportee =
+        leave.reportee?.id === currentUserId ||
+        leave.reporteeId === currentUserId;
+      return isReportee && leave.reporteeStatus === "APPROVED";
     }
 
     return false;
@@ -200,6 +264,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {leaves.map((leave) => {
                 const canAction = canTakeAction(leave);
+                const canCancel = canCancelLeave(leave);
 
                 // Safely extract user info
                 const userName = getDisplayName(
@@ -234,6 +299,12 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                           <div className="text-xs text-blue-600 mt-1">
                             Reportee: {reporteeName} ({reporteeEmployeeCode})
                           </div>
+                          {userRole.toUpperCase() === "HR" &&
+                            leave.user?.id === currentUserId && (
+                              <div className="text-xs text-red-600 mt-1">
+                                (Your own leave - only Admin can approve)
+                              </div>
+                            )}
                         </div>
                       </div>
                     </td>
@@ -287,6 +358,18 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                             HR: {leave.hrStatus}
                           </span>
                         </div>
+                        {(leave.status === "REJECTED" ||
+                          leave.hrStatus === "REJECTED" ||
+                          leave.reporteeStatus === "REJECTED") && (
+                          <div className="text-xs text-red-600 mt-1">
+                            ❌ All actions disabled - Leave is REJECTED
+                          </div>
+                        )}
+                        {leave.status === "CANCELLED" && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            ⚫ All actions disabled - Leave is CANCELLED
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -314,6 +397,17 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                         >
                           Reject
                         </button>
+                        <button
+                          onClick={() => handleActionClick(leave.id, "CANCEL")}
+                          disabled={!canCancel}
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            canCancel
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 cursor-pointer"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -337,7 +431,12 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {actionType === "APPROVE" ? "Approve" : "Reject"} Leave
+                {actionType === "APPROVE"
+                  ? "Approve"
+                  : actionType === "REJECT"
+                    ? "Reject"
+                    : "Cancel"}{" "}
+                Leave
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Please add comments for your action:
@@ -361,7 +460,9 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
                   className={`px-4 py-2 rounded-md text-white transition-colors ${
                     actionType === "APPROVE"
                       ? "bg-green-600 hover:bg-green-700"
-                      : "bg-red-600 hover:bg-red-700"
+                      : actionType === "REJECT"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-yellow-600 hover:bg-yellow-700"
                   }`}
                 >
                   Confirm {actionType}

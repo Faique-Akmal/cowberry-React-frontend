@@ -12,6 +12,7 @@ import LeavesTable from "./LeavesTable";
 import Filters from "./FiltersLeave";
 import StatisticsPanel from "./StatisticsPanel";
 import API from "../api/axios";
+import Loader from "../pages/UiElements/Loader";
 
 const LeavesPage: React.FC = () => {
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -322,7 +323,7 @@ const LeavesPage: React.FC = () => {
 
   const handleApproveReject = async (
     leaveId: number,
-    action: "APPROVE" | "REJECT",
+    action: "APPROVE" | "REJECT" | "CANCEL",
     comments: string,
   ) => {
     if (!userData) {
@@ -344,7 +345,25 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Authorization check - SIMPLIFIED AND FIXED
+      // Check if leave is already rejected - DISABLE ALL ACTIONS
+      if (
+        leave.status === "REJECTED" ||
+        leave.hrStatus === "REJECTED" ||
+        leave.reporteeStatus === "REJECTED"
+      ) {
+        alert(
+          "This leave has already been REJECTED. No further actions can be taken.",
+        );
+        return;
+      }
+
+      // Check if leave is cancelled
+      if (leave.status === "CANCELLED") {
+        alert("This leave has already been CANCELLED.");
+        return;
+      }
+
+      // Authorization check
       let hasPermission = false;
       let statusToCheck = "";
       let permissionMessage = "";
@@ -352,18 +371,38 @@ const LeavesPage: React.FC = () => {
       // Normalize the role for comparison
       const userRole = userData.role.toUpperCase();
 
-      // Debug information
+      // CHECK 1: HR cannot approve their own leaves
+      if (userRole === "HR") {
+        if (leave.user?.id === userData.id) {
+          alert(
+            "HR cannot approve/reject their own leaves. Only Admin can approve HR leaves.",
+          );
+          return;
+        }
+      }
 
-      if (
-        userRole.toLowerCase() === "hr" ||
-        userRole.toLowerCase() === "admin"
-      ) {
-        // HR can approve any leave where HR status is pending
-        hasPermission = leave.hrStatus === "PENDING";
+      if (userRole === "HR" || userRole === "ADMIN") {
+        // HR/Admin can approve if HR status is pending AND leave is not rejected by reportee
+        const isHrPending = leave.hrStatus === "PENDING";
+        const isReporteeApproved = leave.reporteeStatus === "APPROVED";
+        const isNotRejected =
+          leave.status !== "REJECTED" && leave.reporteeStatus !== "REJECTED";
+
+        hasPermission =
+          isHrPending &&
+          (isReporteeApproved || leave.reporteeStatus === "PENDING") &&
+          isNotRejected;
         statusToCheck = "HR";
-        permissionMessage = hasPermission
-          ? "HR can approve this leave"
-          : "HR can only approve leaves with PENDING HR status";
+
+        if (!isHrPending) {
+          permissionMessage =
+            "HR can only approve leaves with PENDING HR status";
+        } else if (!isNotRejected) {
+          permissionMessage =
+            "This leave has been REJECTED by reportee. No further actions can be taken.";
+        } else {
+          permissionMessage = "HR can approve this leave";
+        }
       } else if (userRole === "MANAGER") {
         // Manager can approve if they are the reportee AND leave is pending for reportee approval
         const isReportee =
@@ -373,8 +412,10 @@ const LeavesPage: React.FC = () => {
           ? leave.user?.department === managerDepartmentName
           : true;
         const isPending = leave.reporteeStatus === "PENDING";
+        const isNotRejected = leave.status !== "REJECTED";
 
-        hasPermission = isReportee && isFromDepartment && isPending;
+        hasPermission =
+          isReportee && isFromDepartment && isPending && isNotRejected;
         statusToCheck = "Reportee";
 
         if (!isReportee) {
@@ -384,6 +425,9 @@ const LeavesPage: React.FC = () => {
         } else if (!isPending) {
           permissionMessage =
             "This leave is not pending for reportee approval.";
+        } else if (!isNotRejected) {
+          permissionMessage =
+            "This leave has been REJECTED. No further actions can be taken.";
         } else {
           permissionMessage = "Manager can approve this leave";
         }
@@ -393,8 +437,9 @@ const LeavesPage: React.FC = () => {
           leave.reporteeId === userData.id ||
           leave.reportee?.id === userData.id;
         const isPending = leave.reporteeStatus === "PENDING";
+        const isNotRejected = leave.status !== "REJECTED";
 
-        hasPermission = isReportee && isPending;
+        hasPermission = isReportee && isPending && isNotRejected;
         statusToCheck = "Reportee";
 
         if (!isReportee) {
@@ -402,6 +447,9 @@ const LeavesPage: React.FC = () => {
         } else if (!isPending) {
           permissionMessage =
             "This leave is not pending for reportee approval.";
+        } else if (!isNotRejected) {
+          permissionMessage =
+            "This leave has been REJECTED. No further actions can be taken.";
         } else {
           permissionMessage = "Zonal Manager can approve this leave";
         }
@@ -430,6 +478,38 @@ const LeavesPage: React.FC = () => {
           `This leave has already been ${leave.reporteeStatus.toLowerCase()} by reportee`,
         );
         return;
+      }
+
+      // Special case: Cancelling an APPROVED leave
+      if (action === "CANCEL") {
+        // Only allow cancel if leave is APPROVED (not rejected)
+        if (leave.status !== "APPROVED") {
+          alert(
+            `Cannot cancel a leave that is ${leave.status}. Only APPROVED leaves can be cancelled.`,
+          );
+          return;
+        }
+
+        // Check who can cancel based on role
+        if (userRole === "HR" || userRole === "ADMIN") {
+          // HR/Admin can cancel any approved leave
+          if (leave.hrStatus !== "APPROVED") {
+            alert("Only HR-approved leaves can be cancelled by HR/Admin.");
+            return;
+          }
+        } else if (userRole === "MANAGER" || userRole === "ZONALMANAGER") {
+          // Managers can only cancel leaves they approved
+          if (
+            leave.reporteeStatus !== "APPROVED" ||
+            leave.reportee?.id !== userData.id
+          ) {
+            alert("You can only cancel leaves that you have approved.");
+            return;
+          }
+        } else {
+          alert("You don't have permission to cancel leaves.");
+          return;
+        }
       }
 
       const response = await API.put(
@@ -488,7 +568,7 @@ const LeavesPage: React.FC = () => {
   // Get display title based on role
   const getDisplayTitle = () => {
     if (userData?.role === "HR" || userData?.role.toLowerCase() === "admin") {
-      return "View and manage all leaves";
+      return "View and manage all leaves (HR cannot approve their own leaves)";
     } else if (userData?.role === "Manager") {
       if (managerDepartmentName) {
         return `Viewing pending leaves for approval in ${managerDepartmentName} department where you are the reportee`;
@@ -504,8 +584,7 @@ const LeavesPage: React.FC = () => {
   if (!userData && !error) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <div className="ml-4">Loading user data...</div>
+        <Loader />
       </div>
     );
   }
@@ -539,9 +618,46 @@ const LeavesPage: React.FC = () => {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Leaves Management
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Leaves Management
+          </h1>
+
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => (window.location.href = "/employeeleave-balance")}
+              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-cowberry-green-700 transition-colors"
+            >
+              Employee Leave Balance
+            </button>
+            <button
+              onClick={() => (window.location.href = "/getself-leaves")}
+              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-cowberry-green-700 transition-colors"
+            >
+              Show My Leaves
+            </button>
+
+            <button
+              onClick={() => (window.location.href = "/new-leaves")}
+              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-lantern-blue-700 transition-colors"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Leave Application
+            </button>
+          </div>
+        </div>
 
         <p className="text-gray-600 mt-2">{getDisplayTitle()}</p>
 

@@ -35,7 +35,8 @@ interface MessageBubbleProps {
 const MessageBubble = React.memo(
   ({ msg, isMe, onDelete }: MessageBubbleProps) => {
     const [activeMenu, setActiveMenu] = useState(false);
-    const { setReplyingTo, setEditingMessage, getMessageById } = useChatStore();
+    const { currentUser, setReplyingTo, setEditingMessage, getMessageById } =
+      useChatStore();
 
     const handleMenuClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -136,16 +137,18 @@ const MessageBubble = React.memo(
           }`}
         >
           <p className="text-xs text-gray-100 font-bold mb-1 opacity-80">
-            {isMe ? `${msg.sender.username} (You)` : msg.sender.username}
+            {msg.sender.username || "User"}
+            {isMe && " (You)"}
           </p>
 
           {/* Reply Context */}
           {msg.replyTo && (
             <div className="mb-2 p-2 rounded-lg bg-black/20 text-xs border-l-2 border-white/50 opacity-80 flex flex-col">
               <span className="font-bold text-indigo-300">
-                {msg.replyTo.sender?.username ||
-                  getMessageById(msg.id)?.sender.username ||
+                {msg.replyTo?.sender?.username ||
+                  getMessageById(msg.replyToId!)?.sender?.username ||
                   "User"}
+                {msg.replyTo.senderId === currentUser?.id && " (You)"}
               </span>
               <span className="truncate">
                 {msg.replyTo.content || "Attachment"}

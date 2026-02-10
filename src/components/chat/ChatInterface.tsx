@@ -574,9 +574,8 @@ export const ChatInterface = () => {
                         }`}
                       >
                         <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
-                          {isMe
-                            ? `${msg.sender.username} (You)`
-                            : msg.sender.username}
+                          {msg.sender.username}
+                          {isMe && " (You)"}
                         </p>
                         {/* Reply Context */}
                         {!isDeleted && msg.replyTo && (
@@ -589,8 +588,11 @@ export const ChatInterface = () => {
                           >
                             <span className="font-bold text-grey-600">
                               {msg.replyTo?.sender?.username ||
-                                getMessageById(msg.id)?.sender.username ||
+                                getMessageById(msg.replyToId!)?.sender
+                                  ?.username ||
                                 "User"}
+                              {msg.replyTo.senderId === currentUser?.id &&
+                                " (You)"}
                             </span>
                             <p className="truncate">
                               {msg.replyTo.content || "Attachment"}

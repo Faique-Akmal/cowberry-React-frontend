@@ -1096,6 +1096,196 @@ export default function RegisterUserForm() {
           </div>
         </div>
 
+        {/* Additional Information Section */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
+            Additional Information
+          </h3>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Mobile Number
+                </label>
+                <input
+                  type="tel"
+                  name="mobileNo"
+                  placeholder="10-digit mobile number"
+                  value={formData.mobileNo}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  name="birthDate"
+                  value={formData.birthDate}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Address
+              </label>
+              <input
+                type="text"
+                name="address"
+                placeholder="Enter complete address"
+                value={formData.address}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Allocated Area
+              </label>
+              <input
+                type="text"
+                name="allocatedArea"
+                placeholder="Enter allocated area"
+                value={formData.allocatedArea}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            {/* Zone Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Zone
+                </label>
+                {isLoadingZones && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <FaSpinner className="animate-spin" />
+                    Loading zones...
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search for a zone by name or zone ID..."
+                      value={zoneSearch}
+                      onChange={handleZoneSearchChange}
+                      onFocus={() => setShowZoneDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {zoneSearch && (
+                      <button
+                        type="button"
+                        onClick={clearZoneSelection}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label="Clear selection"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fetchZones()}
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2"
+                    title="Refresh zones"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Hidden input to store zone ID */}
+                <input type="hidden" name="zoneId" value={formData.zoneId} />
+
+                {/* Zone Dropdown */}
+                {showZoneDropdown && filteredZones.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredZones.map((zone) => (
+                      <div
+                        key={zone.zoneId}
+                        onClick={() => handleZoneSelect(zone)}
+                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                            <FaMapMarkerAlt className="text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">
+                              {zone.name}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              Zone ID: {zone.zoneId}
+                              {zone.area && <span> • {zone.area}</span>}
+                              {zone.city && <span> • {zone.city}</span>}
+                            </div>
+                            {zone.state && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                {zone.state}{" "}
+                                {zone.pincode && `• ${zone.pincode}`}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No zones found message */}
+                {showZoneDropdown &&
+                  zoneSearch &&
+                  filteredZones.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        No zones found matching "{zoneSearch}"
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {selectedZone && (
+                <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <FaMapMarkerAlt />
+                  <span>
+                    Selected: {selectedZone.name} (Zone ID:{" "}
+                    {selectedZone.zoneId})
+                  </span>
+                </div>
+              )}
+
+              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                Search and select a zone to allocate to this user
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Reporting Structure Section */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
@@ -1369,196 +1559,6 @@ export default function RegisterUserForm() {
               )}
               <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
                 Search and select an HR manager for the user
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Information Section */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h3 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
-            Additional Information
-          </h3>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Mobile Number
-                </label>
-                <input
-                  type="tel"
-                  name="mobileNo"
-                  placeholder="10-digit mobile number"
-                  value={formData.mobileNo}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                Address
-              </label>
-              <input
-                type="text"
-                name="address"
-                placeholder="Enter complete address"
-                value={formData.address}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                Allocated Area
-              </label>
-              <input
-                type="text"
-                name="allocatedArea"
-                placeholder="Enter allocated area"
-                value={formData.allocatedArea}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-            </div>
-
-            {/* Zone Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Zone
-                </label>
-                {isLoadingZones && (
-                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                    <FaSpinner className="animate-spin" />
-                    Loading zones...
-                  </span>
-                )}
-              </div>
-
-              <div className="relative">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search for a zone by name or zone ID..."
-                      value={zoneSearch}
-                      onChange={handleZoneSearchChange}
-                      onFocus={() => setShowZoneDropdown(true)}
-                      className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    />
-                    {zoneSearch && (
-                      <button
-                        type="button"
-                        onClick={clearZoneSelection}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        aria-label="Clear selection"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fetchZones()}
-                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2"
-                    title="Refresh zones"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    Refresh
-                  </button>
-                </div>
-
-                {/* Hidden input to store zone ID */}
-                <input type="hidden" name="zoneId" value={formData.zoneId} />
-
-                {/* Zone Dropdown */}
-                {showZoneDropdown && filteredZones.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredZones.map((zone) => (
-                      <div
-                        key={zone.zoneId}
-                        onClick={() => handleZoneSelect(zone)}
-                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                            <FaMapMarkerAlt className="text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800 dark:text-gray-200">
-                              {zone.name}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Zone ID: {zone.zoneId}
-                              {zone.area && <span> • {zone.area}</span>}
-                              {zone.city && <span> • {zone.city}</span>}
-                            </div>
-                            {zone.state && (
-                              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                {zone.state}{" "}
-                                {zone.pincode && `• ${zone.pincode}`}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* No zones found message */}
-                {showZoneDropdown &&
-                  zoneSearch &&
-                  filteredZones.length === 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
-                      <div className="text-center text-gray-500 dark:text-gray-400">
-                        No zones found matching "{zoneSearch}"
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {selectedZone && (
-                <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                  <FaMapMarkerAlt />
-                  <span>
-                    Selected: {selectedZone.name} (Zone ID:{" "}
-                    {selectedZone.zoneId})
-                  </span>
-                </div>
-              )}
-
-              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-                Search and select a zone to allocate to this user
               </p>
             </div>
           </div>

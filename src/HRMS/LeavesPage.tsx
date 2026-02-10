@@ -345,7 +345,67 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Check if leave is already rejected - DISABLE ALL ACTIONS
+      // Handle CANCEL action separately from APPROVE/REJECT
+      if (action === "CANCEL") {
+        // Only allow cancel if leave is PENDING
+        if (leave.status !== "PENDING") {
+          alert(
+            `Cannot cancel a leave that is ${leave.status}. Only PENDING leaves can be cancelled.`,
+          );
+          return;
+        }
+
+        // Check who can cancel based on role
+        const userRole = userData.role.toUpperCase();
+
+        if (userRole === "HR" || userRole === "ADMIN") {
+          // HR/Admin can cancel any pending leave
+          if (leave.hrStatus !== "PENDING") {
+            alert("Only pending leaves can be cancelled by HR/Admin.");
+            return;
+          }
+        } else if (userRole === "MANAGER" || userRole === "ZONALMANAGER") {
+          // Managers can only cancel pending leaves where they are the reportee
+          const isReportee =
+            leave.reporteeId === userData.id ||
+            leave.reportee?.id === userData.id;
+          if (!isReportee || leave.reporteeStatus !== "PENDING") {
+            alert(
+              "You can only cancel pending leaves where you are the reportee.",
+            );
+            return;
+          }
+        } else {
+          alert("You don't have permission to cancel leaves.");
+          return;
+        }
+
+        // Proceed with cancel action
+        const response = await API.put(
+          `/leaves/approve-reject/${leaveId}`,
+          {
+            action: action,
+            comments: comments,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.data.success) {
+          alert(`Leave ${action.toLowerCase()}d successfully!`);
+          fetchLeaves(); // Refresh leaves list
+        } else {
+          alert(response.data.message || "Failed to update leave status");
+        }
+        return; // Exit early for CANCEL action
+      }
+
+      // For APPROVE and REJECT actions only (not CANCEL)
+      // Check if leave is already rejected
       if (
         leave.status === "REJECTED" ||
         leave.hrStatus === "REJECTED" ||
@@ -363,7 +423,7 @@ const LeavesPage: React.FC = () => {
         return;
       }
 
-      // Authorization check
+      // Authorization check for APPROVE/REJECT
       let hasPermission = false;
       let statusToCheck = "";
       let permissionMessage = "";
@@ -478,38 +538,6 @@ const LeavesPage: React.FC = () => {
           `This leave has already been ${leave.reporteeStatus.toLowerCase()} by reportee`,
         );
         return;
-      }
-
-      // Special case: Cancelling an APPROVED leave
-      if (action === "CANCEL") {
-        // Only allow cancel if leave is APPROVED (not rejected)
-        if (leave.status !== "APPROVED") {
-          alert(
-            `Cannot cancel a leave that is ${leave.status}. Only APPROVED leaves can be cancelled.`,
-          );
-          return;
-        }
-
-        // Check who can cancel based on role
-        if (userRole === "HR" || userRole === "ADMIN") {
-          // HR/Admin can cancel any approved leave
-          if (leave.hrStatus !== "APPROVED") {
-            alert("Only HR-approved leaves can be cancelled by HR/Admin.");
-            return;
-          }
-        } else if (userRole === "MANAGER" || userRole === "ZONALMANAGER") {
-          // Managers can only cancel leaves they approved
-          if (
-            leave.reporteeStatus !== "APPROVED" ||
-            leave.reportee?.id !== userData.id
-          ) {
-            alert("You can only cancel leaves that you have approved.");
-            return;
-          }
-        } else {
-          alert("You don't have permission to cancel leaves.");
-          return;
-        }
       }
 
       const response = await API.put(

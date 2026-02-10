@@ -157,7 +157,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
     }
 
     // Only APPROVED leaves can be cancelled
-    if (leave.status !== "APPROVED") {
+    if (leave.status !== "PENDING") {
       return false;
     }
 
@@ -165,7 +165,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
 
     if (userRoleUpper === "HR" || userRoleUpper === "ADMIN") {
       // HR/Admin can cancel any approved leave (if they approved it or anyone else)
-      return leave.hrStatus === "APPROVED";
+      return leave.hrStatus === "PENDING";
     } else if (
       userRoleUpper === "MANAGER" ||
       userRoleUpper === "ZONALMANAGER"
@@ -174,7 +174,7 @@ const LeavesTable: React.FC<LeavesTableProps> = ({
       const isReportee =
         leave.reportee?.id === currentUserId ||
         leave.reporteeId === currentUserId;
-      return isReportee && leave.reporteeStatus === "APPROVED";
+      return isReportee && leave.reporteeStatus === "PENDING";
     }
 
     return false;

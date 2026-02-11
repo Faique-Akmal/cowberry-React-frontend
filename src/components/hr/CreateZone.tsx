@@ -785,17 +785,6 @@ const CreateZonePage: React.FC = () => {
                   <h2 className="text-2xl font-bold text-gray-900">
                     Create New Zone
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {userToken
-                      ? "You are authenticated to create zones"
-                      : "Please login to enable form"}
-                    {userToken && (
-                      <span className="flex items-center gap-1 text-xs text-emerald-600 mt-1">
-                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                        Token detected in localStorage
-                      </span>
-                    )}
-                  </p>
                 </div>
               </div>
 

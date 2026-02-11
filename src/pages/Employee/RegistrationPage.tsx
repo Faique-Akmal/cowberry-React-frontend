@@ -779,7 +779,7 @@ export default function RegisterUserForm() {
       {/* Header */}
       <div className="text-center mb-10 border-2xl white bg-blur">
         <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800 dark:text-gray-200">
-          User Registration
+          USER REGISTRATION
         </h2>
       </div>
 

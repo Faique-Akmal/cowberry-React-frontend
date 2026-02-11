@@ -164,11 +164,8 @@ const AppSidebar: React.FC = () => {
   const othersItems: NavItem[] = [
     {
       icon: <PlugInIcon />,
-      name: t("menu.Authentication"),
-      subItems: [
-        { name: t("signIn"), path: "/signin" },
-        { name: t("signOut"), path: "/logout" },
-      ],
+      name: "LogOut",
+      path: "/logout",
     },
   ];
 

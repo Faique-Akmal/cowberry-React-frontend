@@ -3,21 +3,13 @@ import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
-import { useTheme } from "../context/ThemeContext";
-// import LangToggleButton from "../components/common/LangToggleButton";
-// import AnnouncementNotification from "../pages/AnnouncementNotification";
-// import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
-// import { Link } from "react-router";
-// import { useTranslation } from "react-i18next";
 
 const AppHeader: React.FC = () => {
-  const { themeConfig } = useTheme();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { isMobile, isMobileOpen, toggleSidebar, toggleMobileSidebar } =
     useSidebar();
-  // const { t } = useTranslation();
-  // const [searchQuery, setSearchQuery] = useState("");
-  // const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,10 +21,14 @@ const AppHeader: React.FC = () => {
     }
   };
 
-  const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
-  };
+  // Scroll-aware shadow
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 4);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
+  // ⌘K / Ctrl+K to focus search
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
@@ -41,81 +37,188 @@ const AppHeader: React.FC = () => {
       }
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
     <header
-      style={{
-        backgroundColor: themeConfig.header.background
-          ? `${themeConfig.header.background}40`
-          : "rgba(255, 255, 255, 0.2)",
-        color: themeConfig.header.text,
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-      }}
-      className="sticky top-0 flex w-full z-40 
-    dark:bg-gray-900/30
-    shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]"
+      className={`
+        sticky top-0 z-40 w-full
+        h-16
+        flex items-center
+        bg-white dark:bg-gray-900
+        border-b border-gray-200/60 dark:border-gray-800/60
+        transition-shadow duration-200
+        ${isScrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]" : ""}
+      `}
     >
-      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
-          {/* Sidebar Toggle */}
+      <div className="flex items-center justify-between w-full px-4 lg:px-6">
+        {/* Left — Sidebar toggle + Search */}
+        <div className="flex items-center gap-3">
           <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
+            className="
+              flex items-center justify-center
+              w-10 h-10 rounded-lg
+              border border-gray-200 dark:border-gray-700
+              text-gray-500 dark:text-gray-400
+              hover:bg-gray-100 dark:hover:bg-gray-800
+              hover:text-gray-900 dark:hover:text-gray-100
+              active:scale-95
+              transition-all duration-150
+            "
           >
-            {isMobile && isMobileOpen ? <>&#x2715;</> : <>&#9776;</>}
+            {isMobile && isMobileOpen ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
           </button>
 
-          {/* Logo */}
-          <Link
-            to="/home"
-            className="absolute left-1/2 transform -translate-x-1/2"
+          {/* Search bar — hidden on mobile */}
+          {/* <div
+            onClick={() => inputRef.current?.focus()}
+            className={`
+              hidden lg:flex items-center gap-2
+              h-9 px-3 min-w-[200px]
+              rounded-lg cursor-text
+              border transition-all duration-150
+              ${
+                isSearchFocused
+                  ? "border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-800"
+                  : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+              }
+            `}
           >
-            <div>
-              <img
-                src="lantern-banner.png"
-                alt="Logo"
-                width={300}
-                height={20}
-              />
-            </div>
-          </Link>
+            <svg
+              className="text-gray-400"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search..."
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              className="
+                bg-transparent outline-none w-full
+                text-sm text-gray-700 dark:text-gray-200
+                placeholder-gray-400 dark:placeholder-gray-500
+              "
+            />
+            <kbd
+              className="
+              hidden lg:inline-flex items-center
+              text-[11px] text-gray-400
+              bg-white dark:bg-gray-700
+              border border-gray-200 dark:border-gray-600
+              rounded px-1.5 py-0.5
+            "
+            >
+              ⌘K
+            </kbd>
+          </div> */}
+        </div>
 
-          {/* App Menu Button */}
+        {/* Center — Logo (absolutely centered) */}
+        <Link
+          to="/home"
+          className="absolute left-1/2 -translate-x-1/2 flex items-center"
+        >
+          <img
+            src="lantern-banner.png"
+            alt="Logo"
+            width={200}
+            height={32}
+            className="object-contain"
+          />
+        </Link>
+
+        {/* Right — Actions */}
+        <div
+          className={`
+            ${isApplicationMenuOpen ? "flex" : "hidden"}
+            lg:flex items-center gap-2
+          `}
+        >
+          {/* Mobile search icon */}
           <button
-            onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            className="
+              lg:hidden flex items-center justify-center
+              w-10 h-10 rounded-lg
+              text-gray-500 dark:text-gray-400
+              hover:bg-gray-100 dark:hover:bg-gray-800
+              active:scale-95 transition-all duration-150
+            "
+            aria-label="Search"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24">
-              <circle cx="5" cy="12" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="19" cy="12" r="2" />
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </button>
-        </div>
 
-        {/* Right Side Header Actions */}
-        <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-0`}
-        >
-          <div className="flex items-center gap-2">
-            {/* <LangToggleButton /> */}
-            {/* <ThemeToggleButton /> */}
-            {/* <AnnouncementNotification /> */}
-
-            {/* ✅ FIXED: NotificationDropdown without props */}
-            <NotificationDropdown />
-          </div>
+          <NotificationDropdown />
           <UserDropdown />
         </div>
+
+        {/* Mobile overflow menu button */}
+        <button
+          onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
+          className="
+            lg:hidden flex items-center justify-center
+            w-10 h-10 rounded-lg
+            text-gray-500 dark:text-gray-400
+            hover:bg-gray-100 dark:hover:bg-gray-800
+            active:scale-95 transition-all duration-150
+          "
+          aria-label="Open menu"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+          </svg>
+        </button>
       </div>
     </header>
   );

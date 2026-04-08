@@ -58,8 +58,7 @@ const FieldEmployeeRestrictionModal = ({
               onClick={() => {
                 // You can add logic to redirect to app store or show download links
                 window.open(
-                  "https://your-mobile-app-download-link.com",
-                  "_blank",
+                  "https://play.google.com/store/apps/details?id=com.cowberry.lantern360",
                 );
                 onClose();
               }}

@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+// NotificationDropdown.tsx (updated with WebSocket)
+import { useState, useEffect, useRef } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-// import { Link } from "react-router";
 import AnnouncementModal from "./AnnouncementModal";
-import axios from 'axios';
 import API from "../../api/axios";
 
-// Define the announcement type based on your API response
 interface Announcement {
   id: number;
   title: string;
   description: string;
   content: string;
   isActive: boolean;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   category: string;
   startDate: string;
   endDate: string;
@@ -32,71 +30,154 @@ interface ApiResponse {
   data: Announcement[];
 }
 
-// Create axios instance (you might want to move this to a separate file)
-
-
-// Add request interceptor to include token
-
-
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifying, setNotifying] = useState(true);
+  const [notifying, setNotifying] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] =
+    useState<Announcement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [unreadIds, setUnreadIds] = useState<Set<number>>(new Set());
+  const socketRef = useRef<WebSocket | null>(null);
+
+  // Get user info and token
+  const accessToken = localStorage.getItem("accessToken");
+  const meUser = JSON.parse(localStorage.getItem("meUser") || "{}");
+  const userId = meUser?.id;
 
   // Fetch announcements from API
   useEffect(() => {
     fetchAnnouncements();
   }, []);
 
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    if (!accessToken || !userId) {
+      console.warn("No token or user ID found. Skipping WebSocket connection.");
+      return;
+    }
+
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+    const socketUrl = `${SOCKET_URL}/ws/announcements/${userId}/?token=${accessToken}`;
+
+    const socket = new WebSocket(socketUrl);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("Announcement WebSocket connected");
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Real-time announcement received:", data);
+
+        if (data.type === "new_announcement" || data.type === "announcement") {
+          const newAnnouncement: Announcement = {
+            id: data.id,
+            title: data.title,
+            description:
+              data.description || data.content?.substring(0, 100) || "",
+            content: data.content,
+            isActive: true,
+            priority: data.priority || "medium",
+            category: data.category || "general",
+            startDate: data.startDate || new Date().toISOString(),
+            endDate: data.endDate || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString(),
+            updatedAt: data.timestamp || new Date().toISOString(),
+            createdBy: data.created_by || {
+              id: data.created_by,
+              username: "Admin",
+              email: "",
+            },
+          };
+
+          // Add to beginning of announcements array
+          setAnnouncements((prev) => [newAnnouncement, ...prev]);
+
+          // Mark as unread and show notification
+          setUnreadIds((prev) => new Set(prev).add(newAnnouncement.id));
+          setNotifying(true);
+
+          // Show browser notification
+          if (Notification.permission === "granted") {
+            new Notification(
+              `New ${newAnnouncement.priority} priority announcement`,
+              {
+                body: newAnnouncement.title,
+                icon: "/announcement-icon.png",
+                tag: `announcement-${newAnnouncement.id}`,
+              },
+            );
+          }
+
+          // Optional: Play sound
+          // const audio = new Audio("/notification-sound.mp3");
+          // audio.play();
+        }
+      } catch (error) {
+        console.error("Error processing WebSocket message:", error);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("Announcement WebSocket disconnected");
+      // Reconnect after 3 seconds
+      setTimeout(() => {
+        if (socketRef.current?.readyState !== WebSocket.OPEN) {
+          console.log("Reconnecting WebSocket...");
+        }
+      }, 3000);
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, [accessToken, userId]);
+
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      
-      // Using Axios to fetch announcements
-      const response = await API.get<ApiResponse>('/auth/announcements');
+      const response = await API.get<ApiResponse>("/auth/announcements");
       const data = response.data;
-      
+
       if (data.success && data.data) {
-        setAnnouncements(Array.isArray(data.data) ? data.data : [data.data]);
-        // Check if there are any active announcements to show notification dot
-        const hasActiveAnnouncements = Array.isArray(data.data) 
-          ? data.data.some(ann => ann.isActive)
-          : data.data.isActive;
-        setNotifying(hasActiveAnnouncements);
+        const announcementsList = Array.isArray(data.data)
+          ? data.data
+          : [data.data];
+        setAnnouncements(announcementsList);
+
+        // Check for unread announcements (based on localStorage)
+        const lastReadTime = localStorage.getItem("lastReadAnnouncementTime");
+        if (lastReadTime) {
+          const newUnreadIds = announcementsList
+            .filter((ann) => new Date(ann.createdAt) > new Date(lastReadTime))
+            .map((ann) => ann.id);
+          setUnreadIds(new Set(newUnreadIds));
+          setNotifying(newUnreadIds.length > 0);
+        } else if (announcementsList.length > 0) {
+          setNotifying(true);
+          setUnreadIds(new Set(announcementsList.map((ann) => ann.id)));
+        }
       } else {
         setError(data.message || "Failed to fetch announcements");
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        // Axios-specific error handling
-        if (err.response) {
-          // Server responded with an error status
-          setError(err.response.data?.message || `Error: ${err.response.status}`);
-        } else if (err.request) {
-          // Request was made but no response received
-          setError("No response from server. Please check your connection.");
-        } else {
-          // Something happened in setting up the request
-          setError(err.message);
-        }
-      } else {
-        // Non-Axios error
-        setError(err instanceof Error ? err.message : "An error occurred");
-      }
-      
-      // For demo purposes, set some mock data
-      setAnnouncements();
+      console.error("Error fetching announcements:", err);
+      setError("Failed to load announcements");
     } finally {
       setLoading(false);
     }
   };
-
-  // Mock data for demo purposes
- 
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -104,17 +185,35 @@ export default function NotificationDropdown() {
 
   function closeDropdown() {
     setIsOpen(false);
+    // Mark all as read when dropdown closes
+    if (unreadIds.size > 0) {
+      localStorage.setItem(
+        "lastReadAnnouncementTime",
+        new Date().toISOString(),
+      );
+      setUnreadIds(new Set());
+      setNotifying(false);
+    }
   }
 
   const handleClick = () => {
     toggleDropdown();
-    setNotifying(false);
   };
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     setSelectedAnnouncement(announcement);
     setIsModalOpen(true);
     closeDropdown();
+
+    // Mark this specific announcement as read
+    setUnreadIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(announcement.id);
+      if (newSet.size === 0) {
+        setNotifying(false);
+      }
+      return newSet;
+    });
   };
 
   const handleCloseModal = () => {
@@ -122,49 +221,55 @@ export default function NotificationDropdown() {
     setSelectedAnnouncement(null);
   };
 
-  // Function to get priority badge color
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
-      case 'high':
-        return 'bg-red-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-green-500';
+      case "high":
+        return "bg-red-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "low":
+        return "bg-green-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
-  // Function to format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) {
-      return 'Just now';
+      return "Just now";
     } else if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
     } else {
       const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
     }
   };
 
-  // Function to get category icon
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'maintenance':
-        return '🛠️';
-      case 'update':
-        return '🔄';
-      case 'general':
-        return '📢';
+      case "maintenance":
+        return "🛠️";
+      case "update":
+        return "🔄";
+      case "general":
+        return "📢";
       default:
-        return '📄';
+        return "📄";
     }
   };
+
+  // Request notification permission
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   return (
     <div className="relative">
@@ -179,6 +284,11 @@ export default function NotificationDropdown() {
         >
           <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
         </span>
+        {unreadIds.size > 0 && (
+          <span className="absolute -top-1 -right-1 z-10 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+            {unreadIds.size > 99 ? "99+" : unreadIds.size}
+          </span>
+        )}
         <svg
           className="fill-current"
           width="20"
@@ -194,15 +304,20 @@ export default function NotificationDropdown() {
           />
         </svg>
       </button>
-      
+
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="fixed left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-8 lg:translate-x-0 flex flex-col gap-3 w-[90%] sm:w-auto max-w-sm z-50 p-6"
+        className="fixed left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-8 lg:translate-x-0 flex flex-col gap-3 w-[90%] sm:w-[420px] max-w-sm z-50 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl"
       >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Announcements
+            {unreadIds.size > 0 && (
+              <span className="ml-2 text-xs text-blue-500">
+                ({unreadIds.size} new)
+              </span>
+            )}
           </h5>
           <button
             onClick={toggleDropdown}
@@ -224,7 +339,7 @@ export default function NotificationDropdown() {
             </svg>
           </button>
         </div>
-        
+
         <ul className="flex flex-col h-auto max-h-96 overflow-y-auto custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -233,7 +348,7 @@ export default function NotificationDropdown() {
           ) : error ? (
             <div className="text-center py-8 text-red-500">
               <p>{error}</p>
-              <button 
+              <button
                 onClick={fetchAnnouncements}
                 className="mt-2 px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
               >
@@ -249,31 +364,54 @@ export default function NotificationDropdown() {
               <li key={announcement.id}>
                 <DropdownItem
                   onItemClick={() => handleAnnouncementClick(announcement)}
-                  className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer"
+                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer transition-all ${
+                    unreadIds.has(announcement.id)
+                      ? "bg-blue-50 dark:bg-blue-900/20"
+                      : ""
+                  }`}
                 >
                   <span className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800">
-                    <span className="text-lg">{getCategoryIcon(announcement.category)}</span>
-                    <span className={`absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-full border-[1.5px] border-white ${getPriorityColor(announcement.priority)} dark:border-gray-900`}></span>
+                    <span className="text-lg">
+                      {getCategoryIcon(announcement.category)}
+                    </span>
+                    <span
+                      className={`absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-full border-[1.5px] border-white ${getPriorityColor(announcement.priority)} dark:border-gray-900`}
+                    ></span>
                   </span>
 
                   <span className="block flex-1">
                     <div className="flex items-start justify-between mb-1">
-                      <span className="font-medium text-gray-800 dark:text-white/90 line-clamp-1">
+                      <span
+                        className={`font-medium ${unreadIds.has(announcement.id) ? "text-blue-600 dark:text-blue-400" : "text-gray-800 dark:text-white/90"} line-clamp-1`}
+                      >
                         {announcement.title}
+                        {unreadIds.has(announcement.id) && (
+                          <span className="ml-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                        )}
                       </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(announcement.priority)} text-white`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full text-white ${getPriorityColor(announcement.priority)}`}
+                      >
                         {announcement.priority}
                       </span>
                     </div>
-                    
+
                     <span className="mb-1.5 block text-theme-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                       {announcement.description}
                     </span>
 
                     <span className="flex items-center gap-2 text-gray-500 text-theme-xs dark:text-gray-400">
                       <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        <svg
+                          className="w-3 h-3"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         {announcement.createdBy.username}
                       </span>
@@ -286,17 +424,8 @@ export default function NotificationDropdown() {
             ))
           )}
         </ul>
-        
-        {/* <Link
-          to="/announcements"
-          className="block px-4 py-2 mt-3 text-sm font-medium text-center text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          onClick={closeDropdown}
-        >
-          View All Announcements
-        </Link> */}
       </Dropdown>
 
-      {/* Announcement Modal */}
       <AnnouncementModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

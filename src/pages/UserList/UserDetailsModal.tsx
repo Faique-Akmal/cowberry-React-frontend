@@ -160,9 +160,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
         </div> */}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 bg-blue-500">
           {/* Profile Header */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 pb-6 border-b border-blue-800 dark:border-gray-700 ">
             <div className="w-18 h-18 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
               {(
                 user.name?.charAt(0) ||

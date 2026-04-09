@@ -41,9 +41,9 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center bg-white p-1 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-lantern-blue-600"
+        className="flex items-center bg-white p-1 rounded-full text-gray-700 dropdown-toggle dark:text-white dark:bg-black dark:hover:bg-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-lantern-blue-600"
       >
-        <div className="mr-3 overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
+        <div className=" overflow-hidden rounded-full w-12 h-12 flex items-center justify-center">
           {profile_image ? (
             <img
               src={profile_image}
@@ -51,13 +51,13 @@ export default function UserDropdown() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full rounded-full bg-gradient-to-r from-lantern-blue-600 to-gray-600 flex items-center justify-center text-white text-lg font-medium">
+            <div className="w-full h-full rounded-full bg-gradient-to-r from-lantern-blue-600 to-gray-600 flex items-center justify-center text-white text-sm font-medium">
               {localStorage.getItem("username")?.charAt(0)?.toUpperCase()}
             </div>
           )}
         </div>
 
-        <svg
+        {/* <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
           }`}
@@ -74,7 +74,7 @@ export default function UserDropdown() {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
+        </svg> */}
       </button>
 
       <Dropdown

@@ -421,11 +421,11 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
         {/* Footer */}
         <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0 bg-gray-50 dark:bg-gray-800/50">
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
+          <div className="flex flex-row justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium order-2 sm:order-1"
+              className="px-6 py- border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
             >
               Close
             </button>
@@ -433,18 +433,18 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={onDeleteClick}
-                className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium order-1 sm:order-2"
+                className="px-6 py-2.5 bg-red-600 text-white  hover:bg-red-700 rounded-full transition-colors font-medium"
               >
-                Delete User
+                Delete
               </button>
             )}
             {canEditUser && (
               <button
                 type="button"
                 onClick={onEditClick}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium order-3"
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-full  hover:bg-blue-700 transition-colors font-medium"
               >
-                Edit User
+                Edit
               </button>
             )}
           </div>

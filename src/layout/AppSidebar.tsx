@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { PiUsersThreeBold } from "react-icons/pi";
 import {
-  // CalenderIcon,
   ChatIcon,
   ChevronDownIcon,
   GridIcon,
@@ -17,8 +16,6 @@ import SidebarWidget from "./SidebarWidget";
 import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
-// import { FaHouseChimneyUser } from "react-icons/fa6";
-// import { MdAppRegistration } from "react-icons/md";
 
 type SubItem = {
   name: string;
@@ -87,55 +84,44 @@ const AppSidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     {
-      icon: <GridIcon />,
+      icon: <GridIcon className="text-lantern-blue-600" />,
       name: t("menu.dashboard"),
       path: "/home",
       role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
     },
     {
-      icon: <ChatIcon />,
+      icon: <ChatIcon className="text-lantern-blue-600" />,
       name: t("menu.chat"),
       path: "/chat",
       role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
     },
 
     {
-      icon: <UserCircleIcon />,
+      icon: <UserCircleIcon className="text-lantern-blue-600" />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
       role: ["admin", "manager", "hr"],
     },
     {
-      icon: <MdListAlt />,
+      icon: <MdListAlt className="text-lantern-blue-600" />,
       name: t("menu.TravelSessions"),
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr"],
     },
     {
-      icon: <IoPersonAddOutline />,
+      icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
       name: t("menu.registerUserForm"),
       path: "/user-register",
       role: ["admin", "hr"],
     },
     {
-      icon: <MdOutlineAdd />,
+      icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Leaves Management"),
       path: "/get-leaves",
       role: ["admin", "hr", "manager", "zonalmanager"],
     },
-    // {
-    //   icon: <MdOutlineAdd />,
-    //   name: t("Add department"),
-    //   path: "/add-department",
-    // },
-    // {
-    //   icon: <MdOutlineAdd />,
-    //   name: t("Add Zones"),
-    //   path: "/add-zones",
-    //   role: ["admin", "hr"],
-    // },
     {
-      icon: <MdOutlineAdd />,
+      icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Add / Manage"),
       subItems: [
         { name: t("Add Zones"), path: "/add-zones", role: ["admin", "hr"] },
@@ -148,13 +134,13 @@ const AppSidebar: React.FC = () => {
       ],
     },
     {
-      icon: <MdAnnouncement />,
+      icon: <MdAnnouncement className="text-lantern-blue-600" />,
       name: t("menu.announcement"),
       path: "/announcementList",
       role: ["admin", "hr"],
     },
     {
-      icon: <PiUsersThreeBold />,
+      icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
       name: t("menu.allUsers"),
       path: "/all-users",
       role: ["admin", "manager", "hr", "zonalmanager"],
@@ -163,7 +149,7 @@ const AppSidebar: React.FC = () => {
 
   const othersItems: NavItem[] = [
     {
-      icon: <PlugInIcon />,
+      icon: <PlugInIcon className="text-red-700" />,
       name: "LogOut",
       path: "/logout",
     },
@@ -198,6 +184,13 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
+  // Close mobile sidebar when navigating
+  const handleNavigation = (path: string) => {
+    if (isMobileOpen) {
+      toggleMobileSidebar();
+    }
+  };
+
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prev) =>
       prev?.type === menuType && prev.index === index
@@ -209,10 +202,10 @@ const AppSidebar: React.FC = () => {
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-4">
       {items
-        .filter((nav) => hasAccess(nav.role)) // Use hasAccess function for main item
+        .filter((nav) => hasAccess(nav.role))
         .map((nav, index) => {
-          const visibleSubItems = nav.subItems?.filter(
-            (sub) => hasAccess(sub.role), // Use hasAccess function for sub items
+          const visibleSubItems = nav.subItems?.filter((sub) =>
+            hasAccess(sub.role),
           );
 
           if (
@@ -247,7 +240,7 @@ const AppSidebar: React.FC = () => {
                 nav.path && (
                   <Link
                     to={nav.path}
-                    // onClick={toggleMobileSidebar}
+                    onClick={() => handleNavigation(nav.path!)}
                     className="menu-item group"
                   >
                     <span className="menu-item-icon-size">{nav.icon}</span>
@@ -277,7 +270,7 @@ const AppSidebar: React.FC = () => {
                       <li key={subItem.name}>
                         <Link
                           to={subItem.path}
-                          // onClick={toggleMobileSidebar}
+                          onClick={() => handleNavigation(subItem.path)}
                           className={`menu-dropdown-item ${
                             isActive(subItem.path)
                               ? "menu-dropdown-item-active"
@@ -311,19 +304,28 @@ const AppSidebar: React.FC = () => {
       className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
     text-gray-900 dark:text-blue-light-25
     shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
-    ${isExpanded || isMobileOpen || isHovered ? "w-[290px]" : "w-[90px]"}
+    ${isExpanded || isMobileOpen || isHovered ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
     ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        // Only trigger hover on desktop when sidebar is collapsed and not expanded
+        if (!isExpanded && !isMobile && !isMobileOpen) {
+          setIsHovered(true);
+        }
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+      }}
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div
           className={`py-8 flex ${
-            !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+            !isExpanded && !isHovered && !isMobile
+              ? "lg:justify-center justify-start"
+              : "justify-start"
           } px-5`}
         >
-          {isExpanded || isHovered || isMobile ? (
+          {isExpanded || isHovered || isMobileOpen ? (
             <img
               src="lantern-banner.png"
               alt="Logo"

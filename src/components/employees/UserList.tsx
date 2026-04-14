@@ -933,6 +933,7 @@ const UserList: React.FC = () => {
                     flex-1
                     relative
                   
+                    overflow-y-auto
                     overflow-x-auto
                   "
                 >

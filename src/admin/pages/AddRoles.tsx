@@ -34,6 +34,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [adminToken, setAdminToken] = useState<string>("");
+  const [syncingRoles, setSyncingRoles] = useState<boolean>(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -78,6 +79,60 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  // ERP ROLE SYNC LOGIC
+
+  const syncRolesFromERP = async () => {
+    setError("");
+    setSuccess("");
+    setSyncingRoles(true);
+
+    try {
+      const response = await API.post(
+        "/admin/sync-roles-from-erp",
+        {}, // Empty body as per curl
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+        },
+      );
+
+      setSuccess(response.data.message || "Roles synced successfully from ERP");
+
+      // Refresh the roles list after successful sync
+      await fetchRoles(adminToken);
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        if (err.response) {
+          setError(
+            err.response.data?.message ||
+              `Failed to sync roles: ${err.response.status}`,
+          );
+
+          // Handle unauthorized error
+          if (err.response.status === 401 || err.response.status === 403) {
+            localStorage.removeItem("token");
+            setAdminToken("");
+            setError("Session expired. Please login again.");
+          }
+        } else if (err.request) {
+          setError(
+            "No response received from server. Please check your connection.",
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred",
+        );
+      }
+    } finally {
+      setSyncingRoles(false);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -237,6 +292,56 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               <p className="text-gray-600 mt-2">
                 Manage system roles and permissions with full control
               </p>
+            </div>
+            <div>
+              <button
+                onClick={syncRolesFromERP}
+                disabled={syncingRoles}
+                className="ml-6 p-8 py-3 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {syncingRoles ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Syncing Roles...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Sync ERP Roles
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -401,7 +506,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-lantern-blue-600 hover:bg-blue-500 text-white w-full py-4 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -501,7 +606,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
               </div>
               <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-lantern-blue-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(roles.length * 10, 100)}%` }}
                 ></div>
               </div>
@@ -585,23 +690,23 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                       key={role.id}
                       className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-300"
                     >
-                      <div className="p-5">
+                      <div className="p-2">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-3">
+                            <div className="flex items-center  ">
                               <div>
                                 <h4 className="text-lg font-bold text-gray-800">
                                   {role.name}
                                 </h4>
-                                <div className="flex items-center mt-1">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <div className="flex items-center ">
+                                  <span className="inline-flex items-center px-3  rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                     ID: {role.id}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <p className="text-gray-600 text-sm leading-relaxed pl-13">
-                              {role.description}
+                            <p className="text-gray-600 text-sm leading-relaxed ">
+                              Description: {role.description}
                             </p>
                           </div>
                           <div className="ml-4">

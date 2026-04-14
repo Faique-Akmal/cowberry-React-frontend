@@ -55,6 +55,7 @@ L.Icon.Default.mergeOptions({
 // Interface for Travel Sessions API response
 interface TravelSession {
   sessionId: number;
+  fullName: string;
   userId: number;
   username: string;
   employeeCode: string;
@@ -126,6 +127,7 @@ interface FarmerData {
 interface GroupedSession {
   userId: number;
   username: string;
+  fullName?: string;
   employeeCode: string;
   date: string;
   sessions: TravelSession[];
@@ -533,7 +535,9 @@ export default function AttendanceList() {
           groupedMap.set(groupKey, {
             userId: session.userId,
             username: session.username,
+
             employeeCode: session.employeeCode,
+            fullName: session.fullName,
             date: dateKey,
             sessions: [session],
             totalSessions: 1,
@@ -2026,6 +2030,7 @@ export default function AttendanceList() {
         return {
           "User ID": group.userId,
           Username: group.username,
+          fullName: group.fullName,
           "Employee Code": group.employeeCode,
           Department: group.sessions[0]?.department || "N/A",
           "Allocated Area": group.sessions[0]?.allocatedArea || "N/A",
@@ -2099,6 +2104,7 @@ export default function AttendanceList() {
       const baseHeaders = [
         "User ID",
         "Username",
+        "fullName",
         "Employee Code",
         "Department",
         "Allocated Area",
@@ -2576,7 +2582,7 @@ export default function AttendanceList() {
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800 dark:text-white">
-                              {group.username}
+                              {group.fullName}
                               <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
                                 ({group.employeeCode})
                               </span>

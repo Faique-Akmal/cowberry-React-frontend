@@ -24,7 +24,7 @@ import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
 interface CheckLog {
   userId: number;
-  username: string;
+  fullName: string;
   employee_code: string;
   logType: "check_in" | "check_out";
   timestamp: string;
@@ -41,7 +41,7 @@ interface CheckLogsResponse {
 
 interface GroupedLog {
   userId: number;
-  username: string;
+  fullName: string;
   employee_code: string;
   date: string;
   checkInTime: string | null;
@@ -57,8 +57,8 @@ const EmployeeCheckin = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<"username" | "employee_code">(
-    "username",
+  const [searchType, setSearchType] = useState<"fullName" | "employee_code">(
+    "fullName",
   );
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
@@ -148,7 +148,7 @@ const EmployeeCheckin = () => {
       if (!grouped.has(key)) {
         grouped.set(key, {
           userId: log.userId,
-          username: log.username,
+          fullName: log.fullName,
           employee_code: log.employee_code,
           date: date,
           checkInTime: null,
@@ -219,8 +219,8 @@ const EmployeeCheckin = () => {
 
     if (searchQuery.trim()) {
       result = result.filter((log) => {
-        if (searchType === "username") {
-          return log.username.toLowerCase().includes(searchQuery.toLowerCase());
+        if (searchType === "fullName") {
+          return log.fullName.toLowerCase().includes(searchQuery.toLowerCase());
         } else {
           return log.employee_code
             .toLowerCase()
@@ -279,7 +279,7 @@ const EmployeeCheckin = () => {
   const clearFilters = () => {
     setSearchQuery("");
     setDateRange([null, null]);
-    setSearchType("username");
+    setSearchType("fullName");
     fetchCheckLogs(1);
   };
 
@@ -290,7 +290,7 @@ const EmployeeCheckin = () => {
 
   const exportToCSV = () => {
     const headers = [
-      "Username",
+      "fullName",
       "Employee Code",
       "Date",
       "Check-in Time",
@@ -300,7 +300,7 @@ const EmployeeCheckin = () => {
       headers.join(","),
       ...filteredLogs.map((log) =>
         [
-          `"${log.username}"`,
+          `"${log.fullName}"`,
           `"${log.employee_code}"`,
           `"${log.date}"`,
           `"${log.checkInTime || "N/A"}"`,
@@ -517,7 +517,7 @@ const EmployeeCheckin = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={`Search by ${searchType === "username" ? "username" : "employee code"}`}
+                placeholder={`Search by ${searchType === "fullName" ? "fullName" : "employee code"}`}
                 className="
                   w-full pl-9 pr-24 py-2
                   bg-white/50 dark:bg-gray-700/50
@@ -533,7 +533,7 @@ const EmployeeCheckin = () => {
               <select
                 value={searchType}
                 onChange={(e) =>
-                  setSearchType(e.target.value as "username" | "employee_code")
+                  setSearchType(e.target.value as "fullName" | "employee_code")
                 }
                 className="
                   absolute right-1 top-1/2 transform -translate-y-1/2
@@ -549,7 +549,7 @@ const EmployeeCheckin = () => {
                   w-20
                 "
               >
-                <option value="username">User</option>
+                <option value="fullName">User</option>
                 <option value="employee_code">Emp ID</option>
               </select>
             </div>
@@ -643,7 +643,7 @@ const EmployeeCheckin = () => {
                   "
                 >
                   <span className="truncate">
-                    {searchType === "username" ? "👤" : "🔢"}: {searchQuery}
+                    {searchType === "fullName" ? "👤" : "🔢"}: {searchQuery}
                   </span>
                   <button
                     onClick={() => setSearchQuery("")}
@@ -818,8 +818,8 @@ const EmployeeCheckin = () => {
                       <tr>
                         {[
                           {
-                            key: "username",
-                            label: "Username",
+                            key: "fullName",
+                            label: "fullName",
                             className: "w-[180px] sm:w-auto",
                           },
                           {
@@ -888,11 +888,11 @@ const EmployeeCheckin = () => {
                                 "
                               >
                                 <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                                  {log.username.charAt(0).toUpperCase()}
+                                  {log.fullName.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                               <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                {log.username}
+                                {log.fullName}
                               </span>
                             </div>
                           </td>

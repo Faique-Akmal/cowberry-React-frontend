@@ -1,9 +1,10 @@
 // FilterSection.tsx
 import React, { useState } from "react";
-import { Role, Zone, FilterState } from "../../types/user.types"; // ADD FilterState import
+import { Role, Zone, FilterState } from "../../types/user.types";
+import API from "../../api/axios"; // Add this import
 
 interface FilterSectionProps {
-  filterState: FilterState; // ✅ Add this
+  filterState: FilterState;
   uniqueDepartments: string[];
   uniqueZones: string[];
   roles: Role[];
@@ -13,13 +14,14 @@ interface FilterSectionProps {
   currentPage: number;
   totalPages: number;
   exporting: boolean;
-  onFilterChange: (key: keyof FilterState, value: any) => void; // ✅ Add this
-  onClearFilters: () => void; // ✅ This should be a function
+  onFilterChange: (key: keyof FilterState, value: any) => void;
+  onClearFilters: () => void;
   onExport: () => void;
+  onSyncComplete?: () => void;
 }
 
 const FilterSection: React.FC<FilterSectionProps> = ({
-  filterState, // ✅ Get the whole filter state
+  filterState,
   uniqueDepartments = [],
   uniqueZones = [],
   roles = [],
@@ -32,12 +34,62 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   onFilterChange,
   onClearFilters,
   onExport,
+  onSyncComplete,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
 
   // Use the passed values
   const filteredCount = filteredUsersLength || 0;
   const paginatedCount = paginatedUsersLength || 0;
+
+  // Sync function
+  // This is already in your component - lines 48-106
+  const syncUsersFromERP = async () => {
+    setSyncing(true);
+    setSyncError(null);
+    setSyncSuccess(null);
+
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("adminToken") ||
+      sessionStorage.getItem("token");
+
+    if (!token) {
+      setSyncError("Authentication required. Please log in as admin.");
+      setSyncing(false);
+      return;
+    }
+
+    try {
+      const response = await API.post(
+        "/admin/sync-employees-from-erp",
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const message =
+        response.data.message || "Users synced successfully from ERP";
+      setSyncSuccess(message);
+
+      setTimeout(() => setSyncSuccess(null), 3000);
+
+      if (onSyncComplete) {
+        onSyncComplete(); // This will refresh the user list
+      }
+    } catch (err: any) {
+      // Error handling...
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Create handler functions that call onFilterChange
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +147,45 @@ const FilterSection: React.FC<FilterSectionProps> = ({
       <div
         className={`${isVisible ? "block" : "hidden sm:block"} bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] shrink-0`}
       >
+        {/* Sync Status Messages */}
+        {syncError && (
+          <div className="mb-3 p-2 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm flex items-center gap-2">
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{syncError}</span>
+          </div>
+        )}
+
+        {syncSuccess && (
+          <div className="mb-3 p-2 bg-green-100 border border-green-300 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{syncSuccess}</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-2">
           {/* Search Input */}
           <div className="sm:col-span-2">
@@ -216,9 +307,59 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Sync Button */}
           <div>
-            <button className="ml-6 px-6 py-1.5 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-xs flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Sync Users
+            </label>
+            <button
+              onClick={syncUsersFromERP}
+              disabled={syncing}
+              className="w-full py-1.5 px-2 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 shadow-sm hover:shadow text-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {syncing ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-3 w-3 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-3 h-3 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Sync ERP Users
+                </>
+              )}
             </button>
           </div>
         </div>

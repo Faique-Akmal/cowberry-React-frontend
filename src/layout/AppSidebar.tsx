@@ -130,7 +130,7 @@ const AppSidebar: React.FC = () => {
           path: "/add-department",
           role: ["admin", "hr"],
         },
-        { name: t("Add Role"), path: "/add-role", role: ["admin", "hr,"] },
+        { name: t("Add Role"), path: "/add-role", role: ["admin", "hr"] },
       ],
     },
     {

@@ -147,6 +147,8 @@ interface GroupedSession {
 interface MultiSessionMapView {
   userId: number;
   username: string;
+  fullName:string;
+
   employeeCode: string;
   date: string;
   sessions: TravelSession[];
@@ -992,7 +994,7 @@ export default function AttendanceList() {
               session.userId,
               {
                 userId: session.userId,
-                username: session.username,
+                fullName: session.fullName,
                 employeeCode: session.employeeCode,
                 department: session.department || "Unknown",
                 allocatedArea: session.allocatedArea || "Unknown",
@@ -1668,7 +1670,7 @@ export default function AttendanceList() {
       // Set the multi-session view immediately
       setMultiSessionMapView({
         userId: group.userId,
-        username: group.username,
+        fullName: group.fullName,
         employeeCode: group.employeeCode,
         date: group.date,
         sessions: group.sessions.sort(
@@ -2028,8 +2030,6 @@ export default function AttendanceList() {
         });
 
         return {
-          "User ID": group.userId,
-          Username: group.username,
           fullName: group.fullName,
           "Employee Code": group.employeeCode,
           Department: group.sessions[0]?.department || "N/A",
@@ -2102,8 +2102,6 @@ export default function AttendanceList() {
 
       // Build headers
       const baseHeaders = [
-        "User ID",
-        "Username",
         "fullName",
         "Employee Code",
         "Department",
@@ -2578,7 +2576,8 @@ export default function AttendanceList() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {group.username.charAt(0).toUpperCase()}
+                            {group.fullName
+.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -2952,7 +2951,8 @@ export default function AttendanceList() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
-                        {session.username.charAt(0).toUpperCase()}
+                        {session.fullName
+.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">
@@ -3430,7 +3430,8 @@ export default function AttendanceList() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">
-                      {multiSessionMapView.username}
+                      {multiSessionMapView.fullName
+}
                     </h2>
                     <p className="text-blue-100">
                       {multiSessionMapView.employeeCode} •

@@ -25,6 +25,7 @@ const DepartmentManagement: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [adminToken, setAdminToken] = useState<string>("");
+  const [syncing, setSyncing] = useState<boolean>(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -63,6 +64,62 @@ const DepartmentManagement: React.FC = () => {
       }
     } finally {
       setFetching(false);
+    }
+  };
+
+  // ERP DEPARTMENT SYNC LOGIC
+
+  const syncDepartmentsFromERP = async () => {
+    setError("");
+    setSuccess("");
+    setSyncing(true);
+
+    try {
+      const response = await API.post(
+        "/admin/sync-departments-from-erp",
+        {}, // Empty body as per curl
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+        },
+      );
+
+      setSuccess(
+        response.data.message || "Departments synced successfully from ERP",
+      );
+
+      // Refresh the departments list after successful sync
+      await fetchDepartments();
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        if (err.response) {
+          setError(
+            err.response.data?.message ||
+              `Failed to sync departments: ${err.response.status}`,
+          );
+
+          // Handle unauthorized error
+          if (err.response.status === 401 || err.response.status === 403) {
+            localStorage.removeItem("token");
+            setAdminToken("");
+            setError("Session expired. Please login again.");
+          }
+        } else if (err.request) {
+          setError(
+            "No response received from server. Please check your connection.",
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred",
+        );
+      }
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -229,11 +286,55 @@ const DepartmentManagement: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-              <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 flex items-center shadow-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-sm text-gray-600">
-                  {departments.length} Departments
-                </span>
+              <div>
+                <button
+                  onClick={syncDepartmentsFromERP}
+                  disabled={syncing}
+                  className="ml-6 p-8 py-3 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 w-full sm:w-auto shadow-sm hover:shadow text-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {syncing ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Sync ERP Departments
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -311,9 +412,7 @@ const DepartmentManagement: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Add Department
-                  </h2>
+                  <h2 className="text-xl font-bold  ">Add Department</h2>
                   <p className="text-gray-600 text-sm mt-1">
                     Create new departments
                   </p>
@@ -397,7 +496,7 @@ const DepartmentManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="bg-lantern-blue-600 hover:bg-blue-500 text-white w-full py-3 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
                       <>
@@ -571,7 +670,7 @@ const DepartmentManagement: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                  {departments.map((department) => (
+                  {departments.map((department, index) => (
                     <div
                       key={department.departmentId}
                       className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-300"
@@ -582,12 +681,15 @@ const DepartmentManagement: React.FC = () => {
                             <div className="flex items-center space-x-4">
                               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                                 <span className="text-gray-700 font-bold text-lg">
-                                  {department.departmentId}
+                                  {index + 1}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-lg font-bold text-gray-800 truncate">
                                   {department.name}
+                                  <span className="text-gray-700 font-bold text-lg">
+                                    {department.departmentId}
+                                  </span>
                                 </h3>
                                 <p className="text-gray-600 text-sm mt-1 truncate">
                                   {department.description}

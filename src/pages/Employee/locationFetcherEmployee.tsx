@@ -2576,8 +2576,7 @@ export default function AttendanceList() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {group.fullName
-.charAt(0).toUpperCase()}
+                            {group.fullName?.charAt(0)?.toUpperCase() || group.username?.charAt(0)?.toUpperCase() || "?"}
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -2951,8 +2950,7 @@ export default function AttendanceList() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
-                        {session.fullName
-.charAt(0).toUpperCase()}
+                        {session.fullName?.charAt(0)?.toUpperCase() || session.username?.charAt(0)?.toUpperCase() || "?"}
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">

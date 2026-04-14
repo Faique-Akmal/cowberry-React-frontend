@@ -108,12 +108,12 @@ const AppSidebar: React.FC = () => {
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr"],
     },
-    {
-      icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
-      name: t("menu.registerUserForm"),
-      path: "/user-register",
-      role: ["admin", "hr"],
-    },
+    // {
+    //   icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
+    //   name: t("menu.registerUserForm"),
+    //   path: "/user-register",
+    //   role: ["admin", "hr"],
+    // },
     {
       icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Leaves Management"),
@@ -130,14 +130,14 @@ const AppSidebar: React.FC = () => {
           path: "/add-department",
           role: ["admin", "hr"],
         },
-        { name: t("Add Role"), path: "/add-role", role: ["admin", "hr"] },
+        { name: t("Add Role"), path: "/add-role", role: ["admin", "hr,"] },
       ],
     },
     {
       icon: <MdAnnouncement className="text-lantern-blue-600" />,
       name: t("menu.announcement"),
       path: "/announcementList",
-      role: ["admin", "hr"],
+      role: ["admin", "hr", "ceo"],
     },
     {
       icon: <PiUsersThreeBold className="text-lantern-blue-600" />,

@@ -2240,7 +2240,7 @@ export default function AttendanceList() {
             </div>
             <p className="text-gray-600 dark:text-gray-300">
               Track employee travel activities and paths
-              {currentUserInfo?.userRole && (
+              {/* {currentUserInfo?.userRole && (
                 <span className="ml-2 text-sm opacity-75">
                   (Viewing:{" "}
                   {currentUserInfo.userRole.includes("manager") &&
@@ -2251,7 +2251,7 @@ export default function AttendanceList() {
                       : "All"}
                   )
                 </span>
-              )}
+              )} */}
             </p>
           </div>
 
@@ -2449,6 +2449,7 @@ export default function AttendanceList() {
                     type="date"
                     className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                     value={startDate}
+                    placeholder="start date"
                     onChange={(e) => setStartDate(e.target.value)}
                     max={endDate || new Date().toISOString().split("T")[0]}
                   />
@@ -2496,7 +2497,7 @@ export default function AttendanceList() {
                 }
                 value={viewMode}
               >
-                <option value="grouped">Grouped by User/Date</option>
+                <option value="grouped">Group session</option>
                 <option value="individual">Individual Sessions</option>
               </select>
             </div>

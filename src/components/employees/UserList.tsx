@@ -893,16 +893,17 @@ const UserList: React.FC = () => {
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
         <div className="relative z-10 flex flex-col h-full">
-          <h2
+          {/* <h5
             className="
-          text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 text-center
+          text-xl sm:text-2xl lg:text-2xl font-bold mb-3 sm:mb-4 text-left
           text-dark
+          uppercase
           bg-clip-text 
           px-2
         "
           >
-            Users Directory
-          </h2>
+            Employee List
+          </h5> */}
 
           {/* Filter Section */}
           <FilterSection
@@ -967,7 +968,7 @@ const UserList: React.FC = () => {
                     </div>
                   )}
 
-                {/* Debug info for Zonal Manager */}
+                {/* Debug info for Zonal Manager
                 {currentUser &&
                   (currentUser.role === "zonalmanager" ||
                     currentUser.role === "zonal manager") &&
@@ -985,7 +986,7 @@ const UserList: React.FC = () => {
                         Total users in system: {users.length}
                       </p>
                     </div>
-                  )}
+                  )} */}
 
                 {/* Users Table Container with Scroll */}
                 <div

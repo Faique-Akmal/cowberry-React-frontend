@@ -13,8 +13,8 @@ import PageMeta from "../../components/common/PageMeta";
 import {
   getUniqueDepartments,
   getUniqueZones,
-  normalizeString, // ADD THIS IMPORT
-  normalizeRole, // ADD THIS IMPORT
+  normalizeString,
+  normalizeRole,
 } from "../../utils/user.helpers";
 
 // Import types and hooks
@@ -26,31 +26,25 @@ import {
   Zone,
   EditUserForm,
   FilterState,
-  PaginationState,
 } from "../../types/user.types";
 
 import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 
-// import FilterSection from "../../pages/UserList/filterSection";
-// import UserTable from "../../pages/UserList/userTable";
-// import Pagination from "../../pages/UserList/pagination";
 import EditUserModal from "../../pages/UserList/EditUserModal";
-import DeleteUserModal from "../../pages/UserList/DeleteUserModal"; // ADD THIS IMPORT
+import DeleteUserModal from "../../pages/UserList/DeleteUserModal";
 import { useUserFilters } from "../../hooks/useUserFilters";
 import { useUserPermissions } from "../../hooks/useUserPermissions";
 import UserCard from "../../pages/UserList/UserCard";
 import UserDetailsModal from "../../pages/UserList/UserDetailsModal";
-import Pagination from "../../pages/UserList/Pagination";
 import UserTable from "../../pages/UserList/UserTable";
 import FilterSection from "../../pages/UserList/FilterSection";
 
 const UserList: React.FC = () => {
   // ✅ Access Store States & Actions
-  const { users, fetchUsers, isLoading, resetStore } = useUserStore();
+  const { users, isLoading, resetStore } = useUserStore();
   const { zones, fetchZones } = useZoneStore();
 
   // Local UI States
-  const [loadingMore, setLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -98,22 +92,18 @@ const UserList: React.FC = () => {
   const [loadingRoles, setLoadingRoles] = useState(false);
   const [loadingZones, setLoadingZones] = useState(false);
 
-  // Pagination states
-  const [paginationState, setPaginationState] = useState<PaginationState>({
-    currentPage: 1,
-    totalPages: 1,
-    totalUsersCount: 0,
-    hasMore: true,
-    limit: 20,
-  });
+  // Infinite scroll states
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false);
 
-  // Get derived values
-  const { limit, currentPage, totalPages, hasMore } = paginationState;
-
-  // Helper functions - REMOVE THE DUPLICATE ONES AT THE TOP
+  // Helper functions
   const getZoneArea = useCallback(
     (zoneId: string): string => {
       if (!zoneId) return "Not Assigned";
@@ -148,12 +138,11 @@ const UserList: React.FC = () => {
   const getUserKey = (user: User, index: number): string => {
     const userId = user.id || user.userId;
     const baseKey = userId || `user-${index}`;
-    const pageIndex = (currentPage - 1) * limit + index;
-    return `${baseKey}-${pageIndex}`;
+    return `${baseKey}-${index}`;
   };
 
   // Hooks
-  const filteredUsers = useUserFilters(users, currentUser, filterState);
+  const filteredUsers = useUserFilters(allUsers, currentUser, filterState);
   const { canEditUser, canDeleteUser, canViewUser } =
     useUserPermissions(currentUser);
 
@@ -166,13 +155,6 @@ const UserList: React.FC = () => {
     () => getUniqueZones(filteredUsers),
     [filteredUsers],
   );
-
-  // Paginated users
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * limit;
-    const endIndex = startIndex + limit;
-    return filteredUsers.slice(startIndex, endIndex);
-  }, [filteredUsers, currentPage, limit]);
 
   // Fetch current user info
   const fetchCurrentUser = useCallback(async () => {
@@ -188,7 +170,7 @@ const UserList: React.FC = () => {
       if (localId && localRole) {
         setCurrentUser({
           id: localId,
-          role: normalizeRole(localRole), // Use normalizeRole here
+          role: normalizeRole(localRole),
           department: localDepartment || undefined,
           departmentName: localDepartment || undefined,
           allocatedArea: localAllocatedArea || undefined,
@@ -238,14 +220,18 @@ const UserList: React.FC = () => {
     }
   }, []);
 
-  // Enhanced fetchUsers function
-  const fetchUsersWithDetails = useCallback(async () => {
+  // Fetch users with infinite scroll
+  const fetchUsers = useCallback(async (pageToFetch: number, append = true) => {
+    if (isLoadingRef.current) return;
+
+    isLoadingRef.current = true;
+    setLoadingMore(true);
+
     try {
-      setLoadingMore(true);
       const response = await API.get("/admin/users", {
         params: {
-          page: currentPage,
-          limit: limit,
+          page: pageToFetch,
+          limit: 20,
           includeDetails: true,
         },
       });
@@ -300,37 +286,55 @@ const UserList: React.FC = () => {
           };
         });
 
-        useUserStore.setState({
-          users: usersData,
-          isLoading: false,
-        });
+        if (append) {
+          setAllUsers((prev) => [...prev, ...usersData]);
+        } else {
+          setAllUsers(usersData);
+        }
 
         // Update pagination info
         if (response.data.pagination) {
-          setPaginationState((prev) => ({
-            ...prev,
-            totalPages: response.data.pagination.totalPages || 1,
-            totalUsersCount:
-              response.data.pagination.totalItems || usersData.length,
-            hasMore: response.data.pagination.hasNextPage || false,
-          }));
+          const hasNextPage = response.data.pagination.hasNextPage || false;
+          const total = response.data.pagination.totalItems || usersData.length;
+
+          setHasMore(hasNextPage);
+          setTotalUsersCount(total);
+
+          if (!hasNextPage) {
+            // Disconnect observer when no more data
+            if (sentinelRef.current && observerRef.current) {
+              observerRef.current.disconnect();
+            }
+          }
+        } else {
+          setHasMore(false);
         }
       } else {
         console.error("No data in response:", response.data);
-        useUserStore.setState({ isLoading: false });
+        setHasMore(false);
       }
     } catch (error) {
-      console.error("Failed to fetch users with details:", error);
-      useUserStore.setState({ isLoading: false });
+      console.error("Failed to fetch users:", error);
+      setHasMore(false);
     } finally {
+      isLoadingRef.current = false;
       setLoadingMore(false);
     }
-  }, [currentPage, limit]);
+  }, []);
 
-  // ✅ Fetch Users on Mount using enhanced function
+  // Initial load
   useEffect(() => {
-    fetchUsersWithDetails();
-  }, [fetchUsersWithDetails]);
+    setPage(1);
+    setAllUsers([]);
+    fetchUsers(1, false);
+  }, []);
+
+  // Load more when page changes
+  useEffect(() => {
+    if (page > 1) {
+      fetchUsers(page, true);
+    }
+  }, [page, fetchUsers]);
 
   // ✅ Fetch Zones on Mount
   useEffect(() => {
@@ -354,20 +358,60 @@ const UserList: React.FC = () => {
     fetchRoles();
   }, [fetchCurrentUser, fetchDepartments, fetchRoles]);
 
-  // Update total pages when filtered list changes
+  // Reset everything when filters change
   useEffect(() => {
-    const totalFiltered = filteredUsers.length;
-    setPaginationState((prev) => ({
-      ...prev,
-      totalUsersCount: totalFiltered,
-      totalPages: Math.ceil(totalFiltered / limit),
-      hasMore: currentPage < Math.ceil(totalFiltered / limit),
-    }));
+    setPage(1);
+    setAllUsers([]);
+    setHasMore(true);
+    fetchUsers(1, false);
+  }, [
+    filterState.searchTerm,
+    filterState.roleFilter,
+    filterState.departmentFilter,
+    filterState.zoneFilter,
+    filterState.statusFilter,
+  ]);
 
-    if (currentPage > Math.ceil(totalFiltered / limit)) {
-      setPaginationState((prev) => ({ ...prev, currentPage: 1 }));
+  // Intersection Observer for infinite scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loadingMore) return;
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-  }, [filteredUsers, currentPage, limit]);
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (
+          entry.isIntersecting &&
+          hasMore &&
+          !loadingMore &&
+          !isLoadingRef.current
+        ) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        rootMargin: "200px",
+        threshold: 0.1,
+      },
+    );
+
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observerRef.current.observe(currentSentinel);
+    }
+
+    return () => {
+      if (observerRef.current && currentSentinel) {
+        observerRef.current.unobserve(currentSentinel);
+      }
+    };
+  }, [hasMore, loadingMore, filteredUsers.length]);
 
   // Event Handlers
   const handleFilterChange = (key: keyof FilterState, value: any) => {
@@ -375,7 +419,6 @@ const UserList: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    // Reset ALL filter states
     setFilterState({
       searchTerm: "",
       sortOrder: "asc",
@@ -384,12 +427,6 @@ const UserList: React.FC = () => {
       zoneFilter: "",
       statusFilter: "",
     });
-
-    // Reset pagination to page 1
-    setPaginationState((prev) => ({
-      ...prev,
-      currentPage: 1,
-    }));
   };
 
   const handleToggleSortOrder = () => {
@@ -399,15 +436,26 @@ const UserList: React.FC = () => {
     }));
   };
 
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return;
-    setPaginationState((prev) => ({ ...prev, currentPage: page }));
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
+  // Sort users based on sortOrder
+  const sortedFilteredUsers = useMemo(() => {
+    const sorted = [...filteredUsers];
+    if (filterState.sortOrder === "asc") {
+      sorted.sort((a, b) => {
+        const nameA = (a.full_name || a.name || "").toLowerCase();
+        const nameB = (b.full_name || b.name || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    } else {
+      sorted.sort((a, b) => {
+        const nameA = (a.full_name || a.name || "").toLowerCase();
+        const nameB = (b.full_name || b.name || "").toLowerCase();
+        return nameB.localeCompare(nameA);
+      });
     }
-  };
+    return sorted;
+  }, [filteredUsers, filterState.sortOrder]);
 
-  // In your UserList component, update the handleRowClick function to fetch user details:
+  // Handle row click
   const handleRowClick = async (user: User) => {
     if (!canViewUser(user)) {
       alert("You don't have permission to view this user.");
@@ -415,14 +463,11 @@ const UserList: React.FC = () => {
     }
 
     try {
-      // Fetch fresh user details from API
       const userId = user.id || user.userId;
       const response = await API.get(`/admin/users/${userId}`);
 
       if (response.data?.success && response.data?.data) {
         const userData = response.data.data;
-
-        // Map the API response to your User type
         const detailedUser: User = {
           id: userData.id?.toString() || userData.userId?.toString() || "",
           userId: userData.userId?.toString() || userData.id?.toString() || "",
@@ -453,10 +498,8 @@ const UserList: React.FC = () => {
           reporteeId: user.reporteeId,
           hrManager: user.hrManager || null,
           reportee: user.reportee || null,
-
           zone: userData.zone || null,
         };
-
         setSelectedUser(detailedUser);
         setIsModalOpen(true);
       } else {
@@ -464,13 +507,12 @@ const UserList: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to fetch user details:", error);
-      // Fallback to basic user data
       setSelectedUser(user);
       setIsModalOpen(true);
     }
   };
 
-  // Handle edit button click - IMPROVED with zone fetching
+  // Handle edit button click
   const handleEditClick = async (user: User) => {
     if (!canEditUser(user)) {
       alert("You don't have permission to edit this user.");
@@ -480,14 +522,12 @@ const UserList: React.FC = () => {
     setSelectedUser(user);
 
     try {
-      // Fetch fresh user data from API
       const userId = user.id || user.userId;
       const response = await API.get(`/admin/users/${userId}`);
 
       if (response.data?.success && response.data?.data) {
         const userData = response.data.data;
 
-        // Extract department information
         let departmentId = 0;
         let departmentName =
           userData.department?.name || userData.department || "";
@@ -503,7 +543,6 @@ const UserList: React.FC = () => {
           departmentId = dept?.departmentId || 0;
         }
 
-        // Extract role information
         let roleId = 0;
         let roleName = userData.role?.name || userData.role || "";
 
@@ -518,31 +557,26 @@ const UserList: React.FC = () => {
           roleId = role?.id || 0;
         }
 
-        // Extract zone information
         const zoneData = userData.zone || {};
         const zoneId = zoneData.zoneId || userData.zoneId || "";
-        const zoneDatabaseId = zoneData.id || userData.zone?.id || 0; // Get the integer ID
+        const zoneDatabaseId = zoneData.id || userData.zone?.id || 0;
         let zoneName = zoneData.name || userData.zoneName || "";
         let allocatedArea = userData.allocatedArea || "";
 
-        // If we have zoneId but zones not loaded, fetch zones
         if (zoneId && zones.length === 0) {
           await fetchZones({ page: 1, limit: 100 });
         }
 
-        // If we have zoneId but not zoneName, get it from zones
         if (zoneId && !zoneName && zones.length > 0) {
           const zone = zones.find((z: Zone) => z.zoneId === zoneId);
           if (zone) {
             zoneName = zone.name;
-            // Only set allocatedArea from zone if user doesn't have one
             if (!allocatedArea.trim()) {
               allocatedArea = zone.area;
             }
           }
         }
 
-        // Prepare the edit form with fresh API data
         setEditForm({
           full_name:
             userData.fullName || userData.full_name || userData.name || "",
@@ -552,7 +586,7 @@ const UserList: React.FC = () => {
           address: userData.address || "",
           allocatedArea: allocatedArea,
           zoneId: zoneId,
-          zoneDatabaseId: zoneDatabaseId, // Make sure this is set correctly
+          zoneDatabaseId: zoneDatabaseId,
           zoneName: zoneName,
           birthDate: userData.birthDate
             ? new Date(userData.birthDate).toISOString().split("T")[0]
@@ -570,7 +604,6 @@ const UserList: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to prepare edit form:", error);
-      // Fallback to existing user data
       setEditForm({
         full_name: user.full_name || user.name || "",
         username: user.username || "",
@@ -641,8 +674,11 @@ const UserList: React.FC = () => {
         alert("User deleted successfully!");
         setIsDeleteModalOpen(false);
 
-        // Refresh data from API
-        await fetchUsersWithDetails();
+        // Refresh the entire list
+        setPage(1);
+        setAllUsers([]);
+        setHasMore(true);
+        await fetchUsers(1, false);
       } else {
         alert(response.data?.message || "Failed to delete user");
       }
@@ -666,14 +702,12 @@ const UserList: React.FC = () => {
     const { name, value } = e.target;
 
     if (name === "zoneId") {
-      // When zoneId changes, update zoneDatabaseId and zoneName
       const selectedZone = zones.find((z: Zone) => z.zoneId === value);
       setEditForm((prev) => ({
         ...prev,
         zoneId: value,
-        zoneDatabaseId: selectedZone ? selectedZone.id : 0, // Make sure this is set
+        zoneDatabaseId: selectedZone ? selectedZone.id : 0,
         zoneName: selectedZone ? selectedZone.name : prev.zoneName,
-        // Do NOT update allocatedArea automatically - keep it separate
       }));
     } else if (name === "departmentId") {
       const selectedDept = departments.find(
@@ -699,7 +733,6 @@ const UserList: React.FC = () => {
     }
   };
 
-  // FIXED: Updated handleEditSubmit to send correct zoneId (integer)
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -713,15 +746,14 @@ const UserList: React.FC = () => {
     setIsEditing(true);
 
     try {
-      // Create update data object
       const updateData: any = {
         username: editForm.username?.trim(),
-        full_name: editForm.full_name.trim(), // Changed from fullName to full_name
+        full_name: editForm.full_name.trim(),
         email: editForm.email.trim(),
         mobileNo: editForm.mobileNo.trim(),
         address: editForm.address.trim(),
         allocatedArea: editForm.allocatedArea.trim() || null,
-        zoneId: editForm.zoneDatabaseId || null, // Send the integer zone database ID - CORRECT
+        zoneId: editForm.zoneDatabaseId || null,
         birthDate: editForm.birthDate || null,
         profileImageUrl: editForm.profileImageUrl.trim() || null,
         hrManagerId: editForm.hrManagerId,
@@ -730,7 +762,6 @@ const UserList: React.FC = () => {
         roleId: Number(editForm.roleId) || null,
       };
 
-      // Remove empty fields
       Object.keys(updateData).forEach((key) => {
         if (
           updateData[key] === null ||
@@ -741,11 +772,8 @@ const UserList: React.FC = () => {
         }
       });
 
-      // Ensure zoneId is an integer if it exists
       if (updateData.zoneId !== null && updateData.zoneId !== undefined) {
         updateData.zoneId = parseInt(updateData.zoneId);
-
-        // If zoneId is 0 or invalid, set to null
         if (isNaN(updateData.zoneId) || updateData.zoneId <= 0) {
           updateData.zoneId = null;
         }
@@ -761,10 +789,12 @@ const UserList: React.FC = () => {
         alert("User updated successfully!");
         setIsEditModalOpen(false);
 
-        // Refresh the data from API
-        await fetchUsersWithDetails();
+        // Refresh the list
+        setPage(1);
+        setAllUsers([]);
+        setHasMore(true);
+        await fetchUsers(1, false);
 
-        // Also refresh zones if zone was changed
         if (updateData.zoneId) {
           await fetchZones({ page: 1, limit: 100 });
         }
@@ -787,74 +817,34 @@ const UserList: React.FC = () => {
   const exportToExcel = async () => {
     try {
       setExporting(true);
-      const usersToExport = filteredUsers;
+      const usersToExport = sortedFilteredUsers;
 
       if (usersToExport.length === 0) {
         alert(
-          `No users to export. Total users: ${users.length}, Filtered: ${filteredUsers.length}`,
+          `No users to export. Total users: ${allUsers.length}, Filtered: ${sortedFilteredUsers.length}`,
         );
         setExporting(false);
         return;
       }
 
-      // Import the export function dynamically
       const { exportUsersToExcel } = await import("../../utils/excel.export");
-
-      // Call the export function with both users and zones
       const fileName = await exportUsersToExcel(usersToExport, zones);
-
-      // Show success message
       alert(`Users exported successfully to ${fileName}`);
     } catch (error: any) {
       console.error("Error exporting to Excel:", error);
-      console.error("Error details:", error.message, error.stack);
-
       alert(`Failed to export users: ${error.message || "Please try again."}`);
     } finally {
       setExporting(false);
     }
   };
-  // Infinite Scroll Observer
-  useEffect(() => {
-    if (!sentinelRef.current || !hasMore || loadingMore) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && hasMore && !loadingMore) {
-          setPaginationState((prev) => ({
-            ...prev,
-            currentPage: prev.currentPage + 1,
-          }));
-        }
-      },
-      {
-        root: scrollContainerRef.current,
-        rootMargin: "100px",
-        threshold: 0.1,
-      },
-    );
-
-    const currentSentinel = sentinelRef.current;
-    observer.observe(currentSentinel);
-
-    return () => {
-      if (observer && currentSentinel) {
-        observer.unobserve(currentSentinel);
-      }
-    };
-  }, [hasMore, loadingMore]);
-
-  // Reset current page when filters change
-  useEffect(() => {
-    setPaginationState((prev) => ({ ...prev, currentPage: 1 }));
-  }, [
-    filterState.searchTerm,
-    filterState.roleFilter,
-    filterState.departmentFilter,
-    filterState.zoneFilter,
-    filterState.statusFilter,
-  ]);
+  // Sync function refresh callback
+  const handleSyncComplete = useCallback(async () => {
+    setPage(1);
+    setAllUsers([]);
+    setHasMore(true);
+    await fetchUsers(1, false);
+  }, [fetchUsers]);
 
   // Show loading for current user info
   if (loadingCurrentUser) {
@@ -870,74 +860,58 @@ const UserList: React.FC = () => {
 
   return (
     <>
-      <PageMeta title="Users Directory" description="users list " />
+      <PageMeta title="Users Directory" description="users list" />
       <div
         className="
-      w-full max-w-full mx-auto
-      px-2 sm:px-3 md:px-4
-      rounded-2xl sm:rounded-3xl
-      bg-linear-to-br from-white/20 via-white/10 to-white/5
-      dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/10
-      backdrop-blur-2xl
-      border border-white/40 dark:border-gray-700/40
-      p-3 sm:p-4 lg:p-6
-      shadow-[0_8px_32px_rgba(31,38,135,0.15)]
-      dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]
-      overflow-hidden
-      relative
-      flex flex-col
-      h-[85vh]
-      box-border
-    "
+          w-full max-w-full mx-auto
+          px-2 sm:px-3 md:px-4
+          rounded-2xl sm:rounded-3xl
+          bg-linear-to-br from-white/20 via-white/10 to-white/5
+          dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/10
+          backdrop-blur-2xl
+          border border-white/40 dark:border-gray-700/40
+          p-3 sm:p-4 lg:p-6
+          shadow-[0_8px_32px_rgba(31,38,135,0.15)]
+          dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]
+          overflow-hidden
+          relative
+          flex flex-col
+          h-[85vh]
+          box-border
+        "
       >
-        {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
         <div className="relative z-10 flex flex-col h-full">
-          {/* <h5
-            className="
-          text-xl sm:text-2xl lg:text-2xl font-bold mb-3 sm:mb-4 text-left
-          text-dark
-          uppercase
-          bg-clip-text 
-          px-2
-        "
-          >
-            Employee List
-          </h5> */}
-
-          {/* Filter Section */}
           <FilterSection
             filterState={filterState}
-            roles={roles}
-            zones={zones}
             uniqueDepartments={uniqueDepartments}
             uniqueZones={uniqueZones}
+            roles={roles}
             loadingRoles={loadingRoles}
-            onClearFilters={handleClearFilters}
-            exportToExcel={exportToExcel}
-            onFilterChange={handleFilterChange}
+            filteredUsersLength={sortedFilteredUsers.length}
+            paginatedUsersLength={sortedFilteredUsers.length}
+            currentPage={1}
+            totalPages={Math.ceil(sortedFilteredUsers.length / 20)}
             exporting={exporting}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
             onExport={exportToExcel}
-            paginatedUsersLength={paginatedUsers.length}
-            filteredUsersLength={filteredUsers.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
+            onSyncComplete={handleSyncComplete}
           />
 
-          {/* Main content area with scroll */}
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            {/* Check store isLoading instead of local loading */}
-            {isLoading && users.length === 0 ? (
+            {(isLoading && allUsers.length === 0) ||
+            (loadingMore && allUsers.length === 0) ? (
               <div
                 className="
-                flex flex-col justify-center items-center py-8 sm:py-12
-                bg-linear-to-br from-white/30 to-white/10
-                dark:from-gray-800/30 dark:to-gray-900/10
-                backdrop-blur-lg
-                rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
-                text-center
-                flex-1
-              "
+                  flex flex-col justify-center items-center py-8 sm:py-12
+                  bg-linear-to-br from-white/30 to-white/10
+                  dark:from-gray-800/30 dark:to-gray-900/10
+                  backdrop-blur-lg
+                  rounded-xl sm:rounded-2xl border border-white/40 dark:border-gray-700/40
+                  text-center
+                  flex-1
+                "
               >
                 <LoadingAnimation />
                 <span className="text-gray-600 dark:text-gray-300 text-sm">
@@ -946,71 +920,27 @@ const UserList: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* Debug info for Manager */}
-                {currentUser?.role === "manager" &&
-                  filteredUsers.length === 0 &&
-                  users.length > 0 && (
-                    <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                      <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                        ⚠️ No users found in your department.
-                      </p>
-                      <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                        Your department:{" "}
-                        <strong>
-                          {currentUser.departmentName ||
-                            currentUser.department ||
-                            "Not set"}
-                        </strong>
-                      </p>
-                      <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-                        Total users in system: {users.length}
-                      </p>
-                    </div>
-                  )}
-
-                {/* Debug info for Zonal Manager
-                {currentUser &&
-                  (currentUser.role === "zonalmanager" ||
-                    currentUser.role === "zonal manager") &&
-                  filteredUsers.length === 0 &&
-                  users.length > 0 && (
-                    <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                      <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                        ⚠️ No users found in your zone.
-                      </p>
-                      <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                        Your zone ID:{" "}
-                        <strong>{currentUser.zoneId || "Not set"}</strong>
-                      </p>
-                      <p className="text-yellow-600 dark:text-yellow-400 text-xs">
-                        Total users in system: {users.length}
-                      </p>
-                    </div>
-                  )} */}
-
-                {/* Users Table Container with Scroll */}
                 <div
                   ref={scrollContainerRef}
                   className="
-                  overflow-hidden rounded-xl sm:rounded-2xl
-                  bg-linear-to-br from-white/40 to-white/20
-                  dark:from-gray-800/40 dark:to-gray-900/20
-                  backdrop-blur-xl
-                  border border-white/40 dark:border-gray-700/40
-                  shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-                  dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-                  flex-1
-                  relative
-                  overflow-y-auto
-                  overflow-x-auto
-                "
+                    overflow-hidden rounded-xl sm:rounded-2xl
+                    bg-linear-to-br from-white/40 to-white/20
+                    dark:from-gray-800/40 dark:to-gray-900/20
+                    backdrop-blur-xl
+                    border border-white/40 dark:border-gray-700/40
+                    shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+                    dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+                    flex-1
+                    relative
+                  
+                    overflow-x-auto
+                  "
                 >
-                  {/* Desktop Table */}
                   <div className="hidden md:block min-w-full h-full">
                     <UserTable
-                      users={paginatedUsers}
-                      currentPage={currentPage}
-                      limit={limit}
+                      users={sortedFilteredUsers}
+                      currentPage={1}
+                      limit={sortedFilteredUsers.length}
                       sortOrder={filterState.sortOrder}
                       getZoneName={getZoneName}
                       getAllocatedArea={getAllocatedArea}
@@ -1021,10 +951,9 @@ const UserList: React.FC = () => {
                     />
                   </div>
 
-                  {/* Mobile Cards View */}
                   <div className="md:hidden p-4 space-y-4">
-                    {paginatedUsers.length > 0 ? (
-                      paginatedUsers.map((user, index) => (
+                    {sortedFilteredUsers.length > 0 ? (
+                      sortedFilteredUsers.map((user, index) => (
                         <UserCard
                           key={getUserKey(user, index)}
                           user={user}
@@ -1066,14 +995,33 @@ const UserList: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Pagination Controls */}
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+                  {/* Sentinel element for infinite scroll */}
+                  {hasMore && sortedFilteredUsers.length > 0 && (
+                    <div
+                      ref={sentinelRef}
+                      className="h-10 flex justify-center items-center py-4"
+                    >
+                      {loadingMore && (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Loading more users...
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!hasMore && sortedFilteredUsers.length > 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        You've reached the end! Loaded{" "}
+                        {sortedFilteredUsers.length} of {totalUsersCount} users
+                      </p>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -1083,9 +1031,6 @@ const UserList: React.FC = () => {
         {isModalOpen && selectedUser && (
           <UserDetailsModal
             user={selectedUser}
-            zones={zones}
-            getZoneName={getZoneName}
-            getAllocatedArea={getAllocatedArea}
             canEditUser={canEditUser(selectedUser)}
             canDeleteUser={canDeleteUser(selectedUser)}
             onClose={() => {
@@ -1136,8 +1081,6 @@ const UserList: React.FC = () => {
           <DeleteUserModal
             user={selectedUser}
             zones={zones}
-            getZoneName={getZoneName}
-            getAllocatedArea={getAllocatedArea}
             deleting={deleting}
             onClose={() => {
               setIsDeleteModalOpen(false);

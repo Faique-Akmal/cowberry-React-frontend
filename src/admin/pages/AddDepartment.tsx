@@ -272,7 +272,7 @@ const DepartmentManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50  px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -675,22 +675,26 @@ const DepartmentManagement: React.FC = () => {
                       key={department.departmentId}
                       className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-300"
                     >
-                      <div className="p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="p-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between ">
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <span className="text-gray-700 font-bold text-lg">
+                              <div className="w-12 h-8 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span className="text-gray-700 text-lg">
                                   {index + 1}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-lg font-bold text-gray-800 truncate">
                                   {department.name}
-                                  <span className="text-gray-700 font-bold text-lg">
-                                    {department.departmentId}
-                                  </span>
+                                  <p className="text-gray-500 text-sm mt-1">
+                                    departmentId:
+                                    <span className="text-gray-700  text-sm">
+                                      {department.departmentId}
+                                    </span>
+                                  </p>
                                 </h3>
+
                                 <p className="text-gray-600 text-sm mt-1 truncate">
                                   {department.description}
                                 </p>

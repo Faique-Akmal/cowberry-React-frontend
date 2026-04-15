@@ -147,7 +147,7 @@ interface GroupedSession {
 interface MultiSessionMapView {
   userId: number;
   username: string;
-  fullName:string;
+  fullName: string;
 
   employeeCode: string;
   date: string;
@@ -2576,8 +2576,7 @@ export default function AttendanceList() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {group.fullName
-.charAt(0).toUpperCase()}
+                            {group.fullName.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -2951,8 +2950,7 @@ export default function AttendanceList() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
-                        {session.fullName
-.charAt(0).toUpperCase()}
+                        {session.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">
@@ -3430,8 +3428,7 @@ export default function AttendanceList() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">
-                      {multiSessionMapView.fullName
-}
+                      {multiSessionMapView.fullName}
                     </h2>
                     <p className="text-blue-100">
                       {multiSessionMapView.employeeCode} •
@@ -3657,7 +3654,7 @@ export default function AttendanceList() {
                                     </span>
                                   </div>
                                   <div>
-                                    <strong className="text-lg text-purple-700 dark:text-purple-400">
+                                    <strong className="text-lg text-lantern-blue-600 ">
                                       ⏸️ Pause Point
                                     </strong>
                                     <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
@@ -3688,18 +3685,15 @@ export default function AttendanceList() {
                                     </div>
                                   </div>
 
-                                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-1">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                          Pause Duration
-                                        </p>
-                                        <p className="text-lg font-bold text-black">
-                                          {Math.round(pause.durationMinutes)}{" "}
-                                          minutes
-                                        </p>
-                                      </div>
-                                    </div>
+                                  <div>
+                                    <p className="text-lg font-bold px-3 rounded-full bg-red-300 text-black dark:text-gray-400">
+                                      Pause Duration -
+                                      <span className="text-sm">
+                                        {" "}
+                                        {Math.round(pause.durationMinutes)}{" "}
+                                        minutes
+                                      </span>
+                                    </p>
                                   </div>
 
                                   <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
@@ -3989,20 +3983,17 @@ export default function AttendanceList() {
                             icon={customIcons.pauseIcon}
                           >
                             <Popup>
-                              <div className="text-sm min-w-[250px]">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white">
-                                    <FaClock />
-                                  </div>
+                              <div className="text-sm min-w-[200px]">
+                                <div className="flex items-center gap-2 ">
                                   <div>
-                                    <strong className="text-lg text-purple-700 dark:text-purple-400">
+                                    <strong className="text-lg text-lantern-blue-700 dark:text-lantern-blue-400">
                                       ⏸️ Pause Point
                                     </strong>
                                   </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-2 gap-2">
+                                <div className="">
+                                  <div className="grid grid-cols-2 gap-1">
                                     <div>
                                       <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Pause Start
@@ -4021,20 +4012,18 @@ export default function AttendanceList() {
                                     </div>
                                   </div>
 
-                                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
-                                    <div className="flex items-center justify-between p-3">
-                                      <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                          Pause Duration
-                                        </p>
-                                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                                          {Math.round(pause.durationMinutes)}{" "}
+                                  <div className="flex items-center ">
+                                    <div>
+                                      <p className="text-lg font-bold px-3 rounded-full bg-red-300 text-black dark:text-gray-400">
+                                        Pause Duration -
+                                        <span className="text-sm">
+                                          {" "}
+                                          {Math.round(
+                                            pause.durationMinutes,
+                                          )}{" "}
                                           minutes
-                                        </p>
-                                      </div>
-                                      <div className="bg-purple-500/20 backdrop-blur-sm p-2 rounded-lg">
-                                        <FaClock className="text-purple-500" />
-                                      </div>
+                                        </span>
+                                      </p>
                                     </div>
                                   </div>
 

@@ -81,26 +81,26 @@ const AppSidebar: React.FC = () => {
       icon: <GridIcon className="text-lantern-blue-600" />,
       name: t("menu.dashboard"),
       path: "/home",
-      role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
+      role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
     },
     {
       icon: <ChatIcon className="text-lantern-blue-600" />,
       name: t("menu.chat"),
       path: "/chat",
-      role: ["admin", "department_head", "zonalmanager", "manager", "hr"],
+      role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
     },
 
     {
       icon: <UserCircleIcon className="text-lantern-blue-600" />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
-      role: ["admin", "manager", "hr"],
+      role: ["admin", "manager", "hr", "headofdepartment"],
     },
     {
       icon: <MdListAlt className="text-lantern-blue-600" />,
       name: t("menu.TravelSessions"),
       path: "/tracking-admin",
-      role: ["admin", "zonalmanager", "manager", "hr"],
+      role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },
     // {
     //   icon: <MdOutlineAdd className="text-lantern-blue-600" />,
@@ -131,7 +131,7 @@ const AppSidebar: React.FC = () => {
       icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
       name: t("menu.allUsers"),
       path: "/all-users",
-      role: ["admin", "manager", "hr", "zonalmanager"],
+      role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
   ];
 

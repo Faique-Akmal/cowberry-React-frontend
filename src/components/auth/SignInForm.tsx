@@ -11,15 +11,39 @@ import ForgotPasswordModal from "./ForgotPasswordModal";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
-// Field Employee Restriction Modal Component
-const FieldEmployeeRestrictionModal = ({
+// Access Restriction Modal Component (Updated)
+const AccessRestrictionModal = ({
   isOpen,
   onClose,
+  userRole,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  userRole?: string;
 }) => {
   if (!isOpen) return null;
+
+  // Get appropriate message based on role
+  const getRestrictionMessage = () => {
+    if (userRole?.toLowerCase() === "fieldemployee") {
+      return {
+        title: "Access Restricted",
+        message:
+          "Field employees cannot login through the web portal. Please use the mobile app to access your account.",
+        buttonText: "Okay, Got it",
+        showDownloadButton: true,
+      };
+    } else {
+      return {
+        title: "Access Denied",
+        message: `Your role (${userRole || "Unknown"}) does not have permission to access this application. Please contact your administrator if you believe this is an error.`,
+        buttonText: "Okay, Got it",
+        showDownloadButton: false,
+      };
+    }
+  };
+
+  const restrictionInfo = getRestrictionMessage();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -41,31 +65,31 @@ const FieldEmployeeRestrictionModal = ({
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Access Restricted
+            {restrictionInfo.title}
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Field employees cannot login through the web portal. Please use the
-            mobile app to access your account.
+            {restrictionInfo.message}
           </p>
           <div className="flex flex-col space-y-3">
             <button
               onClick={onClose}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              Okay, Got it
+              {restrictionInfo.buttonText}
             </button>
-            <button
-              onClick={() => {
-                // You can add logic to redirect to app store or show download links
-                window.open(
-                  "https://play.google.com/store/apps/details?id=com.cowberry.lantern360",
-                );
-                onClose();
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Download Mobile App
-            </button>
+            {restrictionInfo.showDownloadButton && (
+              <button
+                onClick={() => {
+                  window.open(
+                    "https://play.google.com/store/apps/details?id=com.cowberry.lantern360",
+                  );
+                  onClose();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Download Mobile App
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -84,7 +108,9 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(true);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showFieldEmployeeModal, setShowFieldEmployeeModal] = useState(false);
+  const [showAccessRestrictionModal, setShowAccessRestrictionModal] =
+    useState(false);
+  const [restrictedUserRole, setRestrictedUserRole] = useState<string>("");
   const [isMounted, setIsMounted] = useState(false);
 
   const navigate = useNavigate();
@@ -100,22 +126,25 @@ export default function SignInForm() {
     setIsMounted(true);
   }, []);
 
-  // Function to check if user is a field employee
-  const isFieldEmployee = (role: string): boolean => {
+  // Function to check if user role is allowed to access the web app
+  const isAllowedRole = (role: string): boolean => {
     if (!role) return false;
 
     const normalizedRole = role.toLowerCase().trim();
 
-    // Check for various possible field employee role names
-    return (
-      normalizedRole === "fieldemployee" ||
-      normalizedRole === "field employee" ||
-      normalizedRole === "field_employee" ||
-      (normalizedRole.includes("field") &&
-        normalizedRole.includes("employee")) ||
-      normalizedRole === "fieldstaff" ||
-      normalizedRole === "field staff"
-    );
+    // List of allowed roles
+    const allowedRoles = [
+      "admin",
+      "hr",
+      "zonalmanager",
+      "zonal_manager",
+      "manager",
+      "headofdepartment",
+      "head_of_department",
+      "hod",
+    ];
+
+    return allowedRoles.includes(normalizedRole);
   };
 
   // Function to determine login endpoint based on login type
@@ -136,8 +165,27 @@ export default function SignInForm() {
       return;
     }
 
+    const adminRole = admin?.role || "admin";
+
+    // Check if admin role is allowed
+    if (!isAllowedRole(adminRole)) {
+      setRestrictedUserRole(adminRole);
+      setShowAccessRestrictionModal(true);
+
+      // Clear any tokens that might have been set
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+
+      toast.error(`Access denied for role: ${adminRole}`, {
+        id: loadingToast,
+      });
+
+      setIsLoading(false);
+      return;
+    }
+
     // Store admin-specific data in localStorage
-    localStorage.setItem("userRole", admin?.role || "admin");
+    localStorage.setItem("userRole", adminRole);
     localStorage.setItem("userId", admin?.id || "");
     localStorage.setItem("username", admin?.username || "");
     localStorage.setItem("email", admin?.email || "");
@@ -176,16 +224,18 @@ export default function SignInForm() {
     }
   };
 
-  // Function to handle user login (HR, Manager, Zonal Manager)
+  // Function to handle user login (HR, Manager, Zonal Manager, etc.)
   const handleUserLogin = async (response: any) => {
     const { user, tokens, message } = response.data;
 
-    // Check if user is a field employee BEFORE storing anything
+    // Get user role
     const userRole = user?.role || "";
 
-    if (isFieldEmployee(userRole)) {
-      // Show field employee restriction modal
-      setShowFieldEmployeeModal(true);
+    // Check if user role is allowed to access the web app
+    if (!isAllowedRole(userRole)) {
+      // Show restriction modal with the actual role
+      setRestrictedUserRole(userRole);
+      setShowAccessRestrictionModal(true);
 
       // Clear any tokens that might have been set
       if (tokens?.access) {
@@ -196,16 +246,19 @@ export default function SignInForm() {
       }
 
       // Show error toast
-      toast.error("Field employees must use the mobile app to login", {
-        id: loadingToast,
-      });
+      toast.error(
+        `Access denied. Role "${userRole}" does not have permission to use the web portal.`,
+        {
+          id: loadingToast,
+        },
+      );
 
       setIsLoading(false);
       return; // Stop further execution
     }
 
-    // Store user data in localStorage (only if not field employee)
-    localStorage.setItem("userRole", user?.role || "employee");
+    // Store user data in localStorage (only if role is allowed)
+    localStorage.setItem("userRole", userRole);
     localStorage.setItem("userId", user?.id || "");
     localStorage.setItem("profileimg", user?.profileimg || "");
     localStorage.setItem("department", user?.department || "");
@@ -445,58 +498,6 @@ export default function SignInForm() {
             </h1>
           </div>
 
-          {/* Login Type Selector */}
-          {/* <div className="flex justify-center">
-            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginType('user');
-                  setEmail('');
-                  setPassword('');
-                  setMessage('');
-                }}
-                className={`
-                  px-4 py-2 text-sm font-medium rounded-md transition-all duration-300
-                  ${loginType === 'user' 
-                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
-                  }
-                `}
-              >
-                Employee Login
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginType('admin');
-                  setEmail('');
-                  setPassword('');
-                  setMessage('');
-                }}
-                className={`
-                  px-4 py-2 text-sm font-medium rounded-md transition-all duration-300
-                  ${loginType === 'admin' 
-                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
-                  }
-                `}
-              >
-                Admin Login
-              </button>
-            </div>
-          </div> */}
-
-          {/* Login type indicator */}
-          {/* <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {loginType === 'admin' 
-                ? 'Sign in as Administrator' 
-                : 'Sign in as Employee/Manager/HR'
-              }
-            </p>
-          </div>
-           */}
           {/* Form container with staggered animation */}
           <div
             className={`
@@ -703,9 +704,10 @@ export default function SignInForm() {
         onClose={closeForgotModal}
       />
 
-      <FieldEmployeeRestrictionModal
-        isOpen={showFieldEmployeeModal}
-        onClose={() => setShowFieldEmployeeModal(false)}
+      <AccessRestrictionModal
+        isOpen={showAccessRestrictionModal}
+        onClose={() => setShowAccessRestrictionModal(false)}
+        userRole={restrictedUserRole}
       />
     </>
   );

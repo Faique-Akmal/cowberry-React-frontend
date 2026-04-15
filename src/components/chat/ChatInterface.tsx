@@ -473,7 +473,7 @@ export const ChatInterface = () => {
                 >
                   <div className="relative">
                     <img
-                      src={`https://ui-avatars.com/api/?name=${user?.username}&background=random`}
+                      src={`https://ui-avatars.com/api/?name=${user?.firstName}&background=random`}
                       alt="avatar"
                       className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
                     />
@@ -482,7 +482,7 @@ export const ChatInterface = () => {
                   <div className="flex-1 overflow-hidden">
                     <div className="flex justify-between items-baseline">
                       <h3 className="truncate text-base font-semibold text-white drop-shadow-sm group-hover:text-white">
-                        {user.username}
+                        {user.firstName} {user.lastName}
                       </h3>
                     </div>
                     <p className="truncate text-sm text-white/60 group-hover:text-white/80">
@@ -516,7 +516,7 @@ export const ChatInterface = () => {
                     {activeConversation.type === "PERSONAL"
                       ? activeConversation.participants
                           .find((p) => p.user.id !== currentUser?.id)
-                          ?.user.username.slice(0, 2)
+                          ?.user.firstName?.slice(0, 2)
                           .toUpperCase()
                       : "G"}
                   </div>
@@ -525,7 +525,7 @@ export const ChatInterface = () => {
                       {activeConversation.type === "PERSONAL"
                         ? activeConversation.participants.find(
                             (p) => p.user.id !== currentUser?.id,
-                          )?.user.username || "Chat"
+                          )?.user.firstName || "Chat"
                         : activeConversation.name}
                     </h3>
                     {/* <span className="text-xs font-medium text-white/70 flex items-center gap-1">
@@ -574,7 +574,7 @@ export const ChatInterface = () => {
                         }`}
                       >
                         <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
-                          {msg.sender.username}
+                          {msg.sender.firstName}
                           {isMe && " (You)"}
                         </p>
                         {/* Reply Context */}
@@ -587,7 +587,7 @@ export const ChatInterface = () => {
                             }`}
                           >
                             <span className="font-bold text-grey-600">
-                              {msg.replyTo?.sender?.username ||
+                              {msg.replyTo?.sender?.firstName ||
                                 getMessageById(msg.replyToId!)?.sender
                                   ?.username ||
                                 "User"}

@@ -346,74 +346,62 @@ const EmployeeCheckin = () => {
       {/* Header */}
       <div className="mb-4 relative z-10">
         <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              <h1 className="text-base sm:text-lg font-bold truncate">
-                Employee Check Logs
-              </h1>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            {/* Left section */}
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <div>
+                <h1 className="text-lg font-bold">Employee Check Logs</h1>
+                <p className="text-gray-600 dark:text-gray-300 text-xs hidden md:block">
+                  Monitor employee check-in and check-out activities
+                </p>
+              </div>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 truncate">
-              Monitor employee check-in and check-out activities
-            </p>
+
+            {/* Right section - Buttons */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={exportToCSV}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
+        bg-lantern-blue-600 hover:bg-lantern-yellow-400
+        text-white rounded-lg text-sm"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export</span>
+              </button>
+
+              <button
+                onClick={() => fetchCheckLogs(1)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
+        bg-lantern-blue-600 text-white rounded-lg hover:bg-cyan-700 text-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5
+        bg-white/40 dark:bg-gray-800/40 backdrop-blur-lg
+        border border-white/50 dark:border-gray-700/50 rounded-lg text-sm
+        font-medium text-gray-700 dark:text-gray-300"
+              >
+                {showFilters ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    <span>Hide</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    <span>Filters</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5 flex-shrink-0">
-            <button
-              onClick={exportToCSV}
-              className="
-                flex items-center gap-1 px-2.5 py-1.5
-                bg-lantern-blue-600 hover:bg-lantern-yellow-400
-                text-white rounded-lg  
-                transition-all shadow hover:shadow-md text-xs
-                whitespace-nowrap
-              "
-            >
-              <Download className="w-3 h-3" />
-              <span>Export CSV</span>
-            </button>
-            <button
-              onClick={() => fetchCheckLogs(1)}
-              className="
-                flex items-center gap-1 px-2.5 py-1.5
-                bg-lantern-blue-600
-                text-white rounded-lg  hover:bg-cyan-700
-                transition-all shadow hover:shadow-md text-xs
-                whitespace-nowrap
-              "
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Refresh</span>
-            </button>
-          </div>
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="
-            flex items-center gap-1.5 px-3 py-1.5
-            bg-white/40 dark:bg-gray-800/40
-            backdrop-blur-lg
-            border border-white/50 dark:border-gray-700/50
-            rounded-lg
-            text-sm font-medium
-            text-gray-700 dark:text-gray-300
-            hover:bg-white/60 dark:hover:bg-gray-700/60
-            transition-all duration-300
-            shadow-sm
-          "
-            >
-              {showFilters ? (
-                <>
-                  <ChevronUp className="w-4 h-4" />
-                  <span>Hide Filters & Cards</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4" />
-                  <span>Show Filters</span>
-                </>
-              )}
-            </button>
-          </div>
+
+          <div className="flex justify-end"></div>
           {showFilters && (
             <>
               {/* Filters Section */}
@@ -426,7 +414,7 @@ const EmployeeCheckin = () => {
               rounded-xl sm:rounded-2xl p-3 sm:p-4
               shadow-[0_8px_32px_rgba(31,38,135,0.1)]
               dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-              mb-6
+              mb-2
             "
               >
                 <div className="flex items-center justify-between mb-3">

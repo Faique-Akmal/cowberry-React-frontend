@@ -119,31 +119,35 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   return (
     <>
       {/* Toggle Button - Visible on all devices now */}
-      <div className="mb-2">
-        <button
-          onClick={() => setIsVisible(!isVisible)}
-          className="w-full sm:w-auto px-2 py-1 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-700 dark:text-gray-300 hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 flex items-center justify-center shadow-sm"
-        >
-          <svg
-            className={`w-4 h-4 mr-2 transition-transform duration-300 ${isVisible ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-          {isVisible ? "Hide Filters" : "Show Filters"}
-          {/* <span className="ml-2 px-2 py-0.5 text-sm bg-lantern-blue-100 dark:bg-lantern-blue-900 text-lantern-blue-800 dark:text-lantern-blue-200 rounded-full">
-            {filteredCount}
-          </span> */}
-        </button>
-      </div>
+      <div className="mb-2 grid grid-cols-2 gap-4 items-center">
+        <div className="items-center ">
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            Employee List
+          </h1>
+        </div>
 
+        <div className="flex justify-end items-center">
+          <button
+            onClick={() => setIsVisible(!isVisible)}
+            className="w-full sm:w-auto px-2 py-1 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-700 dark:text-gray-300 hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 flex items-center justify-center shadow-sm"
+          >
+            <svg
+              className={`w-4 h-4 mr-2 transition-transform duration-300 ${isVisible ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+            {isVisible ? "Hide Filters" : "Show Filters"}
+          </button>
+        </div>
+      </div>
       {/* Filter Section Container */}
       <div
         className={`${isVisible ? "block" : "hidden"} bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] shrink-0`}

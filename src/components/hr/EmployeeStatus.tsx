@@ -443,7 +443,7 @@ const EmployeeStatus = () => {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="font-semibold text-sm capitalize truncate text-gray-800 dark:text-white">
-                              {user.name}
+                              {user.full_name}
                             </p>
                             <div className="flex-shrink-0">
                               <HomeOfficePill active={user.is_checkin} />
@@ -505,14 +505,14 @@ const EmployeeStatus = () => {
                       }}
                     >
                       <span className="font-bold text-white text-lg">
-                        {user.name?.charAt(0)?.toUpperCase() || "U"}
+                        {user.full_name?.charAt(0)?.toUpperCase() || "U"}
                       </span>
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-linear-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-800"></div>
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm capitalize truncate text-gray-800 dark:text-white">
-                      {user.name}
+                      {user.full_name}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span

@@ -165,24 +165,24 @@ export default function Metrics() {
 
   // Main Render
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5 p-4 w-full">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5 p-4 w-full ">
       {cards.map((card, index) => (
         <div
           key={index}
-          className={`
+          className={`border border-dashed
                         relative rounded-2xl p-4 w-full flex flex-col justify-between 
                         hover:scale-[1.02] transition-all duration-300
                         before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br ${card.gradient}
-                        overflow-hidden group
+                        overflow-hidden group 
                     `}
           style={currentGlassStyle}
         >
           {/* Optional: Subtle background pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10">
-            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-r from-current to-transparent opacity-20 group-hover:opacity-30 transition-opacity"></div>
+          <div className="absolute inset-0 opacity-5 dark:opacity-10 border border-dashed ">
+            <div className="absolute  -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-r from-current to-transparent opacity-20 group-hover:opacity-30 transition-opacity"></div>
           </div>
 
-          <div className="relative z-10 flex justify-between items-center">
+          <div className="relative z-10 flex justify-between items-center ">
             <div>
               <h4
                 className={`

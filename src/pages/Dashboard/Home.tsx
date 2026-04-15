@@ -35,10 +35,10 @@ export default function Home() {
       <div
         className="animate-pulse text-center mb-8 p-6 rounded-lg shadow-md 
                 backdrop-blur-lg bg-white/10 dark:bg-gray-900/20 
-                border border-white/20 dark:border-gray-700/30"
+                border dark:border-gray-700/30 border-dashed "
       >
         <h1 className="text-3xl font-bold text-black dark:text-white">
-          {greeting} {localStorage.getItem("username")}!
+          {greeting} {localStorage.getItem("full_name")}!
         </h1>
         <p className="text-gray-900 dark:text-gray-300 mt-1">
           Welcome to your Dashboard

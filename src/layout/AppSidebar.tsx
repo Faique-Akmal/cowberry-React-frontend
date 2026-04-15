@@ -214,13 +214,13 @@ const AppSidebar: React.FC = () => {
                     onClick={() => handleSubmenuToggle(index, menuType)}
                     className={`menu-item group relative transition-all duration-300 ${
                       isParentOfActiveSubmenu
-                        ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
+                        ? "bg-lantern-blue-600  dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
                         : ""
                     }`}
                   >
                     {/* Pointed Indicator for active parent */}
                     {isParentOfActiveSubmenu && (
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
                     )}
 
                     <span className="menu-item-icon-size">{nav.icon}</span>
@@ -263,7 +263,7 @@ const AppSidebar: React.FC = () => {
                                 onClick={() => handleNavigation(subItem.path)}
                                 className={`menu-dropdown-item relative transition-all duration-300 ${
                                   isSubItemActive
-                                    ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300 font-medium"
+                                    ? "bg-lantern-blue-600 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300 font-medium"
                                     : "menu-dropdown-item-inactive"
                                 }`}
                               >
@@ -291,10 +291,10 @@ const AppSidebar: React.FC = () => {
                         : ""
                     }`}
                   >
-                    {/* Pointed Indicator for active item */}
+                    {/* Pointed Indicator for active item
                     {isItemActive && (
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
-                    )}
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
+                    )} */}
 
                     <span className="menu-item-icon-size">{nav.icon}</span>
                     {(isExpanded || isMobileOpen) && (

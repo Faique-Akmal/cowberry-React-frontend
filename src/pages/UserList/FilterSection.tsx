@@ -317,7 +317,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             <button
               onClick={syncUsersFromERP}
               disabled={syncing}
-              className="w-full py-1.5 px-2 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 shadow-sm hover:shadow text-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className=" hover:bg-blue-400 py-1.5 px-1 bg-lantern-blue-600 text-white rounded-lg transition-all duration-300 shadow-sm hover:shadow text-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {syncing ? (
                 <>

@@ -15,6 +15,8 @@ import {
   RefreshCw,
   Eye,
   Tag,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -68,6 +70,7 @@ const EmployeeCheckin = () => {
   const [filteredLogs, setFilteredLogs] = useState<GroupedLog[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showFilters, setShowFilters] = useState(true); // State for filter visibility
   const itemsPerPage = 20;
 
   // Ref for the infinite scroll container
@@ -372,8 +375,8 @@ const EmployeeCheckin = () => {
               onClick={() => fetchCheckLogs(1)}
               className="
                 flex items-center gap-1 px-2.5 py-1.5
-                bg-gradient-to-r from-blue-500 to-cyan-600 
-                text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 
+                bg-lantern-blue-600
+                text-white rounded-lg  hover:bg-cyan-700
                 transition-all shadow hover:shadow-md text-xs
                 whitespace-nowrap
               "
@@ -382,346 +385,318 @@ const EmployeeCheckin = () => {
               <span>Refresh</span>
             </button>
           </div>
-        </div>
-
-        {/* Compact Stats Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 mb-4">
-          <div
-            className="
-              flex items-center gap-2
-              bg-white/30 dark:bg-gray-800/30
-              backdrop-blur-lg
-              border border-white/40 dark:border-gray-700/40
-              rounded-xl p-2.5
-              shadow-sm
-              hover:shadow-md
-              transition-all duration-300
-              min-w-0
-            "
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-600 dark:text-gray-300 truncate mb-0.5">
-                    Check-ins
-                  </p>
-                  <p className="text-lg font-bold truncate">
-                    {logs.filter((log) => log.logType === "check_in").length}
-                  </p>
-                </div>
-                <div
-                  className="
-                    p-1.5 rounded-lg flex-shrink-0 ml-2
-                    bg-gradient-to-br from-purple-500/10 to-pink-500/10
-                    border border-purple-500/20
-                  "
-                >
-                  <LogIn className="w-5 h-5 text-purple-500" />
-                </div>
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-gray-300/50 dark:bg-gray-600/50 mx-1"></div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-600 dark:text-gray-300 truncate mb-0.5">
-                    Check-outs
-                  </p>
-                  <p className="text-lg font-bold truncate">
-                    {logs.filter((log) => log.logType === "check_out").length}
-                  </p>
-                </div>
-                <div
-                  className="
-                    p-1.5 rounded-lg flex-shrink-0 ml-2
-                    bg-gradient-to-br from-red-500/10 to-orange-500/10
-                    border border-red-500/20
-                  "
-                >
-                  <LogOut className="w-5 h-5 text-red-500" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters Section */}
-      <div
-        className="
-          bg-gradient-to-br from-white/40 to-white/20
-          dark:from-gray-800/40 dark:to-gray-900/20
-          backdrop-blur-xl
-          border border-white/40 dark:border-gray-700/40
-          rounded-xl sm:rounded-2xl p-3 sm:p-4
-          shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-          dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-          mb-6
-        "
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
               className="
-                p-1.5 rounded-lg flex-shrink-0
-                bg-gradient-to-br from-blue-500/10 to-cyan-500/10
-                border border-blue-500/20
-              "
+            flex items-center gap-1.5 px-3 py-1.5
+            bg-white/40 dark:bg-gray-800/40
+            backdrop-blur-lg
+            border border-white/50 dark:border-gray-700/50
+            rounded-lg
+            text-sm font-medium
+            text-gray-700 dark:text-gray-300
+            hover:bg-white/60 dark:hover:bg-gray-700/60
+            transition-all duration-300
+            shadow-sm
+          "
             >
-              <Filter className="w-4 h-4 text-blue-500" />
-            </div>
-            <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
-              Filters
-            </h2>
+              {showFilters ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  <span>Hide Filters & Cards</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  <span>Show Filters</span>
+                </>
+              )}
+            </button>
           </div>
-
-          <button
-            onClick={clearFilters}
-            className="
-              px-3 py-1.5
-              bg-gradient-to-r from-gray-200/50 to-gray-300/30
-              dark:from-gray-700/50 dark:to-gray-800/30
-              backdrop-blur-sm
-              border border-gray-300/60 dark:border-gray-600/60
-              text-gray-700 dark:text-gray-300
-              rounded-lg
-              hover:from-gray-300/60 hover:to-gray-400/40
-              dark:hover:from-gray-600/60 dark:hover:to-gray-700/40
-              transition-all duration-300
-              shadow-sm hover:shadow
-              text-xs sm:text-sm
+          {showFilters && (
+            <>
+              {/* Filters Section */}
+              <div
+                className="
+              bg-gradient-to-br from-white/40 to-white/20
+              dark:from-gray-800/40 dark:to-gray-900/20
+              backdrop-blur-xl
+              border border-white/40 dark:border-gray-700/40
+              rounded-xl sm:rounded-2xl p-3 sm:p-4
+              shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+              dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+              mb-6
             "
-          >
-            Clear
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="relative">
-              <div
-                className="
-                  absolute left-2.5 top-1/2 transform -translate-y-1/2
-                  p-1 rounded-md
-                  bg-white/50 dark:bg-gray-700/50
-                  backdrop-blur-sm
-                  z-10
-                "
               >
-                <Search className="w-3.5 h-3.5 text-gray-500" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="
+                    p-1.5 rounded-lg flex-shrink-0
+                    bg-gradient-to-br from-blue-500/10 to-cyan-500/10
+                    border border-blue-500/20
+                  "
+                    >
+                      <Filter className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                      Filters
+                    </h2>
+                  </div>
+
+                  <button
+                    onClick={clearFilters}
+                    className="
+                  px-3 py-1.5
+                  bg-gradient-to-r from-gray-200/50 to-gray-300/30
+                  dark:from-gray-700/50 dark:to-gray-800/30
+                  backdrop-blur-sm
+                  border border-gray-300/60 dark:border-gray-600/60
+                  text-gray-700 dark:text-gray-300
+                  rounded-lg
+                  hover:from-gray-300/60 hover:to-gray-400/40
+                  dark:hover:from-gray-600/60 dark:hover:to-gray-700/40
+                  transition-all duration-300
+                  shadow-sm hover:shadow
+                  text-xs sm:text-sm
+                "
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="relative">
+                      <div
+                        className="
+                      absolute left-2.5 top-1/2 transform -translate-y-1/2
+                      p-1 rounded-md
+                      bg-white/50 dark:bg-gray-700/50
+                      backdrop-blur-sm
+                      z-10
+                    "
+                      >
+                        <Search className="w-3.5 h-3.5 text-gray-500" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                        placeholder={`Search by ${searchType === "fullName" ? "fullName" : "employee code"}`}
+                        className="
+                      w-full pl-9 pr-24 py-2
+                      bg-white/50 dark:bg-gray-700/50
+                      backdrop-blur-sm
+                      border border-white/60 dark:border-gray-600/60
+                      rounded-lg
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                      focus:outline-none
+                      transition-all duration-300
+                      text-sm
+                    "
+                      />
+                      <select
+                        value={searchType}
+                        onChange={(e) =>
+                          setSearchType(
+                            e.target.value as "fullName" | "employee_code",
+                          )
+                        }
+                        className="
+                      absolute right-1 top-1/2 transform -translate-y-1/2
+                      px-2 py-1
+                      bg-white/50 dark:bg-gray-700/50
+                      backdrop-blur-sm
+                      border border-white/60 dark:border-gray-600/60
+                      rounded-lg
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                      focus:outline-none
+                      transition-all duration-300
+                      text-xs
+                      w-20
+                    "
+                      >
+                        <option value="fullName">User</option>
+                        <option value="employee_code">Emp ID</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0 relative">
+                    <div className="relative">
+                      <div
+                        className="
+                      absolute left-2.5 top-1/2 transform -translate-y-1/2
+                      p-1 rounded-md
+                      bg-white/50 dark:bg-gray-700/50
+                      backdrop-blur-sm
+                      z-30
+                      pointer-events-none
+                    "
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                      </div>
+                      <DatePicker
+                        selectsRange={true}
+                        startDate={startDate}
+                        endDate={endDate}
+                        onChange={(update) => {
+                          setDateRange(update);
+                          // Automatically search when date range is selected
+                          if (update[0] && update[1]) {
+                            setTimeout(() => handleSearch(), 100);
+                          }
+                        }}
+                        isClearable={true}
+                        placeholderText="Date range"
+                        className="
+                      w-full pl-9 pr-3 py-2
+                      bg-white/50 dark:bg-gray-700/50
+                      backdrop-blur-sm
+                      border border-white/60 dark:border-gray-600/60
+                      rounded-lg
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                      focus:outline-none
+                      transition-all duration-300
+                      text-sm
+                      relative
+                      z-20
+                    "
+                        withPortal
+                        portalId="datepicker-portal"
+                        popperClassName="z-[9999]"
+                        calendarClassName="z-[9999]"
+                        popperPlacement="bottom-start"
+                        // popperModifiers={[
+                        //   {
+                        //     name: "offset",
+                        //     options: {
+                        //       offset: [0, 10],
+                        //     },
+                        //   },
+                        //   {
+                        //     name: "preventOverflow",
+                        //     options: {
+                        //       boundary: "viewport",
+                        //       padding: 10,
+                        //     },
+                        //   },
+                        // ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {(searchQuery || startDate || endDate) && (
+                  <div className="mt-3 p-2 rounded-lg bg-white/30 dark:bg-gray-800/30 backdrop-blur-md border border-white/40 dark:border-gray-700/40">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Tag className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        Active Filters
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {searchQuery && (
+                        <span
+                          className="
+                        inline-flex items-center gap-1 px-1.5 py-0.5
+                        bg-gradient-to-r from-blue-100/80 to-cyan-100/60
+                        dark:from-blue-900/40 dark:to-cyan-900/30
+                        backdrop-blur-sm
+                        border border-blue-200/60 dark:border-blue-700/40
+                        text-blue-800 dark:text-blue-300
+                        rounded text-xs
+                        truncate max-w-[150px]
+                      "
+                        >
+                          <span className="truncate">
+                            {searchType === "fullName" ? "👤" : "🔢"}:{" "}
+                            {searchQuery}
+                          </span>
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="
+                          ml-0.5 p-0.5 rounded flex-shrink-0
+                          hover:bg-blue-200/50 dark:hover:bg-blue-700/50
+                          transition-colors text-[10px]
+                        "
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {startDate && (
+                        <span
+                          className="
+                        inline-flex items-center gap-1 px-1.5 py-0.5
+                        bg-gradient-to-r from-green-100/80 to-emerald-100/60
+                        dark:from-green-900/40 dark:to-emerald-900/30
+                        backdrop-blur-sm
+                        border border-green-200/60 dark:border-green-700/40
+                        text-green-800 dark:text-green-300
+                        rounded text-xs
+                        truncate max-w-[120px]
+                      "
+                        >
+                          <span className="truncate">
+                            📅 {formatDate(startDate.toISOString())}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setDateRange([null, endDate]);
+                              handleSearch();
+                            }}
+                            className="
+                          ml-0.5 p-0.5 rounded flex-shrink-0
+                          hover:bg-green-200/50 dark:hover:bg-green-700/50
+                          transition-colors text-[10px]
+                        "
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {endDate && (
+                        <span
+                          className="
+                        inline-flex items-center gap-1 px-1.5 py-0.5
+                        bg-gradient-to-r from-purple-100/80 to-pink-100/60
+                        dark:from-purple-900/40 dark:to-pink-900/30
+                        backdrop-blur-sm
+                        border border-purple-200/60 dark:border-purple-700/40
+                        text-purple-800 dark:text-purple-300
+                        rounded text-xs
+                        truncate max-w-[100px]
+                      "
+                        >
+                          <span className="truncate">
+                            → {formatDate(endDate.toISOString())}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setDateRange([startDate, null]);
+                              handleSearch();
+                            }}
+                            className="
+                          ml-0.5 p-0.5 rounded flex-shrink-0
+                          hover:bg-purple-200/50 dark:hover:bg-purple-700/50
+                          transition-colors text-[10px]
+                        "
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={`Search by ${searchType === "fullName" ? "fullName" : "employee code"}`}
-                className="
-                  w-full pl-9 pr-24 py-2
-                  bg-white/50 dark:bg-gray-700/50
-                  backdrop-blur-sm
-                  border border-white/60 dark:border-gray-600/60
-                  rounded-lg
-                  focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                  focus:outline-none
-                  transition-all duration-300
-                  text-sm
-                "
-              />
-              <select
-                value={searchType}
-                onChange={(e) =>
-                  setSearchType(e.target.value as "fullName" | "employee_code")
-                }
-                className="
-                  absolute right-1 top-1/2 transform -translate-y-1/2
-                  px-2 py-1
-                  bg-white/50 dark:bg-gray-700/50
-                  backdrop-blur-sm
-                  border border-white/60 dark:border-gray-600/60
-                  rounded-lg
-                  focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                  focus:outline-none
-                  transition-all duration-300
-                  text-xs
-                  w-20
-                "
-              >
-                <option value="fullName">User</option>
-                <option value="employee_code">Emp ID</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex-1 min-w-0 relative">
-            <div className="relative">
-              <div
-                className="
-                  absolute left-2.5 top-1/2 transform -translate-y-1/2
-                  p-1 rounded-md
-                  bg-white/50 dark:bg-gray-700/50
-                  backdrop-blur-sm
-                  z-30
-                  pointer-events-none
-                "
-              >
-                <Calendar className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-              <DatePicker
-                selectsRange={true}
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(update) => {
-                  setDateRange(update);
-                  // Automatically search when date range is selected
-                  if (update[0] && update[1]) {
-                    setTimeout(() => handleSearch(), 100);
-                  }
-                }}
-                isClearable={true}
-                placeholderText="Date range"
-                className="
-                  w-full pl-9 pr-3 py-2
-                  bg-white/50 dark:bg-gray-700/50
-                  backdrop-blur-sm
-                  border border-white/60 dark:border-gray-600/60
-                  rounded-lg
-                  focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                  focus:outline-none
-                  transition-all duration-300
-                  text-sm
-                  relative
-                  z-20
-                "
-                withPortal
-                portalId="datepicker-portal"
-                popperClassName="z-[9999]"
-                calendarClassName="z-[9999]"
-                popperPlacement="bottom-start"
-                popperModifiers={[
-                  {
-                    name: "offset",
-                    options: {
-                      offset: [0, 10],
-                    },
-                  },
-                  {
-                    name: "preventOverflow",
-                    options: {
-                      boundary: "viewport",
-                      padding: 10,
-                    },
-                  },
-                ]}
-              />
-            </div>
-          </div>
+            </>
+          )}
         </div>
-
-        {(searchQuery || startDate || endDate) && (
-          <div className="mt-3 p-2 rounded-lg bg-white/30 dark:bg-gray-800/30 backdrop-blur-md border border-white/40 dark:border-gray-700/40">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Tag className="w-3 h-3 text-blue-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                Active Filters
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {searchQuery && (
-                <span
-                  className="
-                    inline-flex items-center gap-1 px-1.5 py-0.5
-                    bg-gradient-to-r from-blue-100/80 to-cyan-100/60
-                    dark:from-blue-900/40 dark:to-cyan-900/30
-                    backdrop-blur-sm
-                    border border-blue-200/60 dark:border-blue-700/40
-                    text-blue-800 dark:text-blue-300
-                    rounded text-xs
-                    truncate max-w-[150px]
-                  "
-                >
-                  <span className="truncate">
-                    {searchType === "fullName" ? "👤" : "🔢"}: {searchQuery}
-                  </span>
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="
-                      ml-0.5 p-0.5 rounded flex-shrink-0
-                      hover:bg-blue-200/50 dark:hover:bg-blue-700/50
-                      transition-colors text-[10px]
-                    "
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {startDate && (
-                <span
-                  className="
-                    inline-flex items-center gap-1 px-1.5 py-0.5
-                    bg-gradient-to-r from-green-100/80 to-emerald-100/60
-                    dark:from-green-900/40 dark:to-emerald-900/30
-                    backdrop-blur-sm
-                    border border-green-200/60 dark:border-green-700/40
-                    text-green-800 dark:text-green-300
-                    rounded text-xs
-                    truncate max-w-[120px]
-                  "
-                >
-                  <span className="truncate">
-                    📅 {formatDate(startDate.toISOString())}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setDateRange([null, endDate]);
-                      handleSearch();
-                    }}
-                    className="
-                      ml-0.5 p-0.5 rounded flex-shrink-0
-                      hover:bg-green-200/50 dark:hover:bg-green-700/50
-                      transition-colors text-[10px]
-                    "
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {endDate && (
-                <span
-                  className="
-                    inline-flex items-center gap-1 px-1.5 py-0.5
-                    bg-gradient-to-r from-purple-100/80 to-pink-100/60
-                    dark:from-purple-900/40 dark:to-pink-900/30
-                    backdrop-blur-sm
-                    border border-purple-200/60 dark:border-purple-700/40
-                    text-purple-800 dark:text-purple-300
-                    rounded text-xs
-                    truncate max-w-[100px]
-                  "
-                >
-                  <span className="truncate">
-                    → {formatDate(endDate.toISOString())}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setDateRange([startDate, null]);
-                      handleSearch();
-                    }}
-                    className="
-                      ml-0.5 p-0.5 rounded flex-shrink-0
-                      hover:bg-purple-200/50 dark:hover:bg-purple-700/50
-                      transition-colors text-[10px]
-                    "
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Table Section */}

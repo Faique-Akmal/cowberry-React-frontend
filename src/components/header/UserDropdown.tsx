@@ -52,7 +52,7 @@ export default function UserDropdown() {
             />
           ) : (
             <div className="w-full h-full rounded-full bg-gradient-to-r from-lantern-blue-600 to-gray-600 flex items-center justify-center text-white text-sm font-medium">
-              {localStorage.getItem("username")?.charAt(0)?.toUpperCase()}
+              {localStorage.getItem("full_name")?.charAt(0)?.toUpperCase()}
             </div>
           )}
         </div>
@@ -84,7 +84,7 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400 capitalize">
-            {t(localStorage.getItem("username") || "N/A")}
+            {t(localStorage.getItem("full_name") || "N/A")}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {t(localStorage.getItem("email") || "N/A")}

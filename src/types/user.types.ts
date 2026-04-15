@@ -8,6 +8,7 @@ export interface User {
   name: string;
   full_name: string;
   employee_code: string;
+  designation: string;
   username: string;
   email: string;
   role: string;
@@ -24,7 +25,7 @@ export interface User {
   address?: string;
   birthDate?: string;
   profileImageUrl?: string;
-
+  joiningDate?: string;
   hrManagerId?: number;
 
   reporteeId?: number;
@@ -86,6 +87,7 @@ export interface Zone {
 export interface EditUserForm {
   username: string;
   full_name: string;
+  designation: string;
   email: string;
   mobileNo: string;
   address: string;

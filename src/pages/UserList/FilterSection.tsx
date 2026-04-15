@@ -46,7 +46,6 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   const paginatedCount = paginatedUsersLength || 0;
 
   // Sync function
-  // This is already in your component - lines 48-106
   const syncUsersFromERP = async () => {
     setSyncing(true);
     setSyncError(null);
@@ -86,6 +85,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
       }
     } catch (err: any) {
       // Error handling...
+      setSyncError(err.response?.data?.message || "Failed to sync users");
+      setTimeout(() => setSyncError(null), 5000);
     } finally {
       setSyncing(false);
     }
@@ -117,11 +118,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <div className="sm:hidden mb-3">
+      {/* Toggle Button - Visible on all devices now */}
+      <div className="mb-2">
         <button
           onClick={() => setIsVisible(!isVisible)}
-          className="w-full px-4 py-2 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-700 dark:text-gray-300 hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 flex items-center justify-center shadow-sm"
+          className="w-full sm:w-auto px-2 py-1 bg-linear-to-r from-white/40 to-white/20 dark:from-gray-700/40 dark:to-gray-800/20 backdrop-blur-sm border border-white/60 dark:border-gray-600/60 rounded-lg text-gray-700 dark:text-gray-300 hover:from-white/60 hover:to-white/40 dark:hover:from-gray-600/60 dark:hover:to-gray-700/40 transition-all duration-300 flex items-center justify-center shadow-sm"
         >
           <svg
             className={`w-4 h-4 mr-2 transition-transform duration-300 ${isVisible ? "rotate-180" : ""}`}
@@ -137,15 +138,15 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             />
           </svg>
           {isVisible ? "Hide Filters" : "Show Filters"}
-          <span className="ml-2 px-2 py-0.5 text-xs bg-lantern-blue-100 dark:bg-lantern-blue-900 text-lantern-blue-800 dark:text-lantern-blue-200 rounded-full">
+          {/* <span className="ml-2 px-2 py-0.5 text-sm bg-lantern-blue-100 dark:bg-lantern-blue-900 text-lantern-blue-800 dark:text-lantern-blue-200 rounded-full">
             {filteredCount}
-          </span>
+          </span> */}
         </button>
       </div>
 
       {/* Filter Section Container */}
       <div
-        className={`${isVisible ? "block" : "hidden sm:block"} bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] shrink-0`}
+        className={`${isVisible ? "block" : "hidden"} bg-linear-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] shrink-0`}
       >
         {/* Sync Status Messages */}
         {syncError && (

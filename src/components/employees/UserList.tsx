@@ -258,7 +258,7 @@ const UserList: React.FC = () => {
             department: user.department?.name || user.department || "",
             departmentId: user.departmentId || user.department?.id || 0,
             profile_image: user.profileImageUrl || user.profile_image || "",
-            date: user.createdAt || user.date || "",
+            joiningDate: user.joiningDate || user.joiningDate || "",
             is_online: user.is_online || user.isOnline || false,
             allocatedArea: user.allocatedArea || zoneData.area || "",
             mobileNo: user.mobileNo || user.mobile || "",
@@ -475,7 +475,9 @@ const UserList: React.FC = () => {
           full_name:
             userData.fullName || userData.full_name || userData.name || "",
           employee_code: userData.employeeCode || userData.employee_code || "",
+          designation: userData.designation || "",
           username: userData.username || "",
+          joiningDate: userData.joiningDate || userData.date || "",
           email: userData.email || "",
           role: userData.role?.name || userData.role || "",
           roleId: userData.roleId || userData.role?.id || 0,

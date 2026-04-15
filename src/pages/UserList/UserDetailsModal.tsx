@@ -19,15 +19,19 @@ interface ReportingPerson {
 
 interface User {
   userId: number;
+  id: number;
   name: string;
   full_name: string;
   employee_code: string;
+  employeeCode: string;
+  designation: string;
   email: string;
   mobileNo: string;
-  role: string;
+  role: string | { id: number; name: string };
   is_checkin: boolean;
   date: string;
-  department: string;
+  joiningDate: string;
+  department: string | { id: number; name: string };
   address: string | null;
   birthDate: string;
   allocatedArea: string;
@@ -57,6 +61,30 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   onEditClick,
   onDeleteClick,
 }) => {
+  // Helper to resolve role (string or object)
+  const getRole = () => {
+    if (!user.role) return "N/A";
+    if (typeof user.role === "object") return user.role.name;
+    return user.role;
+  };
+
+  // Helper to resolve department (string or object)
+  const getDepartment = () => {
+    if (!user.department) return "N/A";
+    if (typeof user.department === "object") return user.department.name;
+    return user.department;
+  };
+
+  // Helper to resolve employee code (API uses employeeCode, fallback to employee_code)
+  const getEmployeeCode = () => {
+    return user.employeeCode || user.employee_code || "N/A";
+  };
+
+  // Helper to resolve joining date (API uses joiningDate, fallback to date)
+  const getJoiningDate = () => {
+    return user.joiningDate || user.date;
+  };
+
   // Helper function to format date
   const formatDate = (dateString: string) => {
     if (!dateString) return "Not specified";
@@ -126,39 +154,11 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     return null;
   };
 
+  const resolvedRole = getRole();
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center ">
       <div className="bg-white dark:bg-gray-900 w-full max-w-full max-h-[85vh] flex flex-col overflow-hidden rounded-2xl shadow-2xl">
-        {/* Header */}
-        {/* <div className="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-2 shrink-0 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-900">
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              User Profile
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              User ID: {user.userId}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors ml-4"
-          >
-            <svg
-              className="w-5 h-5 text-gray-500 dark:text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div> */}
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3 ">
           {/* Profile Header */}
@@ -176,13 +176,16 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               </h3>
               <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(user.role)}`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(resolvedRole)}`}
                 >
-                  {user.role}
+                  {resolvedRole}
                 </span>
 
                 <p className="text-gray-600 dark:text-gray-400 text-sm rounded-full bg-gray-100 dark:bg-gray-800/50 px-2 py-1">
-                  Employee Code: {user.employee_code}
+                  Employee Code: {getEmployeeCode()}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm rounded-full bg-gray-100 dark:bg-gray-800/50 px-2 py-1">
+                  Designation: {user.designation || "N/A"}
                 </p>
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(user.is_checkin)}`}
@@ -227,7 +230,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 label="Address"
                 value={user.address || "Not provided"}
               />
-              <InfoCard label="Date Joined" value={formatDate(user.date)} />
+              <InfoCard
+                label="Date Joined"
+                value={formatDate(user.joiningDate)}
+              />
             </div>
           </div>
 
@@ -250,9 +256,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               Work Information
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InfoCard label="Department" value={user.department} />
-              <InfoCard label="Role" value={user.role} />
-              <InfoCard label="Employee Code" value={user.employee_code} />
+              <InfoCard label="Department" value={getDepartment()} />
+              <InfoCard label="Role" value={resolvedRole} />
+              <InfoCard label="Designation" value={user.designation || "N/A"} />
+              <InfoCard label="Employee Code" value={getEmployeeCode()} />
               <InfoCard
                 label="Status"
                 value={

@@ -280,7 +280,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50  px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -293,7 +293,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                 Manage system roles and permissions with full control
               </p>
             </div>
-            <div>
+            {/* <div>
               <button
                 onClick={syncRolesFromERP}
                 disabled={syncingRoles}
@@ -342,7 +342,7 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ onRoleAdded }) => {
                   </>
                 )}
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
 

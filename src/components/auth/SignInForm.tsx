@@ -38,7 +38,7 @@ const AccessRestrictionModal = ({
         title: "Access Denied",
         message: `Your role (${userRole || "Unknown"}) does not have permission to access this application. Please contact your administrator if you believe this is an error.`,
         buttonText: "Okay, Got it",
-        showDownloadButton: false,
+        showDownloadButton: true,
       };
     }
   };
@@ -101,7 +101,7 @@ export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
 
-  const [loginType, setLoginType] = useState<"user" | "admin">("user"); // 'user' or 'admin'
+  const [loginType, setLoginType] = useState<"user">("user"); // 'user' or 'admin'
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -259,6 +259,10 @@ export default function SignInForm() {
 
     // Store user data in localStorage (only if role is allowed)
     localStorage.setItem("userRole", userRole);
+    localStorage.setItem(
+      "full_name",
+      user?.full_name || user?.name || user?.username || "",
+    );
     localStorage.setItem("userId", user?.id || "");
     localStorage.setItem("profileimg", user?.profileimg || "");
     localStorage.setItem("department", user?.department || "");
@@ -289,7 +293,7 @@ export default function SignInForm() {
         // Show success message
         const successMessage = message || t("Logged in successfully");
         setMessage(successMessage);
-        toast.success(`Welcome back, ${user.username} 🍁`, {
+        toast.success(`Welcome back, ${user.full_name || user.username} 🍁`, {
           id: loadingToast,
         });
 

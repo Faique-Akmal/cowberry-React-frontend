@@ -102,12 +102,12 @@ const AppSidebar: React.FC = () => {
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr"],
     },
-    {
-      icon: <MdOutlineAdd className="text-lantern-blue-600" />,
-      name: t("Leaves Management"),
-      path: "/get-leaves",
-      role: ["admin", "hr", "manager", "zonalmanager"],
-    },
+    // {
+    //   icon: <MdOutlineAdd className="text-lantern-blue-600" />,
+    //   name: t("Leaves Management"),
+    //   path: "/get-leaves",
+    //   role: ["admin", "hr", "manager", "zonalmanager"],
+    // },
     {
       icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Add / Manage"),
@@ -220,7 +220,7 @@ const AppSidebar: React.FC = () => {
                   >
                     {/* Pointed Indicator for active parent */}
                     {isParentOfActiveSubmenu && (
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
+                      <div className="absolute left-0 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
                     )}
 
                     <span className="menu-item-icon-size">{nav.icon}</span>
@@ -285,11 +285,12 @@ const AppSidebar: React.FC = () => {
                   <Link
                     to={nav.path}
                     onClick={() => handleNavigation(nav.path!)}
-                    className={`menu-item group relative transition-all duration-300 ${
-                      isItemActive
-                        ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
-                        : ""
-                    }`}
+                    className={`menu-item group relative flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300
+  ${
+    isItemActive
+      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+      : "hover:bg-gray-100 dark:hover:bg-white/10"
+  }`}
                   >
                     {/* Pointed Indicator for active item
                     {isItemActive && (
@@ -320,7 +321,7 @@ const AppSidebar: React.FC = () => {
         WebkitBackdropFilter: "blur(12px) saturate(180%)",
         border: "1px solid rgba(255, 255, 255, 0.18)",
       }}
-      className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
+      className={`fixed top-0  rounded-r-2xl left-0 h-screen z-50 transition-all duration-300
     text-gray-900 dark:text-blue-light-25
     shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
     ${isExpanded || isMobileOpen ? "w-[240px]" : "lg:w-[80px] w-[240px]"}

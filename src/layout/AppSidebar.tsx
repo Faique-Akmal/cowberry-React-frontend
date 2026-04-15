@@ -35,14 +35,8 @@ type NavItem = {
 
 const AppSidebar: React.FC = () => {
   const { themeConfig } = useTheme();
-  const {
-    isExpanded,
-    isMobile,
-    isMobileOpen,
-    isHovered,
-    setIsHovered,
-    toggleMobileSidebar,
-  } = useSidebar();
+  const { isExpanded, isMobile, isMobileOpen, toggleMobileSidebar } =
+    useSidebar();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -108,12 +102,6 @@ const AppSidebar: React.FC = () => {
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr"],
     },
-    // {
-    //   icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
-    //   name: t("menu.registerUserForm"),
-    //   path: "/user-register",
-    //   role: ["admin", "hr"],
-    // },
     {
       icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Leaves Management"),
@@ -207,6 +195,10 @@ const AppSidebar: React.FC = () => {
           const visibleSubItems = nav.subItems?.filter((sub) =>
             hasAccess(sub.role),
           );
+          const isItemActive = nav.path ? isActive(nav.path) : false;
+          const isParentOfActiveSubmenu = nav.subItems?.some(
+            (subItem) => hasAccess(subItem.role) && isActive(subItem.path),
+          );
 
           if (
             nav.subItems &&
@@ -215,74 +207,101 @@ const AppSidebar: React.FC = () => {
             return null;
 
           return (
-            <li key={nav.name}>
+            <li key={nav.name} className="relative">
               {visibleSubItems ? (
-                <button
-                  onClick={() => handleSubmenuToggle(index, menuType)}
-                  className="menu-item group"
-                >
-                  <span className="menu-item-icon-size">{nav.icon}</span>
-                  {(isExpanded || isHovered || isMobileOpen) && (
-                    <span className="menu-item-text">{nav.name}</span>
+                <>
+                  <button
+                    onClick={() => handleSubmenuToggle(index, menuType)}
+                    className={`menu-item group relative transition-all duration-300 ${
+                      isParentOfActiveSubmenu
+                        ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
+                        : ""
+                    }`}
+                  >
+                    {/* Pointed Indicator for active parent */}
+                    {isParentOfActiveSubmenu && (
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
+                    )}
+
+                    <span className="menu-item-icon-size">{nav.icon}</span>
+                    {(isExpanded || isMobileOpen) && (
+                      <span className="menu-item-text">{nav.name}</span>
+                    )}
+                    {(isExpanded || isMobileOpen) && (
+                      <ChevronDownIcon
+                        className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                          openSubmenu?.type === menuType &&
+                          openSubmenu?.index === index
+                            ? "rotate-180 text-brand-500"
+                            : ""
+                        }`}
+                      />
+                    )}
+                  </button>
+
+                  {visibleSubItems && (isExpanded || isMobileOpen) && (
+                    <div
+                      ref={(el) => {
+                        subMenuRefs.current[`${menuType}-${index}`] = el;
+                      }}
+                      className="overflow-hidden transition-all duration-300"
+                      style={{
+                        height:
+                          openSubmenu?.type === menuType &&
+                          openSubmenu?.index === index
+                            ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                            : "0px",
+                      }}
+                    >
+                      <ul className="mt-2 space-y-1 ml-9">
+                        {visibleSubItems.map((subItem) => {
+                          const isSubItemActive = isActive(subItem.path);
+                          return (
+                            <li key={subItem.name} className="relative">
+                              <Link
+                                to={subItem.path}
+                                onClick={() => handleNavigation(subItem.path)}
+                                className={`menu-dropdown-item relative transition-all duration-300 ${
+                                  isSubItemActive
+                                    ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300 font-medium"
+                                    : "menu-dropdown-item-inactive"
+                                }`}
+                              >
+                                {/* Pointed Indicator for active subitem */}
+                                {isSubItemActive && (
+                                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
+                                )}
+                                {subItem.name}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   )}
-                  {(isExpanded || isHovered || isMobileOpen) && (
-                    <ChevronDownIcon
-                      className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                        openSubmenu?.type === menuType &&
-                        openSubmenu?.index === index
-                          ? "rotate-180 text-brand-500"
-                          : ""
-                      }`}
-                    />
-                  )}
-                </button>
+                </>
               ) : (
                 nav.path && (
                   <Link
                     to={nav.path}
                     onClick={() => handleNavigation(nav.path!)}
-                    className="menu-item group"
+                    className={`menu-item group relative transition-all duration-300 ${
+                      isItemActive
+                        ? "bg-gradient-to-r from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
+                        : ""
+                    }`}
                   >
+                    {/* Pointed Indicator for active item */}
+                    {isItemActive && (
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
+                    )}
+
                     <span className="menu-item-icon-size">{nav.icon}</span>
-                    {(isExpanded || isHovered || isMobileOpen) && (
+                    {(isExpanded || isMobileOpen) && (
                       <span className="menu-item-text">{nav.name}</span>
                     )}
                   </Link>
                 )
-              )}
-
-              {visibleSubItems && (isExpanded || isHovered || isMobileOpen) && (
-                <div
-                  ref={(el) => {
-                    subMenuRefs.current[`${menuType}-${index}`] = el;
-                  }}
-                  className="overflow-hidden transition-all duration-300"
-                  style={{
-                    height:
-                      openSubmenu?.type === menuType &&
-                      openSubmenu?.index === index
-                        ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                        : "0px",
-                  }}
-                >
-                  <ul className="mt-2 space-y-1 ml-9">
-                    {visibleSubItems.map((subItem) => (
-                      <li key={subItem.name}>
-                        <Link
-                          to={subItem.path}
-                          onClick={() => handleNavigation(subItem.path)}
-                          className={`menu-dropdown-item ${
-                            isActive(subItem.path)
-                              ? "menu-dropdown-item-active"
-                              : "menu-dropdown-item-inactive"
-                          }`}
-                        >
-                          {subItem.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               )}
             </li>
           );
@@ -304,28 +323,19 @@ const AppSidebar: React.FC = () => {
       className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300
     text-gray-900 dark:text-blue-light-25
     shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
-    ${isExpanded || isMobileOpen || isHovered ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
+    ${isExpanded || isMobileOpen ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
     ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-      onMouseEnter={() => {
-        // Only trigger hover on desktop when sidebar is collapsed and not expanded
-        if (!isExpanded && !isMobile && !isMobileOpen) {
-          setIsHovered(true);
-        }
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-      }}
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div
           className={`py-8 flex ${
-            !isExpanded && !isHovered && !isMobile
+            !isExpanded && !isMobile
               ? "lg:justify-center justify-start"
               : "justify-start"
           } px-5`}
         >
-          {isExpanded || isHovered || isMobileOpen ? (
+          {isExpanded || isMobileOpen ? (
             <img
               src="lantern-banner.png"
               alt="Logo"
@@ -360,7 +370,7 @@ const AppSidebar: React.FC = () => {
               </div>
             </div>
           </nav>
-          {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
+          {(isExpanded || isMobileOpen) && <SidebarWidget />}
         </div>
       </div>
     </aside>

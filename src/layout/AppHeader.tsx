@@ -12,11 +12,38 @@ const AppHeader: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Improved device detection that works with iPad Mini
+  const isTouchDevice = () => {
+    return (
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      // @ts-ignore - for older browsers
+      navigator.msMaxTouchPoints > 0
+    );
+  };
+
+  const isTablet = () => {
+    const width = window.innerWidth;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIPad =
+      /ipad/.test(userAgent) ||
+      (isTouchDevice() && /macintosh/.test(userAgent) && width >= 768);
+    const isAndroidTablet =
+      /android/.test(userAgent) && !/mobile/.test(userAgent) && width >= 600;
+
+    return (isIPad || isAndroidTablet) && width >= 768 && width <= 1024;
+  };
+
   const handleToggle = () => {
-    if (window.innerWidth >= 1024) {
-      toggleSidebar();
-    } else {
+    const width = window.innerWidth;
+    const isTabletDevice = isTablet();
+    const isMobileDevice = width < 768;
+
+    // For tablet devices (including iPad Mini), use mobile sidebar behavior
+    if (isMobileDevice || isTabletDevice) {
       toggleMobileSidebar();
+    } else {
+      toggleSidebar();
     }
   };
 
@@ -38,6 +65,25 @@ const AppHeader: React.FC = () => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Handle window resize to update sidebar state for iPad rotation
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const isTabletDevice = isTablet();
+
+      // If device is tablet or mobile, ensure sidebar is in mobile mode
+      if (width < 768 || isTabletDevice) {
+        // You might want to auto-close the sidebar on orientation change
+        if (isMobileOpen && !isMobile) {
+          toggleMobileSidebar();
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMobileOpen, isMobile, toggleMobileSidebar]);
 
   return (
     <header

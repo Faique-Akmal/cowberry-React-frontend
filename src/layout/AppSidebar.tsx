@@ -35,8 +35,13 @@ type NavItem = {
 
 const AppSidebar: React.FC = () => {
   const { themeConfig } = useTheme();
-  const { isExpanded, isMobile, isMobileOpen, toggleMobileSidebar } =
-    useSidebar();
+  const {
+    isExpanded,
+    isMobile,
+    isMobileOpen,
+    toggleMobileSidebar,
+    closeMobileSidebar,
+  } = useSidebar();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -102,12 +107,6 @@ const AppSidebar: React.FC = () => {
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },
-    // {
-    //   icon: <MdOutlineAdd className="text-lantern-blue-600" />,
-    //   name: t("Leaves Management"),
-    //   path: "/get-leaves",
-    //   role: ["admin", "hr", "manager", "zonalmanager"],
-    // },
     {
       icon: <MdOutlineAdd className="text-lantern-blue-600" />,
       name: t("Add / Manage"),
@@ -178,12 +177,61 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  // Close mobile sidebar when navigating
+  // Close mobile sidebar when navigating or clicking outside on mobile/tablet
   const handleNavigation = (path: string) => {
     if (isMobileOpen) {
       toggleMobileSidebar();
     }
   };
+
+  // Close sidebar when clicking outside on tablet/mobile
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const sidebar = document.querySelector(".sidebar-container");
+      const toggleButton = document.querySelector(".sidebar-toggle-button");
+
+      // Check if sidebar is open on mobile/tablet and click is outside
+      if (
+        isMobileOpen &&
+        sidebar &&
+        !sidebar.contains(target) &&
+        !toggleButton?.contains(target)
+      ) {
+        toggleMobileSidebar();
+      }
+    };
+
+    // Only add listener on mobile/tablet devices
+    if (isMobile) {
+      document.addEventListener("mousedown", handleClickOutside);
+      // For touch devices
+      document.addEventListener("touchstart", handleClickOutside as any);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as any);
+    };
+  }, [isMobileOpen, isMobile, toggleMobileSidebar]);
+
+  // Handle window resize for tablet orientation changes
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const isTablet = width >= 768 && width <= 1024;
+
+      // If it's a tablet and sidebar is open in mobile mode, keep it open
+      // If resizing from tablet to desktop, ensure proper state
+      if (!isMobile && width >= 1024 && isMobileOpen) {
+        // Transition from tablet/mobile to desktop
+        toggleMobileSidebar();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMobile, isMobileOpen, toggleMobileSidebar]);
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prev) =>
@@ -218,17 +266,12 @@ const AppSidebar: React.FC = () => {
                 <>
                   <button
                     onClick={() => handleSubmenuToggle(index, menuType)}
-                    className={`menu-item group relative transition-all duration-300 ${
+                    className={`menu-item group relative transition-all duration-300 w-full text-left ${
                       isParentOfActiveSubmenu
-                        ? "bg-blue-300  dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 "
+                        ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600"
                         : ""
                     }`}
                   >
-                    {/* Pointed Indicator for active parent */}
-                    {/* {isParentOfActiveSubmenu && (
-                      <div className="absolute left-0 transform -translate-y-1/2 w-1 h-6 bg-lantern-blue-600 rounded-r-full"></div>
-                    )} */}
-
                     <span className="menu-item-icon-size">{nav.icon}</span>
                     {(isExpanded || isMobileOpen) && (
                       <span className="menu-item-text">{nav.name}</span>
@@ -267,13 +310,12 @@ const AppSidebar: React.FC = () => {
                               <Link
                                 to={subItem.path}
                                 onClick={() => handleNavigation(subItem.path)}
-                                className={`menu-dropdown-item relative transition-all duration-300 ${
+                                className={`menu-dropdown-item relative transition-all duration-300 block ${
                                   isSubItemActive
                                     ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 dark:text-blue-300 font-medium"
                                     : "menu-dropdown-item-inactive"
                                 }`}
                               >
-                                {/* Pointed Indicator for active subitem */}
                                 {isSubItemActive && (
                                   <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
                                 )}
@@ -291,18 +333,13 @@ const AppSidebar: React.FC = () => {
                   <Link
                     to={nav.path}
                     onClick={() => handleNavigation(nav.path!)}
-                    className={`menu-item group relative flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300
-  ${
-    isItemActive
-      ? "bg-blue-100 dark:bg-blue-900/30 text-lantern-blue-600 dark:text-blue-300"
-      : "hover:bg-gray-100 dark:hover:bg-white/10"
-  }`}
+                    className={`menu-item group relative flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 w-full
+                    ${
+                      isItemActive
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-lantern-blue-600 dark:text-blue-300"
+                        : "hover:bg-gray-100 dark:hover:bg-white/10"
+                    }`}
                   >
-                    {/* Pointed Indicator for active item
-                    {isItemActive && (
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
-                    )} */}
-
                     <span className="menu-item-icon-size">{nav.icon}</span>
                     {(isExpanded || isMobileOpen) && (
                       <span className="menu-item-text">{nav.name}</span>
@@ -317,70 +354,81 @@ const AppSidebar: React.FC = () => {
   );
 
   return (
-    <aside
-      style={{
-        backgroundColor: themeConfig.sidebar.background
-          ? `${themeConfig.sidebar.background}80`
-          : "rgba(255, 255, 255, 0.15)",
-        color: themeConfig.sidebar.text || undefined,
-        backdropFilter: "blur(12px) saturate(180%)",
-        WebkitBackdropFilter: "blur(12px) saturate(180%)",
-        border: "1px solid rgba(255, 255, 255, 0.18)",
-      }}
-      className={`fixed top-0  rounded-r-2xl left-0 h-screen z-50 transition-all duration-300
-    text-gray-900 dark:text-blue-light-25
-    shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
-    ${isExpanded || isMobileOpen ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
-    ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo */}
+    <>
+      {/* Overlay for mobile/tablet devices */}
+      {isMobileOpen && isMobile && (
         <div
-          className={`py-8 flex ${
-            !isExpanded && !isMobile
-              ? "lg:justify-center justify-start"
-              : "justify-start"
-          } px-5`}
-        >
-          {isExpanded || isMobileOpen ? (
-            <img
-              src="lantern-banner.png"
-              alt="Logo"
-              className="object-cover"
-              width={170}
-            />
-          ) : (
-            <img
-              src="lantern-logo.png"
-              alt="Logo"
-              className="object-cover"
-              width={170}
-            />
-          )}
-        </div>
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300"
+          onClick={toggleMobileSidebar}
+          style={{ backdropFilter: "blur(4px)" }}
+        />
+      )}
 
-        {/* Scrollable Area */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5">
-          <nav className="mb-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-xs text-gray-600 uppercase mb-4">
-                  {t("Menu")}
-                </h2>
-                {renderMenuItems(navItems, "main")}
+      <aside
+        className={`sidebar-container fixed top-0 rounded-r-2xl left-0 h-screen z-50 transition-all duration-300
+          text-gray-900 dark:text-blue-light-25
+          shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
+          ${isExpanded || isMobileOpen ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+        style={{
+          backgroundColor: themeConfig.sidebar.background
+            ? `${themeConfig.sidebar.background}80`
+            : "rgba(255, 255, 255, 0.15)",
+          color: themeConfig.sidebar.text || undefined,
+          backdropFilter: "blur(12px) saturate(180%)",
+          WebkitBackdropFilter: "blur(12px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.18)",
+        }}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div
+            className={`py-8 flex ${
+              !isExpanded && !isMobile
+                ? "lg:justify-center justify-start"
+                : "justify-start"
+            } px-5`}
+          >
+            {isExpanded || isMobileOpen ? (
+              <img
+                src="lantern-banner.png"
+                alt="Logo"
+                className="object-cover"
+                width={170}
+              />
+            ) : (
+              <img
+                src="lantern-logo.png"
+                alt="Logo"
+                className="object-cover"
+                width={170}
+              />
+            )}
+          </div>
+
+          {/* Scrollable Area */}
+          <div className="flex-1 overflow-y-auto no-scrollbar px-5">
+            <nav className="mb-6">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h2 className="text-xs text-gray-600 uppercase mb-4">
+                    {t("Menu")}
+                  </h2>
+                  {renderMenuItems(navItems, "main")}
+                </div>
+                <div>
+                  <h2 className="text-xs text-gray-600 uppercase mb-4">
+                    {t("Others")}
+                  </h2>
+                  {renderMenuItems(othersItems, "others")}
+                </div>
               </div>
-              <div>
-                <h2 className="text-xs text-gray-600 uppercase mb-4">
-                  {t("Others")}
-                </h2>
-                {renderMenuItems(othersItems, "others")}
-              </div>
-            </div>
-          </nav>
-          {(isExpanded || isMobileOpen) && <SidebarWidget />}
+            </nav>
+            {(isExpanded || isMobileOpen) && <SidebarWidget />}
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

@@ -328,7 +328,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             user.hrManagerEmployeeCode ||
             user.reportee ||
             user.hrManager) && (
-            <div className="mb-8">
+            <div className="mb-8 px-8 py-3 bg-gray-50 dark:bg-gray-800/20 rounded-xl">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <svg
                   className="w-5 h-5 mr-2 text-blue-600"

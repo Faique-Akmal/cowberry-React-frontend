@@ -770,7 +770,7 @@ export default function RegisterUserForm() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 border-2xl-rounded shadow-lg backdrop-blur-2xl">
+    <div className="w-full max-w-5xl mx-auto px-4 border-2xl-rounded shadow-lg backdrop-blur-2xl">
       <PageMeta
         title="Employee Registration"
         description="Register a new employee"

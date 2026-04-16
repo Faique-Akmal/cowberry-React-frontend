@@ -18,8 +18,6 @@ export default function Metrics() {
   }, [fetchUsers]);
 
   // ✅ Calculation: Compute stats on-the-fly using useMemo
-  // This replaces the complex useState + useCallback logic.
-  // It only recalculates when the 'users' array actually changes.
   const stats = useMemo(() => {
     const total = users.length;
 
@@ -41,8 +39,13 @@ export default function Metrics() {
       hr: users.filter((user) => checkRole(user.role, "hr")).length,
       zonalManager: users.filter((user) => checkRole(user.role, "zonalmanager"))
         .length,
+      headOfDepartment: users.filter(
+        (user) =>
+          checkRole(user.role, "headofdepartment") ||
+          checkRole(user.role, "head_of_department"),
+      ).length,
     };
-  }, [users]); // Dependency is strictly the users array from store
+  }, [users]);
 
   // Glassmorphism styles based on theme
   const glassStyles = {
@@ -66,89 +69,105 @@ export default function Metrics() {
   const cards = useMemo(
     () => [
       {
-        title: t("home.Total Users"),
+        title: t("Total Users"),
         value: stats.totalUsers.toLocaleString(),
-        icon: <CiUser className="h-3 w-3" />,
-        iconColor: "text-indigo-600 dark:text-indigo-400",
-        iconBg: "bg-indigo-100/80 dark:bg-indigo-900/30",
+        // icon: <CiUser className="h-5 w-5" />,
+        // iconColor: "text-indigo-600 dark:text-indigo-400",
+        // iconBg: "bg-indigo-100/80 dark:bg-indigo-900/30",
         gradient:
           "from-indigo-50/50 to-transparent dark:from-indigo-950/20 dark:to-transparent",
       },
       {
         title: t("Field Employees"),
         value: stats.employee.toLocaleString(),
-        icon: <GroupIcon className="h-3 w-3" />,
-        iconColor: "text-blue-600 dark:text-blue-400",
-        iconBg: "bg-blue-100/80 dark:bg-blue-900/30",
+        // icon: <GroupIcon className="h-5 w-5" />,
+        // iconColor: "text-blue-600 dark:text-blue-400",
+        // iconBg: "bg-blue-100/80 dark:bg-blue-900/30",
         gradient:
           "from-blue-50/50 to-transparent dark:from-blue-950/20 dark:to-transparent",
       },
       {
-        title: t("home.Total Managers"),
+        title: t("Total Managers"),
         value: stats.manager.toLocaleString(),
-        icon: <FcDepartment className="h-3 w-3" />,
-        iconColor: "text-yellow-600 dark:text-yellow-400",
-        iconBg: "bg-yellow-100/80 dark:bg-yellow-900/30",
+        // icon: <FcDepartment className="h-5 w-5" />,
+        // iconColor: "text-yellow-600 dark:text-yellow-400",
+        // iconBg: "bg-yellow-100/80 dark:bg-yellow-900/30",
         gradient:
           "from-yellow-50/50 to-transparent dark:from-yellow-950/20 dark:to-transparent",
       },
       {
-        title: t("home.Total HR"),
+        title: t("HR"),
         value: stats.hr.toLocaleString(),
-        icon: <GrUserManager className="h-3 w-3" />,
-        iconColor: "text-orange-600 dark:text-orange-400",
-        iconBg: "bg-orange-100/80 dark:bg-orange-900/30",
+        // icon: <GrUserManager className="h-5 w-5" />,
+        // iconColor: "text-orange-600 dark:text-orange-400",
+        // iconBg: "bg-orange-100/80 dark:bg-orange-900/30",
         gradient:
           "from-orange-50/50 to-transparent dark:from-orange-950/20 dark:to-transparent",
       },
       {
-        title: t("Total Zonal Manager"),
+        title: t("Zonal Manager"),
         value: stats.zonalManager.toLocaleString(),
-        icon: <GrUserManager className="h-3 w-3" />,
-        iconColor: "text-purple-600 dark:text-purple-400",
-        iconBg: "bg-purple-100/80 dark:bg-purple-900/30",
+        // icon: <GrUserManager className="h-5 w-5" />,
+        // iconColor: "text-purple-600 dark:text-purple-400",
+        // iconBg: "bg-purple-100/80 dark:bg-purple-900/30",
         gradient:
           "from-purple-50/50 to-transparent dark:from-purple-950/20 dark:to-transparent",
+      },
+      {
+        title: t("H.O.D"),
+        value: stats.headOfDepartment.toLocaleString(),
+        // icon: <FcDepartment className="h-5 w-5" />,
+        // iconColor: "text-emerald-600 dark:text-emerald-400",
+        // iconBg: "bg-emerald-100/80 dark:bg-emerald-900/30",
+        gradient:
+          "from-emerald-50/50 to-transparent dark:from-emerald-950/20 dark:to-transparent",
+      },
+      {
+        title: t("Employees"),
+        value: stats.employee.toLocaleString(),
+        // icon: <GroupIcon className="h-5 w-5" />,
+        // iconColor: "text-rose-600 dark:text-rose-400",
+        // iconBg: "bg-rose-100/80 dark:bg-rose-900/30",
+        gradient:
+          "from-rose-50/50 to-transparent dark:from-rose-950/20 dark:to-transparent",
       },
     ],
     [t, stats],
   );
 
   // ✅ Skeleton Loading Logic
-  // Show skeleton ONLY if loading AND we have no users yet.
-  // This prevents UI flash if re-fetching in background.
   if (isLoading && users.length === 0) {
     return (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5 p-4 w-full">
-        {[1, 2, 3, 4, 5].map((item) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 p-4 w-full">
+        {[1, 2, 3, 4, 5, 6, 7].map((item) => (
           <div
             key={item}
             className={`
-                            relative rounded-2xl p-4 w-full flex flex-col justify-between 
-                            overflow-hidden animate-pulse
-                        `}
+              relative rounded-2xl p-4 w-full overflow-hidden animate-pulse
+              min-w-[150px] flex-1
+            `}
             style={currentGlassStyle}
           >
-            <div className="relative z-10 flex justify-between items-center">
-              <div className="space-y-3">
+            <div className="relative z-10 flex justify-between items-start gap-2">
+              <div className="space-y-3 flex-1">
                 <div
-                  className={`h-4 w-20 rounded ${
+                  className={`h-4 w-24 rounded ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-300"
                   }`}
                 ></div>
                 <div
-                  className={`h-8 w-12 rounded ${
+                  className={`h-8 w-16 rounded ${
                     isDarkMode ? "bg-gray-600" : "bg-gray-400"
                   }`}
                 ></div>
               </div>
               <div
-                className={`p-3 rounded-full ${
+                className={`p-3 rounded-full shrink-0 ${
                   isDarkMode ? "bg-gray-700" : "bg-gray-300"
                 }`}
               >
                 <div className="opacity-0">
-                  <CiUser className="h-3 w-3" />
+                  <CiUser className="h-5 w-5" />
                 </div>
               </div>
             </div>
@@ -163,78 +182,89 @@ export default function Metrics() {
     );
   }
 
-  // Main Render
+  // Main Render - Fixed UI with proper alignment
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5 p-4 w-full ">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 p-4 w-full auto-rows-fr">
       {cards.map((card, index) => (
         <div
           key={index}
-          className={`border border-dashed
-                        relative rounded-2xl p-4 w-full flex flex-col justify-between 
-                        hover:scale-[1.02] transition-all duration-300
-                        before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br ${card.gradient}
-                        overflow-hidden group 
-                    `}
+          className={`
+            relative rounded-2xl p-4 w-full flex flex-col
+            hover:scale-[1.02] transition-all duration-300
+            before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br ${card.gradient}
+            overflow-hidden group
+            min-w-[100px] h-full
+          `}
           style={currentGlassStyle}
         >
-          {/* Optional: Subtle background pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10 border border-dashed ">
-            <div className="absolute  -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-r from-current to-transparent opacity-20 group-hover:opacity-30 transition-opacity"></div>
+          {/* Background decoration */}
+          <div className="absolute inset-0 opacity-5 dark:opacity-10">
+            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-r from-current to-transparent opacity-20 group-hover:opacity-30 transition-opacity"></div>
           </div>
 
-          <div className="relative z-10 flex justify-between items-center ">
-            <div>
-              <h4
+          {/* Content */}
+          <div className="relative z-10 flex flex-col h-full">
+            {/* Top section with title and icon */}
+            <div className="flex justify-between items-start gap-2 mb-4">
+              <div className="flex-1 min-w-0">
+                <h4
+                  className={`
+                    text-xs sm:text-sm font-medium truncate
+                    ${isDarkMode ? "text-gray-300" : "text-gray-700"}
+                  `}
+                  title={card.title}
+                >
+                  {card.title}
+                </h4>
+              </div>
+              {/* <div
                 className={`
-                                text-sm font-medium 
-                                ${
-                                  isDarkMode ? "text-gray-300" : "text-gray-700"
-                                }
-                                mb-2
-                            `}
+                  p-2.5 rounded-full backdrop-blur-sm shrink-0
+                  ${card.iconBg} 
+                  transition-transform duration-300 
+                  group-hover:scale-110
+                `}
               >
-                {card.title}
-              </h4>
+                <div
+                  className={`${card.iconColor} ${isLoading ? "opacity-50" : "opacity-100"}`}
+                >
+                  {card.icon}
+                </div>
+              </div> */}
+            </div>
+
+            {/* Value section */}
+            <div className="flex items-baseline justify-between mb-4">
               <p
                 className={`
-                                text-3xl font-bold 
-                                ${isDarkMode ? "text-white" : "text-gray-900"}
-                                mt-1 transition-all duration-300
-                                ${isLoading ? "opacity-50" : "opacity-100"}
-                            `}
+                  text-2xl sm:text-3xl font-bold truncate
+                  ${isDarkMode ? "text-white" : "text-gray-900"}
+                  transition-all duration-300
+                  ${isLoading ? "opacity-50" : "opacity-100"}
+                `}
               >
                 {card.value}
               </p>
             </div>
-            <div
-              className={`
-                            p-3 rounded-full backdrop-blur-sm 
-                            ${card.iconBg} 
-                            transition-transform duration-300 
-                            group-hover:scale-110
-                        `}
-            >
-              <div className={card.iconColor}>{card.icon}</div>
-            </div>
-          </div>
 
-          {/* Optional: Progress indicator or decorative element */}
-          <div
-            className={`
-                        relative mt-4 h-1 w-full rounded-full 
-                        ${isDarkMode ? "bg-gray-700/50" : "bg-gray-200/50"}
-                        overflow-hidden
-                    `}
-          >
+            {/* Progress bar */}
             <div
               className={`
-                            absolute inset-0 w-0 group-hover:w-full 
-                            ${card.iconBg
-                              .replace("bg-", "bg-linear-to-r from-")
-                              .replace("/80", "")} 
-                            transition-all duration-500 ease-out
-                        `}
-            ></div>
+                relative mt-auto h-1 w-full rounded-full 
+                ${isDarkMode ? "bg-gray-700/50" : "bg-gray-200/50"}
+                overflow-hidden
+              `}
+            >
+              {/* <div
+                className={`
+                  absolute inset-0 w-0 group-hover:w-full 
+                  ${card.iconBg
+                    .replace("bg-", "bg-linear-to-r from-")
+                    .replace("/80", "")} 
+                  transition-all duration-500 ease-out
+                `}
+              ></div> */}
+            </div>
           </div>
         </div>
       ))}

@@ -128,6 +128,12 @@ const AppSidebar: React.FC = () => {
       role: ["admin", "hr", "ceo"],
     },
     {
+      icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
+      name: t("menu.registerUserForm"),
+      path: "/user-register",
+      role: ["admin", "hr"],
+    },
+    {
       icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
       name: t("menu.allUsers"),
       path: "/all-users",
@@ -214,14 +220,14 @@ const AppSidebar: React.FC = () => {
                     onClick={() => handleSubmenuToggle(index, menuType)}
                     className={`menu-item group relative transition-all duration-300 ${
                       isParentOfActiveSubmenu
-                        ? "bg-lantern-blue-600  dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300"
+                        ? "bg-blue-300  dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 "
                         : ""
                     }`}
                   >
                     {/* Pointed Indicator for active parent */}
-                    {isParentOfActiveSubmenu && (
-                      <div className="absolute left-0 transform -translate-y-1/2 w-1 h-8 bg-lantern-blue-600 rounded-r-full"></div>
-                    )}
+                    {/* {isParentOfActiveSubmenu && (
+                      <div className="absolute left-0 transform -translate-y-1/2 w-1 h-6 bg-lantern-blue-600 rounded-r-full"></div>
+                    )} */}
 
                     <span className="menu-item-icon-size">{nav.icon}</span>
                     {(isExpanded || isMobileOpen) && (
@@ -263,7 +269,7 @@ const AppSidebar: React.FC = () => {
                                 onClick={() => handleNavigation(subItem.path)}
                                 className={`menu-dropdown-item relative transition-all duration-300 ${
                                   isSubItemActive
-                                    ? "bg-lantern-blue-600 dark:from-blue-400/20 dark:to-blue-500/20 text-blue-700 dark:text-blue-300 font-medium"
+                                    ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 dark:text-blue-300 font-medium"
                                     : "menu-dropdown-item-inactive"
                                 }`}
                               >
@@ -288,7 +294,7 @@ const AppSidebar: React.FC = () => {
                     className={`menu-item group relative flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300
   ${
     isItemActive
-      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+      ? "bg-blue-100 dark:bg-blue-900/30 text-lantern-blue-600 dark:text-blue-300"
       : "hover:bg-gray-100 dark:hover:bg-white/10"
   }`}
                   >

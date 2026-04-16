@@ -33,7 +33,7 @@ interface Manager {
   full_name: string;
   name?: string;
   email: string;
-  designation: string;
+  designation?: string;
   employee_code?: string;
   employeeCode?: string;
   username?: string;
@@ -238,11 +238,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-2 mt-4">
       <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden rounded-xl">
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-6">
               Edit User
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -702,8 +702,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
-            <div className="flex justify-end space-x-4">
+          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-2 mb-6 shrink-0">
+            <div className="flex justify-end space-x-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -723,7 +723,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   roles.length === 0 ||
                   zones.length === 0
                 }
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                className="px-6  py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
               >
                 {isEditing ? (
                   <>

@@ -127,6 +127,12 @@ const AppSidebar: React.FC = () => {
       role: ["admin", "hr", "ceo"],
     },
     {
+      icon: <MdOutlineAdd />,
+      name: t("Leaves Management"),
+      path: "/get-leaves",
+      role: ["admin", "hr", "manager", "zonalmanager"],
+    },
+    {
       icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
       name: t("menu.registerUserForm"),
       path: "/user-register",

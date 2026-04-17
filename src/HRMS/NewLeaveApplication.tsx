@@ -58,7 +58,6 @@ const LeaveApplicationPage: React.FC = () => {
   const [fiscalYear, setFiscalYear] = useState<string>("");
 
   // ERP Configuration from env
-  const ERP_BASE_URL = import.meta.env.VITE_ERP_BASE_URL || "";
   const ERP_API_KEY = import.meta.env.VITE_ERP_API_KEY || "";
   const ERP_API_SECRET = import.meta.env.VITE_ERP_API_SECRET || "";
   const ERP_X_API_KEY = import.meta.env.VITE_ERP_X_API_KEY || "";
@@ -66,23 +65,23 @@ const LeaveApplicationPage: React.FC = () => {
   // Use the X-API-Key header value (this is what Frappe expects)
   const API_KEY_HEADER_VALUE = ERP_X_API_KEY || ERP_API_KEY;
 
-  // Leave types mapping to match ERP system
-  const leaveTypes = [
-    { type: "Casual Leave", description: "Personal or casual leave" },
-    {
-      type: "Sick Leave",
-      description: "Medical leave for illness or health issues",
-    },
-    {
-      type: "Compensatory Leave",
-      description: "Leave earned from overtime work",
-    },
-    {
-      type: "Leave Without Pay",
-      description: "Unpaid leave for personal reasons",
-    },
-    { type: "Half Day", description: "Leave for half a day only" },
-  ];
+  // Function to get leave type color for badges
+  const getLeaveTypeColor = (leaveType: string) => {
+    const type = leaveType.toLowerCase();
+    if (type.includes("casual")) {
+      return "bg-blue-100 text-blue-800";
+    } else if (type.includes("sick")) {
+      return "bg-purple-100 text-purple-800";
+    } else if (type.includes("compensatory")) {
+      return "bg-pink-100 text-pink-800";
+    } else if (type.includes("without pay") || type.includes("unpaid")) {
+      return "bg-teal-100 text-teal-800";
+    } else if (type.includes("half")) {
+      return "bg-indigo-100 text-indigo-800";
+    } else {
+      return "bg-gray-100 text-gray-800";
+    }
+  };
 
   // Half day shift options
   const halfDayShifts: HalfDayShiftInfo[] = [
@@ -116,7 +115,7 @@ const LeaveApplicationPage: React.FC = () => {
     }
   }, []);
 
-  // Fetch leave balances from ERP
+  // Fetch leave balances from ERP using proxy
   const fetchLeaveBalances = async (employee_code: string) => {
     setLoadingBalances(true);
     setError("");
@@ -128,8 +127,9 @@ const LeaveApplicationPage: React.FC = () => {
         );
       }
 
-      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
-      console.log("Fetching from URL:", url);
+      // Using relative URL - will be proxied to the actual ERP server
+      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
+      console.log("Fetching from proxy URL:", url);
 
       const response = await axios.get(url, {
         headers: {
@@ -388,7 +388,8 @@ const LeaveApplicationPage: React.FC = () => {
         lantern360LeaveId: generateLeaveId(),
       };
 
-      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
+      // Using relative URL - will be proxied to the actual ERP server
+      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
 
       const response = await axios.post(url, payload, {
         headers: {
@@ -480,41 +481,105 @@ const LeaveApplicationPage: React.FC = () => {
   const balanceDetails = getLeaveBalanceDetails();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50  px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        {/* Employee Information Card */}
-        {selectedEmployeeCode && (
-          <div className="mb-6 bg-white shadow-lg rounded-lg overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Employee Information
-              </h2>
-            </div>
-            <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Employee Code</p>
-                  <p className="font-medium">{selectedEmployeeCode}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Employee Name</p>
-                  <p className="font-medium">{employeeName || "Loading..."}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Fiscal Year</p>
-                  <p className="font-medium">{fiscalYear || "Loading..."}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-6 py-4 bg-blue-600 text-white">
+          <div className="px-6 py-4 bg-lantern-blue-600 text-white">
             <h1 className="text-2xl font-bold">Apply for Leave</h1>
             <p className="text-blue-100">Submit your leave application</p>
           </div>
 
+          {/* Employee Information Card */}
+          {selectedEmployeeCode && (
+            <div className="m-6 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Employee Information
+                </h2>
+              </div>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Employee Code</p>
+                    <p className="font-medium">{selectedEmployeeCode}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Employee Name</p>
+                    <p className="font-medium">
+                      {employeeName || "Loading..."}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Fiscal Year</p>
+                    <p className="font-medium">{fiscalYear || "Loading..."}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Balance Summary Table */}
+          {leaveBalances.length > 0 && (
+            <div className="mx-6 mb-6 bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Leave Balance Summary
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Leave Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Allocated
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Used
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pending Approval
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Remaining
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {leaveBalances.map((balance, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(balance.leave_type)}`}
+                          >
+                            {balance.leave_type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {balance.total_allocated.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {balance.used}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">
+                          {balance.pending_approval}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-green-600">
+                            {balance.remaining.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Application Form */}
           <form onSubmit={handleSubmit} className="px-6 py-6">
             {success && (
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
@@ -552,12 +617,12 @@ const LeaveApplicationPage: React.FC = () => {
               >
                 {leaveBalances.map((balance) => (
                   <option key={balance.leave_type} value={balance.leave_type}>
-                    {balance.leave_type} (Remaining: {balance.remaining} days)
+                    {balance.leave_type}
                   </option>
                 ))}
               </select>
 
-              {balanceDetails && (
+              {/* {balanceDetails && (
                 <div className="mt-2 p-3 bg-blue-50 rounded-md">
                   <p className="text-sm text-blue-800 font-semibold mb-1">
                     Leave Balance Details:
@@ -589,7 +654,7 @@ const LeaveApplicationPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {validationErrors.leaveType && (
                 <p className="mt-1 text-sm text-red-600">
@@ -738,7 +803,7 @@ const LeaveApplicationPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 ${
+                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lantern-blue-600 hover:bg-blue-700 ${
                   isSubmitting ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >

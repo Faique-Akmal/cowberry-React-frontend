@@ -9,13 +9,12 @@ import {
   UserCircleIcon,
 } from "../icons";
 import { IoPersonAddOutline } from "react-icons/io5";
-import { MdOutlineAdd } from "react-icons/md";
+import { MdOutlineAdd, MdAnnouncement, MdListAlt } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
-import { MdAnnouncement } from "react-icons/md";
 import SidebarWidget from "./SidebarWidget";
-import { MdListAlt } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
+import { FaCalendarAlt } from "react-icons/fa";
 
 type SubItem = {
   name: string;
@@ -126,11 +125,27 @@ const AppSidebar: React.FC = () => {
       path: "/announcementList",
       role: ["admin", "hr", "ceo"],
     },
+
     {
-      icon: <MdOutlineAdd />,
+      icon: <FaCalendarAlt className="text-lantern-blue-600" />,
       name: t("Leaves Management"),
-      path: "/get-leaves",
-      role: ["admin", "hr", "manager", "zonalmanager"],
+      subItems: [
+        {
+          name: t("All Leaves"),
+          path: "/get-leaves",
+          role: ["admin", "hr", "manager", "zonalmanager"],
+        },
+        {
+          name: t("Self Leaves"),
+          path: "/getself-leaves",
+          role: ["admin", "hr", "manager", "zonalmanager"],
+        },
+        {
+          name: t("Apply Leave "),
+          path: "/apply-leaves",
+          role: ["admin", "hr", "manager", "zonalmanager"],
+        },
+      ],
     },
     {
       icon: <IoPersonAddOutline className="text-lantern-blue-600" />,

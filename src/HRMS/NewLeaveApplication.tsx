@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Define types
 type HalfDayShift = "FIRST_HALF" | "SECOND_HALF";
 
 interface LeaveApplicationForm {
   leaveType: string;
-  startDate: string;
-  endDate: string;
+  startDate: Date | null;
+  endDate: Date | null;
   reason: string;
   halfDayShift?: HalfDayShift;
   halfDay: boolean;
-  halfDayDate?: string | null;
+  halfDayDate?: Date | null;
 }
 
 interface HalfDayShiftInfo {
@@ -33,8 +35,8 @@ const LeaveApplicationPage: React.FC = () => {
   // State for form data
   const [formData, setFormData] = useState<LeaveApplicationForm>({
     leaveType: "Casual Leave",
-    startDate: "",
-    endDate: "",
+    startDate: null,
+    endDate: null,
     reason: "",
     halfDayShift: undefined,
     halfDay: false,
@@ -224,10 +226,10 @@ const LeaveApplicationPage: React.FC = () => {
       if (isNowHalfDay) {
         setFormData((prev) => ({
           ...prev,
-          endDate: formData.startDate,
+          endDate: prev.startDate,
           halfDayShift: undefined,
           halfDay: true,
-          halfDayDate: formData.startDate || null,
+          halfDayDate: prev.startDate || null,
         }));
       } else {
         // Clear halfDayShift when not HALFDAY
@@ -258,43 +260,62 @@ const LeaveApplicationPage: React.FC = () => {
   };
 
   // Handle date changes with validation
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    if (name === "startDate") {
+  const handleStartDateChange = (date: Date | null) => {
+    if (date) {
       setFormData((prev) => ({
         ...prev,
-        startDate: value,
+        startDate: date,
         ...(isHalfDay
           ? {
-              endDate: value,
-              halfDayDate: value,
+              endDate: date,
+              halfDayDate: date,
             }
           : {}),
       }));
 
       // Validate sick leave can't be backdated
       if (formData.leaveType === "Sick Leave") {
-        const today = new Date().toISOString().split("T")[0];
-        if (value < today) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < today) {
           setValidationErrors((prev) => ({
             ...prev,
             startDate: "Sick leave cannot be backdated",
           }));
+        } else {
+          setValidationErrors((prev) => ({
+            ...prev,
+            startDate: "",
+          }));
         }
       }
-    } else if (name === "endDate") {
+    } else {
       setFormData((prev) => ({
         ...prev,
-        endDate: value,
+        startDate: null,
       }));
     }
 
-    // Clear validation error for this field
-    if (validationErrors[name]) {
+    // Clear validation error for startDate
+    if (validationErrors.startDate) {
       setValidationErrors((prev) => ({
         ...prev,
-        [name]: "",
+        startDate: "",
+      }));
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      endDate: date,
+    }));
+
+    // Clear validation error for endDate
+    if (validationErrors.endDate) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        endDate: "",
       }));
     }
   };
@@ -302,7 +323,8 @@ const LeaveApplicationPage: React.FC = () => {
   // Validate form
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Check required fields
     if (!formData.leaveType) errors.leaveType = "Leave type is required";
@@ -376,14 +398,22 @@ const LeaveApplicationPage: React.FC = () => {
         throw new Error("Employee code not found. Please login again.");
       }
 
+      // Format dates to YYYY-MM-DD for API
+      const formatDate = (date: Date | null): string => {
+        if (!date) return "";
+        return date.toISOString().split("T")[0];
+      };
+
       // Prepare payload based on ERP API requirements
       const payload = {
         employeeCode: employee_code,
         leaveType: formData.leaveType,
-        fromDate: formData.startDate,
-        toDate: isHalfDay ? formData.startDate : formData.endDate,
+        fromDate: formatDate(formData.startDate),
+        toDate: isHalfDay
+          ? formatDate(formData.startDate)
+          : formatDate(formData.endDate),
         halfDay: isHalfDay,
-        halfDayDate: isHalfDay ? formData.startDate : null,
+        halfDayDate: isHalfDay ? formatDate(formData.startDate) : null,
         reason: formData.reason,
         lantern360LeaveId: generateLeaveId(),
       };
@@ -452,8 +482,8 @@ const LeaveApplicationPage: React.FC = () => {
     setFormData({
       leaveType:
         leaveBalances.length > 0 ? leaveBalances[0].leave_type : "Casual Leave",
-      startDate: "",
-      endDate: "",
+      startDate: null,
+      endDate: null,
       reason: "",
       halfDayShift: undefined,
       halfDay: false,
@@ -467,21 +497,15 @@ const LeaveApplicationPage: React.FC = () => {
 
   // Get today's date
   const getTodayDate = () => {
-    return new Date().toISOString().split("T")[0];
-  };
-
-  // Get min date for sick leave
-  const getMinDateForSickLeave = () => {
-    if (formData.leaveType === "Sick Leave") {
-      return getTodayDate();
-    }
-    return "";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
   };
 
   const balanceDetails = getLeaveBalanceDetails();
 
   return (
-    <div className="min-h-screen bg-gray-50  px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="px-6 py-4 bg-lantern-blue-600 text-white">
@@ -622,40 +646,6 @@ const LeaveApplicationPage: React.FC = () => {
                 ))}
               </select>
 
-              {/* {balanceDetails && (
-                <div className="mt-2 p-3 bg-blue-50 rounded-md">
-                  <p className="text-sm text-blue-800 font-semibold mb-1">
-                    Leave Balance Details:
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <p>
-                      Total Allocated:{" "}
-                      <span className="font-semibold">
-                        {balanceDetails.total_allocated}
-                      </span>
-                    </p>
-                    <p>
-                      Used:{" "}
-                      <span className="font-semibold">
-                        {balanceDetails.used}
-                      </span>
-                    </p>
-                    <p>
-                      Pending Approval:{" "}
-                      <span className="font-semibold">
-                        {balanceDetails.pending_approval}
-                      </span>
-                    </p>
-                    <p>
-                      Remaining:{" "}
-                      <span className="font-semibold text-green-600">
-                        {balanceDetails.remaining}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              )} */}
-
               {validationErrors.leaveType && (
                 <p className="mt-1 text-sm text-red-600">
                   {validationErrors.leaveType}
@@ -663,23 +653,27 @@ const LeaveApplicationPage: React.FC = () => {
               )}
             </div>
 
-            {/* Date Selection */}
+            {/* Date Selection with DatePicker */}
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleDateChange}
-                  min={getMinDateForSickLeave()}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                <DatePicker
+                  selected={formData.startDate}
+                  onChange={handleStartDateChange}
+                  dateFormat="yyyy-MM-dd"
+                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.startDate
                       ? "border-red-300"
                       : "border-gray-300"
                   }`}
+                  minDate={
+                    formData.leaveType === "Sick Leave"
+                      ? getTodayDate()
+                      : undefined
+                  }
+                  placeholderText="Select start date"
                   required
                 />
                 {validationErrors.startDate && (
@@ -694,18 +688,20 @@ const LeaveApplicationPage: React.FC = () => {
                   {isHalfDay ? "Date" : "End Date"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleDateChange}
-                  min={formData.startDate}
-                  disabled={isHalfDay}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                <DatePicker
+                  selected={formData.endDate}
+                  onChange={handleEndDateChange}
+                  dateFormat="yyyy-MM-dd"
+                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.endDate
                       ? "border-red-300"
                       : "border-gray-300"
                   } ${isHalfDay ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  minDate={formData.startDate || undefined}
+                  disabled={isHalfDay}
+                  placeholderText={
+                    isHalfDay ? "Same as start date" : "Select end date"
+                  }
                   required={!isHalfDay}
                 />
                 {validationErrors.endDate && (

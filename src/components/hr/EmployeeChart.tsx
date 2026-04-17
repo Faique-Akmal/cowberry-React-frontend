@@ -36,7 +36,7 @@ export default function EmployeeChart() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const { chartData, totalEmployees } = useMemo(() => {
+  const { chartData, totalEmployees, departmentStats } = useMemo(() => {
     const total = users.length;
     const departmentMap = new Map<string, number>();
 
@@ -78,7 +78,28 @@ export default function EmployeeChart() {
       }
     }
 
-    return { chartData: finalData, totalEmployees: total };
+    // Calculate department statistics
+    const totalDepartments = departmentMap.size;
+    const largestDepartment = rawData[0] || { name: "N/A", value: 0 };
+    const smallestDepartment = rawData[rawData.length - 1] || {
+      name: "N/A",
+      value: 0,
+    };
+    const avgEmployeesPerDept =
+      totalDepartments > 0 ? (total / totalDepartments).toFixed(1) : "0";
+
+    return {
+      chartData: finalData,
+      totalEmployees: total,
+      departmentStats: {
+        totalDepartments,
+        largestDepartment: largestDepartment.name,
+        largestCount: largestDepartment.value,
+        smallestDepartment: smallestDepartment.name,
+        smallestCount: smallestDepartment.value,
+        avgEmployeesPerDept,
+      },
+    };
   }, [users]);
 
   // ✅ Optimized Reload: Clear store cache then fetch
@@ -146,8 +167,7 @@ export default function EmployeeChart() {
     return null;
   };
 
-  // ✅ Render Loading State (from store)
-  // Check users.length === 0 to avoid flashing loading screen during background re-fetches
+  // ✅ Render Loading State
   if (isLoading && users.length === 0)
     return (
       <div
@@ -163,7 +183,7 @@ export default function EmployeeChart() {
       </div>
     );
 
-  // ✅ Render Error State (from store)
+  // ✅ Render Error State
   if (error)
     return (
       <div
@@ -204,7 +224,6 @@ export default function EmployeeChart() {
       </div>
     );
 
-  // ✅ Render Empty State
   if (chartData.length === 0)
     return (
       <div
@@ -258,15 +277,97 @@ export default function EmployeeChart() {
       </div>
 
       <div className="relative z-10">
-        <h2 className="text-3xl font-bold text-center mb-8 bg-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
+        <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
           Users By Department
         </h2>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center lg:items-start">
+        {/* Top Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div
+            className="rounded-xl p-4 backdrop-blur-sm"
+            style={{
+              background: isDarkMode
+                ? "rgba(30, 41, 59, 0.5)"
+                : "rgba(255, 255, 255, 0.5)",
+              border: isDarkMode
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Total Employees
+            </p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {totalEmployees}
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-4 backdrop-blur-sm"
+            style={{
+              background: isDarkMode
+                ? "rgba(30, 41, 59, 0.5)"
+                : "rgba(255, 255, 255, 0.5)",
+              border: isDarkMode
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Total Departments
+            </p>
+            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {departmentStats.totalDepartments}
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-4 backdrop-blur-sm"
+            style={{
+              background: isDarkMode
+                ? "rgba(30, 41, 59, 0.5)"
+                : "rgba(255, 255, 255, 0.5)",
+              border: isDarkMode
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Largest Dept.
+            </p>
+            <p className="text-lg font-semibold text-green-600 dark:text-green-400 truncate">
+              {departmentStats.largestDepartment}
+            </p>
+            <p className="text-sm text-gray-500">
+              {departmentStats.largestCount} employees
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-4 backdrop-blur-sm"
+            style={{
+              background: isDarkMode
+                ? "rgba(30, 41, 59, 0.5)"
+                : "rgba(255, 255, 255, 0.5)",
+              border: isDarkMode
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Avg. per Dept.
+            </p>
+            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              {departmentStats.avgEmployeesPerDept}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* Pie Chart Container */}
-          <div className="w-full lg:w-1/2">
+          <div className="w-full lg:w-2/5">
             <div
-              className="relative backdrop-blur-sm rounded-2xl p-6"
+              className="relative backdrop-blur-sm rounded-2xl p-6 h-full"
               style={{
                 background: isDarkMode
                   ? "rgba(30, 41, 59, 0.4)"
@@ -306,34 +407,12 @@ export default function EmployeeChart() {
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-
-              {/* Total Users Badge */}
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-                <div
-                  className="px-6 py-3 rounded-full backdrop-blur-md"
-                  style={{
-                    background: isDarkMode
-                      ? "rgba(30, 41, 59, 0.6)"
-                      : "rgba(255, 255, 255, 0.6)",
-                    border: isDarkMode
-                      ? "1px solid rgba(255, 255, 255, 0.2)"
-                      : "1px solid rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t("home.TotalUsers") || "Total Users"}:{" "}
-                    <span className="font-bold text-xl text-blue-600 dark:text-blue-400 ml-2">
-                      {totalEmployees}
-                    </span>
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Legend Container */}
-          <div className="w-full lg:w-1/2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Legend Container - Now takes more space */}
+          <div className="w-full lg:w-3/5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {chartData.map((item, index) => {
                 const percentage =
                   totalEmployees > 0
@@ -409,6 +488,24 @@ export default function EmployeeChart() {
           </div>
         </div>
       </div>
+
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"};
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: ${isDarkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.2)"};
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${isDarkMode ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.3)"};
+        }
+      `}</style>
     </div>
   );
 }

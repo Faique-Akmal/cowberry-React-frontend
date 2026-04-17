@@ -330,7 +330,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {balance.total_allocated}
+                      {balance.total_allocated.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {balance.used}
@@ -340,7 +340,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-green-600">
-                        {balance.remaining}
+                        {balance.remaining.toFixed(2)}
                       </span>
                     </td>
                   </tr>
@@ -375,7 +375,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
                 Remaining Leaves
               </p>
               <p className="text-2xl font-bold text-green-700">
-                {totalRemainingLeaves}
+                {totalRemainingLeaves.toFixed(2)}
               </p>
             </div>
             <div className="text-green-400">

@@ -98,7 +98,7 @@ const AppSidebar: React.FC = () => {
       icon: <UserCircleIcon className="text-lantern-blue-600" />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
-      role: ["admin", "manager", "hr", "headofdepartment"],
+      role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
     {
       icon: <MdListAlt className="text-lantern-blue-600" />,
@@ -123,7 +123,7 @@ const AppSidebar: React.FC = () => {
       icon: <MdAnnouncement className="text-lantern-blue-600" />,
       name: t("menu.announcement"),
       path: "/announcementList",
-      role: ["admin", "hr", "ceo"],
+      role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
 
     {
@@ -133,17 +133,17 @@ const AppSidebar: React.FC = () => {
         {
           name: t("All Leaves"),
           path: "/get-leaves",
-          role: ["admin", "hr", "manager", "zonalmanager"],
+          role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
         },
         {
           name: t("Self Leaves"),
           path: "/getself-leaves",
-          role: ["admin", "hr", "manager", "zonalmanager"],
+          role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
         },
         {
           name: t("Apply Leave "),
           path: "/apply-leaves",
-          role: ["admin", "hr", "manager", "zonalmanager"],
+          role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
         },
       ],
     },
@@ -281,6 +281,10 @@ const AppSidebar: React.FC = () => {
           )
             return null;
 
+          const isSubmenuOpen =
+            openSubmenu?.type === menuType && openSubmenu?.index === index;
+          const shouldShowText = isExpanded || isMobileOpen;
+
           return (
             <li key={nav.name} className="relative">
               {visibleSubItems ? (
@@ -292,62 +296,87 @@ const AppSidebar: React.FC = () => {
                         ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600"
                         : ""
                     }`}
+                    title={!shouldShowText ? nav.name : undefined}
                   >
                     <span className="menu-item-icon-size">{nav.icon}</span>
-                    {(isExpanded || isMobileOpen) && (
+                    {shouldShowText && (
                       <span className="menu-item-text">{nav.name}</span>
                     )}
-                    {(isExpanded || isMobileOpen) && (
+                    {shouldShowText && (
                       <ChevronDownIcon
                         className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                          openSubmenu?.type === menuType &&
-                          openSubmenu?.index === index
-                            ? "rotate-180 text-blue-400"
-                            : ""
+                          isSubmenuOpen ? "rotate-180 text-blue-400" : ""
                         }`}
                       />
                     )}
                   </button>
 
-                  {visibleSubItems && (isExpanded || isMobileOpen) && (
-                    <div
-                      ref={(el) => {
-                        subMenuRefs.current[`${menuType}-${index}`] = el;
-                      }}
-                      className="overflow-hidden transition-all duration-300"
-                      style={{
-                        height:
-                          openSubmenu?.type === menuType &&
-                          openSubmenu?.index === index
-                            ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                            : "0px",
-                      }}
-                    >
-                      <ul className="mt-2 space-y-1 ml-9">
+                  {/* Submenu - always render but control visibility with height */}
+                  <div
+                    ref={(el) => {
+                      subMenuRefs.current[`${menuType}-${index}`] = el;
+                    }}
+                    className="overflow-hidden transition-all duration-300"
+                    style={{
+                      height: isSubmenuOpen
+                        ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                        : "0px",
+                    }}
+                  >
+                    {/* When sidebar is collapsed, use absolute positioning for submenu */}
+                    {!shouldShowText && isSubmenuOpen ? (
+                      // Floating submenu for collapsed state
+                      <div className="fixed left-[80px] mt-[-40px] bg-white dark:bg-gray-800 shadow-lg rounded-lg min-w-[200px] z-[60] border border-gray-200 dark:border-gray-700 py-2">
                         {visibleSubItems.map((subItem) => {
                           const isSubItemActive = isActive(subItem.path);
                           return (
-                            <li key={subItem.name} className="relative">
-                              <Link
-                                to={subItem.path}
-                                onClick={() => handleNavigation(subItem.path)}
-                                className={`menu-dropdown-item relative transition-all duration-300 block ${
-                                  isSubItemActive
-                                    ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 dark:text-blue-300 font-medium"
-                                    : "menu-dropdown-item-inactive"
-                                }`}
-                              >
-                                {isSubItemActive && (
-                                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
-                                )}
-                                {subItem.name}
-                              </Link>
-                            </li>
+                            <Link
+                              key={subItem.name}
+                              to={subItem.path}
+                              onClick={() => {
+                                handleNavigation(subItem.path);
+                                setOpenSubmenu(null);
+                              }}
+                              className={`block px-4 py-2 text-sm transition-colors ${
+                                isSubItemActive
+                                  ? "bg-blue-50 dark:bg-blue-900/30 text-lantern-blue-600 dark:text-blue-300 font-medium"
+                                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              }`}
+                            >
+                              {subItem.name}
+                            </Link>
                           );
                         })}
-                      </ul>
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      // Normal submenu for expanded state
+                      shouldShowText && (
+                        <ul className="mt-2 space-y-1 ml-9">
+                          {visibleSubItems.map((subItem) => {
+                            const isSubItemActive = isActive(subItem.path);
+                            return (
+                              <li key={subItem.name} className="relative">
+                                <Link
+                                  to={subItem.path}
+                                  onClick={() => handleNavigation(subItem.path)}
+                                  className={`menu-dropdown-item relative transition-all duration-300 block ${
+                                    isSubItemActive
+                                      ? "bg-blue-300 dark:from-blue-400/20 dark:to-blue-500/20 text-lantern-blue-600 dark:text-blue-300 font-medium"
+                                      : "menu-dropdown-item-inactive"
+                                  }`}
+                                >
+                                  {isSubItemActive && (
+                                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full"></div>
+                                  )}
+                                  {subItem.name}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )
+                    )}
+                  </div>
                 </>
               ) : (
                 nav.path && (
@@ -360,9 +389,10 @@ const AppSidebar: React.FC = () => {
                         ? "bg-blue-100 dark:bg-blue-900/30 text-lantern-blue-600 dark:text-blue-300"
                         : "hover:bg-gray-100 dark:hover:bg-white/10"
                     }`}
+                    title={!shouldShowText ? nav.name : undefined}
                   >
                     <span className="menu-item-icon-size">{nav.icon}</span>
-                    {(isExpanded || isMobileOpen) && (
+                    {shouldShowText && (
                       <span className="menu-item-text">{nav.name}</span>
                     )}
                   </Link>

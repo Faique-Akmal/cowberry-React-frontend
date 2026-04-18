@@ -1,30 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import API from "../api/axios";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Define types
-type LeaveType =
-  | "SICK"
-  | "CASUAL"
-  | "COMPENSATORY"
-  | "LEAVEWITHOUTPAY"
-  | "HALFDAY";
-
 type HalfDayShift = "FIRST_HALF" | "SECOND_HALF";
 
 interface LeaveApplicationForm {
-  leaveType: LeaveType;
-  startDate: string;
-  endDate: string;
+  leaveType: string;
+  startDate: Date | null;
+  endDate: Date | null;
   reason: string;
   halfDayShift?: HalfDayShift;
-}
-
-interface LeaveTypeInfo {
-  type: LeaveType;
-  description: string;
-  maxDuration?: number;
-  requiresApproval?: boolean;
+  halfDay: boolean;
+  halfDayDate?: Date | null;
 }
 
 interface HalfDayShiftInfo {
@@ -34,14 +23,24 @@ interface HalfDayShiftInfo {
   timeRange: string;
 }
 
+interface LeaveBalance {
+  leave_type: string;
+  total_allocated: number;
+  used: number;
+  pending_approval: number;
+  remaining: number;
+}
+
 const LeaveApplicationPage: React.FC = () => {
   // State for form data
   const [formData, setFormData] = useState<LeaveApplicationForm>({
-    leaveType: "CASUAL",
-    startDate: "",
-    endDate: "",
+    leaveType: "Casual Leave",
+    startDate: null,
+    endDate: null,
     reason: "",
     halfDayShift: undefined,
+    halfDay: false,
+    halfDayDate: null,
   });
 
   // State for UI
@@ -53,17 +52,38 @@ const LeaveApplicationPage: React.FC = () => {
     Record<string, string>
   >({});
 
-  // Leave types information
-  const leaveTypes: LeaveTypeInfo[] = [
-    { type: "SICK", description: "Medical leave for illness or health issues" },
-    { type: "CASUAL", description: "Personal or casual leave" },
-    { type: "COMPENSATORY", description: "Leave earned from overtime work" },
-    {
-      type: "LEAVEWITHOUTPAY",
-      description: "Unpaid leave for personal reasons",
-    },
-    { type: "HALFDAY", description: "Leave for half a day only" },
-  ];
+  // State for leave balances
+  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+  const [loadingBalances, setLoadingBalances] = useState(false);
+  const [selectedEmployeeCode, setSelectedEmployeeCode] = useState<string>("");
+  const [employeeName, setEmployeeName] = useState<string>("");
+  const [fiscalYear, setFiscalYear] = useState<string>("");
+
+  // ERP Configuration from env
+  const ERP_API_KEY = import.meta.env.VITE_ERP_API_KEY || "";
+  const ERP_API_SECRET = import.meta.env.VITE_ERP_API_SECRET || "";
+  const ERP_X_API_KEY = import.meta.env.VITE_ERP_X_API_KEY || "";
+
+  // Use the X-API-Key header value (this is what Frappe expects)
+  const API_KEY_HEADER_VALUE = ERP_X_API_KEY || ERP_API_KEY;
+
+  // Function to get leave type color for badges
+  const getLeaveTypeColor = (leaveType: string) => {
+    const type = leaveType.toLowerCase();
+    if (type.includes("casual")) {
+      return "bg-blue-100 text-blue-800";
+    } else if (type.includes("sick")) {
+      return "bg-purple-100 text-purple-800";
+    } else if (type.includes("compensatory")) {
+      return "bg-pink-100 text-pink-800";
+    } else if (type.includes("without pay") || type.includes("unpaid")) {
+      return "bg-teal-100 text-teal-800";
+    } else if (type.includes("half")) {
+      return "bg-indigo-100 text-indigo-800";
+    } else {
+      return "bg-gray-100 text-gray-800";
+    }
+  };
 
   // Half day shift options
   const halfDayShifts: HalfDayShiftInfo[] = [
@@ -81,9 +101,98 @@ const LeaveApplicationPage: React.FC = () => {
     },
   ];
 
-  // Get token from localStorage (adjust based on your auth implementation)
-  const getAuthToken = (): string => {
-    return localStorage.getItem("token") || "";
+  // Get employee code from localStorage
+  const getEmployeeCode = (): string => {
+    return localStorage.getItem("employee_code") || "";
+  };
+
+  // Fetch leave balances when component mounts
+  useEffect(() => {
+    const employee_code = getEmployeeCode();
+    if (employee_code) {
+      setSelectedEmployeeCode(employee_code);
+      fetchLeaveBalances(employee_code);
+    } else {
+      setError("Employee code not found. Please login again.");
+    }
+  }, []);
+
+  // Fetch leave balances from ERP using proxy
+  const fetchLeaveBalances = async (employee_code: string) => {
+    setLoadingBalances(true);
+    setError("");
+
+    try {
+      if (!API_KEY_HEADER_VALUE) {
+        throw new Error(
+          "API key not found. Please check your environment configuration. Make sure VITE_ERP_X_API_KEY is set in your .env file",
+        );
+      }
+
+      // Using relative URL - will be proxied to the actual ERP server
+      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
+
+      const response = await axios.get(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": API_KEY_HEADER_VALUE,
+        },
+      });
+
+      // Handle response - the data might be directly in response.data or wrapped in message
+      const responseData = response.data.message || response.data;
+
+      if (responseData.success) {
+        setLeaveBalances(responseData.leave_balances || []);
+        setEmployeeName(responseData.employee_name || "");
+        setFiscalYear(responseData.fiscal_year || "");
+
+        // Set default leave type to first available
+        if (
+          responseData.leave_balances &&
+          responseData.leave_balances.length > 0
+        ) {
+          setFormData((prev) => ({
+            ...prev,
+            leaveType: responseData.leave_balances[0].leave_type,
+          }));
+        }
+      } else {
+        setError(responseData.message || "Failed to fetch leave balances");
+      }
+    } catch (err: any) {
+      console.error("Error fetching leave balances:", err);
+
+      if (err.response) {
+        const errorMessage =
+          err.response.data?.message ||
+          err.response.data?.error ||
+          "Failed to fetch leave balances";
+        setError(errorMessage);
+      } else if (err.request) {
+        setError("Network error. Please check your connection.");
+      } else {
+        setError(err.message || "An error occurred");
+      }
+    } finally {
+      setLoadingBalances(false);
+    }
+  };
+
+  // Get remaining balance for selected leave type
+  const getRemainingBalance = (): number | null => {
+    const balance = leaveBalances.find(
+      (b) => b.leave_type === formData.leaveType,
+    );
+    return balance ? balance.remaining : null;
+  };
+
+  // Get leave balance details
+  const getLeaveBalanceDetails = () => {
+    const balance = leaveBalances.find(
+      (b) => b.leave_type === formData.leaveType,
+    );
+    return balance;
   };
 
   // Handle input changes
@@ -109,22 +218,25 @@ const LeaveApplicationPage: React.FC = () => {
 
     // Special handling for leave type
     if (name === "leaveType") {
-      const selectedType = value as LeaveType;
-      const isNowHalfDay = selectedType === "HALFDAY";
+      const isNowHalfDay = value === "Half Day";
       setIsHalfDay(isNowHalfDay);
 
       // If half day, set end date same as start date and reset halfDayShift
       if (isNowHalfDay) {
         setFormData((prev) => ({
           ...prev,
-          endDate: formData.startDate,
+          endDate: prev.startDate,
           halfDayShift: undefined,
+          halfDay: true,
+          halfDayDate: prev.startDate || null,
         }));
       } else {
         // Clear halfDayShift when not HALFDAY
         setFormData((prev) => ({
           ...prev,
           halfDayShift: undefined,
+          halfDay: false,
+          halfDayDate: null,
         }));
       }
     }
@@ -147,38 +259,62 @@ const LeaveApplicationPage: React.FC = () => {
   };
 
   // Handle date changes with validation
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    if (name === "startDate") {
+  const handleStartDateChange = (date: Date | null) => {
+    if (date) {
       setFormData((prev) => ({
         ...prev,
-        startDate: value,
-        ...(isHalfDay ? { endDate: value } : {}),
+        startDate: date,
+        ...(isHalfDay
+          ? {
+              endDate: date,
+              halfDayDate: date,
+            }
+          : {}),
       }));
 
       // Validate sick leave can't be backdated
-      if (formData.leaveType === "SICK") {
-        const today = new Date().toISOString().split("T")[0];
-        if (value < today) {
+      if (formData.leaveType === "Sick Leave") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < today) {
           setValidationErrors((prev) => ({
             ...prev,
             startDate: "Sick leave cannot be backdated",
           }));
+        } else {
+          setValidationErrors((prev) => ({
+            ...prev,
+            startDate: "",
+          }));
         }
       }
-    } else if (name === "endDate") {
+    } else {
       setFormData((prev) => ({
         ...prev,
-        endDate: value,
+        startDate: null,
       }));
     }
 
-    // Clear validation error for this field
-    if (validationErrors[name]) {
+    // Clear validation error for startDate
+    if (validationErrors.startDate) {
       setValidationErrors((prev) => ({
         ...prev,
-        [name]: "",
+        startDate: "",
+      }));
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      endDate: date,
+    }));
+
+    // Clear validation error for endDate
+    if (validationErrors.endDate) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        endDate: "",
       }));
     }
   };
@@ -186,7 +322,8 @@ const LeaveApplicationPage: React.FC = () => {
   // Validate form
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Check required fields
     if (!formData.leaveType) errors.leaveType = "Leave type is required";
@@ -202,18 +339,38 @@ const LeaveApplicationPage: React.FC = () => {
       }
 
       // Sick leave backdate validation
-      if (formData.leaveType === "SICK" && formData.startDate < today) {
+      if (formData.leaveType === "Sick Leave" && formData.startDate < today) {
         errors.startDate = "Sick leave cannot be backdated";
       }
     }
 
     // Half day shift validation
-    if (formData.leaveType === "HALFDAY" && !formData.halfDayShift) {
+    if (formData.leaveType === "Half Day" && !formData.halfDayShift) {
       errors.halfDayShift = "Please select a shift for half day leave";
+    }
+
+    // Validate leave balance
+    const remainingBalance = getRemainingBalance();
+    if (
+      remainingBalance !== null &&
+      remainingBalance <= 0 &&
+      formData.leaveType !== "Leave Without Pay"
+    ) {
+      errors.leaveType = `Insufficient leave balance. Only ${remainingBalance} days remaining.`;
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // Generate a unique ID for leave application
+  const generateLeaveId = (): string => {
+    const prefix = "LV";
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
+    return `${prefix}-${timestamp}-${random}`;
   };
 
   // Handle form submission
@@ -229,49 +386,77 @@ const LeaveApplicationPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("Authentication token not found. Please login again.");
+      if (!API_KEY_HEADER_VALUE) {
+        throw new Error(
+          "API key not found. Please check your environment configuration.",
+        );
       }
 
-      // Prepare payload based on leave type
-      const payload = {
-        leaveType: formData.leaveType,
-        startDate: formData.startDate,
-        endDate:
-          formData.leaveType === "HALFDAY"
-            ? formData.startDate
-            : formData.endDate,
-        reason: formData.reason,
-        ...(formData.leaveType === "HALFDAY" && {
-          halfDayShift: formData.halfDayShift,
-        }),
+      const employee_code = getEmployeeCode();
+      if (!employee_code) {
+        throw new Error("Employee code not found. Please login again.");
+      }
+
+      // Format dates to YYYY-MM-DD for API
+      const formatDate = (date: Date | null): string => {
+        if (!date) return "";
+        return date.toISOString().split("T")[0];
       };
 
-      const response = await API.post("/leaves/create", payload, {
+      // Prepare payload based on ERP API requirements
+      const payload = {
+        employeeCode: employee_code,
+        leaveType: formData.leaveType,
+        fromDate: formatDate(formData.startDate),
+        toDate: isHalfDay
+          ? formatDate(formData.startDate)
+          : formatDate(formData.endDate),
+        halfDay: isHalfDay,
+        halfDayDate: isHalfDay ? formatDate(formData.startDate) : null,
+        reason: formData.reason,
+        lantern360LeaveId: generateLeaveId(),
+      };
+
+      // Using relative URL - will be proxied to the actual ERP server
+      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
+
+      const response = await axios.post(url, payload, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "X-API-Key": API_KEY_HEADER_VALUE,
         },
       });
 
-      setSuccess("Leave application submitted successfully!");
+      // Handle response
+      const responseData = response.data.message || response.data;
 
-      // Reset form
-      handleReset();
+      if (responseData.success) {
+        setSuccess(
+          `Leave application submitted successfully! Application ID: ${responseData.leave_application}`,
+        );
+
+        // Refresh leave balances
+        await fetchLeaveBalances(employee_code);
+
+        // Reset form
+        handleReset();
+      } else {
+        throw new Error(
+          responseData.message || "Failed to submit leave application",
+        );
+      }
     } catch (err: any) {
       console.error("Error submitting leave application:", err);
 
       if (err.response) {
-        // Server responded with error
-        setError(
-          err.response.data?.message || "Failed to submit leave application",
-        );
+        const errorMessage =
+          err.response.data?.message ||
+          err.response.data?.error ||
+          "Failed to submit leave application";
+        setError(errorMessage);
       } else if (err.request) {
-        // Request made but no response
         setError("Network error. Please check your connection.");
       } else {
-        // Other errors
         setError(err.message || "An error occurred");
       }
     } finally {
@@ -288,17 +473,20 @@ const LeaveApplicationPage: React.FC = () => {
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    return diffDays + 1; // Inclusive of both dates
+    return diffDays + 1;
   };
 
   // Reset form
   const handleReset = () => {
     setFormData({
-      leaveType: "CASUAL",
-      startDate: "",
-      endDate: "",
+      leaveType:
+        leaveBalances.length > 0 ? leaveBalances[0].leave_type : "Casual Leave",
+      startDate: null,
+      endDate: null,
       reason: "",
       halfDayShift: undefined,
+      halfDay: false,
+      halfDayDate: null,
     });
     setError("");
     setSuccess("");
@@ -306,56 +494,131 @@ const LeaveApplicationPage: React.FC = () => {
     setIsHalfDay(false);
   };
 
-  // Get today's date in YYYY-MM-DD format
+  // Get today's date
   const getTodayDate = () => {
-    return new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
   };
 
-  // Get min date for sick leave (today)
-  const getMinDateForSickLeave = () => {
-    if (formData.leaveType === "SICK") {
-      return getTodayDate();
-    }
-    return "";
-  };
-
-  // Get leave type description
-  const getSelectedLeaveTypeDescription = () => {
-    const selectedType = leaveTypes.find(
-      (type) => type.type === formData.leaveType,
-    );
-    return selectedType ? selectedType.description : "";
-  };
-
-  // Get selected half day shift info
-  const getSelectedHalfDayShiftInfo = () => {
-    if (!formData.halfDayShift) return null;
-    return halfDayShifts.find((shift) => shift.value === formData.halfDayShift);
-  };
+  const balanceDetails = getLeaveBalanceDetails();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          {/* Header */}
           <div className="px-6 py-4 bg-lantern-blue-600 text-white">
             <h1 className="text-2xl font-bold">Apply for Leave</h1>
             <p className="text-blue-100">Submit your leave application</p>
           </div>
 
-          {/* Form */}
+          {/* Employee Information Card */}
+          {selectedEmployeeCode && (
+            <div className="m-6 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Employee Information
+                </h2>
+              </div>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Employee Code</p>
+                    <p className="font-medium">{selectedEmployeeCode}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Employee Name</p>
+                    <p className="font-medium">
+                      {employeeName || "Loading..."}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Fiscal Year</p>
+                    <p className="font-medium">{fiscalYear || "Loading..."}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Balance Summary Table */}
+          {leaveBalances.length > 0 && (
+            <div className="mx-6 mb-6 bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Leave Balance Summary
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Leave Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Allocated
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Used
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pending Approval
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Remaining
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {leaveBalances.map((balance, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(balance.leave_type)}`}
+                          >
+                            {balance.leave_type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {balance.total_allocated.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {balance.used}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">
+                          {balance.pending_approval}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-green-600">
+                            {balance.remaining.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Application Form */}
           <form onSubmit={handleSubmit} className="px-6 py-6">
-            {/* Success Message */}
             {success && (
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
                 <p className="text-green-600 font-medium">{success}</p>
               </div>
             )}
 
-            {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-red-600 font-medium">{error}</p>
+              </div>
+            )}
+
+            {loadingBalances && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-blue-600">Loading leave balances...</p>
               </div>
             )}
 
@@ -365,51 +628,22 @@ const LeaveApplicationPage: React.FC = () => {
                 Leave Type <span className="text-red-500">*</span>
               </label>
 
-              <div className="relative">
-                <select
-                  name="leaveType"
-                  value={formData.leaveType}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none ${
-                    validationErrors.leaveType
-                      ? "border-red-300"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {leaveTypes.map((leaveType) => (
-                    <option key={leaveType.type} value={leaveType.type}>
-                      {leaveType.type}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Custom dropdown arrow */}
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Leave type description */}
-              {formData.leaveType && (
-                <div className="mt-2 p-3 bg-blue-50 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    <span className="font-semibold">{formData.leaveType}:</span>{" "}
-                    {getSelectedLeaveTypeDescription()}
-                  </p>
-                </div>
-              )}
+              <select
+                name="leaveType"
+                value={formData.leaveType}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  validationErrors.leaveType
+                    ? "border-red-300"
+                    : "border-gray-300"
+                }`}
+              >
+                {leaveBalances.map((balance) => (
+                  <option key={balance.leave_type} value={balance.leave_type}>
+                    {balance.leave_type}
+                  </option>
+                ))}
+              </select>
 
               {validationErrors.leaveType && (
                 <p className="mt-1 text-sm text-red-600">
@@ -418,24 +652,27 @@ const LeaveApplicationPage: React.FC = () => {
               )}
             </div>
 
-            {/* Date Selection */}
+            {/* Date Selection with DatePicker */}
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Start Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleDateChange}
-                  min={getMinDateForSickLeave()}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                <DatePicker
+                  selected={formData.startDate}
+                  onChange={handleStartDateChange}
+                  dateFormat="yyyy-MM-dd"
+                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.startDate
                       ? "border-red-300"
                       : "border-gray-300"
                   }`}
+                  minDate={
+                    formData.leaveType === "Sick Leave"
+                      ? getTodayDate()
+                      : undefined
+                  }
+                  placeholderText="Select start date"
                   required
                 />
                 {validationErrors.startDate && (
@@ -445,24 +682,25 @@ const LeaveApplicationPage: React.FC = () => {
                 )}
               </div>
 
-              {/* End Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {isHalfDay ? "Date" : "End Date"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleDateChange}
-                  min={formData.startDate}
-                  disabled={isHalfDay}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                <DatePicker
+                  selected={formData.endDate}
+                  onChange={handleEndDateChange}
+                  dateFormat="yyyy-MM-dd"
+                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.endDate
                       ? "border-red-300"
                       : "border-gray-300"
                   } ${isHalfDay ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  minDate={formData.startDate || undefined}
+                  disabled={isHalfDay}
+                  placeholderText={
+                    isHalfDay ? "Same as start date" : "Select end date"
+                  }
                   required={!isHalfDay}
                 />
                 {validationErrors.endDate && (
@@ -470,21 +708,15 @@ const LeaveApplicationPage: React.FC = () => {
                     {validationErrors.endDate}
                   </p>
                 )}
-                {isHalfDay && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    Half day leave is for single day only
-                  </p>
-                )}
               </div>
             </div>
 
-            {/* Half Day Shift Selection (only show for HALFDAY) */}
+            {/* Half Day Shift Selection */}
             {isHalfDay && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Select Shift <span className="text-red-500">*</span>
                 </label>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {halfDayShifts.map((shift) => (
                     <div
@@ -493,82 +725,29 @@ const LeaveApplicationPage: React.FC = () => {
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         formData.halfDayShift === shift.value
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                          : "border-gray-200 hover:border-blue-300"
                       }`}
                     >
                       <div className="flex items-start">
-                        <div
-                          className={`flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center ${
-                            formData.halfDayShift === shift.value
-                              ? "border-blue-500 bg-blue-500"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {formData.halfDayShift === shift.value && (
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
-                          )}
-                        </div>
-                        <div className="ml-3">
+                        <div className="flex-1">
                           <h3 className="font-semibold text-gray-900">
                             {shift.label}
                           </h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {shift.description}
-                          </p>
-                          <div className="mt-2 flex items-center text-sm text-gray-500">
-                            <svg
-                              className="w-4 h-4 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
+                          <p className="text-sm text-gray-600">
                             {shift.timeRange}
-                          </div>
+                          </p>
                         </div>
+                        {formData.halfDayShift === shift.value && (
+                          <div className="text-blue-500">✓</div>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
-
                 {validationErrors.halfDayShift && (
                   <p className="mt-2 text-sm text-red-600">
                     {validationErrors.halfDayShift}
                   </p>
-                )}
-
-                {/* Selected shift info */}
-                {formData.halfDayShift && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                    <div className="flex items-center">
-                      <svg
-                        className="w-5 h-5 text-green-500 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <p className="text-sm text-green-800">
-                        Selected:{" "}
-                        <span className="font-semibold">
-                          {getSelectedHalfDayShiftInfo()?.label}
-                        </span>{" "}
-                        ({getSelectedHalfDayShiftInfo()?.timeRange})
-                      </p>
-                    </div>
-                  </div>
                 )}
               </div>
             )}
@@ -578,8 +757,7 @@ const LeaveApplicationPage: React.FC = () => {
               <div className="mb-6 p-3 bg-blue-50 rounded-md">
                 <p className="text-sm text-blue-800">
                   <span className="font-semibold">Total Duration:</span>{" "}
-                  {calculateTotalDays()} day
-                  {calculateTotalDays() !== 1 ? "s" : ""}
+                  {calculateTotalDays()} day(s)
                 </p>
               </div>
             )}
@@ -605,9 +783,6 @@ const LeaveApplicationPage: React.FC = () => {
                   {validationErrors.reason}
                 </p>
               )}
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.reason.length}/500 characters
-              </p>
             </div>
 
             {/* Form Actions */}
@@ -615,7 +790,7 @@ const LeaveApplicationPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 disabled={isSubmitting}
               >
                 Reset
@@ -623,36 +798,11 @@ const LeaveApplicationPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lantern-blue-600 hover:bg-blue-700 ${
                   isSubmitting ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Submitting...
-                  </span>
-                ) : (
-                  "Submit Application"
-                )}
+                {isSubmitting ? "Submitting..." : "Submit Application"}
               </button>
             </div>
           </form>

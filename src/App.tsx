@@ -95,7 +95,7 @@ export default function App() {
 
           <Route path="/user-register" element={<RegistrationPage />} />
           <Route path="/get-leaves" element={<LeavesPage />} />
-          <Route path="/new-leaves" element={<LeaveApplicationPage />} />
+          <Route path="/apply-leaves" element={<LeaveApplicationPage />} />
           <Route path="/employeeleave-balance" element={<LeaveBalancePage />} />
           <Route
             path="/getself-leaves"

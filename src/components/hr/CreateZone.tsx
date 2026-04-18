@@ -401,7 +401,7 @@ const CreateZonePage: React.FC = () => {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setShowZones(!showZones)}
-                  className="bg-lantern-blue-600 text-white font-medium rounded-lg px-4 py-2.5 hover:bg-lantern-yellow-400 transition-colors duration-300 flex items-center gap-2 text-sm"
+                  className="bg-lantern-blue-600 text-white font-medium rounded-lg px-4 py-2.5 hover:bg-blue-500 transition-colors duration-300 flex items-center gap-2 text-sm"
                 >
                   {showZones ? (
                     <>
@@ -1008,7 +1008,7 @@ const CreateZonePage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!userToken || loading}
-                    className="flex-1 bg-cowberry-green-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                    className="flex-1 bg-lantern-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                   >
                     {loading ? (
                       <>

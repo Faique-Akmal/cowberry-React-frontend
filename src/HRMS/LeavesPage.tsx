@@ -658,32 +658,6 @@ const LeavesPage: React.FC = () => {
             >
               Employee Leave Balance
             </button>
-            <button
-              onClick={() => (window.location.href = "/getself-leaves")}
-              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-cowberry-green-700 transition-colors"
-            >
-              Show My Leaves
-            </button>
-
-            <button
-              onClick={() => (window.location.href = "/new-leaves")}
-              className="inline-flex items-center px-4 py-2 bg-cowberry-green-600 text-white rounded-md hover:bg-lantern-blue-700 transition-colors"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Leave Application
-            </button>
           </div>
         </div>
 

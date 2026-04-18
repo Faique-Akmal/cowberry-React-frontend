@@ -131,7 +131,6 @@ const LeaveApplicationPage: React.FC = () => {
 
       // Using relative URL - will be proxied to the actual ERP server
       const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
-      console.log("Fetching from proxy URL:", url);
 
       const response = await axios.get(url, {
         headers: {

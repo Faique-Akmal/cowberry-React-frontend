@@ -265,9 +265,9 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
     <div className="space-y-6">
       {/* Employee Information Card */}
       {employeeInfo.employee_name && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className=" shadow-md rounded-lg overflow-hidden">
+          <div className="px-6 py-4  border-b border-gray-200 bg-lantern-blue-600">
+            <h2 className="text-lg text-white font-semibold  ">
               Employee Information
             </h2>
           </div>
@@ -293,8 +293,8 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
       {/* Leave Balance Summary */}
       {leaveBalances.length > 0 && (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="px-6 py-4  border-b border-gray-200 bg-lantern-blue-600">
+            <h2 className="text-lg font-semibold text-white">
               Leave Balance Summary
             </h2>
           </div>
@@ -457,7 +457,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
             />
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Leave requests feature coming soon
+            Leave Application feature coming soon
           </h3>
           <p className="text-gray-500">
             The API endpoint for fetching leave requests is being integrated.

@@ -21,6 +21,8 @@ interface Announcement {
   createdBy: {
     id: number;
     username: string;
+    full_name?: string;
+
     email: string;
   };
 }
@@ -648,7 +650,7 @@ export default function NotificationDropdown() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        {ann.createdBy.username}
+                        {ann.createdBy.full_name || ann.createdBy.username}
                         <span className="w-1 h-1 bg-gray-300 rounded-full" />
                         {formatDate(ann.createdAt)}
                       </span>

@@ -64,11 +64,10 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
   // API Configuration
-  const API_KEY_HEADER_VALUE =
-    import.meta.env.VITE_ERP_X_API_KEY ||
-    import.meta.env.VITE_ERP_API_KEY ||
-    "";
 
+  const ERP_BASE_URL = import.meta.env.VITE_ERP_BASE_URL || "";
+  const ERP_API_KEY = import.meta.env.VITE_ERP_API_KEY || "";
+  const ERP_API_SECRET = import.meta.env.VITE_ERP_API_SECRET || "";
   // Get employee code from localStorage
   const getEmployeeCode = (): string => {
     return localStorage.getItem("employee_code") || "";
@@ -82,12 +81,12 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
         throw new Error("Employee code not found");
       }
 
-      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
-
+      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
       const response = await axios.get<{ message: LeaveBalanceResponse }>(url, {
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY_HEADER_VALUE,
+          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
+           "Cache-Control": "no-cache"
         },
       });
 
@@ -116,12 +115,12 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
     try {
       // Note: You'll need to create this endpoint in Frappe or adjust based on your actual API
       // This is a placeholder - replace with your actual leave requests API endpoint
-      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_requests?employee_code=${getEmployeeCode()}&page=${page}&limit=10`;
-
+      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_requests?employee_code=${getEmployeeCode()}&page=${page}&limit=10`;
       const response = await axios.get(url, {
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY_HEADER_VALUE,
+          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
+           "Cache-Control": "no-cache"
         },
       });
 

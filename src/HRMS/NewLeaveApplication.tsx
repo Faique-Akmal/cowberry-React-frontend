@@ -60,6 +60,8 @@ const LeaveApplicationPage: React.FC = () => {
   const [fiscalYear, setFiscalYear] = useState<string>("");
 
   // ERP Configuration from env
+  const ERP_BASE_URL = import.meta.env.VITE_ERP_BASE_URL;
+
   const ERP_API_KEY = import.meta.env.VITE_ERP_API_KEY || "";
   const ERP_API_SECRET = import.meta.env.VITE_ERP_API_SECRET || "";
   const ERP_X_API_KEY = import.meta.env.VITE_ERP_X_API_KEY || "";
@@ -130,12 +132,12 @@ const LeaveApplicationPage: React.FC = () => {
       }
 
       // Using relative URL - will be proxied to the actual ERP server
-      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
-
+      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
       const response = await axios.get(url, {
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY_HEADER_VALUE,
+          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
+          "Cache-Control": "no-cache",
         },
       });
 
@@ -418,12 +420,12 @@ const LeaveApplicationPage: React.FC = () => {
       };
 
       // Using relative URL - will be proxied to the actual ERP server
-      const url = `/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
-
+      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
       const response = await axios.post(url, payload, {
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY_HEADER_VALUE,
+          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
+          "Cache-Control": "no-cache",
         },
       });
 

@@ -424,7 +424,7 @@ export const ChatInterface = () => {
             <div className="flex items-center gap-1">
               <div className="h-10 w-10 rounded-full bg-linear-to-tr from-blue-400 to-lantern-blue-600 p-0.5">
                 <img
-                  src={`https://ui-avatars.com/api/?name=${currentUser?.username}&background=random`}
+                  src={`https://ui-avatars.com/api/?name=${currentUser?.full_name?.substring(0, 2).toUpperCase()}&background=random`}
                   alt="Me"
                   className="h-full w-full rounded-full border-2 border-white/50"
                 />

@@ -910,9 +910,7 @@ const EmployeeCheckin = () => {
                                     dark:from-green-900/30 dark:to-emerald-900/20
                                     backdrop-blur-sm
                                   "
-                                >
-                                  <LogIn className="w-3 h-3 text-green-500" />
-                                </div>
+                                ></div>
                                 <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
                                   {log.checkInTime}
                                 </span>
@@ -934,9 +932,7 @@ const EmployeeCheckin = () => {
                                     dark:from-red-900/30 dark:to-pink-900/20
                                     backdrop-blur-sm
                                   "
-                                >
-                                  <LogOut className="w-3 h-3 text-red-500" />
-                                </div>
+                                ></div>
                                 <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
                                   {log.checkOutTime}
                                 </span>

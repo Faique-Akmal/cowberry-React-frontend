@@ -127,7 +127,7 @@ const BirthdayCardList: React.FC = () => {
     >
       {/* Animated background gradients */}
       <div className="absolute inset-0 opacity-40">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-linear-to-r from-purple-500/20 to-pink-500/20 blur-3xl animate-pulse"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-linear-to-r from-blue-500/20 to-blue-500/20 blur-3xl animate-pulse"></div>
         <div
           className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-linear-to-r from-yellow-500/20 to-orange-500/20 blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
@@ -169,15 +169,15 @@ const BirthdayCardList: React.FC = () => {
       <div className="relative z-10">
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center p-4 rounded-2xl backdrop-blur-sm mb-4"
-            style={{
-              background: isDarkMode
-                ? "rgba(139, 92, 246, 0.2)"
-                : "rgba(139, 92, 246, 0.1)",
-              border: isDarkMode
-                ? "1px solid rgba(139, 92, 246, 0.3)"
-                : "1px solid rgba(139, 92, 246, 0.2)",
-            }}
+            className="inline-flex items-center justify-center p-4 rounded-2xl backdrop-blur-sm mb-4 bg-white"
+            // style={{
+            //   background: isDarkMode
+            //     ? "rgba(139, 92, 246, 0.2)"
+            //     : "rgba(139, 92, 246, 0.1)",
+            //   border: isDarkMode
+            //     ? "1px solid rgba(139, 92, 246, 0.3)"
+            //     : "1px solid rgba(139, 92, 246, 0.2)",
+            // }}
           >
             <h2 className="text-2xl font-bold bg-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
               🎉 Today's Birthdays
@@ -185,17 +185,7 @@ const BirthdayCardList: React.FC = () => {
           </div>
 
           {birthdayUsers.length > 0 && (
-            <div
-              className="px-4 py-2 rounded-full inline-flex items-center ml-3 gap-2 backdrop-blur-sm "
-              style={{
-                background: isDarkMode
-                  ? "rgba(139, 92, 246, 0.2)"
-                  : "rgba(139, 92, 246, 0.1)",
-                border: isDarkMode
-                  ? "1px solid rgba(139, 92, 246, 0.2)"
-                  : "1px solid rgba(139, 92, 246, 0.1)",
-              }}
-            >
+            <div className="px-4 py-2 rounded-full inline-flex items-center ml-3 gap-2 backdrop-blur-sm ">
               <span className="w-2 h-2 bg-linear-to-r from-green-500 to-gray-900 rounded-full animate-pulse"></span>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {birthdayUsers.length} birthday
@@ -244,7 +234,7 @@ const BirthdayCardList: React.FC = () => {
                   />
                 </svg>
               </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-linear-to-r from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm shadow-lg">
+              <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center text-lantern-blue-600 text-sm shadow-lg">
                 ?
               </div>
             </div>
@@ -265,126 +255,50 @@ const BirthdayCardList: React.FC = () => {
         ) : (
           <div className="max-h-[400px] overflow-y-scroll overflow-x-hidden  pr-1 space-y-4">
             {birthdayUsers.map((user, index) => {
-              const age = calculateAge(user.birthDate);
+              // const age = calculateAge(user.birthDate);
               const formattedDate = formatBirthDate(user.birthDate);
 
               return (
                 <div
                   key={user.userId}
-                  className="relative rounded-xl p-5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group/card overflow-hidden"
-                  style={{
-                    background: isDarkMode
-                      ? `rgba(139, 92, 246, ${0.2 + index * 0.02})`
-                      : `rgba(255, 255, 255, ${0.7 - index * 0.02})`,
-                    border: isDarkMode
-                      ? "1px solid rgba(255, 255, 255, 0.1)"
-                      : "1px solid rgba(0, 0, 0, 0.05)",
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-                  }}
+                  className="relative rounded-xl p-5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02]  group/card overflow-hidden border border-blue-200"
                 >
-                  {/* Glow effect on hover */}
-                  <div
-                    className="absolute inset-0 rounded-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background:
-                        "radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.1), transparent 50%)",
-                    }}
-                  ></div>
-
                   <div className="relative z-10 flex items-center gap-4">
                     {/* Avatar */}
                     <div className="relative shrink-0">
-                      <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg backdrop-blur-sm group-hover/card:scale-110 transition-transform duration-300"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3))",
-                          border: isDarkMode
-                            ? "1px solid rgba(255, 255, 255, 0.2)"
-                            : "1px solid rgba(255, 255, 255, 0.3)",
-                        }}
-                      >
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg backdrop-blur-sm group-hover/card:scale-110 transition-transform duration-300 bg-lantern-blue-600">
                         <span className="text-2xl">
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div
-                        className="absolute -top-3 -right-3 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center shadow-lg animate-bounce"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(236, 72, 153, 0.9))",
-                          border: "2px solid rgba(255, 255, 255, 0.3)",
-                        }}
-                      >
+                      <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center shadow-lg animate-bounce">
                         <span className="text-lg">🎂</span>
                       </div>
-                      <div className="absolute -bottom-2 -left-2 w-6 h-6 rounded-full bg-linear-to-r from-yellow-400 to-orange-400 flex items-center justify-center text-xs font-bold text-white shadow-md">
+                      {/* <div className="absolute -bottom-2 -left-2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center text-xs font-bold text-yellow-800 shadow-md">
                         {age}
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white truncate group-hover/card:text-transparent group-hover/card:bg-clip-text group-hover/card:bg-linear-to-r group-hover/card:from-purple-600 group-hover/card:to-pink-600 transition-all duration-300">
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white truncate group-hover/card:text-transparent group-hover/card:bg-clip-text group-hover/card:bg-linear-to-r group-hover/card:from-blue-900 group-hover/card:to-blue-600 transition-all duration-300">
                         {user.full_name}
                       </h3>
 
                       <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                        <span
-                          className="text-xs px-3 py-1 rounded-full backdrop-blur-sm truncate max-w-[120px]"
-                          style={{
-                            background: isDarkMode
-                              ? "rgba(30, 41, 59, 0.5)"
-                              : "rgba(255, 255, 255, 0.5)",
-                            border: isDarkMode
-                              ? "1px solid rgba(255, 255, 255, 0.1)"
-                              : "1px solid rgba(0, 0, 0, 0.05)",
-                          }}
-                        >
+                        <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm bg-white border border-r truncate max-w-[120px]">
                           {user.employee_code}
                         </span>
-                        <span
-                          className="text-xs px-3 py-1 rounded-full backdrop-blur-sm truncate max-w-[140px]"
-                          style={{
-                            background: isDarkMode
-                              ? "rgba(139, 92, 246, 0.2)"
-                              : "rgba(139, 92, 246, 0.1)",
-                            border: isDarkMode
-                              ? "1px solid rgba(139, 92, 246, 0.3)"
-                              : "1px solid rgba(139, 92, 246, 0.2)",
-                          }}
-                        >
+                        <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm truncate max-w-[140px] bg-white border border-r">
                           {user.department || "No Department"}
                         </span>
-                      </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        <span
-                          className="text-xs px-3 py-1 rounded-full backdrop-blur-sm flex items-center gap-1"
-                          style={{
-                            background: isDarkMode
-                              ? "rgba(16, 185, 129, 0.2)"
-                              : "rgba(16, 185, 129, 0.1)",
-                            border: isDarkMode
-                              ? "1px solid rgba(16, 185, 129, 0.3)"
-                              : "1px solid rgba(16, 185, 129, 0.2)",
-                          }}
-                        >
+                        <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm flex items-center bg-white border border-r gap-1">
                           <span className="text-xs">🎂</span>
                           <span className="font-medium">{formattedDate}</span>
                         </span>
 
-                        <span
-                          className="text-xs px-3 py-1 rounded-full backdrop-blur-sm truncate max-w-[120px]"
-                          style={{
-                            background: isDarkMode
-                              ? "rgba(59, 130, 246, 0.2)"
-                              : "rgba(59, 130, 246, 0.1)",
-                            border: isDarkMode
-                              ? "1px solid rgba(59, 130, 246, 0.3)"
-                              : "1px solid rgba(59, 130, 246, 0.2)",
-                          }}
-                        >
+                        <span className="text-xs px-3 py-1 rounded-full backdrop-blur-sm bg-white border border-r truncate max-w-[120px]">
                           {getRoleName(user.role)}
                         </span>
                       </div>
@@ -406,7 +320,7 @@ const BirthdayCardList: React.FC = () => {
                 : "rgba(0, 0, 0, 0.02)",
             }}
           >
-            <span className="w-2 h-2 bg-linear-to-r from-purple-500 to-pink-500 rounded-full"></span>
+            <span className="w-2 h-2 bg-white  rounded-full"></span>
             <span>
               {birthdayUsers.length > 0
                 ? `Wish them a happy birthday! 🎉`

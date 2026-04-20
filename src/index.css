@@ -219,7 +219,7 @@ layer(base);
     background-position: center cover;
     background-size: 100% 89%;
     background-attachment: fixed;
-    background-color: rgba(255, 255, 255, 0.9); /* Fallback color */
+    background-color: rgba(255, 255, 255, 0.9);
   }
 }
 

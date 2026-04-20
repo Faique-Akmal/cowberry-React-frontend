@@ -277,8 +277,8 @@ export default function EmployeeChart() {
       </div>
 
       <div className="relative z-10">
-        <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
-          Users By Department
+        <h2 className="text-2xl font-bold  mb-8 bg-gradient-to-r from-lantern-blue-600 to-gray-600 bg-clip-text text-transparent">
+          Users Department Distribution
         </h2>
 
         {/* Top Statistics Cards */}

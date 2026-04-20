@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import API from "../api/axios";
 
 // Define types
 type HalfDayShift = "FIRST_HALF" | "SECOND_HALF";
@@ -31,6 +31,14 @@ interface LeaveBalance {
   remaining: number;
 }
 
+interface LeaveBalanceResponse {
+  success: boolean;
+  employee_code: string;
+  employee_name: string;
+  fiscal_year: string;
+  leave_balances: LeaveBalance[];
+}
+
 const LeaveApplicationPage: React.FC = () => {
   // State for form data
   const [formData, setFormData] = useState<LeaveApplicationForm>({
@@ -58,16 +66,6 @@ const LeaveApplicationPage: React.FC = () => {
   const [selectedEmployeeCode, setSelectedEmployeeCode] = useState<string>("");
   const [employeeName, setEmployeeName] = useState<string>("");
   const [fiscalYear, setFiscalYear] = useState<string>("");
-
-  // ERP Configuration from env
-  const ERP_BASE_URL = import.meta.env.VITE_ERP_BASE_URL;
-
-  const ERP_API_KEY = import.meta.env.VITE_ERP_API_KEY || "";
-  const ERP_API_SECRET = import.meta.env.VITE_ERP_API_SECRET || "";
-  const ERP_X_API_KEY = import.meta.env.VITE_ERP_X_API_KEY || "";
-
-  // Use the X-API-Key header value (this is what Frappe expects)
-  const API_KEY_HEADER_VALUE = ERP_X_API_KEY || ERP_API_KEY;
 
   // Function to get leave type color for badges
   const getLeaveTypeColor = (leaveType: string) => {
@@ -119,37 +117,23 @@ const LeaveApplicationPage: React.FC = () => {
     }
   }, []);
 
-  // Fetch leave balances from ERP using proxy
+  // Fetch leave balances using the API instance
   const fetchLeaveBalances = async (employee_code: string) => {
     setLoadingBalances(true);
     setError("");
 
     try {
-      if (!API_KEY_HEADER_VALUE) {
-        throw new Error(
-          "API key not found. Please check your environment configuration. Make sure VITE_ERP_X_API_KEY is set in your .env file",
-        );
-      }
+      const response = await API.get<{ message: LeaveBalanceResponse }>(
+        `/leaves/get-erp-leave-balance?employee_code=${employee_code}`,
+      );
 
-      // Using relative URL - will be proxied to the actual ERP server
-      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.get_leave_balance?employee_code=${employee_code}`;
-      const response = await axios.get(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
-          "Cache-Control": "no-cache",
-        },
-      });
-
-      // Handle response - the data might be directly in response.data or wrapped in message
-      const responseData = response.data.message || response.data;
+      const responseData = response.data.message;
 
       if (responseData.success) {
         setLeaveBalances(responseData.leave_balances || []);
         setEmployeeName(responseData.employee_name || "");
         setFiscalYear(responseData.fiscal_year || "");
 
-        // Set default leave type to first available
         if (
           responseData.leave_balances &&
           responseData.leave_balances.length > 0
@@ -164,7 +148,6 @@ const LeaveApplicationPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error fetching leave balances:", err);
-
       if (err.response) {
         const errorMessage =
           err.response.data?.message ||
@@ -197,6 +180,61 @@ const LeaveApplicationPage: React.FC = () => {
     return balance;
   };
 
+  // Calculate total days requested
+  const calculateTotalDays = (): number => {
+    if (!formData.startDate) return 0;
+
+    if (isHalfDay) {
+      return 0.5; // Half day counts as 0.5 days
+    }
+
+    if (!formData.endDate) return 0;
+
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays + 1;
+  };
+
+  // Validate if requested days exceed available balance
+  const validateLeaveBalance = (requestedDays: number): boolean => {
+    const remainingBalance = getRemainingBalance();
+
+    if (remainingBalance === null) {
+      return true; // No balance info available
+    }
+
+    // Allow Leave Without Pay regardless of balance
+    if (formData.leaveType === "Leave Without Pay") {
+      return true;
+    }
+
+    // For half day leaves
+    if (isHalfDay) {
+      if (remainingBalance < 0.5) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          leaveType: `Insufficient leave balance. You have only ${remainingBalance} days remaining. Cannot apply for half day leave.`,
+        }));
+        return false;
+      }
+      return true;
+    }
+
+    // For full day leaves
+    if (requestedDays > remainingBalance) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        leaveType: `Insufficient leave balance. You have ${remainingBalance} days remaining but requested ${requestedDays} days.`,
+      }));
+      return false;
+    }
+
+    return true;
+  };
+
   // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -210,7 +248,6 @@ const LeaveApplicationPage: React.FC = () => {
       [name]: value,
     }));
 
-    // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -218,12 +255,10 @@ const LeaveApplicationPage: React.FC = () => {
       }));
     }
 
-    // Special handling for leave type
     if (name === "leaveType") {
       const isNowHalfDay = value === "Half Day";
       setIsHalfDay(isNowHalfDay);
 
-      // If half day, set end date same as start date and reset halfDayShift
       if (isNowHalfDay) {
         setFormData((prev) => ({
           ...prev,
@@ -233,7 +268,6 @@ const LeaveApplicationPage: React.FC = () => {
           halfDayDate: prev.startDate || null,
         }));
       } else {
-        // Clear halfDayShift when not HALFDAY
         setFormData((prev) => ({
           ...prev,
           halfDayShift: undefined,
@@ -241,6 +275,12 @@ const LeaveApplicationPage: React.FC = () => {
           halfDayDate: null,
         }));
       }
+
+      // Clear leave type validation error when changing leave type
+      setValidationErrors((prev) => ({
+        ...prev,
+        leaveType: "",
+      }));
     }
   };
 
@@ -251,7 +291,6 @@ const LeaveApplicationPage: React.FC = () => {
       halfDayShift: shift,
     }));
 
-    // Clear validation error for halfDayShift
     if (validationErrors.halfDayShift) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -274,7 +313,6 @@ const LeaveApplicationPage: React.FC = () => {
           : {}),
       }));
 
-      // Validate sick leave can't be backdated
       if (formData.leaveType === "Sick Leave") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -297,7 +335,6 @@ const LeaveApplicationPage: React.FC = () => {
       }));
     }
 
-    // Clear validation error for startDate
     if (validationErrors.startDate) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -312,7 +349,6 @@ const LeaveApplicationPage: React.FC = () => {
       endDate: date,
     }));
 
-    // Clear validation error for endDate
     if (validationErrors.endDate) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -335,30 +371,41 @@ const LeaveApplicationPage: React.FC = () => {
     if (!formData.reason.trim()) errors.reason = "Reason is required";
 
     // Date validations
-    if (formData.startDate && formData.endDate) {
+    if (formData.startDate && formData.endDate && !isHalfDay) {
       if (formData.endDate < formData.startDate) {
         errors.endDate = "End date cannot be before start date";
       }
 
-      // Sick leave backdate validation
       if (formData.leaveType === "Sick Leave" && formData.startDate < today) {
         errors.startDate = "Sick leave cannot be backdated";
       }
     }
 
     // Half day shift validation
-    if (formData.leaveType === "Half Day" && !formData.halfDayShift) {
+    if (isHalfDay && !formData.halfDayShift) {
       errors.halfDayShift = "Please select a shift for half day leave";
     }
 
-    // Validate leave balance
-    const remainingBalance = getRemainingBalance();
-    if (
-      remainingBalance !== null &&
-      remainingBalance <= 0 &&
-      formData.leaveType !== "Leave Without Pay"
-    ) {
-      errors.leaveType = `Insufficient leave balance. Only ${remainingBalance} days remaining.`;
+    // Calculate requested days and validate against balance
+    const requestedDays = calculateTotalDays();
+
+    if (!isHalfDay && formData.startDate && formData.endDate) {
+      // Validate that requested days don't exceed remaining balance
+      const remainingBalance = getRemainingBalance();
+      if (remainingBalance !== null && remainingBalance > 0) {
+        if (
+          requestedDays > remainingBalance &&
+          formData.leaveType !== "Leave Without Pay"
+        ) {
+          errors.leaveType = `Insufficient leave balance! You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
+        }
+      } else if (
+        remainingBalance !== null &&
+        remainingBalance <= 0 &&
+        formData.leaveType !== "Leave Without Pay"
+      ) {
+        errors.leaveType = `No leave balance available for ${formData.leaveType}. You have ${remainingBalance} days remaining.`;
+      }
     }
 
     setValidationErrors(errors);
@@ -375,11 +422,26 @@ const LeaveApplicationPage: React.FC = () => {
     return `${prefix}-${timestamp}-${random}`;
   };
 
-  // Handle form submission
+  // Handle form submission using the API instance
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    // Re-validate balance before submission
+    const requestedDays = calculateTotalDays();
+    const remainingBalance = getRemainingBalance();
+
+    if (
+      remainingBalance !== null &&
+      requestedDays > remainingBalance &&
+      formData.leaveType !== "Leave Without Pay"
+    ) {
+      setError(
+        `Cannot submit: You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`,
+      );
+      return;
+    }
 
     if (!validateForm()) {
       return;
@@ -388,24 +450,16 @@ const LeaveApplicationPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (!API_KEY_HEADER_VALUE) {
-        throw new Error(
-          "API key not found. Please check your environment configuration.",
-        );
-      }
-
       const employee_code = getEmployeeCode();
       if (!employee_code) {
         throw new Error("Employee code not found. Please login again.");
       }
 
-      // Format dates to YYYY-MM-DD for API
       const formatDate = (date: Date | null): string => {
         if (!date) return "";
         return date.toISOString().split("T")[0];
       };
 
-      // Prepare payload based on ERP API requirements
       const payload = {
         employeeCode: employee_code,
         leaveType: formData.leaveType,
@@ -413,34 +467,26 @@ const LeaveApplicationPage: React.FC = () => {
         toDate: isHalfDay
           ? formatDate(formData.startDate)
           : formatDate(formData.endDate),
-        halfDay: isHalfDay,
-        halfDayDate: isHalfDay ? formatDate(formData.startDate) : null,
         reason: formData.reason,
+        totalDays: requestedDays,
+        ...(isHalfDay &&
+          formData.halfDayShift && {
+            halfDay: true,
+            halfDayShift: formData.halfDayShift,
+            halfDayDate: formatDate(formData.startDate),
+          }),
         lantern360LeaveId: generateLeaveId(),
       };
 
-      // Using relative URL - will be proxied to the actual ERP server
-      const url = `${ERP_BASE_URL}/api/method/lantern360_integration.lantern360_integration.api.v1.receive_leave_application`;
-      const response = await axios.post(url, payload, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `token ${ERP_API_KEY}:${ERP_API_SECRET}`,
-          "Cache-Control": "no-cache",
-        },
-      });
-
-      // Handle response
-      const responseData = response.data.message || response.data;
+      const response = await API.post("/leaves/apply-erp-leave", payload);
+      const responseData = response.data;
 
       if (responseData.success) {
         setSuccess(
-          `Leave application submitted successfully! Application ID: ${responseData.leave_application}`,
+          `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || responseData.data?.leave_application || "N/A"}`,
         );
 
-        // Refresh leave balances
         await fetchLeaveBalances(employee_code);
-
-        // Reset form
         handleReset();
       } else {
         throw new Error(
@@ -464,18 +510,6 @@ const LeaveApplicationPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Calculate total days
-  const calculateTotalDays = (): number => {
-    if (!formData.startDate || !formData.endDate) return 0;
-
-    const start = new Date(formData.startDate);
-    const end = new Date(formData.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return diffDays + 1;
   };
 
   // Reset form
@@ -504,6 +538,8 @@ const LeaveApplicationPage: React.FC = () => {
   };
 
   const balanceDetails = getLeaveBalanceDetails();
+  const requestedDays = calculateTotalDays();
+  const remainingBalance = getRemainingBalance();
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
@@ -592,7 +628,9 @@ const LeaveApplicationPage: React.FC = () => {
                           {balance.pending_approval}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-green-600">
+                          <span
+                            className={`text-sm font-semibold ${balance.remaining <= 0 ? "text-red-600" : "text-green-600"}`}
+                          >
                             {balance.remaining.toFixed(2)}
                           </span>
                         </td>
@@ -619,7 +657,7 @@ const LeaveApplicationPage: React.FC = () => {
             )}
 
             {loadingBalances && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="mb-4 p-3 bg-blue-50 border border-lantern-blue-600 rounded-md">
                 <p className="text-blue-600">Loading leave balances...</p>
               </div>
             )}
@@ -634,7 +672,7 @@ const LeaveApplicationPage: React.FC = () => {
                 name="leaveType"
                 value={formData.leaveType}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-lantern-blue-600 ${
                   validationErrors.leaveType
                     ? "border-red-300"
                     : "border-gray-300"
@@ -664,7 +702,7 @@ const LeaveApplicationPage: React.FC = () => {
                   selected={formData.startDate}
                   onChange={handleStartDateChange}
                   dateFormat="yyyy-MM-dd"
-                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-lantern-blue-600 ${
                     validationErrors.startDate
                       ? "border-red-300"
                       : "border-gray-300"
@@ -693,7 +731,7 @@ const LeaveApplicationPage: React.FC = () => {
                   selected={formData.endDate}
                   onChange={handleEndDateChange}
                   dateFormat="yyyy-MM-dd"
-                  className={`w-full px-7 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-lantern-blue-600 ${
                     validationErrors.endDate
                       ? "border-red-300"
                       : "border-gray-300"
@@ -712,6 +750,29 @@ const LeaveApplicationPage: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Leave Balance Warning */}
+            {!isHalfDay &&
+              formData.startDate &&
+              formData.endDate &&
+              remainingBalance !== null && (
+                <div
+                  className={`mb-4 p-3 rounded-md ${requestedDays > remainingBalance ? "bg-red-50 border border-red-200" : "bg-yellow-50 border border-yellow-200"}`}
+                >
+                  <p
+                    className={`text-sm ${requestedDays > remainingBalance ? "text-red-800" : "text-yellow-800"}`}
+                  >
+                    <span className="font-semibold">Leave Summary:</span> You
+                    are requesting {requestedDays} day(s). Available balance:{" "}
+                    {remainingBalance.toFixed(2)} days.
+                    {requestedDays > remainingBalance && (
+                      <span className="block mt-1 font-semibold text-red-600">
+                        ⚠️ Warning: Requested days exceed available balance!
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
 
             {/* Half Day Shift Selection */}
             {isHalfDay && (
@@ -764,6 +825,15 @@ const LeaveApplicationPage: React.FC = () => {
               </div>
             )}
 
+            {isHalfDay && formData.startDate && (
+              <div className="mb-6 p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Total Duration:</span> 0.5 day
+                  (Half Day)
+                </p>
+              </div>
+            )}
+
             {/* Reason */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -775,7 +845,7 @@ const LeaveApplicationPage: React.FC = () => {
                 onChange={handleInputChange}
                 rows={4}
                 placeholder="Please provide a detailed reason for your leave application..."
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-lantern-blue-600 ${
                   validationErrors.reason ? "border-red-300" : "border-gray-300"
                 }`}
                 required
@@ -799,9 +869,19 @@ const LeaveApplicationPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  (remainingBalance !== null &&
+                    requestedDays > remainingBalance &&
+                    formData.leaveType !== "Leave Without Pay")
+                }
                 className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lantern-blue-600 hover:bg-blue-700 ${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                  isSubmitting ||
+                  (remainingBalance !== null &&
+                    requestedDays > remainingBalance &&
+                    formData.leaveType !== "Leave Without Pay")
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 {isSubmitting ? "Submitting..." : "Submit Application"}

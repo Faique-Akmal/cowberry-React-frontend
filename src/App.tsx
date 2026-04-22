@@ -45,8 +45,12 @@ import LeaveApplicationPage from "./HRMS/NewLeaveApplication";
 import LeaveStatus from "./HRMS/GetSelfLeaves";
 import LeaveBalancePage from "./HRMS/EmployeeLeaveBalance";
 import ChatToggle from "./context/ChatToggle";
+import { useSocketStore } from "./store/useSocketStore";
+import { IncomingCall } from "./components/chat/CallModal";
 
 export default function App() {
+  const { incomingCall, setIncomingCall, socket } = useSocketStore();
+  const currentUserId = useSocketStore((s) => s.currentUserId);
   return (
     <>
       <ScrollToTop />
@@ -154,6 +158,20 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatToggle />
+
+      {incomingCall && (
+        <IncomingCall
+          isOpen={!!incomingCall}
+          callerName={incomingCall.callerName}
+          callerId={incomingCall.from}
+          isVideo={incomingCall.isVideo}
+          offer={incomingCall.offer}
+          myId={currentUserId!}
+          socket={socket}
+          onClose={() => setIncomingCall(null)}
+        />
+      )}
+
       <Toaster
         position="bottom-right"
         reverseOrder={false}

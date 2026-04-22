@@ -47,15 +47,46 @@ const getFullUrl = (path: string | undefined) => {
 // --- Background Image ---
 const BG_IMAGE = "/lantern-logo.png";
 
+// Extended User type to include last message info from API
+interface ExtendedUser extends User {
+  lastMessage?: string;
+  lastMessageTime?: string;
+  lastMessageType?: string;
+}
+
 // Type for chat list item
 interface ChatListItem {
   userId: number;
-  user: User;
+  user: ExtendedUser;
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount: number;
   conversationId?: number;
 }
+
+// Helper function to sort chat list by most recent message
+const sortChatListByRecentMessage = (
+  chatList: ChatListItem[],
+): ChatListItem[] => {
+  return [...chatList].sort((a, b) => {
+    // If both have no messages, sort alphabetically
+    if (!a.lastMessageTime && !b.lastMessageTime) {
+      const nameA =
+        `${a.user.firstName || ""} ${a.user.lastName || ""}`.toLowerCase();
+      const nameB =
+        `${b.user.firstName || ""} ${b.user.lastName || ""}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    }
+    // Users with no messages go to the bottom
+    if (!a.lastMessageTime) return 1;
+    if (!b.lastMessageTime) return -1;
+    // Sort by most recent message (descending)
+    return (
+      new Date(b.lastMessageTime).getTime() -
+      new Date(a.lastMessageTime).getTime()
+    );
+  });
+};
 
 export const ChatInterface = () => {
   const navigate = useNavigate();
@@ -87,7 +118,7 @@ export const ChatInterface = () => {
   // --- State for chat list ---
   const [chatList, setChatList] = useState<ChatListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ExtendedUser[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -96,12 +127,50 @@ export const ChatInterface = () => {
   const docInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
+  const userid = localStorage.getItem("userId");
+
   // Filter chat list based on search term
   const filteredChatList = chatList.filter((chat) => {
     const name =
       `${chat.user.firstName || ""} ${chat.user.lastName || ""}`.toLowerCase();
     return name.includes(searchTerm.toLowerCase());
   });
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98D8C8",
+      "#F7B731",
+      "#5D9BEC",
+      "#F06292",
+      "#BA68C8",
+      "#4DB6AC",
+      "#FF8A65",
+      "#7986CB",
+      "#A2B9C8",
+    ];
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  const handleGoBack = () => {
+    if (showMobileChat) {
+      setShowMobileChat(false);
+      setActiveConversation(null);
+    } else {
+      navigate("/home");
+    }
+  };
 
   // Setup User & Socket
   useEffect(() => {
@@ -125,95 +194,67 @@ export const ChatInterface = () => {
     const fetchUsersAndChats = async () => {
       try {
         setLoading(true);
-        // Fetch all users
+        // Fetch all users with their last message info
         const allUsers = await ChatService.getAllUsers();
         setUsers(allUsers);
 
-        // Initialize chat list with all users
-        const initialChatList: ChatListItem[] = allUsers.map((user) => ({
-          userId: user.id,
-          user: user,
-          lastMessage: undefined,
-          lastMessageTime: undefined,
-          unreadCount: 0,
-          conversationId: undefined,
-        }));
+        // Build chat list directly from users API response
+        // The API already provides lastMessage and lastMessageTime
+        let chatListData: ChatListItem[] = allUsers.map(
+          (user: ExtendedUser) => {
+            // Format message preview based on type if needed
+            let messagePreview = user.lastMessage;
+            if (user.lastMessageType === "IMAGE" && !messagePreview) {
+              messagePreview = "📷 Image";
+            } else if (user.lastMessageType === "VIDEO" && !messagePreview) {
+              messagePreview = "📹 Video";
+            } else if (user.lastMessageType === "LOCATION" && !messagePreview) {
+              messagePreview = "📍 Location";
+            } else if (user.lastMessageType === "DOCUMENT" && !messagePreview) {
+              messagePreview = "📄 File";
+            }
 
-        // Try to load existing conversations to get last messages
+            return {
+              userId: user.id,
+              user: user,
+              lastMessage: messagePreview || undefined,
+              lastMessageTime: user.lastMessageTime,
+              conversationId: undefined, // Will be set when conversation is started
+              unreadCount: 0,
+            };
+          },
+        );
+
+        // Try to get conversation IDs for users that have existing conversations
         try {
           const conversations = await ChatService.getUserConversations();
           if (conversations && conversations.length > 0) {
-            // Update chat list with conversation data
-            const updatedChatList = [...initialChatList];
-
+            // Create a map of user ID to conversation ID
+            const conversationMap = new Map();
             for (const conv of conversations) {
               const otherParticipant = conv.participants.find(
                 (p) => p.user.id !== currentUser?.id,
               )?.user;
-
               if (otherParticipant) {
-                const chatIndex = updatedChatList.findIndex(
-                  (chat) => chat.user.id === otherParticipant.id,
-                );
-
-                if (chatIndex !== -1) {
-                  updatedChatList[chatIndex] = {
-                    ...updatedChatList[chatIndex],
-                    lastMessage: conv.lastMessage,
-                    lastMessageTime: conv.lastMessageAt,
-                    conversationId: conv.id,
-                    unreadCount: 0,
-                  };
-                }
+                conversationMap.set(otherParticipant.id, conv.id);
               }
             }
 
-            // FIX: Sort by last message time (most recent first)
-            // This ensures users with recent messages appear at the top
-            const sortedList = [...updatedChatList].sort((a, b) => {
-              // If both have no messages, keep original order (or sort alphabetically)
-              if (!a.lastMessageTime && !b.lastMessageTime) {
-                // Sort alphabetically by name for users with no messages
-                const nameA =
-                  `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
-                const nameB =
-                  `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
-                return nameA.localeCompare(nameB);
-              }
-              // Users with no messages go to the bottom
-              if (!a.lastMessageTime) return 1;
-              if (!b.lastMessageTime) return -1;
-              // Most recent messages first (descending order by date)
-              return (
-                new Date(b.lastMessageTime).getTime() -
-                new Date(a.lastMessageTime).getTime()
-              );
-            });
-
-            setChatList(sortedList);
-          } else {
-            // If no conversations, sort alphabetically
-            const sortedList = [...initialChatList].sort((a, b) => {
-              const nameA =
-                `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
-              const nameB =
-                `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
-              return nameA.localeCompare(nameB);
-            });
-            setChatList(sortedList);
+            // Update chat list with conversation IDs
+            chatListData = chatListData.map((chat) => ({
+              ...chat,
+              conversationId:
+                conversationMap.get(chat.user.id) || chat.conversationId,
+            }));
           }
         } catch (error) {
-          console.log("No conversations found or error loading them:", error);
-          // Even if there's an error, sort alphabetically
-          const sortedList = [...initialChatList].sort((a, b) => {
-            const nameA =
-              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
-            const nameB =
-              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
-            return nameA.localeCompare(nameB);
-          });
-          setChatList(sortedList);
+          console.error("Error fetching conversations:", error);
         }
+
+        // CRITICAL FIX: Sort by most recent message time using the lastMessageTime from API
+        const sortedList = sortChatListByRecentMessage(chatListData);
+
+        setChatList(sortedList);
       } catch (error) {
         console.error("Failed to fetch users", error);
         toast.error("Failed to load chat list");
@@ -232,8 +273,6 @@ export const ChatInterface = () => {
     if (!socket) return;
 
     const handleNewMessage = (message: Message) => {
-      console.log("New message received:", message);
-
       // Update chat list with new message
       setChatList((prevList) => {
         // First, find which user this message is from/to
@@ -247,24 +286,24 @@ export const ChatInterface = () => {
 
         if (!relevantUserId) return prevList;
 
-        const updatedList = prevList.map((chat) => {
-          // Find the chat that matches the message
+        // Format message preview
+        let messagePreview = message.content || "";
+        if (!messagePreview && message.type === "IMAGE")
+          messagePreview = "📷 Image";
+        if (!messagePreview && message.type === "VIDEO")
+          messagePreview = "📹 Video";
+        if (!messagePreview && message.type === "LOCATION")
+          messagePreview = "📍 Location";
+        if (!messagePreview && message.type === "DOCUMENT")
+          messagePreview = "📄 File";
+
+        // Update the specific chat
+        let updatedList = prevList.map((chat) => {
           if (chat.user.id === relevantUserId) {
             const isUnread =
               isIncoming &&
               (!activeConversation ||
                 activeConversation.id !== message.conversationId);
-
-            // Format message preview
-            let messagePreview = message.content || "";
-            if (!messagePreview && message.type === "IMAGE")
-              messagePreview = "📷 Image";
-            if (!messagePreview && message.type === "VIDEO")
-              messagePreview = "📹 Video";
-            if (!messagePreview && message.type === "LOCATION")
-              messagePreview = "📍 Location";
-            if (!messagePreview && message.type === "DOCUMENT")
-              messagePreview = "📄 File";
 
             return {
               ...chat,
@@ -277,35 +316,14 @@ export const ChatInterface = () => {
           return chat;
         });
 
-        // FIX: Sort by latest message time (most recent first)
-        // This is the critical fix - ensures proper sorting on new messages
-        const sortedList = [...updatedList].sort((a, b) => {
-          // If both have no messages, sort alphabetically
-          if (!a.lastMessageTime && !b.lastMessageTime) {
-            const nameA =
-              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
-            const nameB =
-              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
-            return nameA.localeCompare(nameB);
-          }
-          // Users with no messages go to bottom
-          if (!a.lastMessageTime) return 1;
-          if (!b.lastMessageTime) return -1;
-          // Sort by most recent message (descending)
-          return (
-            new Date(b.lastMessageTime).getTime() -
-            new Date(a.lastMessageTime).getTime()
-          );
-        });
-
+        // CRITICAL FIX: Sort by most recent message time
+        const sortedList = sortChatListByRecentMessage(updatedList);
         return sortedList;
       });
     };
 
     // Listen for message sent confirmation (for outgoing messages)
     const handleMessageSent = (message: Message) => {
-      console.log("Message sent confirmation:", message);
-
       setChatList((prevList) => {
         // For outgoing messages, find the recipient
         const recipientId = activeConversation?.participants?.find(
@@ -314,18 +332,20 @@ export const ChatInterface = () => {
 
         if (!recipientId) return prevList;
 
-        const updatedList = prevList.map((chat) => {
-          if (chat.user.id === recipientId) {
-            let messagePreview = message.content || "";
-            if (!messagePreview && message.type === "IMAGE")
-              messagePreview = "📷 Image";
-            if (!messagePreview && message.type === "VIDEO")
-              messagePreview = "📹 Video";
-            if (!messagePreview && message.type === "LOCATION")
-              messagePreview = "📍 Location";
-            if (!messagePreview && message.type === "DOCUMENT")
-              messagePreview = "📄 File";
+        // Format message preview
+        let messagePreview = message.content || "";
+        if (!messagePreview && message.type === "IMAGE")
+          messagePreview = "📷 Image";
+        if (!messagePreview && message.type === "VIDEO")
+          messagePreview = "📹 Video";
+        if (!messagePreview && message.type === "LOCATION")
+          messagePreview = "📍 Location";
+        if (!messagePreview && message.type === "DOCUMENT")
+          messagePreview = "📄 File";
 
+        // Update the specific chat
+        let updatedList = prevList.map((chat) => {
+          if (chat.user.id === recipientId) {
             return {
               ...chat,
               lastMessage: messagePreview,
@@ -337,23 +357,8 @@ export const ChatInterface = () => {
           return chat;
         });
 
-        // Sort by most recent message
-        const sortedList = [...updatedList].sort((a, b) => {
-          if (!a.lastMessageTime && !b.lastMessageTime) {
-            const nameA =
-              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
-            const nameB =
-              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
-            return nameA.localeCompare(nameB);
-          }
-          if (!a.lastMessageTime) return 1;
-          if (!b.lastMessageTime) return -1;
-          return (
-            new Date(b.lastMessageTime).getTime() -
-            new Date(a.lastMessageTime).getTime()
-          );
-        });
-
+        // CRITICAL FIX: Sort by most recent message time
+        const sortedList = sortChatListByRecentMessage(updatedList);
         return sortedList;
       });
     };
@@ -377,7 +382,7 @@ export const ChatInterface = () => {
           }
           return chat;
         });
-        // Don't re-sort here to maintain order
+        // Keep the sorted order
         return updatedList;
       });
     }
@@ -429,9 +434,6 @@ export const ChatInterface = () => {
   }, []);
 
   // --- Handlers ---
-  const handleGoBack = () => {
-    navigate(-1);
-  };
 
   const handleUserClick = async (receiverId: number) => {
     try {
@@ -446,7 +448,7 @@ export const ChatInterface = () => {
           }
           return chat;
         });
-        // Don't re-sort here - keep the order based on message times
+        // Keep the sorted order
         return updatedList;
       });
     } catch (error) {
@@ -698,22 +700,13 @@ export const ChatInterface = () => {
               </h2>
             </div>
 
-            <div className="flex items-center gap-1">
-              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-blue-400 to-lantern-blue-600 p-0.5">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${currentUser?.firstName?.substring(0, 2).toUpperCase()}&background=random`}
-                  alt="Me"
-                  className="h-full w-full rounded-full border-2 border-white/50"
-                />
-              </div>
-              {!!activeConversation && (
-                <button
-                  onClick={() => setShowMobileChat(true)}
-                  className="mr-1 rounded-full p-2 text-white/80 hover:bg-white/20 md:hidden"
-                >
-                  <ArrowRight className="h-6 w-6" />
-                </button>
-              )}
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
+              style={{
+                backgroundColor: getAvatarColor(currentUser?.firstName || "U"),
+              }}
+            >
+              {currentUser?.firstName?.substring(0, 2).toUpperCase() || "U"}
             </div>
           </div>
 
@@ -756,11 +749,18 @@ export const ChatInterface = () => {
                     }`}
                   >
                     <div className="relative flex-shrink-0">
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${chat.user?.firstName || "U"}&background=random`}
-                        alt="avatar"
-                        className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
-                      />
+                      <div
+                        className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-md shadow-sm border-2 border-white/30"
+                        style={{
+                          backgroundColor: getAvatarColor(
+                            chat.user.firstName || "U",
+                          ),
+                        }}
+                      >
+                        {chat.user.firstName?.substring(0, 2).toUpperCase() ||
+                          chat.user.username?.substring(0, 2).toUpperCase() ||
+                          "U"}
+                      </div>
                       {chat.unreadCount > 0 && (
                         <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center animate-pulse shadow-lg">
                           {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
@@ -814,7 +814,7 @@ export const ChatInterface = () => {
           </div>
         </div>
 
-        {/* Chat Area - Keep all your existing chat area code exactly as it was */}
+        {/* Chat Area */}
         <div
           className={`absolute inset-y-0 right-0 z-10 w-full flex-col bg-white/5 transition-transform duration-300 md:relative md:flex md:translate-x-0 ${
             showMobileChat ? "translate-x-0" : "translate-x-full"
@@ -864,6 +864,16 @@ export const ChatInterface = () => {
 
               {/* Messages Container */}
               <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar">
+                <div
+                  className="absolute inset-0 opacity-20 pointer-events-none"
+                  style={{
+                    backgroundImage: `url(${BG_IMAGE})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundAttachment: "local",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
                 {messages.map((msg) => {
                   const isMe = msg.senderId === currentUser?.id;
                   const isDeleted = msg.isDeleted;
@@ -877,13 +887,13 @@ export const ChatInterface = () => {
                       } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
                     >
                       <div
-                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 shadow-lg backdrop-blur-md group ${
+                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2  group ${
                           !isMe
                             ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
                             : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
                         }`}
                       >
-                        <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
+                        <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80 ">
                           {msg.sender.firstName}
                           {isMe && " (You)"}
                         </p>
@@ -898,7 +908,7 @@ export const ChatInterface = () => {
                             <span className="font-bold text-grey-600">
                               {msg.replyTo?.sender?.firstName ||
                                 getMessageById(msg.replyToId!)?.sender
-                                  ?.username ||
+                                  ?.firstName ||
                                 "User"}
                               {msg.replyTo.senderId === currentUser?.id &&
                                 " (You)"}

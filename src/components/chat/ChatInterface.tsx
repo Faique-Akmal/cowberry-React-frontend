@@ -28,7 +28,7 @@ import {
   CornerUpLeft,
   ArrowRight,
 } from "lucide-react";
-import { Message, User } from "../../types/chatTypes";
+import { Message, User, Conversation } from "../../types/chatTypes";
 import toast from "react-hot-toast";
 
 const BASE_URL = import.meta.env.VITE_FILE_URL || "http://localhost:5000";
@@ -45,31 +45,17 @@ const getFullUrl = (path: string | undefined) => {
 };
 
 // --- Background Image ---
-// const BG_IMAGE =
-//   "https://cdn.magicdecor.in/com/2024/05/09154244/TV-Unit-Luxury-Floral-Pattern-Wallpaper-Design.jpg";
-
 const BG_IMAGE = "/lantern-logo.png";
 
-// --- Custom Hook for User List ---
-const useUserList = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAllChatUser = async () => {
-      try {
-        const allChatUsers = await ChatService.getAllUsers();
-        setUsers(allChatUsers);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAllChatUser();
-  }, []);
-  return { users, loading };
-};
+// Type for chat list item
+interface ChatListItem {
+  userId: number;
+  user: User;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  conversationId?: number;
+}
 
 export const ChatInterface = () => {
   const navigate = useNavigate();
@@ -96,22 +82,26 @@ export const ChatInterface = () => {
 
   // --- UI States ---
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
-  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false); // Attachment Menu State
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
 
-  const { users, loading: usersLoading } = useUserList();
+  // --- State for chat list ---
+  const [chatList, setChatList] = useState<ChatListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- Input Refs ---
-  const mediaInputRef = useRef<HTMLInputElement>(null); // For Images/Videos
-  const docInputRef = useRef<HTMLInputElement>(null); // For Documents
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter users
-  const filteredUsers = users.filter(
-    (u) =>
-      u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // Filter chat list based on search term
+  const filteredChatList = chatList.filter((chat) => {
+    const name =
+      `${chat.user.firstName || ""} ${chat.user.lastName || ""}`.toLowerCase();
+    return name.includes(searchTerm.toLowerCase());
+  });
 
   // Setup User & Socket
   useEffect(() => {
@@ -129,6 +119,269 @@ export const ChatInterface = () => {
     connect();
     return () => disconnect();
   }, []);
+
+  // Fetch users and load chat history
+  useEffect(() => {
+    const fetchUsersAndChats = async () => {
+      try {
+        setLoading(true);
+        // Fetch all users
+        const allUsers = await ChatService.getAllUsers();
+        setUsers(allUsers);
+
+        // Initialize chat list with all users
+        const initialChatList: ChatListItem[] = allUsers.map((user) => ({
+          userId: user.id,
+          user: user,
+          lastMessage: undefined,
+          lastMessageTime: undefined,
+          unreadCount: 0,
+          conversationId: undefined,
+        }));
+
+        // Try to load existing conversations to get last messages
+        try {
+          const conversations = await ChatService.getUserConversations();
+          if (conversations && conversations.length > 0) {
+            // Update chat list with conversation data
+            const updatedChatList = [...initialChatList];
+
+            for (const conv of conversations) {
+              const otherParticipant = conv.participants.find(
+                (p) => p.user.id !== currentUser?.id,
+              )?.user;
+
+              if (otherParticipant) {
+                const chatIndex = updatedChatList.findIndex(
+                  (chat) => chat.user.id === otherParticipant.id,
+                );
+
+                if (chatIndex !== -1) {
+                  updatedChatList[chatIndex] = {
+                    ...updatedChatList[chatIndex],
+                    lastMessage: conv.lastMessage,
+                    lastMessageTime: conv.lastMessageAt,
+                    conversationId: conv.id,
+                    unreadCount: 0,
+                  };
+                }
+              }
+            }
+
+            // FIX: Sort by last message time (most recent first)
+            // This ensures users with recent messages appear at the top
+            const sortedList = [...updatedChatList].sort((a, b) => {
+              // If both have no messages, keep original order (or sort alphabetically)
+              if (!a.lastMessageTime && !b.lastMessageTime) {
+                // Sort alphabetically by name for users with no messages
+                const nameA =
+                  `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
+                const nameB =
+                  `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+              }
+              // Users with no messages go to the bottom
+              if (!a.lastMessageTime) return 1;
+              if (!b.lastMessageTime) return -1;
+              // Most recent messages first (descending order by date)
+              return (
+                new Date(b.lastMessageTime).getTime() -
+                new Date(a.lastMessageTime).getTime()
+              );
+            });
+
+            setChatList(sortedList);
+          } else {
+            // If no conversations, sort alphabetically
+            const sortedList = [...initialChatList].sort((a, b) => {
+              const nameA =
+                `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
+              const nameB =
+                `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
+              return nameA.localeCompare(nameB);
+            });
+            setChatList(sortedList);
+          }
+        } catch (error) {
+          console.log("No conversations found or error loading them:", error);
+          // Even if there's an error, sort alphabetically
+          const sortedList = [...initialChatList].sort((a, b) => {
+            const nameA =
+              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
+            const nameB =
+              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          setChatList(sortedList);
+        }
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+        toast.error("Failed to load chat list");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchUsersAndChats();
+    }
+  }, [currentUser]);
+
+  // Listen for new messages and update chat list
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (message: Message) => {
+      console.log("New message received:", message);
+
+      // Update chat list with new message
+      setChatList((prevList) => {
+        // First, find which user this message is from/to
+        const isIncoming = message.senderId !== currentUser?.id;
+        const relevantUserId = isIncoming
+          ? message.senderId
+          : // For outgoing messages, find the recipient from conversation
+            activeConversation?.participants?.find(
+              (p) => p.user.id !== currentUser?.id,
+            )?.user.id;
+
+        if (!relevantUserId) return prevList;
+
+        const updatedList = prevList.map((chat) => {
+          // Find the chat that matches the message
+          if (chat.user.id === relevantUserId) {
+            const isUnread =
+              isIncoming &&
+              (!activeConversation ||
+                activeConversation.id !== message.conversationId);
+
+            // Format message preview
+            let messagePreview = message.content || "";
+            if (!messagePreview && message.type === "IMAGE")
+              messagePreview = "📷 Image";
+            if (!messagePreview && message.type === "VIDEO")
+              messagePreview = "📹 Video";
+            if (!messagePreview && message.type === "LOCATION")
+              messagePreview = "📍 Location";
+            if (!messagePreview && message.type === "DOCUMENT")
+              messagePreview = "📄 File";
+
+            return {
+              ...chat,
+              lastMessage: messagePreview,
+              lastMessageTime: message.createdAt,
+              conversationId: message.conversationId,
+              unreadCount: isUnread ? chat.unreadCount + 1 : chat.unreadCount,
+            };
+          }
+          return chat;
+        });
+
+        // FIX: Sort by latest message time (most recent first)
+        // This is the critical fix - ensures proper sorting on new messages
+        const sortedList = [...updatedList].sort((a, b) => {
+          // If both have no messages, sort alphabetically
+          if (!a.lastMessageTime && !b.lastMessageTime) {
+            const nameA =
+              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
+            const nameB =
+              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+          }
+          // Users with no messages go to bottom
+          if (!a.lastMessageTime) return 1;
+          if (!b.lastMessageTime) return -1;
+          // Sort by most recent message (descending)
+          return (
+            new Date(b.lastMessageTime).getTime() -
+            new Date(a.lastMessageTime).getTime()
+          );
+        });
+
+        return sortedList;
+      });
+    };
+
+    // Listen for message sent confirmation (for outgoing messages)
+    const handleMessageSent = (message: Message) => {
+      console.log("Message sent confirmation:", message);
+
+      setChatList((prevList) => {
+        // For outgoing messages, find the recipient
+        const recipientId = activeConversation?.participants?.find(
+          (p) => p.user.id !== currentUser?.id,
+        )?.user.id;
+
+        if (!recipientId) return prevList;
+
+        const updatedList = prevList.map((chat) => {
+          if (chat.user.id === recipientId) {
+            let messagePreview = message.content || "";
+            if (!messagePreview && message.type === "IMAGE")
+              messagePreview = "📷 Image";
+            if (!messagePreview && message.type === "VIDEO")
+              messagePreview = "📹 Video";
+            if (!messagePreview && message.type === "LOCATION")
+              messagePreview = "📍 Location";
+            if (!messagePreview && message.type === "DOCUMENT")
+              messagePreview = "📄 File";
+
+            return {
+              ...chat,
+              lastMessage: messagePreview,
+              lastMessageTime: message.createdAt,
+              conversationId: message.conversationId,
+              // Don't increment unread count for outgoing messages
+            };
+          }
+          return chat;
+        });
+
+        // Sort by most recent message
+        const sortedList = [...updatedList].sort((a, b) => {
+          if (!a.lastMessageTime && !b.lastMessageTime) {
+            const nameA =
+              `${a.user.firstName} ${a.user.lastName}`.toLowerCase();
+            const nameB =
+              `${b.user.firstName} ${b.user.lastName}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+          }
+          if (!a.lastMessageTime) return 1;
+          if (!b.lastMessageTime) return -1;
+          return (
+            new Date(b.lastMessageTime).getTime() -
+            new Date(a.lastMessageTime).getTime()
+          );
+        });
+
+        return sortedList;
+      });
+    };
+
+    socket.on("receive_message", handleNewMessage);
+    socket.on("message_sent", handleMessageSent);
+
+    return () => {
+      socket.off("receive_message", handleNewMessage);
+      socket.off("message_sent", handleMessageSent);
+    };
+  }, [socket, currentUser, activeConversation]);
+
+  // Reset unread count when viewing a conversation
+  useEffect(() => {
+    if (activeConversation) {
+      setChatList((prevList) => {
+        const updatedList = prevList.map((chat) => {
+          if (chat.conversationId === activeConversation.id) {
+            return { ...chat, unreadCount: 0 };
+          }
+          return chat;
+        });
+        // Don't re-sort here to maintain order
+        return updatedList;
+      });
+    }
+  }, [activeConversation]);
 
   // Auto-scroll
   useEffect(() => {
@@ -160,7 +413,6 @@ export const ChatInterface = () => {
   // Close menus on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Logic could be more specific, but for now simple closing works
       const target = e.target as HTMLElement;
       if (!target.closest(".message-menu-trigger")) {
         setActiveMenuId(null);
@@ -178,15 +430,28 @@ export const ChatInterface = () => {
 
   // --- Handlers ---
   const handleGoBack = () => {
-    navigate(-1); // -1 means: Go back 1 step in history
+    navigate(-1);
   };
 
   const handleUserClick = async (receiverId: number) => {
     try {
       const conversation = await ChatService.startChat(receiverId);
       setActiveConversation(conversation);
+
+      // Update chat list with conversation ID and reset unread count
+      setChatList((prevList) => {
+        const updatedList = prevList.map((chat) => {
+          if (chat.user.id === receiverId) {
+            return { ...chat, conversationId: conversation.id, unreadCount: 0 };
+          }
+          return chat;
+        });
+        // Don't re-sort here - keep the order based on message times
+        return updatedList;
+      });
     } catch (error) {
       console.error("Failed to start chat", error);
+      toast.error("Failed to start conversation");
     }
   };
 
@@ -229,7 +494,6 @@ export const ChatInterface = () => {
     const file = e.target.files?.[0];
     if (!file || !activeConversation || !currentUser || !socket) return;
 
-    // Frontend validation: 100MB
     if (file.size > 100 * 1024 * 1024) {
       toast.error("File size exceeds 100MB");
       return;
@@ -244,11 +508,8 @@ export const ChatInterface = () => {
       }
 
       const { fileUrl, type } = await ChatService.uploadFile(file);
-
-      // Dismiss loading toast
       toast.dismiss("videoUpload");
 
-      // Determine proper message type based on MIME
       let msgType = "DOCUMENT";
       if (type.startsWith("image/")) msgType = "IMAGE";
       if (type.startsWith("video/")) msgType = "VIDEO";
@@ -310,8 +571,27 @@ export const ChatInterface = () => {
     );
   };
 
-  // --- Renderers ---
+  // Helper function to format last message time
+  const formatLastMessageTime = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
+    if (diffDays === 0) {
+      return format(date, "h:mm a");
+    } else if (diffDays === 1) {
+      return "Yesterday";
+    } else if (diffDays < 7) {
+      return format(date, "EEEE");
+    } else {
+      return format(date, "MMM d");
+    }
+  };
+
+  // --- Renderers ---
   const renderAttachment = (msg: Message) => {
     const fullUrl = getFullUrl(msg.fileUrl);
 
@@ -341,26 +621,24 @@ export const ChatInterface = () => {
       return (
         <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
           <div className="flex items-center gap-2 text-white/90 font-medium">
-            {/* <MapPin className="w-5 h-5 text-red-500" /> */}
             <img
-              // src={mapUrl}
               src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
               alt="Location Preview"
               className="w-full h-40 object-cover rounded-tl rounded-tr"
-            />{" "}
+            />
           </div>
           <div className="p-2 flex flex-col items-center">
             <a href={mapUrl} target="_blank" rel="noopener noreferrer">
               <button className="mx-auto overflow-hidden relative w-32 h-8 bg-lantern-blue-600 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
                 <span className="flex items-center justify-center gap-1">
-                  <MapPinned className="w-5 h-5" /> Open map
+                  <MapPinned className="h-5 w-5" /> Open map
                 </span>
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-blue-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-lantern-blue-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
                 <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-6 z-10">
                   <span className="flex items-center justify-center gap-1">
-                    <Telescope className="w-5 h-5" /> Explore!
+                    <Telescope className="h-5 w-5" /> Explore!
                   </span>
                 </span>
               </button>
@@ -369,7 +647,6 @@ export const ChatInterface = () => {
         </div>
       );
     }
-    // Docs
     return (
       <div className="flex items-center gap-3 rounded-lg bg-black/20 p-3 mb-2 border border-white/10 hover:bg-black/30 transition-colors">
         <div className="p-2 bg-white/10 rounded-full">
@@ -399,17 +676,17 @@ export const ChatInterface = () => {
       className="relative flex h-screen w-full items-center justify-center bg-cover bg-center overflow-hidden font-sans"
       style={{ backgroundImage: `url(${BG_IMAGE})` }}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black" />
 
       <div className="relative z-10 flex h-full w-full max-w-[1600px] overflow-hidden bg-white/10 shadow-2xl backdrop-blur-xl border-white/20 md:h-[96vh] md:w-[98%] md:rounded-3xl md:border">
         {/* Sidebar */}
         <div
-          className={`absolute inset-y-0 left-0 z-20 w-full flex-col border-r border-white/20 bg-white/20 backdrop-blur-lg transition-transform duration-300 md:relative md:w-80 md:translate-x-0 ${
+          className={`absolute inset-y-0 left-0 z-20 w-full flex-col border-r border-white/20 bg-white/10 backdrop-blur-lg transition-transform duration-300 md:relative md:w-80 md:translate-x-0 ${
             showMobileChat ? "-translate-x-full" : "translate-x-0"
           } flex`}
         >
-          <div className="flex h-20 items-center justify-between px-6 border-b border-white/10">
-            <div className="flex items-center gap-1">
+          <div className="flex h-20 items-center justify-between px-6 border-b border-white/10 bg-lantern-blue-600">
+            <div className="flex items-center gap-1 ">
               <button
                 onClick={handleGoBack}
                 className="mr-1 rounded-full p-1 text-white/80 hover:bg-white/20"
@@ -424,7 +701,7 @@ export const ChatInterface = () => {
             <div className="flex items-center gap-1">
               <div className="h-10 w-10 rounded-full bg-linear-to-tr from-blue-400 to-lantern-blue-600 p-0.5">
                 <img
-                  src={`https://ui-avatars.com/api/?name=${currentUser?.full_name?.substring(0, 2).toUpperCase()}&background=random`}
+                  src={`https://ui-avatars.com/api/?name=${currentUser?.firstName?.substring(0, 2).toUpperCase()}&background=random`}
                   alt="Me"
                   className="h-full w-full rounded-full border-2 border-white/50"
                 />
@@ -454,48 +731,90 @@ export const ChatInterface = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-            {usersLoading ? (
+            {loading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-white/50" />
               </div>
+            ) : filteredChatList.length === 0 ? (
+              <div className="text-center py-10 text-white/50">
+                No users found
+              </div>
             ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  onClick={() => handleUserClick(user.id)}
-                  className={`group flex cursor-pointer items-center gap-4 rounded-2xl p-3 transition-all duration-200 hover:bg-white/20 ${
-                    activeConversation?.participants.some(
-                      (p) => p.user.id === user.id,
-                    )
-                      ? "bg-white/25 shadow-lg ring-1 ring-white/20"
-                      : "hover:shadow-md"
-                  }`}
-                >
-                  <div className="relative">
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${user?.firstName}&background=random`}
-                      alt="avatar"
-                      className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
-                    />
-                    {/* <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-white/20"></span> */}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <div className="flex justify-between items-baseline">
-                      <h3 className="truncate text-base font-semibold text-white drop-shadow-sm group-hover:text-white">
-                        {user.firstName} {user.lastName}
-                      </h3>
+              filteredChatList.map((chat) => {
+                const isActive = activeConversation?.participants?.some(
+                  (p) => p.user.id === chat.user.id,
+                );
+
+                return (
+                  <div
+                    key={chat.user.id}
+                    onClick={() => handleUserClick(chat.user.id)}
+                    className={`group flex cursor-pointer items-center gap-3 rounded-2xl p-3 transition-all duration-200 hover:bg-white/20 ${
+                      isActive
+                        ? "bg-white/25 shadow-lg ring-1 ring-white/20"
+                        : "hover:shadow-md"
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${chat.user?.firstName || "U"}&background=random`}
+                        alt="avatar"
+                        className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
+                      />
+                      {chat.unreadCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center animate-pulse shadow-lg">
+                          {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                        </div>
+                      )}
                     </div>
-                    <p className="truncate text-sm text-white/60 group-hover:text-white/80">
-                      {user.email}
-                    </p>
+
+                    <div className="flex-1 overflow-hidden min-w-0">
+                      <div className="flex justify-between items-baseline gap-2">
+                        <h3
+                          className={`truncate text-base font-semibold drop-shadow-sm ${
+                            chat.unreadCount > 0
+                              ? "text-white font-bold"
+                              : "text-white/90"
+                          }`}
+                        >
+                          {chat.user.firstName} {chat.user.lastName}
+                        </h3>
+                        {chat.lastMessageTime && (
+                          <span
+                            className={`text-xs flex-shrink-0 ${
+                              chat.unreadCount > 0
+                                ? "text-white font-semibold"
+                                : "text-white/50"
+                            }`}
+                          >
+                            {formatLastMessageTime(chat.lastMessageTime)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center gap-2">
+                        <p
+                          className={`truncate text-sm ${
+                            chat.unreadCount > 0
+                              ? "text-white font-medium"
+                              : "text-white/60"
+                          }`}
+                        >
+                          {chat.lastMessage || "Click to start conversation"}
+                        </p>
+                        {chat.unreadCount > 0 && (
+                          <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Chat Area */}
+        {/* Chat Area - Keep all your existing chat area code exactly as it was */}
         <div
           className={`absolute inset-y-0 right-0 z-10 w-full flex-col bg-white/5 transition-transform duration-300 md:relative md:flex md:translate-x-0 ${
             showMobileChat ? "translate-x-0" : "translate-x-full"
@@ -504,7 +823,7 @@ export const ChatInterface = () => {
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="flex h-20 items-center justify-between border-b border-white/10 bg-white/10 px-4 shadow-sm backdrop-blur-md md:px-8">
+              <div className="flex h-20 items-center justify-between border-b border-white/10 bg-lantern-blue-600 px-4 shadow-sm backdrop-blur-md md:px-8">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setShowMobileChat(false)}
@@ -528,10 +847,6 @@ export const ChatInterface = () => {
                           )?.user.firstName || "Chat"
                         : activeConversation.name}
                     </h3>
-                    {/* <span className="text-xs font-medium text-white/70 flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>{" "}
-                      Online
-                    </span> */}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-white/70">
@@ -552,20 +867,15 @@ export const ChatInterface = () => {
                 {messages.map((msg) => {
                   const isMe = msg.senderId === currentUser?.id;
                   const isDeleted = msg.isDeleted;
-
-                  // ✅ Check if this message has the active menu open
                   const isMenuOpen = activeMenuId === msg.id;
 
                   return (
                     <div
                       key={msg.id}
-                      // ✅ BUG FIX: Add 'z-50' if menu is open, otherwise let it be auto (or lower)
-                      // This brings the ENTIRE message container to the top of the stack
                       className={`relative flex flex-col ${
                         isMe ? "items-end" : "items-start"
                       } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
                     >
-                      {/* Message Bubble */}
                       <div
                         className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 shadow-lg backdrop-blur-md group ${
                           !isMe
@@ -577,7 +887,6 @@ export const ChatInterface = () => {
                           {msg.sender.firstName}
                           {isMe && " (You)"}
                         </p>
-                        {/* Reply Context */}
                         {!isDeleted && msg.replyTo && (
                           <div
                             className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
@@ -599,11 +908,9 @@ export const ChatInterface = () => {
                             </p>
                           </div>
                         )}
-                        {/* Attachments */}
                         {!isDeleted &&
                           msg.type !== "TEXT" &&
                           renderAttachment(msg)}
-                        {/* Text Content */}
                         {!isDeleted && msg.content && msg.type === "TEXT" && (
                           <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
                             {msg.content}
@@ -628,7 +935,6 @@ export const ChatInterface = () => {
                           {msg.isEdited && <span>(edited)</span>}
                           {isMe && <CheckCheck className="h-4 w-4" />}
                         </div>
-                        {/* Dropdown Menu (Only for valid messages) */}
                         {!isDeleted && (
                           <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
                             <button
@@ -642,11 +948,8 @@ export const ChatInterface = () => {
                             >
                               <ChevronDown className="h-6 w-6" />
                             </button>
-
-                            {/* Popup Menu */}
                             {isMenuOpen && (
                               <div
-                                // ✅ Ensure dropdown itself has a high z-index (though parent z-index does most of the work)
                                 className={`absolute top-9 ${
                                   isMe ? "right-0" : "left-0"
                                 } z-100 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-32 animate-in zoom-in-95 origin-top-right`}
@@ -699,7 +1002,6 @@ export const ChatInterface = () => {
 
               {/* Input Area */}
               <div className="bg-white/10 p-4 md:px-8 md:py-5 backdrop-blur-md border-t border-white/10 relative">
-                {/* Reply/Edit Preview Banner */}
                 {(replyingTo || editingMessage) && (
                   <div className="absolute bottom-full left-0 right-0 mx-4 md:mx-8 mb-2 p-3 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-between text-white animate-in slide-in-from-bottom-2">
                     <div className="flex flex-col text-sm border-l-4 border-blue-300 pl-3">
@@ -734,7 +1036,6 @@ export const ChatInterface = () => {
                       : "ring-white/10"
                   }`}
                 >
-                  {/* --- ATTACHMENT MENU BUTTON --- */}
                   <div className="relative attachment-menu-trigger">
                     <button
                       onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
@@ -746,11 +1047,8 @@ export const ChatInterface = () => {
                     >
                       <BadgePlus className="h-6 w-6" />
                     </button>
-
-                    {/* Popup Attachment Menu */}
                     {isAttachMenuOpen && (
                       <div className="attachment-menu absolute bottom-14 left-0 w-48 p-2 rounded-2xl bg-[#1c1c1c]/50 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col gap-1 animate-in slide-in-from-bottom-2 fade-in zoom-in-95 origin-bottom-left z-50">
-                        {/* Option 1: Location */}
                         <button
                           onClick={() => {
                             handleSendLocation();
@@ -770,8 +1068,6 @@ export const ChatInterface = () => {
                             </span>
                           </div>
                         </button>
-
-                        {/* Option 2: Photos & Videos */}
                         <button
                           onClick={() => {
                             mediaInputRef.current?.click();
@@ -789,8 +1085,6 @@ export const ChatInterface = () => {
                             </span>
                           </div>
                         </button>
-
-                        {/* Option 3: Document */}
                         <button
                           onClick={() => {
                             docInputRef.current?.click();
@@ -814,7 +1108,6 @@ export const ChatInterface = () => {
                     )}
                   </div>
 
-                  {/* Hidden Inputs for File Selection */}
                   <input
                     type="file"
                     ref={mediaInputRef}
@@ -826,11 +1119,9 @@ export const ChatInterface = () => {
                     type="file"
                     ref={docInputRef}
                     className="hidden"
-                    // No accept means all files allowed (Documents/Zips etc)
                     onChange={handleFileUpload}
                   />
 
-                  {/* Text Input */}
                   <input
                     type="text"
                     className="flex-1 bg-transparent px-2 py-2 text-white placeholder-white/40 focus:outline-none text-sm md:text-base"
@@ -845,7 +1136,6 @@ export const ChatInterface = () => {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
 
-                  {/* Send/Loading/Location Loading */}
                   {isUploading || isSendingLocation ? (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                       <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -876,7 +1166,7 @@ export const ChatInterface = () => {
                 <ImageIcon className="h-10 w-10 text-white/80" />
               </div>
               <h3 className="mb-2 text-2xl font-bold text-white drop-shadow-md">
-                Welcome to Glass Chat
+                Welcome to Lantern Chat
               </h3>
               <p className="max-w-xs text-white/60">
                 Select a conversation from the sidebar to start messaging.

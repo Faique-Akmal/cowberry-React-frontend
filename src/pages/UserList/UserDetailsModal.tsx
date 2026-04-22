@@ -193,7 +193,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
           </div>
 
           {/* Basic Information */}
-          <div className="mb-8 px-8 py-3 bg-gray-50 dark:bg-gray-800/20 rounded-xl">
+          <div className="mb-8 px-8 py-3 bg-blue-50 dark:bg-gray-800/20 rounded-xl">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <svg
                 className="w-5 h-5 mr-2 text-blue-600"
@@ -234,7 +234,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
           </div>
 
           {/* Work Information */}
-          <div className="mb-8 px-8  py-3 bg-gray-50 dark:bg-gray-800/20 rounded-xl">
+          <div className="mb-8 px-8  py-3 bg-blue-50 dark:bg-gray-800/20 rounded-xl">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <svg
                 className="w-5 h-5 mr-2 text-blue-600"
@@ -256,7 +256,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <InfoCard label="Role" value={resolvedRole} />
               <InfoCard label="Designation" value={user.designation || "N/A"} />
               <InfoCard label="Employee Code" value={getEmployeeCode()} />
-              <InfoCard
+              {/* <InfoCard
                 label="Status"
                 value={
                   <div className="flex items-center">
@@ -267,13 +267,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                     </span>
                   </div>
                 }
-              />
+              /> */}
             </div>
           </div>
 
           {/* Zone & Location Information */}
           {user.zone && (
-            <div className="mb-8 px-8 py-3 bg-gray-50 dark:bg-gray-800/20 rounded-xl">
+            <div className="mb-8 px-8 py-3 bg-blue-50 dark:bg-gray-800/20 rounded-xl">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <svg
                   className="w-5 h-5 mr-2 text-blue-600"
@@ -328,7 +328,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             user.hrManagerEmployeeCode ||
             user.reportee ||
             user.hrManager) && (
-            <div className="mb-8 px-8 py-3 bg-gray-50 dark:bg-gray-800/20 rounded-xl">
+            <div className="mb-8 px-8 py-3 bg-blue-50 dark:bg-gray-800/20 rounded-xl">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <svg
                   className="w-5 h-5 mr-2 text-blue-600"
@@ -423,7 +423,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0 bg-gray-50 dark:bg-gray-800/50">
+        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-2 shrink-0 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex flex-row justify-end gap-3">
             <button
               type="button"
@@ -436,7 +436,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={onDeleteClick}
-                className="px-6 py-2.5 bg-red-600 text-white  hover:bg-red-700 rounded-full transition-colors font-medium"
+                className="px-6 py-2 bg-red-600 text-white  hover:bg-red-700 rounded-full transition-colors font-medium"
               >
                 Delete
               </button>
@@ -445,7 +445,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={onEditClick}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-full  hover:bg-blue-700 transition-colors font-medium"
+                className="px-6 py-2 bg-blue-600 text-white rounded-full  hover:bg-blue-700 transition-colors font-medium"
               >
                 Edit
               </button>

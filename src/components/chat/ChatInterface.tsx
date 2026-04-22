@@ -69,7 +69,6 @@ const sortChatListByRecentMessage = (
   chatList: ChatListItem[],
 ): ChatListItem[] => {
   return [...chatList].sort((a, b) => {
-    // If both have no messages, sort alphabetically
     if (!a.lastMessageTime && !b.lastMessageTime) {
       const nameA =
         `${a.user.firstName || ""} ${a.user.lastName || ""}`.toLowerCase();
@@ -77,10 +76,8 @@ const sortChatListByRecentMessage = (
         `${b.user.firstName || ""} ${b.user.lastName || ""}`.toLowerCase();
       return nameA.localeCompare(nameB);
     }
-    // Users with no messages go to the bottom
     if (!a.lastMessageTime) return 1;
     if (!b.lastMessageTime) return -1;
-    // Sort by most recent message (descending)
     return (
       new Date(b.lastMessageTime).getTime() -
       new Date(a.lastMessageTime).getTime()
@@ -127,7 +124,8 @@ export const ChatInterface = () => {
   const docInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  const userid = localStorage.getItem("userId");
+  // Track message IDs to prevent duplicates
+  const processedMessageIds = useRef<Set<number>>(new Set());
 
   // Filter chat list based on search term
   const filteredChatList = chatList.filter((chat) => {
@@ -135,6 +133,9 @@ export const ChatInterface = () => {
       `${chat.user.firstName || ""} ${chat.user.lastName || ""}`.toLowerCase();
     return name.includes(searchTerm.toLowerCase());
   });
+
+
+  const isSendingRef = useRef(false);
 
   const getAvatarColor = (name: string) => {
     const colors = [
@@ -194,15 +195,11 @@ export const ChatInterface = () => {
     const fetchUsersAndChats = async () => {
       try {
         setLoading(true);
-        // Fetch all users with their last message info
         const allUsers = await ChatService.getAllUsers();
         setUsers(allUsers);
 
-        // Build chat list directly from users API response
-        // The API already provides lastMessage and lastMessageTime
         let chatListData: ChatListItem[] = allUsers.map(
           (user: ExtendedUser) => {
-            // Format message preview based on type if needed
             let messagePreview = user.lastMessage;
             if (user.lastMessageType === "IMAGE" && !messagePreview) {
               messagePreview = "📷 Image";
@@ -219,41 +216,13 @@ export const ChatInterface = () => {
               user: user,
               lastMessage: messagePreview || undefined,
               lastMessageTime: user.lastMessageTime,
-              conversationId: undefined, // Will be set when conversation is started
+              conversationId: undefined,
               unreadCount: 0,
             };
           },
         );
 
-        // Try to get conversation IDs for users that have existing conversations
-        try {
-          const conversations = await ChatService.getUserConversations();
-          if (conversations && conversations.length > 0) {
-            // Create a map of user ID to conversation ID
-            const conversationMap = new Map();
-            for (const conv of conversations) {
-              const otherParticipant = conv.participants.find(
-                (p) => p.user.id !== currentUser?.id,
-              )?.user;
-              if (otherParticipant) {
-                conversationMap.set(otherParticipant.id, conv.id);
-              }
-            }
-
-            // Update chat list with conversation IDs
-            chatListData = chatListData.map((chat) => ({
-              ...chat,
-              conversationId:
-                conversationMap.get(chat.user.id) || chat.conversationId,
-            }));
-          }
-        } catch (error) {
-          console.error("Error fetching conversations:", error);
-        }
-
-        // CRITICAL FIX: Sort by most recent message time using the lastMessageTime from API
         const sortedList = sortChatListByRecentMessage(chatListData);
-
         setChatList(sortedList);
       } catch (error) {
         console.error("Failed to fetch users", error);
@@ -268,25 +237,68 @@ export const ChatInterface = () => {
     }
   }, [currentUser]);
 
-  // Listen for new messages and update chat list
+  // Join Room and fetch messages
+  useEffect(() => {
+    if (activeConversation && socket) {
+      socket.emit("join_conversation", activeConversation.id);
+      ChatService.getMessages(activeConversation.id).then((fetchedMessages) => {
+        if (Array.isArray(fetchedMessages)) {
+          // Clear processed IDs when switching conversations
+          processedMessageIds.current.clear();
+          setMessages(fetchedMessages);
+        } else {
+          setMessages([]);
+        }
+      });
+      setShowMobileChat(true);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      setIsAttachMenuOpen(false);
+      setInput("");
+    }
+  }, [activeConversation, socket]);
+
+  // Listen for new messages and update chat list AND messages
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (message: Message) => {
+    
+
+      
+  isSendingRef.current = true;
+
+      // Mark as processed
+      processedMessageIds.current.add(message.id);
+
+      // Add the new message to the messages state with safety check
+      if (
+        activeConversation &&
+        message.conversationId === activeConversation.id
+      ) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          // Double-check if message already exists
+          const exists = messagesArray.some((m) => m.id === message.id);
+          if (exists) {
+           
+            return messagesArray;
+          }
+          return [...messagesArray, message];
+        });
+      }
+
       // Update chat list with new message
       setChatList((prevList) => {
-        // First, find which user this message is from/to
         const isIncoming = message.senderId !== currentUser?.id;
         const relevantUserId = isIncoming
           ? message.senderId
-          : // For outgoing messages, find the recipient from conversation
-            activeConversation?.participants?.find(
+          : activeConversation?.participants?.find(
               (p) => p.user.id !== currentUser?.id,
             )?.user.id;
 
         if (!relevantUserId) return prevList;
 
-        // Format message preview
         let messagePreview = message.content || "";
         if (!messagePreview && message.type === "IMAGE")
           messagePreview = "📷 Image";
@@ -297,7 +309,6 @@ export const ChatInterface = () => {
         if (!messagePreview && message.type === "DOCUMENT")
           messagePreview = "📄 File";
 
-        // Update the specific chat
         let updatedList = prevList.map((chat) => {
           if (chat.user.id === relevantUserId) {
             const isUnread =
@@ -316,23 +327,23 @@ export const ChatInterface = () => {
           return chat;
         });
 
-        // CRITICAL FIX: Sort by most recent message time
-        const sortedList = sortChatListByRecentMessage(updatedList);
-        return sortedList;
+        return sortChatListByRecentMessage(updatedList);
       });
     };
 
-    // Listen for message sent confirmation (for outgoing messages)
+    // Listen for message sent confirmation - ONLY update chat list, not messages
     const handleMessageSent = (message: Message) => {
+     
+
+      // Don't add the message again - it will be added by receive_message
+      // Just update the chat list
       setChatList((prevList) => {
-        // For outgoing messages, find the recipient
         const recipientId = activeConversation?.participants?.find(
           (p) => p.user.id !== currentUser?.id,
         )?.user.id;
 
         if (!recipientId) return prevList;
 
-        // Format message preview
         let messagePreview = message.content || "";
         if (!messagePreview && message.type === "IMAGE")
           messagePreview = "📷 Image";
@@ -343,7 +354,6 @@ export const ChatInterface = () => {
         if (!messagePreview && message.type === "DOCUMENT")
           messagePreview = "📄 File";
 
-        // Update the specific chat
         let updatedList = prevList.map((chat) => {
           if (chat.user.id === recipientId) {
             return {
@@ -351,26 +361,59 @@ export const ChatInterface = () => {
               lastMessage: messagePreview,
               lastMessageTime: message.createdAt,
               conversationId: message.conversationId,
-              // Don't increment unread count for outgoing messages
             };
           }
           return chat;
         });
 
-        // CRITICAL FIX: Sort by most recent message time
-        const sortedList = sortChatListByRecentMessage(updatedList);
-        return sortedList;
+        return sortChatListByRecentMessage(updatedList);
       });
+    };
+
+    const handleMessageEdited = (updatedMessage: Message) => {
+   
+      if (
+        activeConversation &&
+        updatedMessage.conversationId === activeConversation.id
+      ) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          return messagesArray.map((msg) =>
+            msg.id === updatedMessage.id ? updatedMessage : msg,
+          );
+        });
+      }
+    };
+
+    const handleMessageDeleted = (data: {
+      messageId: number;
+      conversationId: number;
+    }) => {
+     
+      if (activeConversation && data.conversationId === activeConversation.id) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          return messagesArray.map((msg) =>
+            msg.id === data.messageId
+              ? { ...msg, isDeleted: true, content: null }
+              : msg,
+          );
+        });
+      }
     };
 
     socket.on("receive_message", handleNewMessage);
     socket.on("message_sent", handleMessageSent);
+    socket.on("message_edited", handleMessageEdited);
+    socket.on("message_deleted", handleMessageDeleted);
 
     return () => {
       socket.off("receive_message", handleNewMessage);
       socket.off("message_sent", handleMessageSent);
+      socket.off("message_edited", handleMessageEdited);
+      socket.off("message_deleted", handleMessageDeleted);
     };
-  }, [socket, currentUser, activeConversation]);
+  }, [socket, currentUser, activeConversation, setMessages]);
 
   // Reset unread count when viewing a conversation
   useEffect(() => {
@@ -382,7 +425,6 @@ export const ChatInterface = () => {
           }
           return chat;
         });
-        // Keep the sorted order
         return updatedList;
       });
     }
@@ -400,20 +442,6 @@ export const ChatInterface = () => {
       textInputRef.current?.focus();
     }
   }, [editingMessage]);
-
-  // Join Room
-  useEffect(() => {
-    if (activeConversation && socket) {
-      socket.emit("join_conversation", activeConversation.id);
-      ChatService.getMessages(activeConversation.id).then(setMessages);
-      setShowMobileChat(true);
-      // Clear states when changing chat
-      setReplyingTo(null);
-      setEditingMessage(null);
-      setIsAttachMenuOpen(false);
-      setInput("");
-    }
-  }, [activeConversation, socket]);
 
   // Close menus on click outside
   useEffect(() => {
@@ -439,8 +467,10 @@ export const ChatInterface = () => {
     try {
       const conversation = await ChatService.startChat(receiverId);
       setActiveConversation(conversation);
+      // Reset messages and processed IDs when switching conversations
+      processedMessageIds.current.clear();
+      setMessages([]);
 
-      // Update chat list with conversation ID and reset unread count
       setChatList((prevList) => {
         const updatedList = prevList.map((chat) => {
           if (chat.user.id === receiverId) {
@@ -448,7 +478,6 @@ export const ChatInterface = () => {
           }
           return chat;
         });
-        // Keep the sorted order
         return updatedList;
       });
     } catch (error) {
@@ -591,6 +620,17 @@ export const ChatInterface = () => {
     } else {
       return format(date, "MMM d");
     }
+  };
+
+  // Helper to safely get messages array and remove duplicates
+  const getSafeMessages = (msgs: any): Message[] => {
+    const messagesArray = Array.isArray(msgs) ? msgs : [];
+    // Remove duplicates by ID
+    const uniqueMessages = messagesArray.filter(
+      (message, index, self) =>
+        index === self.findIndex((m) => m.id === message.id),
+    );
+    return uniqueMessages;
   };
 
   // --- Renderers ---
@@ -874,143 +914,176 @@ export const ChatInterface = () => {
                     backgroundRepeat: "no-repeat",
                   }}
                 />
-                {messages.map((msg) => {
-                  const isMe = msg.senderId === currentUser?.id;
-                  const isDeleted = msg.isDeleted;
-                  const isMenuOpen = activeMenuId === msg.id;
+                {getSafeMessages(messages).length > 0 ? (
+                  getSafeMessages(messages).map((msg) => {
+                    const isMe = msg.senderId === currentUser?.id;
+                    const isDeleted = msg.isDeleted;
+                    const isMenuOpen = activeMenuId === msg.id;
 
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`relative flex flex-col ${
-                        isMe ? "items-end" : "items-start"
-                      } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
-                    >
+                    return (
                       <div
-                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2  group ${
-                          !isMe
-                            ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
-                            : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
-                        }`}
+                        key={`msg-${msg.id}`}
+                        className={`relative flex flex-col ${
+                          isMe ? "items-end" : "items-start"
+                        } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
                       >
-                        <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80 ">
-                          {msg.sender.firstName}
-                          {isMe && " (You)"}
-                        </p>
-                        {!isDeleted && msg.replyTo && (
-                          <div
-                            className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
-                              !isMe
-                                ? "border-white/50 bg-black/10"
-                                : "border-lantern-blue-600 bg-white/5"
-                            }`}
-                          >
-                            <span className="font-bold text-grey-600">
-                              {msg.replyTo?.sender?.firstName ||
-                                getMessageById(msg.replyToId!)?.sender
-                                  ?.firstName ||
-                                "User"}
-                              {msg.replyTo.senderId === currentUser?.id &&
-                                " (You)"}
-                            </span>
-                            <p className="truncate">
-                              {msg.replyTo.content || "Attachment"}
-                            </p>
-                          </div>
-                        )}
-                        {!isDeleted &&
-                          msg.type !== "TEXT" &&
-                          renderAttachment(msg)}
-                        {!isDeleted && msg.content && msg.type === "TEXT" && (
-                          <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                        )}
-                        {msg.isDeleted && (
-                          <p className="italic text-md opacity-60 flex items-center gap-2">
-                            <Ban className="h-5 w-5" />{" "}
-                            {isMe
-                              ? "You deleted this message"
-                              : "This message was deleted"}
-                          </p>
-                        )}
                         <div
-                          className={`mt-1 flex items-center justify-end gap-1 text-xs ${
-                            !isMe ? "text-white/80" : "text-gray-100"
+                          className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 group ${
+                            !isMe
+                              ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
+                              : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
                           }`}
                         >
-                          <span>
-                            {format(new Date(msg.createdAt), "h:mm a")}
-                          </span>
-                          {msg.isEdited && <span>(edited)</span>}
-                          {isMe && <CheckCheck className="h-4 w-4" />}
-                        </div>
-                        {!isDeleted && (
-                          <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(
-                                  activeMenuId === msg.id ? null : msg.id,
-                                );
-                              }}
-                              className="p-1 rounded-full hover:bg-black/50 text-white/90"
+                          <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
+                            {msg.sender?.firstName ||
+                              msg.sender?.username ||
+                              "User"}
+                            {isMe && " (You)"}
+                          </p>
+
+                          {/* Reply Preview */}
+                          {!isDeleted && msg.replyTo && (
+                            <div
+                              className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
+                                !isMe
+                                  ? "border-white/50 bg-black/10"
+                                  : "border-lantern-blue-600 bg-white/5"
+                              }`}
                             >
-                              <ChevronDown className="h-6 w-6" />
-                            </button>
-                            {isMenuOpen && (
-                              <div
-                                className={`absolute top-9 ${
-                                  isMe ? "right-0" : "left-0"
-                                } z-100 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-32 animate-in zoom-in-95 origin-top-right`}
-                              >
-                                <button
-                                  onClick={() => {
-                                    setReplyingTo(msg);
-                                    setActiveMenuId(null);
-                                    textInputRef.current?.focus();
-                                  }}
-                                  className="w-full text-left px-4 py-2 hover:bg-indigo-50/40 rounded-md flex items-center gap-2"
-                                >
-                                  <CornerUpLeft className="h-3.5 w-3.5" /> Reply
-                                </button>
-                                {isMe && (
-                                  <>
-                                    {msg.type !== "LOCATION" && (
-                                      <button
-                                        onClick={() => {
-                                          setEditingMessage(msg);
-                                          setActiveMenuId(null);
-                                          textInputRef.current?.focus();
-                                        }}
-                                        className="w-full text-left px-4 py-2 hover:bg-indigo-200/40 rounded-md flex items-center gap-2"
-                                      >
-                                        <Edit2 className="h-3.5 w-3.5" /> Edit
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                        handleDeleteMessage(msg.id);
-                                        setActiveMenuId(null);
-                                      }}
-                                      className="w-full text-left px-4 py-2 hover:bg-red-50/50 rounded-md text-red-600 flex items-center gap-2"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" /> Delete
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                              <span className="font-bold text-grey-600">
+                                {msg.replyTo?.sender?.firstName ||
+                                  msg.replyTo?.sender?.username ||
+                                  getMessageById(msg.replyToId!)?.sender
+                                    ?.firstName ||
+                                  getMessageById(msg.replyToId!)?.sender
+                                    ?.username ||
+                                  "User"}
+                                {msg.replyTo?.senderId === currentUser?.id &&
+                                  " (You)"}
+                              </span>
+                              <p className="truncate">
+                                {msg.replyTo.content ||
+                                  msg.replyTo.type ||
+                                  "Attachment"}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Attachment Renderer */}
+                          {!isDeleted &&
+                            msg.type !== "TEXT" &&
+                            renderAttachment(msg)}
+
+                          {/* Text Message */}
+                          {!isDeleted && msg.content && msg.type === "TEXT" && (
+                            <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap break-words">
+                              {msg.content}
+                            </p>
+                          )}
+
+                          {/* Deleted Message */}
+                          {msg.isDeleted && (
+                            <p className="italic text-md opacity-60 flex items-center gap-2">
+                              <Ban className="h-5 w-5" />{" "}
+                              {isMe
+                                ? "You deleted this message"
+                                : "This message was deleted"}
+                            </p>
+                          )}
+
+                          {/* Timestamp and Status */}
+                          <div
+                            className={`mt-1 flex items-center justify-end gap-1 text-xs ${
+                              !isMe ? "text-white/80" : "text-gray-100"
+                            }`}
+                          >
+                            <span>
+                              {msg.createdAt
+                                ? format(new Date(msg.createdAt), "h:mm a")
+                                : "Just now"}
+                            </span>
+                            {msg.isEdited && <span>(edited)</span>}
+                            {isMe && !msg.isDeleted && (
+                              <CheckCheck className="h-4 w-4" />
                             )}
                           </div>
-                        )}
+
+                          {/* Message Menu */}
+                          {!isDeleted && (
+                            <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(
+                                    activeMenuId === msg.id ? null : msg.id,
+                                  );
+                                }}
+                                className="p-1 rounded-full hover:bg-black/50 text-white/90 transition-colors"
+                              >
+                                <ChevronDown className="h-5 w-5" />
+                              </button>
+
+                              {isMenuOpen && (
+                                <div
+                                  className={`absolute top-8 ${
+                                    isMe ? "right-0" : "left-0"
+                                  } z-[100] bg-black/90 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-36 animate-in zoom-in-95 origin-top-right`}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(msg);
+                                      setActiveMenuId(null);
+                                      textInputRef.current?.focus();
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md flex items-center gap-2 text-sm text-white/90 transition-colors"
+                                  >
+                                    <CornerUpLeft className="h-3.5 w-3.5" />{" "}
+                                    Reply
+                                  </button>
+
+                                  {isMe && (
+                                    <>
+                                      {msg.type !== "LOCATION" && (
+                                        <button
+                                          onClick={() => {
+                                            setEditingMessage(msg);
+                                            setActiveMenuId(null);
+                                            textInputRef.current?.focus();
+                                          }}
+                                          className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md flex items-center gap-2 text-sm text-white/90 transition-colors"
+                                        >
+                                          <Edit2 className="h-3.5 w-3.5" /> Edit
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          handleDeleteMessage(msg.id);
+                                          setActiveMenuId(null);
+                                        }}
+                                        className="w-full text-left px-3 py-2 hover:bg-red-500/20 rounded-md flex items-center gap-2 text-sm text-red-400 transition-colors"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />{" "}
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="flex justify-center items-center h-full text-white/50">
+                    No messages yet. Start a conversation!
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
+              {/* Input Area - Keep as is */}
               <div className="bg-white/10 p-4 md:px-8 md:py-5 backdrop-blur-md border-t border-white/10 relative">
                 {(replyingTo || editingMessage) && (
                   <div className="absolute bottom-full left-0 right-0 mx-4 md:mx-8 mb-2 p-3 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-between text-white animate-in slide-in-from-bottom-2">
@@ -1018,7 +1091,7 @@ export const ChatInterface = () => {
                       <span className="font-bold text-blue-300 mb-0.5">
                         {editingMessage
                           ? "Editing Message"
-                          : `Replying to ${replyingTo?.sender.username}`}
+                          : `Replying to ${replyingTo?.sender?.username || "User"}`}
                       </span>
                       <span className="truncate max-w-md opacity-80 text-xs">
                         {editingMessage

@@ -8,18 +8,21 @@ interface ChatState {
   replyingTo: Message | null;
   editingMessage: Message | null;
   setActiveConversation: (conversation: Conversation) => void;
-  setMessages: (messages: Message[]) => void;
+  setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
   addMessage: (message: Message) => void;
   updateMessage: (messageId: number, updates: Partial<Message>) => void;
+  deleteMessage: (messageId: number) => void;
   setCurrentUser: (user: User) => void;
-  getMessageById: (id: number) => Message | undefined
+  getMessageById: (id: number) => Message | undefined;
   setReplyingTo: (message: Message | null) => void;
   setEditingMessage: (message: Message | null) => void;
+  resetMessages: () => void;
+  clearDuplicateMessages: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   activeConversation: null,
-  messages: [],
+  messages: [], // Initialize as empty array
   currentUser: null,
   replyingTo: null,
   editingMessage: null,
@@ -27,32 +30,95 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setActiveConversation: (conversation) =>
     set({ activeConversation: conversation }),
 
-  setMessages: (messages) => set({ messages }),
+  setMessages: (messages) => {
+    // Handle both array and function updater
+    if (typeof messages === "function") {
+      set((state) => ({
+        messages: messages(Array.isArray(state.messages) ? state.messages : []),
+      }));
+    } else {
+      // Remove any duplicates when setting messages
+      const uniqueMessages = Array.isArray(messages)
+        ? messages.filter(
+            (message, index, self) =>
+              index === self.findIndex((m) => m.id === message.id),
+          )
+        : [];
+      set({ messages: uniqueMessages });
+    }
+  },
 
   addMessage: (message) =>
     set((state) => {
-      // Duplicate check
-      if (state.messages.some((m) => m.id === message.id)) return state;
-      return { messages: [...state.messages, message] };
+      const currentMessages = Array.isArray(state.messages)
+        ? state.messages
+        : [];
+
+      const exists = currentMessages.some((m) => m.id === message.id);
+      if (exists) return { messages: currentMessages };
+
+      return { messages: [...currentMessages, message] };
     }),
 
   updateMessage: (messageId, updates) =>
-    set((state) => ({
-      messages: state.messages.map((msg) =>
-        msg.id === messageId ? { ...msg, ...updates } : msg
-      ),
-    })),
+    set((state) => {
+      // Safety check: ensure messages is an array
+      const currentMessages = Array.isArray(state.messages)
+        ? state.messages
+        : [];
+
+      return {
+        messages: currentMessages.map((msg) =>
+          msg.id === messageId ? { ...msg, ...updates } : msg,
+        ),
+      };
+    }),
+
+  deleteMessage: (messageId) =>
+    set((state) => {
+      // Safety check: ensure messages is an array
+      const currentMessages = Array.isArray(state.messages)
+        ? state.messages
+        : [];
+
+      return {
+        messages: currentMessages.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, isDeleted: true, content: null, fileUrl: null }
+            : msg,
+        ),
+      };
+    }),
 
   setCurrentUser: (user) => set({ currentUser: user }),
 
   setReplyingTo: (message) =>
-    set({ replyingTo: message, editingMessage: null }), 
+    set({ replyingTo: message, editingMessage: null }),
 
   setEditingMessage: (message) =>
-    set({ editingMessage: message, replyingTo: null }), 
+    set({ editingMessage: message, replyingTo: null }),
 
   getMessageById: (id) => {
-    const { messages } = get();
-    return messages.find((msg) => msg.id === id)
+    const state = get();
+    // Safety check: ensure messages is an array
+    const currentMessages = Array.isArray(state.messages) ? state.messages : [];
+    return currentMessages.find((msg) => msg.id === id);
+  },
+
+  resetMessages: () => set({ messages: [] }),
+
+  clearDuplicateMessages: () => {
+    const state = get();
+    const currentMessages = Array.isArray(state.messages) ? state.messages : [];
+
+    // Remove duplicates based on message id
+    const uniqueMessages = currentMessages.filter(
+      (message, index, self) =>
+        index === self.findIndex((m) => m.id === message.id),
+    );
+
+    if (uniqueMessages.length !== currentMessages.length) {
+      set({ messages: uniqueMessages });
+    }
   },
 }));

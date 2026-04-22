@@ -43,18 +43,15 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     });
 
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
       set({ isConnected: true });
 
       const { currentUserId } = get();
       if (currentUserId) {
-        console.log("📱 Registering user on connect:", currentUserId);
         newSocket.emit("register_user", currentUserId);
       }
     });
 
     newSocket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
       set({ isConnected: false });
     });
 
@@ -87,12 +84,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     // Someone is calling you → store it so UI can show IncomingCall component
     newSocket.on("incoming_call", (data: IncomingCallData) => {
-      console.log(
-        "📲 Incoming call from:",
-        data.callerName,
-        "isVideo:",
-        data.isVideo,
-      );
       set({ incomingCall: data });
     });
 
@@ -102,9 +93,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       alert(error?.message || "Call failed. User may be offline.");
     });
 
-    newSocket.on("user_registered", (data) => {
-      console.log("✅ User registered successfully:", data);
-    });
+    newSocket.on("user_registered", (data) => {});
 
     set({ socket: newSocket });
   },
@@ -126,18 +115,15 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const { socket, isConnected, currentUserId } = get();
 
     if (currentUserId === userId) {
-      console.log("User already registered with ID:", userId);
       return;
     }
 
     set({ currentUserId: userId });
 
     if (socket && isConnected) {
-      console.log("📱 Registering user with socket:", userId);
       socket.emit("register_user", userId);
     } else if (socket && !isConnected) {
       const onConnect = () => {
-        console.log("📱 Socket connected, registering user:", userId);
         socket.emit("register_user", userId);
         socket.off("connect", onConnect);
       };

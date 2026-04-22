@@ -226,12 +226,7 @@ export const ChatInterface = () => {
     if (!socket || !currentUser) return;
 
     // Listen for registration confirmation
-    socket.on("user_registered", (data: any) => {
-      console.log("✅ Registration confirmed:", data);
-    });
 
-    // Register the user
-    console.log("📱 Registering user:", currentUser.id);
     socket.emit("register_user", currentUser.id);
 
     return () => {
@@ -260,12 +255,9 @@ export const ChatInterface = () => {
   // Register user with socket for calling
   useEffect(() => {
     if (socket && currentUser) {
-      console.log("📱 Attempting to register user:", currentUser.id);
       useSocketStore.getState().registerUser(currentUser.id);
       // Optional: Add a confirmation listener
-      socket.on("user_registered", (data) => {
-        console.log("✅ User registered successfully:", data);
-      });
+      socket.on("user_registered", (data) => {});
 
       return () => {
         socket.off("user_registered");

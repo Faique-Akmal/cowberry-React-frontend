@@ -30,8 +30,9 @@ import {
 } from "lucide-react";
 import { Message, User, Conversation } from "../../types/chatTypes";
 import toast from "react-hot-toast";
+import { DirectCall, IncomingCall } from "./CallModal";
 
-const BASE_URL = import.meta.env.VITE_FILE_URL || "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_FILE_URL;
 
 const getFullUrl = (path: string | undefined) => {
   if (!path) return "";
@@ -134,7 +135,6 @@ export const ChatInterface = () => {
     return name.includes(searchTerm.toLowerCase());
   });
 
-
   const isSendingRef = useRef(false);
 
   const getAvatarColor = (name: string) => {
@@ -173,6 +173,72 @@ export const ChatInterface = () => {
     }
   };
 
+  // Add these state variables inside your ChatInterface component
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [activeCallWith, setActiveCallWith] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  // Add these handler functions
+  const handleStartCall = (isVideo: boolean) => {
+    if (!activeConversation) return;
+
+    const otherParticipant = activeConversation.participants.find(
+      (p) => p.user.id !== currentUser?.id,
+    );
+
+    if (otherParticipant) {
+      setActiveCallWith({
+        id: otherParticipant.user.id,
+        name: otherParticipant.user.firstName || otherParticipant.user.username,
+      });
+      setIsVideoCall(isVideo);
+      setIsCallModalOpen(true); // This will trigger the call
+    }
+  };
+
+  // const handleIncomingCall = (data: any) => {
+  //   setActiveCallWith({
+  //     id: data.from,
+  //     name: data.callerName,
+  //   });
+
+  //   setIsVideoCall(data.isVideo);
+  //   setIsCallModalOpen(true);
+
+  //   // ❗ DO NOT start call here
+  //   // Wait for offer event
+  // };
+
+  // Add socket listeners for incoming calls
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   socket.on("incoming_call", handleIncomingCall);
+
+  //   return () => {
+  //     socket.off("incoming_call", handleIncomingCall);
+  //   };
+  // }, [socket]);
+
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+
+    // Listen for registration confirmation
+    socket.on("user_registered", (data: any) => {
+      console.log("✅ Registration confirmed:", data);
+    });
+
+    // Register the user
+    console.log("📱 Registering user:", currentUser.id);
+    socket.emit("register_user", currentUser.id);
+
+    return () => {
+      socket.off("user_registered");
+    };
+  }, [socket, currentUser]);
+
   // Setup User & Socket
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -189,6 +255,23 @@ export const ChatInterface = () => {
     connect();
     return () => disconnect();
   }, []);
+
+  // Register user with socket for calling feature
+  // Register user with socket for calling
+  useEffect(() => {
+    if (socket && currentUser) {
+      console.log("📱 Attempting to register user:", currentUser.id);
+      useSocketStore.getState().registerUser(currentUser.id);
+      // Optional: Add a confirmation listener
+      socket.on("user_registered", (data) => {
+        console.log("✅ User registered successfully:", data);
+      });
+
+      return () => {
+        socket.off("user_registered");
+      };
+    }
+  }, [socket, currentUser]);
 
   // Fetch users and load chat history
   useEffect(() => {
@@ -263,10 +346,7 @@ export const ChatInterface = () => {
     if (!socket) return;
 
     const handleNewMessage = (message: Message) => {
-    
-
-      
-  isSendingRef.current = true;
+      isSendingRef.current = true;
 
       // Mark as processed
       processedMessageIds.current.add(message.id);
@@ -281,7 +361,6 @@ export const ChatInterface = () => {
           // Double-check if message already exists
           const exists = messagesArray.some((m) => m.id === message.id);
           if (exists) {
-           
             return messagesArray;
           }
           return [...messagesArray, message];
@@ -333,8 +412,6 @@ export const ChatInterface = () => {
 
     // Listen for message sent confirmation - ONLY update chat list, not messages
     const handleMessageSent = (message: Message) => {
-     
-
       // Don't add the message again - it will be added by receive_message
       // Just update the chat list
       setChatList((prevList) => {
@@ -371,7 +448,6 @@ export const ChatInterface = () => {
     };
 
     const handleMessageEdited = (updatedMessage: Message) => {
-   
       if (
         activeConversation &&
         updatedMessage.conversationId === activeConversation.id
@@ -389,7 +465,6 @@ export const ChatInterface = () => {
       messageId: number;
       conversationId: number;
     }) => {
-     
       if (activeConversation && data.conversationId === activeConversation.id) {
         setMessages((prevMessages) => {
           const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
@@ -889,17 +964,25 @@ export const ChatInterface = () => {
                     </h3>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-white/70">
-                  <button className="p-2 hover:bg-white/20 rounded-full">
+
+                {/* calling feature */}
+                {/* <div className="flex items-center gap-3 text-white/70">
+                  <button
+                    onClick={() => handleStartCall(false)}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  >
                     <Phone className="h-5 w-5" />
                   </button>
-                  <button className="p-2 hover:bg-white/20 rounded-full">
+                  <button
+                    onClick={() => handleStartCall(true)}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  >
                     <Video className="h-5 w-5" />
                   </button>
-                  <button className="p-2 hover:bg-white/20 rounded-full">
+                  <button className="p-2 hover:bg-white/20 rounded-full transition-colors">
                     <MoreVertical className="h-5 w-5" />
                   </button>
-                </div>
+                </div> */}
               </div>
 
               {/* Messages Container */}
@@ -912,6 +995,7 @@ export const ChatInterface = () => {
                     backgroundPosition: "center",
                     backgroundAttachment: "local",
                     backgroundRepeat: "no-repeat",
+                    paddingRight: "12px",
                   }}
                 />
                 {getSafeMessages(messages).length > 0 ? (
@@ -1258,6 +1342,23 @@ export const ChatInterface = () => {
           )}
         </div>
       </div>
+
+      {/* Call Modal */}
+      {activeCallWith && (
+        <DirectCall
+          isOpen={isCallModalOpen}
+          isVideoCall={isVideoCall}
+          callerName={activeCallWith.name}
+          callerId={activeCallWith.id}
+          receiverId={activeCallWith.id}
+          onClose={() => {
+            setIsCallModalOpen(false);
+            setActiveCallWith(null);
+          }}
+          socket={socket}
+          currentUserId={currentUser?.id || 0}
+        />
+      )}
     </div>
   );
 };

@@ -28,7 +28,7 @@ import {
   CornerUpLeft,
   ArrowRight,
 } from "lucide-react";
-import { Message, User } from "../../types/chatTypes";
+import { Message, User, Conversation } from "../../types/chatTypes";
 import toast from "react-hot-toast";
 
 const BASE_URL = import.meta.env.VITE_FILE_URL || "http://localhost:5000";
@@ -45,30 +45,44 @@ const getFullUrl = (path: string | undefined) => {
 };
 
 // --- Background Image ---
-// const BG_IMAGE =
-//   "https://cdn.magicdecor.in/com/2024/05/09154244/TV-Unit-Luxury-Floral-Pattern-Wallpaper-Design.jpg";
-
 const BG_IMAGE = "/lantern-logo.png";
 
-// --- Custom Hook for User List ---
-const useUserList = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+// Extended User type to include last message info from API
+interface ExtendedUser extends User {
+  lastMessage?: string;
+  lastMessageTime?: string;
+  lastMessageType?: string;
+}
 
-  useEffect(() => {
-    const fetchAllChatUser = async () => {
-      try {
-        const allChatUsers = await ChatService.getAllUsers();
-        setUsers(allChatUsers);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAllChatUser();
-  }, []);
-  return { users, loading };
+// Type for chat list item
+interface ChatListItem {
+  userId: number;
+  user: ExtendedUser;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  conversationId?: number;
+}
+
+// Helper function to sort chat list by most recent message
+const sortChatListByRecentMessage = (
+  chatList: ChatListItem[],
+): ChatListItem[] => {
+  return [...chatList].sort((a, b) => {
+    if (!a.lastMessageTime && !b.lastMessageTime) {
+      const nameA =
+        `${a.user.firstName || ""} ${a.user.lastName || ""}`.toLowerCase();
+      const nameB =
+        `${b.user.firstName || ""} ${b.user.lastName || ""}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    }
+    if (!a.lastMessageTime) return 1;
+    if (!b.lastMessageTime) return -1;
+    return (
+      new Date(b.lastMessageTime).getTime() -
+      new Date(a.lastMessageTime).getTime()
+    );
+  });
 };
 
 export const ChatInterface = () => {
@@ -96,22 +110,68 @@ export const ChatInterface = () => {
 
   // --- UI States ---
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
-  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false); // Attachment Menu State
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
 
-  const { users, loading: usersLoading } = useUserList();
+  // --- State for chat list ---
+  const [chatList, setChatList] = useState<ChatListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<ExtendedUser[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- Input Refs ---
-  const mediaInputRef = useRef<HTMLInputElement>(null); // For Images/Videos
-  const docInputRef = useRef<HTMLInputElement>(null); // For Documents
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter users
-  const filteredUsers = users.filter(
-    (u) =>
-      u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // Track message IDs to prevent duplicates
+  const processedMessageIds = useRef<Set<number>>(new Set());
+
+  // Filter chat list based on search term
+  const filteredChatList = chatList.filter((chat) => {
+    const name =
+      `${chat.user.firstName || ""} ${chat.user.lastName || ""}`.toLowerCase();
+    return name.includes(searchTerm.toLowerCase());
+  });
+
+
+  const isSendingRef = useRef(false);
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98D8C8",
+      "#F7B731",
+      "#5D9BEC",
+      "#F06292",
+      "#BA68C8",
+      "#4DB6AC",
+      "#FF8A65",
+      "#7986CB",
+      "#A2B9C8",
+    ];
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  const handleGoBack = () => {
+    if (showMobileChat) {
+      setShowMobileChat(false);
+      setActiveConversation(null);
+    } else {
+      navigate("/home");
+    }
+  };
 
   // Setup User & Socket
   useEffect(() => {
@@ -130,6 +190,246 @@ export const ChatInterface = () => {
     return () => disconnect();
   }, []);
 
+  // Fetch users and load chat history
+  useEffect(() => {
+    const fetchUsersAndChats = async () => {
+      try {
+        setLoading(true);
+        const allUsers = await ChatService.getAllUsers();
+        setUsers(allUsers);
+
+        let chatListData: ChatListItem[] = allUsers.map(
+          (user: ExtendedUser) => {
+            let messagePreview = user.lastMessage;
+            if (user.lastMessageType === "IMAGE" && !messagePreview) {
+              messagePreview = "📷 Image";
+            } else if (user.lastMessageType === "VIDEO" && !messagePreview) {
+              messagePreview = "📹 Video";
+            } else if (user.lastMessageType === "LOCATION" && !messagePreview) {
+              messagePreview = "📍 Location";
+            } else if (user.lastMessageType === "DOCUMENT" && !messagePreview) {
+              messagePreview = "📄 File";
+            }
+
+            return {
+              userId: user.id,
+              user: user,
+              lastMessage: messagePreview || undefined,
+              lastMessageTime: user.lastMessageTime,
+              conversationId: undefined,
+              unreadCount: 0,
+            };
+          },
+        );
+
+        const sortedList = sortChatListByRecentMessage(chatListData);
+        setChatList(sortedList);
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+        toast.error("Failed to load chat list");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchUsersAndChats();
+    }
+  }, [currentUser]);
+
+  // Join Room and fetch messages
+  useEffect(() => {
+    if (activeConversation && socket) {
+      socket.emit("join_conversation", activeConversation.id);
+      ChatService.getMessages(activeConversation.id).then((fetchedMessages) => {
+        if (Array.isArray(fetchedMessages)) {
+          // Clear processed IDs when switching conversations
+          processedMessageIds.current.clear();
+          setMessages(fetchedMessages);
+        } else {
+          setMessages([]);
+        }
+      });
+      setShowMobileChat(true);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      setIsAttachMenuOpen(false);
+      setInput("");
+    }
+  }, [activeConversation, socket]);
+
+  // Listen for new messages and update chat list AND messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (message: Message) => {
+    
+
+      
+  isSendingRef.current = true;
+
+      // Mark as processed
+      processedMessageIds.current.add(message.id);
+
+      // Add the new message to the messages state with safety check
+      if (
+        activeConversation &&
+        message.conversationId === activeConversation.id
+      ) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          // Double-check if message already exists
+          const exists = messagesArray.some((m) => m.id === message.id);
+          if (exists) {
+           
+            return messagesArray;
+          }
+          return [...messagesArray, message];
+        });
+      }
+
+      // Update chat list with new message
+      setChatList((prevList) => {
+        const isIncoming = message.senderId !== currentUser?.id;
+        const relevantUserId = isIncoming
+          ? message.senderId
+          : activeConversation?.participants?.find(
+              (p) => p.user.id !== currentUser?.id,
+            )?.user.id;
+
+        if (!relevantUserId) return prevList;
+
+        let messagePreview = message.content || "";
+        if (!messagePreview && message.type === "IMAGE")
+          messagePreview = "📷 Image";
+        if (!messagePreview && message.type === "VIDEO")
+          messagePreview = "📹 Video";
+        if (!messagePreview && message.type === "LOCATION")
+          messagePreview = "📍 Location";
+        if (!messagePreview && message.type === "DOCUMENT")
+          messagePreview = "📄 File";
+
+        let updatedList = prevList.map((chat) => {
+          if (chat.user.id === relevantUserId) {
+            const isUnread =
+              isIncoming &&
+              (!activeConversation ||
+                activeConversation.id !== message.conversationId);
+
+            return {
+              ...chat,
+              lastMessage: messagePreview,
+              lastMessageTime: message.createdAt,
+              conversationId: message.conversationId,
+              unreadCount: isUnread ? chat.unreadCount + 1 : chat.unreadCount,
+            };
+          }
+          return chat;
+        });
+
+        return sortChatListByRecentMessage(updatedList);
+      });
+    };
+
+    // Listen for message sent confirmation - ONLY update chat list, not messages
+    const handleMessageSent = (message: Message) => {
+     
+
+      // Don't add the message again - it will be added by receive_message
+      // Just update the chat list
+      setChatList((prevList) => {
+        const recipientId = activeConversation?.participants?.find(
+          (p) => p.user.id !== currentUser?.id,
+        )?.user.id;
+
+        if (!recipientId) return prevList;
+
+        let messagePreview = message.content || "";
+        if (!messagePreview && message.type === "IMAGE")
+          messagePreview = "📷 Image";
+        if (!messagePreview && message.type === "VIDEO")
+          messagePreview = "📹 Video";
+        if (!messagePreview && message.type === "LOCATION")
+          messagePreview = "📍 Location";
+        if (!messagePreview && message.type === "DOCUMENT")
+          messagePreview = "📄 File";
+
+        let updatedList = prevList.map((chat) => {
+          if (chat.user.id === recipientId) {
+            return {
+              ...chat,
+              lastMessage: messagePreview,
+              lastMessageTime: message.createdAt,
+              conversationId: message.conversationId,
+            };
+          }
+          return chat;
+        });
+
+        return sortChatListByRecentMessage(updatedList);
+      });
+    };
+
+    const handleMessageEdited = (updatedMessage: Message) => {
+   
+      if (
+        activeConversation &&
+        updatedMessage.conversationId === activeConversation.id
+      ) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          return messagesArray.map((msg) =>
+            msg.id === updatedMessage.id ? updatedMessage : msg,
+          );
+        });
+      }
+    };
+
+    const handleMessageDeleted = (data: {
+      messageId: number;
+      conversationId: number;
+    }) => {
+     
+      if (activeConversation && data.conversationId === activeConversation.id) {
+        setMessages((prevMessages) => {
+          const messagesArray = Array.isArray(prevMessages) ? prevMessages : [];
+          return messagesArray.map((msg) =>
+            msg.id === data.messageId
+              ? { ...msg, isDeleted: true, content: null }
+              : msg,
+          );
+        });
+      }
+    };
+
+    socket.on("receive_message", handleNewMessage);
+    socket.on("message_sent", handleMessageSent);
+    socket.on("message_edited", handleMessageEdited);
+    socket.on("message_deleted", handleMessageDeleted);
+
+    return () => {
+      socket.off("receive_message", handleNewMessage);
+      socket.off("message_sent", handleMessageSent);
+      socket.off("message_edited", handleMessageEdited);
+      socket.off("message_deleted", handleMessageDeleted);
+    };
+  }, [socket, currentUser, activeConversation, setMessages]);
+
+  // Reset unread count when viewing a conversation
+  useEffect(() => {
+    if (activeConversation) {
+      setChatList((prevList) => {
+        const updatedList = prevList.map((chat) => {
+          if (chat.conversationId === activeConversation.id) {
+            return { ...chat, unreadCount: 0 };
+          }
+          return chat;
+        });
+        return updatedList;
+      });
+    }
+  }, [activeConversation]);
+
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -143,24 +443,9 @@ export const ChatInterface = () => {
     }
   }, [editingMessage]);
 
-  // Join Room
-  useEffect(() => {
-    if (activeConversation && socket) {
-      socket.emit("join_conversation", activeConversation.id);
-      ChatService.getMessages(activeConversation.id).then(setMessages);
-      setShowMobileChat(true);
-      // Clear states when changing chat
-      setReplyingTo(null);
-      setEditingMessage(null);
-      setIsAttachMenuOpen(false);
-      setInput("");
-    }
-  }, [activeConversation, socket]);
-
   // Close menus on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Logic could be more specific, but for now simple closing works
       const target = e.target as HTMLElement;
       if (!target.closest(".message-menu-trigger")) {
         setActiveMenuId(null);
@@ -177,16 +462,27 @@ export const ChatInterface = () => {
   }, []);
 
   // --- Handlers ---
-  const handleGoBack = () => {
-    navigate(-1); // -1 means: Go back 1 step in history
-  };
 
   const handleUserClick = async (receiverId: number) => {
     try {
       const conversation = await ChatService.startChat(receiverId);
       setActiveConversation(conversation);
+      // Reset messages and processed IDs when switching conversations
+      processedMessageIds.current.clear();
+      setMessages([]);
+
+      setChatList((prevList) => {
+        const updatedList = prevList.map((chat) => {
+          if (chat.user.id === receiverId) {
+            return { ...chat, conversationId: conversation.id, unreadCount: 0 };
+          }
+          return chat;
+        });
+        return updatedList;
+      });
     } catch (error) {
       console.error("Failed to start chat", error);
+      toast.error("Failed to start conversation");
     }
   };
 
@@ -229,7 +525,6 @@ export const ChatInterface = () => {
     const file = e.target.files?.[0];
     if (!file || !activeConversation || !currentUser || !socket) return;
 
-    // Frontend validation: 100MB
     if (file.size > 100 * 1024 * 1024) {
       toast.error("File size exceeds 100MB");
       return;
@@ -244,11 +539,8 @@ export const ChatInterface = () => {
       }
 
       const { fileUrl, type } = await ChatService.uploadFile(file);
-
-      // Dismiss loading toast
       toast.dismiss("videoUpload");
 
-      // Determine proper message type based on MIME
       let msgType = "DOCUMENT";
       if (type.startsWith("image/")) msgType = "IMAGE";
       if (type.startsWith("video/")) msgType = "VIDEO";
@@ -310,8 +602,38 @@ export const ChatInterface = () => {
     );
   };
 
-  // --- Renderers ---
+  // Helper function to format last message time
+  const formatLastMessageTime = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
+    if (diffDays === 0) {
+      return format(date, "h:mm a");
+    } else if (diffDays === 1) {
+      return "Yesterday";
+    } else if (diffDays < 7) {
+      return format(date, "EEEE");
+    } else {
+      return format(date, "MMM d");
+    }
+  };
+
+  // Helper to safely get messages array and remove duplicates
+  const getSafeMessages = (msgs: any): Message[] => {
+    const messagesArray = Array.isArray(msgs) ? msgs : [];
+    // Remove duplicates by ID
+    const uniqueMessages = messagesArray.filter(
+      (message, index, self) =>
+        index === self.findIndex((m) => m.id === message.id),
+    );
+    return uniqueMessages;
+  };
+
+  // --- Renderers ---
   const renderAttachment = (msg: Message) => {
     const fullUrl = getFullUrl(msg.fileUrl);
 
@@ -341,26 +663,24 @@ export const ChatInterface = () => {
       return (
         <div className="overflow-hidden rounded-lg border border-white/20 bg-black/20">
           <div className="flex items-center gap-2 text-white/90 font-medium">
-            {/* <MapPin className="w-5 h-5 text-red-500" /> */}
             <img
-              // src={mapUrl}
               src={`https://static-maps.yandex.ru/1.x/?ll=${lng},${lat}&size=450,250&z=15&l=map&pt=${lng},${lat},pm2rdm`}
               alt="Location Preview"
               className="w-full h-40 object-cover rounded-tl rounded-tr"
-            />{" "}
+            />
           </div>
           <div className="p-2 flex flex-col items-center">
             <a href={mapUrl} target="_blank" rel="noopener noreferrer">
               <button className="mx-auto overflow-hidden relative w-32 h-8 bg-lantern-blue-600 text-white border-none rounded-md text-sm font-bold cursor-pointer z-10 group">
                 <span className="flex items-center justify-center gap-1">
-                  <MapPinned className="w-5 h-5" /> Open map
+                  <MapPinned className="h-5 w-5" /> Open map
                 </span>
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-white rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-500 duration-1000 origin-left" />
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-blue-400 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-700 duration-700 origin-left" />
                 <span className="absolute w-36 h-32 -top-8 -left-2 bg-lantern-blue-600 rotate-12 transform scale-x-0 group-hover:scale-x-100 transition-transform group-hover:duration-1000 duration-500 origin-left" />
                 <span className="group-hover:opacity-100 group-hover:duration-1000 duration-100 opacity-0 absolute top-1.5 left-6 z-10">
                   <span className="flex items-center justify-center gap-1">
-                    <Telescope className="w-5 h-5" /> Explore!
+                    <Telescope className="h-5 w-5" /> Explore!
                   </span>
                 </span>
               </button>
@@ -369,7 +689,6 @@ export const ChatInterface = () => {
         </div>
       );
     }
-    // Docs
     return (
       <div className="flex items-center gap-3 rounded-lg bg-black/20 p-3 mb-2 border border-white/10 hover:bg-black/30 transition-colors">
         <div className="p-2 bg-white/10 rounded-full">
@@ -399,17 +718,17 @@ export const ChatInterface = () => {
       className="relative flex h-screen w-full items-center justify-center bg-cover bg-center overflow-hidden font-sans"
       style={{ backgroundImage: `url(${BG_IMAGE})` }}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black" />
 
       <div className="relative z-10 flex h-full w-full max-w-[1600px] overflow-hidden bg-white/10 shadow-2xl backdrop-blur-xl border-white/20 md:h-[96vh] md:w-[98%] md:rounded-3xl md:border">
         {/* Sidebar */}
         <div
-          className={`absolute inset-y-0 left-0 z-20 w-full flex-col border-r border-white/20 bg-white/20 backdrop-blur-lg transition-transform duration-300 md:relative md:w-80 md:translate-x-0 ${
+          className={`absolute inset-y-0 left-0 z-20 w-full flex-col border-r border-white/20 bg-white/10 backdrop-blur-lg transition-transform duration-300 md:relative md:w-80 md:translate-x-0 ${
             showMobileChat ? "-translate-x-full" : "translate-x-0"
           } flex`}
         >
-          <div className="flex h-20 items-center justify-between px-6 border-b border-white/10">
-            <div className="flex items-center gap-1">
+          <div className="flex h-20 items-center justify-between px-6 border-b border-white/10 bg-lantern-blue-600">
+            <div className="flex items-center gap-1 ">
               <button
                 onClick={handleGoBack}
                 className="mr-1 rounded-full p-1 text-white/80 hover:bg-white/20"
@@ -421,22 +740,13 @@ export const ChatInterface = () => {
               </h2>
             </div>
 
-            <div className="flex items-center gap-1">
-              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-blue-400 to-lantern-blue-600 p-0.5">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${currentUser?.full_name?.substring(0, 2).toUpperCase()}&background=random`}
-                  alt="Me"
-                  className="h-full w-full rounded-full border-2 border-white/50"
-                />
-              </div>
-              {!!activeConversation && (
-                <button
-                  onClick={() => setShowMobileChat(true)}
-                  className="mr-1 rounded-full p-2 text-white/80 hover:bg-white/20 md:hidden"
-                >
-                  <ArrowRight className="h-6 w-6" />
-                </button>
-              )}
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
+              style={{
+                backgroundColor: getAvatarColor(currentUser?.firstName || "U"),
+              }}
+            >
+              {currentUser?.firstName?.substring(0, 2).toUpperCase() || "U"}
             </div>
           </div>
 
@@ -454,43 +764,92 @@ export const ChatInterface = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-            {usersLoading ? (
+            {loading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-white/50" />
               </div>
+            ) : filteredChatList.length === 0 ? (
+              <div className="text-center py-10 text-white/50">
+                No users found
+              </div>
             ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  onClick={() => handleUserClick(user.id)}
-                  className={`group flex cursor-pointer items-center gap-4 rounded-2xl p-3 transition-all duration-200 hover:bg-white/20 ${
-                    activeConversation?.participants.some(
-                      (p) => p.user.id === user.id,
-                    )
-                      ? "bg-white/25 shadow-lg ring-1 ring-white/20"
-                      : "hover:shadow-md"
-                  }`}
-                >
-                  <div className="relative">
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${user?.firstName}&background=random`}
-                      alt="avatar"
-                      className="h-12 w-12 rounded-full object-cover border-2 border-white/30 shadow-sm"
-                    />
-                    {/* <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-white/20"></span> */}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <div className="flex justify-between items-baseline">
-                      <h3 className="truncate text-base font-semibold text-white drop-shadow-sm group-hover:text-white">
-                        {user.firstName} {user.lastName}
-                      </h3>
+              filteredChatList.map((chat) => {
+                const isActive = activeConversation?.participants?.some(
+                  (p) => p.user.id === chat.user.id,
+                );
+
+                return (
+                  <div
+                    key={chat.user.id}
+                    onClick={() => handleUserClick(chat.user.id)}
+                    className={`group flex cursor-pointer items-center gap-3 rounded-2xl p-3 transition-all duration-200 hover:bg-white/20 ${
+                      isActive
+                        ? "bg-white/25 shadow-lg ring-1 ring-white/20"
+                        : "hover:shadow-md"
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-md shadow-sm border-2 border-white/30"
+                        style={{
+                          backgroundColor: getAvatarColor(
+                            chat.user.firstName || "U",
+                          ),
+                        }}
+                      >
+                        {chat.user.firstName?.substring(0, 2).toUpperCase() ||
+                          chat.user.username?.substring(0, 2).toUpperCase() ||
+                          "U"}
+                      </div>
+                      {chat.unreadCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center animate-pulse shadow-lg">
+                          {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                        </div>
+                      )}
                     </div>
-                    <p className="truncate text-sm text-white/60 group-hover:text-white/80">
-                      {user.email}
-                    </p>
+
+                    <div className="flex-1 overflow-hidden min-w-0">
+                      <div className="flex justify-between items-baseline gap-2">
+                        <h3
+                          className={`truncate text-base font-semibold drop-shadow-sm ${
+                            chat.unreadCount > 0
+                              ? "text-white font-bold"
+                              : "text-white/90"
+                          }`}
+                        >
+                          {chat.user.firstName} {chat.user.lastName}
+                        </h3>
+                        {chat.lastMessageTime && (
+                          <span
+                            className={`text-xs flex-shrink-0 ${
+                              chat.unreadCount > 0
+                                ? "text-white font-semibold"
+                                : "text-white/50"
+                            }`}
+                          >
+                            {formatLastMessageTime(chat.lastMessageTime)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center gap-2">
+                        <p
+                          className={`truncate text-sm ${
+                            chat.unreadCount > 0
+                              ? "text-white font-medium"
+                              : "text-white/60"
+                          }`}
+                        >
+                          {chat.lastMessage || "Click to start conversation"}
+                        </p>
+                        {chat.unreadCount > 0 && (
+                          <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -504,7 +863,7 @@ export const ChatInterface = () => {
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="flex h-20 items-center justify-between border-b border-white/10 bg-white/10 px-4 shadow-sm backdrop-blur-md md:px-8">
+              <div className="flex h-20 items-center justify-between border-b border-white/10 bg-lantern-blue-600 px-4 shadow-sm backdrop-blur-md md:px-8">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setShowMobileChat(false)}
@@ -528,10 +887,6 @@ export const ChatInterface = () => {
                           )?.user.firstName || "Chat"
                         : activeConversation.name}
                     </h3>
-                    {/* <span className="text-xs font-medium text-white/70 flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>{" "}
-                      Online
-                    </span> */}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-white/70">
@@ -549,164 +904,194 @@ export const ChatInterface = () => {
 
               {/* Messages Container */}
               <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar">
-                {messages.map((msg) => {
-                  const isMe = msg.senderId === currentUser?.id;
-                  const isDeleted = msg.isDeleted;
+                <div
+                  className="absolute inset-0 opacity-20 pointer-events-none"
+                  style={{
+                    backgroundImage: `url(${BG_IMAGE})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundAttachment: "local",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+                {getSafeMessages(messages).length > 0 ? (
+                  getSafeMessages(messages).map((msg) => {
+                    const isMe = msg.senderId === currentUser?.id;
+                    const isDeleted = msg.isDeleted;
+                    const isMenuOpen = activeMenuId === msg.id;
 
-                  // ✅ Check if this message has the active menu open
-                  const isMenuOpen = activeMenuId === msg.id;
-
-                  return (
-                    <div
-                      key={msg.id}
-                      // ✅ BUG FIX: Add 'z-50' if menu is open, otherwise let it be auto (or lower)
-                      // This brings the ENTIRE message container to the top of the stack
-                      className={`relative flex flex-col ${
-                        isMe ? "items-end" : "items-start"
-                      } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
-                    >
-                      {/* Message Bubble */}
+                    return (
                       <div
-                        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 shadow-lg backdrop-blur-md group ${
-                          !isMe
-                            ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
-                            : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
-                        }`}
+                        key={`msg-${msg.id}`}
+                        className={`relative flex flex-col ${
+                          isMe ? "items-end" : "items-start"
+                        } ${isMenuOpen ? "z-50" : "z-auto"} animate-in fade-in slide-in-from-bottom-2`}
                       >
-                        <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
-                          {msg.sender.firstName}
-                          {isMe && " (You)"}
-                        </p>
-                        {/* Reply Context */}
-                        {!isDeleted && msg.replyTo && (
-                          <div
-                            className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
-                              !isMe
-                                ? "border-white/50 bg-black/10"
-                                : "border-lantern-blue-600 bg-white/5"
-                            }`}
-                          >
-                            <span className="font-bold text-grey-600">
-                              {msg.replyTo?.sender?.firstName ||
-                                getMessageById(msg.replyToId!)?.sender
-                                  ?.username ||
-                                "User"}
-                              {msg.replyTo.senderId === currentUser?.id &&
-                                " (You)"}
-                            </span>
-                            <p className="truncate">
-                              {msg.replyTo.content || "Attachment"}
-                            </p>
-                          </div>
-                        )}
-                        {/* Attachments */}
-                        {!isDeleted &&
-                          msg.type !== "TEXT" &&
-                          renderAttachment(msg)}
-                        {/* Text Content */}
-                        {!isDeleted && msg.content && msg.type === "TEXT" && (
-                          <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                        )}
-                        {msg.isDeleted && (
-                          <p className="italic text-md opacity-60 flex items-center gap-2">
-                            <Ban className="h-5 w-5" />{" "}
-                            {isMe
-                              ? "You deleted this message"
-                              : "This message was deleted"}
-                          </p>
-                        )}
                         <div
-                          className={`mt-1 flex items-center justify-end gap-1 text-xs ${
-                            !isMe ? "text-white/80" : "text-gray-100"
+                          className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-3 pt-3 pb-2 group ${
+                            !isMe
+                              ? "bg-linear-to-br from-lantern-blue-600/50 to-blue-400/50 text-white rounded-tl-none border border-white/20"
+                              : "bg-linear-to-br from-black/20 to-white/20 text-white rounded-br-none border border-white/10"
                           }`}
                         >
-                          <span>
-                            {format(new Date(msg.createdAt), "h:mm a")}
-                          </span>
-                          {msg.isEdited && <span>(edited)</span>}
-                          {isMe && <CheckCheck className="h-4 w-4" />}
-                        </div>
-                        {/* Dropdown Menu (Only for valid messages) */}
-                        {!isDeleted && (
-                          <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(
-                                  activeMenuId === msg.id ? null : msg.id,
-                                );
-                              }}
-                              className="p-1 rounded-full hover:bg-black/50 text-white/90"
-                            >
-                              <ChevronDown className="h-6 w-6" />
-                            </button>
+                          <p className="text-xs md:text-sm text-gray-100 font-bold mb-2 pr-7 opacity-80">
+                            {msg.sender?.firstName ||
+                              msg.sender?.username ||
+                              "User"}
+                            {isMe && " (You)"}
+                          </p>
 
-                            {/* Popup Menu */}
-                            {isMenuOpen && (
-                              <div
-                                // ✅ Ensure dropdown itself has a high z-index (though parent z-index does most of the work)
-                                className={`absolute top-9 ${
-                                  isMe ? "right-0" : "left-0"
-                                } z-100 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-32 animate-in zoom-in-95 origin-top-right`}
-                              >
-                                <button
-                                  onClick={() => {
-                                    setReplyingTo(msg);
-                                    setActiveMenuId(null);
-                                    textInputRef.current?.focus();
-                                  }}
-                                  className="w-full text-left px-4 py-2 hover:bg-indigo-50/40 rounded-md flex items-center gap-2"
-                                >
-                                  <CornerUpLeft className="h-3.5 w-3.5" /> Reply
-                                </button>
-                                {isMe && (
-                                  <>
-                                    {msg.type !== "LOCATION" && (
-                                      <button
-                                        onClick={() => {
-                                          setEditingMessage(msg);
-                                          setActiveMenuId(null);
-                                          textInputRef.current?.focus();
-                                        }}
-                                        className="w-full text-left px-4 py-2 hover:bg-indigo-200/40 rounded-md flex items-center gap-2"
-                                      >
-                                        <Edit2 className="h-3.5 w-3.5" /> Edit
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                        handleDeleteMessage(msg.id);
-                                        setActiveMenuId(null);
-                                      }}
-                                      className="w-full text-left px-4 py-2 hover:bg-red-50/50 rounded-md text-red-600 flex items-center gap-2"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" /> Delete
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                          {/* Reply Preview */}
+                          {!isDeleted && msg.replyTo && (
+                            <div
+                              className={`relative mb-2 rounded-lg border-l-4 p-2 text-xs opacity-80 ${
+                                !isMe
+                                  ? "border-white/50 bg-black/10"
+                                  : "border-lantern-blue-600 bg-white/5"
+                              }`}
+                            >
+                              <span className="font-bold text-grey-600">
+                                {msg.replyTo?.sender?.firstName ||
+                                  msg.replyTo?.sender?.username ||
+                                  getMessageById(msg.replyToId!)?.sender
+                                    ?.firstName ||
+                                  getMessageById(msg.replyToId!)?.sender
+                                    ?.username ||
+                                  "User"}
+                                {msg.replyTo?.senderId === currentUser?.id &&
+                                  " (You)"}
+                              </span>
+                              <p className="truncate">
+                                {msg.replyTo.content ||
+                                  msg.replyTo.type ||
+                                  "Attachment"}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Attachment Renderer */}
+                          {!isDeleted &&
+                            msg.type !== "TEXT" &&
+                            renderAttachment(msg)}
+
+                          {/* Text Message */}
+                          {!isDeleted && msg.content && msg.type === "TEXT" && (
+                            <p className="text-[15px] leading-relaxed tracking-wide whitespace-pre-wrap break-words">
+                              {msg.content}
+                            </p>
+                          )}
+
+                          {/* Deleted Message */}
+                          {msg.isDeleted && (
+                            <p className="italic text-md opacity-60 flex items-center gap-2">
+                              <Ban className="h-5 w-5" />{" "}
+                              {isMe
+                                ? "You deleted this message"
+                                : "This message was deleted"}
+                            </p>
+                          )}
+
+                          {/* Timestamp and Status */}
+                          <div
+                            className={`mt-1 flex items-center justify-end gap-1 text-xs ${
+                              !isMe ? "text-white/80" : "text-gray-100"
+                            }`}
+                          >
+                            <span>
+                              {msg.createdAt
+                                ? format(new Date(msg.createdAt), "h:mm a")
+                                : "Just now"}
+                            </span>
+                            {msg.isEdited && <span>(edited)</span>}
+                            {isMe && !msg.isDeleted && (
+                              <CheckCheck className="h-4 w-4" />
                             )}
                           </div>
-                        )}
+
+                          {/* Message Menu */}
+                          {!isDeleted && (
+                            <div className="absolute top-1 right-1 md:opacity-0 group-hover:opacity-100 transition-opacity message-menu-trigger">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(
+                                    activeMenuId === msg.id ? null : msg.id,
+                                  );
+                                }}
+                                className="p-1 rounded-full hover:bg-black/50 text-white/90 transition-colors"
+                              >
+                                <ChevronDown className="h-5 w-5" />
+                              </button>
+
+                              {isMenuOpen && (
+                                <div
+                                  className={`absolute top-8 ${
+                                    isMe ? "right-0" : "left-0"
+                                  } z-[100] bg-black/90 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-1 w-36 animate-in zoom-in-95 origin-top-right`}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(msg);
+                                      setActiveMenuId(null);
+                                      textInputRef.current?.focus();
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md flex items-center gap-2 text-sm text-white/90 transition-colors"
+                                  >
+                                    <CornerUpLeft className="h-3.5 w-3.5" />{" "}
+                                    Reply
+                                  </button>
+
+                                  {isMe && (
+                                    <>
+                                      {msg.type !== "LOCATION" && (
+                                        <button
+                                          onClick={() => {
+                                            setEditingMessage(msg);
+                                            setActiveMenuId(null);
+                                            textInputRef.current?.focus();
+                                          }}
+                                          className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md flex items-center gap-2 text-sm text-white/90 transition-colors"
+                                        >
+                                          <Edit2 className="h-3.5 w-3.5" /> Edit
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          handleDeleteMessage(msg.id);
+                                          setActiveMenuId(null);
+                                        }}
+                                        className="w-full text-left px-3 py-2 hover:bg-red-500/20 rounded-md flex items-center gap-2 text-sm text-red-400 transition-colors"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />{" "}
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="flex justify-center items-center h-full text-white/50">
+                    No messages yet. Start a conversation!
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
+              {/* Input Area - Keep as is */}
               <div className="bg-white/10 p-4 md:px-8 md:py-5 backdrop-blur-md border-t border-white/10 relative">
-                {/* Reply/Edit Preview Banner */}
                 {(replyingTo || editingMessage) && (
                   <div className="absolute bottom-full left-0 right-0 mx-4 md:mx-8 mb-2 p-3 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-between text-white animate-in slide-in-from-bottom-2">
                     <div className="flex flex-col text-sm border-l-4 border-blue-300 pl-3">
                       <span className="font-bold text-blue-300 mb-0.5">
                         {editingMessage
                           ? "Editing Message"
-                          : `Replying to ${replyingTo?.sender.username}`}
+                          : `Replying to ${replyingTo?.sender?.username || "User"}`}
                       </span>
                       <span className="truncate max-w-md opacity-80 text-xs">
                         {editingMessage
@@ -734,7 +1119,6 @@ export const ChatInterface = () => {
                       : "ring-white/10"
                   }`}
                 >
-                  {/* --- ATTACHMENT MENU BUTTON --- */}
                   <div className="relative attachment-menu-trigger">
                     <button
                       onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
@@ -746,11 +1130,8 @@ export const ChatInterface = () => {
                     >
                       <BadgePlus className="h-6 w-6" />
                     </button>
-
-                    {/* Popup Attachment Menu */}
                     {isAttachMenuOpen && (
                       <div className="attachment-menu absolute bottom-14 left-0 w-48 p-2 rounded-2xl bg-[#1c1c1c]/50 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col gap-1 animate-in slide-in-from-bottom-2 fade-in zoom-in-95 origin-bottom-left z-50">
-                        {/* Option 1: Location */}
                         <button
                           onClick={() => {
                             handleSendLocation();
@@ -770,8 +1151,6 @@ export const ChatInterface = () => {
                             </span>
                           </div>
                         </button>
-
-                        {/* Option 2: Photos & Videos */}
                         <button
                           onClick={() => {
                             mediaInputRef.current?.click();
@@ -789,8 +1168,6 @@ export const ChatInterface = () => {
                             </span>
                           </div>
                         </button>
-
-                        {/* Option 3: Document */}
                         <button
                           onClick={() => {
                             docInputRef.current?.click();
@@ -814,7 +1191,6 @@ export const ChatInterface = () => {
                     )}
                   </div>
 
-                  {/* Hidden Inputs for File Selection */}
                   <input
                     type="file"
                     ref={mediaInputRef}
@@ -826,11 +1202,9 @@ export const ChatInterface = () => {
                     type="file"
                     ref={docInputRef}
                     className="hidden"
-                    // No accept means all files allowed (Documents/Zips etc)
                     onChange={handleFileUpload}
                   />
 
-                  {/* Text Input */}
                   <input
                     type="text"
                     className="flex-1 bg-transparent px-2 py-2 text-white placeholder-white/40 focus:outline-none text-sm md:text-base"
@@ -845,7 +1219,6 @@ export const ChatInterface = () => {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
 
-                  {/* Send/Loading/Location Loading */}
                   {isUploading || isSendingLocation ? (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                       <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -876,7 +1249,7 @@ export const ChatInterface = () => {
                 <ImageIcon className="h-10 w-10 text-white/80" />
               </div>
               <h3 className="mb-2 text-2xl font-bold text-white drop-shadow-md">
-                Welcome to Glass Chat
+                Welcome to Lantern Chat
               </h3>
               <p className="max-w-xs text-white/60">
                 Select a conversation from the sidebar to start messaging.

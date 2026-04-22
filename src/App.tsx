@@ -44,6 +44,7 @@ import LeavesPage from "./HRMS/LeavesPage";
 import LeaveApplicationPage from "./HRMS/NewLeaveApplication";
 import LeaveStatus from "./HRMS/GetSelfLeaves";
 import LeaveBalancePage from "./HRMS/EmployeeLeaveBalance";
+import ChatToggle from "./context/ChatToggle";
 
 export default function App() {
   return (
@@ -152,7 +153,7 @@ export default function App() {
         {/* Fallback Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {/* <ChatToggle /> */}
+      <ChatToggle />
       <Toaster
         position="bottom-right"
         reverseOrder={false}

@@ -87,12 +87,12 @@ const AppSidebar: React.FC = () => {
       path: "/home",
       role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
     },
-    {
-      icon: <ChatIcon className="text-lantern-blue-600" />,
-      name: t("menu.chat"),
-      path: "/chat",
-      role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
-    },
+    // {
+    //   icon: <ChatIcon className="text-lantern-blue-600" />,
+    //   name: t("menu.chat"),
+    //   path: "/chat",
+    //   role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
+    // },
 
     {
       icon: <UserCircleIcon className="text-lantern-blue-600" />,

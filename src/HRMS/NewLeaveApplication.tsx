@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import API from "../api/axios";
+import toast from "react-hot-toast";
 
 // Define types
 type HalfDayShift = "FIRST_HALF" | "SECOND_HALF";
@@ -423,6 +424,7 @@ const LeaveApplicationPage: React.FC = () => {
   };
 
   // Handle form submission using the API instance
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -437,13 +439,20 @@ const LeaveApplicationPage: React.FC = () => {
       requestedDays > remainingBalance &&
       formData.leaveType !== "Leave Without Pay"
     ) {
-      setError(
-        `Cannot submit: You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`,
-      );
+      const errorMsg = `Cannot submit: You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
+      setError(errorMsg);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: "bottom-right",
+      });
       return;
     }
 
     if (!validateForm()) {
+      toast.error("Please fill in all required fields correctly", {
+        duration: 5000,
+        position: "bottom-right",
+      });
       return;
     }
 
@@ -482,9 +491,15 @@ const LeaveApplicationPage: React.FC = () => {
       const responseData = response.data;
 
       if (responseData.success) {
-        setSuccess(
-          `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || responseData.data?.leave_application || "N/A"}`,
-        );
+        const successMsg = `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || responseData.data?.leave_application || "N/A"}`;
+        setSuccess(successMsg);
+
+        // Success toast
+        toast.success(successMsg, {
+          duration: 5000,
+          position: "bottom-right",
+          icon: "✅",
+        });
 
         await fetchLeaveBalances(employee_code);
         handleReset();
@@ -496,17 +511,28 @@ const LeaveApplicationPage: React.FC = () => {
     } catch (err: any) {
       console.error("Error submitting leave application:", err);
 
+      let errorMessage = "";
+
       if (err.response) {
-        const errorMessage =
+        errorMessage =
           err.response.data?.message ||
           err.response.data?.error ||
           "Failed to submit leave application";
         setError(errorMessage);
       } else if (err.request) {
-        setError("Network error. Please check your connection.");
+        errorMessage = "Network error. Please check your connection.";
+        setError(errorMessage);
       } else {
-        setError(err.message || "An error occurred");
+        errorMessage = err.message || "An error occurred";
+        setError(errorMessage);
       }
+
+      // Error toast
+      toast.error(`Failed to submit leave: ${errorMessage}`, {
+        duration: 5000,
+        position: "bottom-right",
+        icon: "❌",
+      });
     } finally {
       setIsSubmitting(false);
     }

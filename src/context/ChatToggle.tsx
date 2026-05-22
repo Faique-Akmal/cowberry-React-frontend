@@ -7,10 +7,16 @@ const ChatToggle = () => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Check if current path is /chat or starts with /chat/
-    const isChatPage =
-      location.pathname === "/chat" || location.pathname.startsWith("/chat/");
-    setIsVisible(!isChatPage);
+    // Check if current path is /chat, /login, /signup, or starts with these paths
+    const isHiddenPage =
+      location.pathname === "/chat" ||
+      location.pathname.startsWith("/chat/") ||
+      location.pathname === "/login" ||
+      location.pathname === "/" ||
+      location.pathname === "/signin" ||
+      location.pathname === "/signup";
+
+    setIsVisible(!isHiddenPage);
   }, [location]);
 
   return (

@@ -267,18 +267,9 @@ const LeaveManagementReportee: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<string>("Open");
-  const [fromDate, setFromDate] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(1);
-    return d.toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState<string>(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(0);
-    return d.toISOString().split("T")[0];
-  });
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
   // Pagination helpers

@@ -133,7 +133,12 @@ const AppSidebar: React.FC = () => {
         {
           name: t("All Leaves"),
           path: "/get-leaves",
-          role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+          role: ["admin", "hr"],
+        },
+        {
+          name: t("All Leaves"),
+          path: "/leave-management-reportee",
+          role: ["manager", "zonalmanager", "headofdepartment"],
         },
         {
           name: t("Self Leaves"),
@@ -170,6 +175,12 @@ const AppSidebar: React.FC = () => {
   ];
 
   useEffect(() => {
+    // Collapse submenu when sidebar is closed/collapsed
+    if (!isExpanded && !isMobileOpen) {
+      setOpenSubmenu(null);
+      return;
+    }
+
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : othersItems;
@@ -184,7 +195,7 @@ const AppSidebar: React.FC = () => {
     });
 
     if (!submenuMatched) setOpenSubmenu(null);
-  }, [location, isActive]);
+  }, [location, isActive, isExpanded, isMobileOpen]);
 
   useEffect(() => {
     if (openSubmenu !== null) {

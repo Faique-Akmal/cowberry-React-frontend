@@ -257,23 +257,15 @@ const LeaveApplicationPage: React.FC = () => {
     }
 
     if (name === "leaveType") {
-      const isNowHalfDay = value === "Half Day";
-      setIsHalfDay(isNowHalfDay);
-
-      if (isNowHalfDay) {
-        setFormData((prev) => ({
-          ...prev,
-          endDate: prev.startDate,
-          halfDayShift: undefined,
-          halfDay: true,
-          halfDayDate: prev.startDate || null,
-        }));
-      } else {
+      // Reset half-day state when leave type changes
+      if (isHalfDay) {
+        setIsHalfDay(false);
         setFormData((prev) => ({
           ...prev,
           halfDayShift: undefined,
           halfDay: false,
           halfDayDate: null,
+          endDate: prev.startDate ? prev.startDate : null,
         }));
       }
 
@@ -281,6 +273,37 @@ const LeaveApplicationPage: React.FC = () => {
       setValidationErrors((prev) => ({
         ...prev,
         leaveType: "",
+      }));
+    }
+  };
+
+  // Handle half-day checkbox change
+  const handleHalfDayCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const isChecked = e.target.checked;
+    setIsHalfDay(isChecked);
+
+    setFormData((prev) => ({
+      ...prev,
+      halfDay: isChecked,
+      ...(isChecked
+        ? {
+            endDate: prev.startDate,
+            halfDayDate: prev.startDate || null,
+          }
+        : {
+            halfDayShift: undefined,
+            halfDayDate: null,
+            endDate: null,
+          }),
+    }));
+
+    // Clear half day related validation errors
+    if (validationErrors.halfDayShift) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        halfDayShift: "",
       }));
     }
   };
@@ -424,7 +447,6 @@ const LeaveApplicationPage: React.FC = () => {
   };
 
   // Handle form submission using the API instance
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -478,9 +500,9 @@ const LeaveApplicationPage: React.FC = () => {
           : formatDate(formData.endDate),
         reason: formData.reason,
         totalDays: requestedDays,
+        halfDay: isHalfDay, // Add the halfDay flag for all leave types
         ...(isHalfDay &&
           formData.halfDayShift && {
-            halfDay: true,
             halfDayShift: formData.halfDayShift,
             halfDayDate: formatDate(formData.startDate),
           }),
@@ -716,6 +738,24 @@ const LeaveApplicationPage: React.FC = () => {
                   {validationErrors.leaveType}
                 </p>
               )}
+            </div>
+
+            {/* Half Day Checkbox */}
+            <div className="mb-6">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isHalfDay}
+                  onChange={handleHalfDayCheckboxChange}
+                  className="w-4 h-4 text-lantern-blue-600 border-gray-300 rounded focus:ring-lantern-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Apply for Half Day Leave
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500">
+                Check this box if you want to apply for half day leave (0.5 day)
+              </p>
             </div>
 
             {/* Date Selection with DatePicker */}

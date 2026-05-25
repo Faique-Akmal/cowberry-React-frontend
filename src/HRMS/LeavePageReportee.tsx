@@ -4,7 +4,6 @@ import {
   ChevronDown,
   CheckCircle,
   XCircle,
-  Edit2,
   Filter,
   RefreshCw,
   ChevronLeft,
@@ -37,7 +36,7 @@ interface ApiResponse {
     success: boolean;
     total: number;
     leaves: LeaveRecord[];
-    caller_employee_code?: string;
+    manager_employee_code?: string;
   };
 }
 
@@ -45,17 +44,6 @@ interface ApprovePayload {
   approver_employee_code: string;
   lantern360_leave_id: string;
   remarks: string;
-}
-
-interface ModifyPayload {
-  caller_employee_code: string;
-  lantern360_leave_id: string;
-  leave_type: string;
-  from_date: string;
-  to_date: string;
-  half_day: boolean;
-  half_day_date: string | null;
-  reason: string;
 }
 
 // ─── Custom Date Picker ───────────────────────────────────────────────────────
@@ -257,9 +245,9 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const LeaveManagement: React.FC = () => {
+const LeaveManagementReportee: React.FC = () => {
   // Read once from localStorage on mount — stable refs
-  const callerEmployeeCode = useRef(
+  const managerEmployeeCode = useRef(
     localStorage.getItem("employee_code") ?? "",
   ).current;
   const apiBaseUrl = useRef(
@@ -271,9 +259,7 @@ const LeaveManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [modalMode, setModalMode] = useState<"approve" | "reject" | "modify">(
-    "approve",
-  );
+  const [modalMode, setModalMode] = useState<"approve" | "reject">("approve");
   const [remarks, setRemarks] = useState<string>("");
 
   // Pagination
@@ -293,17 +279,7 @@ const LeaveManagement: React.FC = () => {
     d.setDate(0);
     return d.toISOString().split("T")[0];
   });
-  const [employeeCodeFilter, setEmployeeCodeFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState<boolean>(false);
-
-  const [modifyForm, setModifyForm] = useState({
-    leave_type: "",
-    from_date: "",
-    to_date: "",
-    half_day: false,
-    half_day_date: "",
-    reason: "",
-  });
 
   // Pagination helpers
   const totalItems = leaves.length;
@@ -313,7 +289,7 @@ const LeaveManagement: React.FC = () => {
     currentPage * itemsPerPage,
   );
 
-  // ── Fetch (HR API only) ────────────────────────────────────────────────────
+  // ── Fetch (Reportee API) ───────────────────────────────────────────────────
 
   const fetchLeaves = useCallback(async () => {
     setLoading(true);
@@ -321,17 +297,16 @@ const LeaveManagement: React.FC = () => {
 
     try {
       const params = new URLSearchParams({
-        caller_employee_code: callerEmployeeCode,
+        manager_employee_code: managerEmployeeCode, // ← reportee param
         from_date: fromDate,
         to_date: toDate,
+        include_indirect: "false",
         limit: "1000",
       });
 
       if (statusFilter !== "All") params.append("status", statusFilter);
-      if (employeeCodeFilter)
-        params.append("employee_code", employeeCodeFilter);
 
-      const url = `${apiBaseUrl}/leaves/erp-hr-leaves?${params.toString()}`;
+      const url = `${apiBaseUrl}/leaves/erp-reportee-leaves?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -358,22 +333,15 @@ const LeaveManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [
-    statusFilter,
-    fromDate,
-    toDate,
-    employeeCodeFilter,
-    callerEmployeeCode,
-    apiBaseUrl,
-  ]);
+  }, [statusFilter, fromDate, toDate, managerEmployeeCode, apiBaseUrl]);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Actions (approve / reject only — no modify for reportee) ──────────────
 
   const handleApproveReject = async (action: "approve" | "reject") => {
     if (!selectedLeave) return;
     try {
       const payload: ApprovePayload = {
-        approver_employee_code: callerEmployeeCode,
+        approver_employee_code: managerEmployeeCode,
         lantern360_leave_id: selectedLeave.lantern360_leave_id,
         remarks: remarks || (action === "approve" ? "Approved" : "Rejected"),
       };
@@ -394,53 +362,10 @@ const LeaveManagement: React.FC = () => {
     }
   };
 
-  const handleModifyLeave = async () => {
-    if (!selectedLeave) return;
-    try {
-      const payload: ModifyPayload = {
-        caller_employee_code: callerEmployeeCode,
-        lantern360_leave_id: selectedLeave.lantern360_leave_id,
-        leave_type: modifyForm.leave_type,
-        from_date: modifyForm.from_date,
-        to_date: modifyForm.to_date,
-        half_day: modifyForm.half_day,
-        half_day_date: modifyForm.half_day_date || null,
-        reason: modifyForm.reason,
-      };
-      const response = await fetch(`${apiBaseUrl}/leaves/erp-modify-leave`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (data.message.success) {
-        await fetchLeaves();
-        closeModal();
-      } else {
-        setError(data.message.message || "Failed to modify leave");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    }
-  };
-
-  const openActionModal = (
-    leave: LeaveRecord,
-    mode: "approve" | "reject" | "modify",
-  ) => {
+  const openActionModal = (leave: LeaveRecord, mode: "approve" | "reject") => {
     setSelectedLeave(leave);
     setModalMode(mode);
     setRemarks("");
-    if (mode === "modify") {
-      setModifyForm({
-        leave_type: leave.leave_type,
-        from_date: leave.from_date,
-        to_date: leave.to_date,
-        half_day: leave.half_day,
-        half_day_date: leave.half_day_date || "",
-        reason: leave.reason,
-      });
-    }
     setIsModalOpen(true);
   };
 
@@ -513,7 +438,7 @@ const LeaveManagement: React.FC = () => {
                   Leave Management
                 </h1>
                 <p className="text-sm text-blue-100 mt-1">
-                  Manage all employee leave requests
+                  Manage leave requests for your reportees
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -541,7 +466,7 @@ const LeaveManagement: React.FC = () => {
           {/* ── Filters Panel ── */}
           {showFilters && (
             <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50 rounded-b-lg">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -570,20 +495,6 @@ const LeaveManagement: React.FC = () => {
                   value={toDate}
                   onChange={setToDate}
                 />
-
-                {/* Employee Code filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Code
-                  </label>
-                  <input
-                    type="text"
-                    value={employeeCodeFilter}
-                    onChange={(e) => setEmployeeCodeFilter(e.target.value)}
-                    placeholder="Filter by employee"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
               </div>
 
               <div className="mt-3 flex justify-end">
@@ -704,6 +615,7 @@ const LeaveManagement: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Reportee: approve & reject only on Open leaves, no Modify */}
                             {leave.status === "Open" && (
                               <>
                                 <button
@@ -726,14 +638,6 @@ const LeaveManagement: React.FC = () => {
                                 </button>
                               </>
                             )}
-                            {/* HR can always modify */}
-                            <button
-                              onClick={() => openActionModal(leave, "modify")}
-                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                              title="Modify"
-                            >
-                              <Edit2 className="w-5 h-5" />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -805,144 +709,58 @@ const LeaveManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Modal (approve / reject only) ── */}
       {isModalOpen && selectedLeave && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                {modalMode === "approve" && "Approve Leave Request"}
-                {modalMode === "reject" && "Reject Leave Request"}
-                {modalMode === "modify" && "Modify Leave Request"}
+                {modalMode === "approve"
+                  ? "Approve Leave Request"
+                  : "Reject Leave Request"}
               </h2>
             </div>
 
             <div className="px-6 py-4">
-              {modalMode === "modify" ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Leave Type
-                    </label>
-                    <select
-                      value={modifyForm.leave_type}
-                      onChange={(e) =>
-                        setModifyForm({
-                          ...modifyForm,
-                          leave_type: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="Casual Leave">Casual Leave</option>
-                      <option value="Sick Leave">Sick Leave</option>
-                      <option value="Annual Leave">Annual Leave</option>
-                      <option value="Unpaid Leave">Unpaid Leave</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <DatePicker
-                      label="From Date"
-                      value={modifyForm.from_date}
-                      onChange={(v) =>
-                        setModifyForm({ ...modifyForm, from_date: v })
-                      }
-                    />
-                    <DatePicker
-                      label="To Date"
-                      value={modifyForm.to_date}
-                      onChange={(v) =>
-                        setModifyForm({ ...modifyForm, to_date: v })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="halfDay"
-                      checked={modifyForm.half_day}
-                      onChange={(e) =>
-                        setModifyForm({
-                          ...modifyForm,
-                          half_day: e.target.checked,
-                        })
-                      }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="halfDay"
-                      className="ml-2 text-sm text-gray-700"
-                    >
-                      Half Day
-                    </label>
-                  </div>
-                  {modifyForm.half_day && (
-                    <DatePicker
-                      label="Half Day Date"
-                      value={modifyForm.half_day_date}
-                      onChange={(v) =>
-                        setModifyForm({ ...modifyForm, half_day_date: v })
-                      }
-                    />
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reason
-                    </label>
-                    <textarea
-                      value={modifyForm.reason}
-                      onChange={(e) =>
-                        setModifyForm({ ...modifyForm, reason: e.target.value })
-                      }
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-1">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Employee:</span>{" "}
-                      {selectedLeave.employee_name} (
-                      {selectedLeave.employee_code})
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Leave:</span>{" "}
-                      {selectedLeave.leave_type} ({selectedLeave.total_days} day
-                      {selectedLeave.total_days !== 1 ? "s" : ""})
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Date:</span>{" "}
-                      {formatDate(selectedLeave.from_date)}
-                      {selectedLeave.from_date !== selectedLeave.to_date &&
-                        ` – ${formatDate(selectedLeave.to_date)}`}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Reason:</span>{" "}
-                      {selectedLeave.reason}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {modalMode === "approve"
-                        ? "Approval Remarks"
-                        : "Rejection Reason"}
-                    </label>
-                    <textarea
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      rows={3}
-                      placeholder={
-                        modalMode === "approve"
-                          ? "Add approval remarks (optional)"
-                          : "Provide reason for rejection"
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-1">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Employee:</span>{" "}
+                  {selectedLeave.employee_name} ({selectedLeave.employee_code})
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Leave:</span>{" "}
+                  {selectedLeave.leave_type} ({selectedLeave.total_days} day
+                  {selectedLeave.total_days !== 1 ? "s" : ""})
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Date:</span>{" "}
+                  {formatDate(selectedLeave.from_date)}
+                  {selectedLeave.from_date !== selectedLeave.to_date &&
+                    ` – ${formatDate(selectedLeave.to_date)}`}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Reason:</span>{" "}
+                  {selectedLeave.reason}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {modalMode === "approve"
+                    ? "Approval Remarks"
+                    : "Rejection Reason"}
+                </label>
+                <textarea
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  rows={3}
+                  placeholder={
+                    modalMode === "approve"
+                      ? "Add approval remarks (optional)"
+                      : "Provide reason for rejection"
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
 
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
@@ -953,23 +771,14 @@ const LeaveManagement: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={
-                  modalMode === "modify"
-                    ? handleModifyLeave
-                    : () =>
-                        handleApproveReject(modalMode as "approve" | "reject")
-                }
+                onClick={() => handleApproveReject(modalMode)}
                 className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
                   modalMode === "approve"
                     ? "bg-green-600 hover:bg-green-700"
-                    : modalMode === "reject"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
+                    : "bg-red-600 hover:bg-red-700"
                 }`}
               >
-                {modalMode === "approve" && "Approve"}
-                {modalMode === "reject" && "Reject"}
-                {modalMode === "modify" && "Save Changes"}
+                {modalMode === "approve" ? "Approve" : "Reject"}
               </button>
             </div>
           </div>
@@ -979,4 +788,4 @@ const LeaveManagement: React.FC = () => {
   );
 };
 
-export default LeaveManagement;
+export default LeaveManagementReportee;

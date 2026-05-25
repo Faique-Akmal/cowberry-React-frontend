@@ -47,6 +47,7 @@ import LeaveBalancePage from "./HRMS/EmployeeLeaveBalance";
 import ChatToggle from "./context/ChatToggle";
 import { useSocketStore } from "./store/useSocketStore";
 import { IncomingCall } from "./components/chat/CallModal";
+import LeaveManagementReportee from "./HRMS/LeavePageReportee";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -97,9 +98,20 @@ export default function App() {
           <Route path="/theme-customizer" element={<ThemeCustomizer />} />
           <Route path="/add-role" element={<AddRoleForm />} />
           <Route path="/add-department" element={<DepartmentManagement />} />
+          <Route
+            path="/leave-management-reportee"
+            element={<LeaveManagementReportee />}
+          />
 
           <Route path="/user-register" element={<RegistrationPage />} />
-          <Route path="/get-leaves" element={<LeavesPage />} />
+          <Route
+            path="/get-leaves"
+            element={
+              <ProtectedRoute>
+                <LeavesPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/apply-leaves" element={<LeaveApplicationPage />} />
           <Route path="/employeeleave-balance" element={<LeaveBalancePage />} />
           <Route

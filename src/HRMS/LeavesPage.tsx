@@ -10,6 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  User,
+  Calendar as CalendarIcon,
+  FileText,
+  Clock,
+  UserCheck,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,7 +49,7 @@ interface ApiResponse {
 interface ApprovePayload {
   approver_employee_code: string;
   lantern360_leave_id: string;
-  remarks?: string; // Make remarks optional as it might not be required
+  remarks?: string;
 }
 
 interface RejectPayload {
@@ -261,6 +266,225 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
   );
 };
 
+// ─── Leave Details Modal Component ───────────────────────────────────────────
+
+interface LeaveDetailsModalProps {
+  leave: LeaveRecord;
+  onClose: () => void;
+  onApprove?: (leave: LeaveRecord) => void;
+  onReject?: (leave: LeaveRecord) => void;
+  onModify?: (leave: LeaveRecord) => void;
+  formatDate: (dateString: string) => string;
+  getStatusBadge: (status: string) => string;
+}
+
+const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
+  leave,
+  onClose,
+  onApprove,
+  onReject,
+  onModify,
+  formatDate,
+  getStatusBadge,
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Leave Request Details
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-4 space-y-4">
+          {/* Status Badge */}
+          <div className="flex justify-end">
+            <span
+              className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadge(leave.status)}`}
+            >
+              {leave.status}
+            </span>
+          </div>
+
+          {/* Employee Information */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Employee Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Employee Name</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {leave.employee_name}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Employee Code</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {leave.employee_code}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Leave Details */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              Leave Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Leave Type</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {leave.leave_type}
+                  {leave.half_day && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      (Half Day)
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Total Days</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {leave.total_days} day{leave.total_days !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">From Date</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(leave.from_date)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">To Date</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(leave.to_date)}
+                </p>
+              </div>
+              {leave.half_day && leave.half_day_date && (
+                <div>
+                  <p className="text-xs text-gray-500">Half Day Date</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatDate(leave.half_day_date)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reason */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Reason for Leave
+            </h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {leave.reason || "No reason provided"}
+            </p>
+          </div>
+
+          {/* Application Details */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Application Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Applied On</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(leave.applied_on)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Approver</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {leave.approver_name || "Not assigned"}
+                </p>
+              </div>
+              {leave.approved_on && (
+                <div>
+                  <p className="text-xs text-gray-500">Approved/Rejected On</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatDate(leave.approved_on)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <UserCheck className="w-4 h-4" />
+              Additional Information
+            </h3>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Leave Application ID</p>
+                <p className="text-sm font-mono text-gray-900">
+                  {leave.leave_application}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Lantern360 Leave ID</p>
+                <p className="text-sm font-mono text-gray-900">
+                  {leave.lantern360_leave_id}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+          {onModify && (
+            <button
+              onClick={() => onModify(leave)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Modify
+            </button>
+          )}
+          {leave.status === "Open" && onApprove && onReject && (
+            <>
+              <button
+                onClick={() => onReject(leave)}
+                className="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => onApprove(leave)}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Approve
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const LeaveManagement: React.FC = () => {
@@ -275,6 +499,7 @@ const LeaveManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<"approve" | "reject" | "modify">(
     "approve",
   );
@@ -389,14 +614,12 @@ const LeaveManagement: React.FC = () => {
 
       let payload;
       if (action === "approve") {
-        // For approval, only send required fields (remarks might be optional)
         payload = remarks ? { ...basePayload, remarks } : basePayload;
       } else {
-        // For rejection, reason is required
         payload = { ...basePayload, reason: remarks || "Rejected" };
       }
 
-      console.log("Sending payload:", payload); // Debug log
+      console.log("Sending payload:", payload);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -405,12 +628,12 @@ const LeaveManagement: React.FC = () => {
       });
 
       const data = await response.json();
-      console.log("Response:", data); // Debug log
+      console.log("Response:", data);
 
-      // Both APIs return the same response structure
       if (data.message?.success) {
         await fetchLeaves();
         closeModal();
+        closeDetailsModal();
       } else {
         setError(
           data.message?.message || data.error || `Failed to ${action} request`,
@@ -443,6 +666,7 @@ const LeaveManagement: React.FC = () => {
       if (data.message.success) {
         await fetchLeaves();
         closeModal();
+        closeDetailsModal();
       } else {
         setError(data.message.message || "Failed to modify leave");
       }
@@ -469,12 +693,35 @@ const LeaveManagement: React.FC = () => {
       });
     }
     setIsModalOpen(true);
+    setIsDetailsModalOpen(false);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedLeave(null);
     setRemarks("");
+  };
+
+  const openDetailsModal = (leave: LeaveRecord) => {
+    setSelectedLeave(leave);
+    setIsDetailsModalOpen(true);
+  };
+
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedLeave(null);
+  };
+
+  const handleApproveFromDetails = (leave: LeaveRecord) => {
+    openActionModal(leave, "approve");
+  };
+
+  const handleRejectFromDetails = (leave: LeaveRecord) => {
+    openActionModal(leave, "reject");
+  };
+
+  const handleModifyFromDetails = (leave: LeaveRecord) => {
+    openActionModal(leave, "modify");
   };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -530,7 +777,7 @@ const LeaveManagement: React.FC = () => {
 
   return (
     <div className="w-full bg-gray-50 min-h-screen overflow-x-hidden">
-      <div className="px-4 sm:px-6  max-w-7xl">
+      <div className="px-4 sm:px-6 max-w-7xl">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
@@ -655,7 +902,7 @@ const LeaveManagement: React.FC = () => {
             <>
               {/* Table with horizontal scroll - responsive width */}
               <div className="overflow-x-auto">
-                <table className="  w-full divide-y divide-gray-200 text-sm table-fixed">
+                <table className="w-full divide-y divide-gray-200 text-sm table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -688,17 +935,18 @@ const LeaveManagement: React.FC = () => {
                     {paginatedLeaves.map((leave) => (
                       <tr
                         key={leave.lantern360_leave_id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => openDetailsModal(leave)}
                       >
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap truncate">
                           <div className="font-medium text-gray-900">
                             {leave.employee_name}
                           </div>
-                          <div className="text-gray-500 text-xs">
+                          <div className="text-gray-500 text-xs truncate">
                             {leave.employee_code}
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap truncate">
                           {leave.leave_type}
                           {leave.half_day && (
                             <span className="ml-1 text-xs text-gray-500">
@@ -706,7 +954,7 @@ const LeaveManagement: React.FC = () => {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 truncate">
                           {formatDate(leave.from_date)}
                           {leave.from_date !== leave.to_date && (
                             <> – {formatDate(leave.to_date)}</>
@@ -731,7 +979,10 @@ const LeaveManagement: React.FC = () => {
                           {formatDate(leave.applied_on)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div
+                            className="flex items-center justify-end gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {leave.status === "Open" && (
                               <>
                                 <button
@@ -833,7 +1084,20 @@ const LeaveManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Leave Details Modal ── */}
+      {isDetailsModalOpen && selectedLeave && (
+        <LeaveDetailsModal
+          leave={selectedLeave}
+          onClose={closeDetailsModal}
+          onApprove={handleApproveFromDetails}
+          onReject={handleRejectFromDetails}
+          onModify={handleModifyFromDetails}
+          formatDate={formatDate}
+          getStatusBadge={getStatusBadge}
+        />
+      )}
+
+      {/* ── Action Modal (Approve/Reject/Modify) ── */}
       {isModalOpen && selectedLeave && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">

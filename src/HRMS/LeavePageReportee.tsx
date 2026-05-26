@@ -326,27 +326,42 @@ const LeaveManagementReportee: React.FC = () => {
     }
   }, [statusFilter, fromDate, toDate, managerEmployeeCode, apiBaseUrl]);
 
-  // ── Actions (approve / reject only — no modify for reportee) ──────────────
+  // ── Actions (approve / reject with correct endpoints) ───────────────────
 
   const handleApproveReject = async (action: "approve" | "reject") => {
     if (!selectedLeave) return;
+
     try {
       const payload: ApprovePayload = {
         approver_employee_code: managerEmployeeCode,
         lantern360_leave_id: selectedLeave.lantern360_leave_id,
         remarks: remarks || (action === "approve" ? "Approved" : "Rejected"),
       };
-      const response = await fetch(`${apiBaseUrl}/leaves/erp-approve-leave`, {
+
+      // Use different endpoints based on action
+      const endpoint =
+        action === "approve"
+          ? `${apiBaseUrl}/leaves/erp-approve-leave`
+          : `${apiBaseUrl}/leaves/erp-reject-leave`;
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await response.json();
-      if (data.message.success) {
+
+      // Check response structure - handle both patterns
+      const isSuccess = data.message?.success || data.success;
+
+      if (isSuccess) {
         await fetchLeaves();
         closeModal();
       } else {
-        setError(data.message.message || "Failed to process request");
+        setError(
+          data.message?.message || data.message || "Failed to process request",
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -418,8 +433,8 @@ const LeaveManagementReportee: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen">
-      <div className="px-4 sm:px-6 py-6">
+    <div className=" bg-gray-50 min-h-screen">
+      <div className="px-4 w-full sm:px-6 py-6">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
@@ -528,8 +543,8 @@ const LeaveManagementReportee: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full divide-y divide-gray-200 text-sm">
+              <div className="overflow-x-auto ">
+                <table className=" w-full divide-y divide-gray-200 text-sm table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -596,7 +611,7 @@ const LeaveManagementReportee: React.FC = () => {
                             {leave.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 max-w-xs">
+                        <td className="px-4 py-3 w-48">
                           <div className="text-gray-900 break-words line-clamp-2">
                             {leave.reason}
                           </div>

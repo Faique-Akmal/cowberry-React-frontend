@@ -44,7 +44,13 @@ interface ApiResponse {
 interface ApprovePayload {
   approver_employee_code: string;
   lantern360_leave_id: string;
-  remarks: string;
+  remarks?: string; // Make remarks optional as it might not be required
+}
+
+interface RejectPayload {
+  approver_employee_code: string;
+  lantern360_leave_id: string;
+  reason: string;
 }
 
 interface ModifyPayload {
@@ -262,9 +268,7 @@ const LeaveManagement: React.FC = () => {
   const callerEmployeeCode = useRef(
     localStorage.getItem("employee_code") ?? "",
   ).current;
-  const apiBaseUrl = useRef(
-    (import.meta as any).env?.VITE_BASE_URL ?? "",
-  ).current;
+  const apiBaseUrl = import.meta.env.VITE_BASE_URL;
 
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -296,10 +300,19 @@ const LeaveManagement: React.FC = () => {
     reason: "",
   });
 
+  // Sort leaves by applied_on date (newest first)
+  const sortedLeaves = React.useMemo(() => {
+    return [...leaves].sort((a, b) => {
+      return (
+        new Date(b.applied_on).getTime() - new Date(a.applied_on).getTime()
+      );
+    });
+  }, [leaves]);
+
   // Pagination helpers
-  const totalItems = leaves.length;
+  const totalItems = sortedLeaves.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const paginatedLeaves = leaves.slice(
+  const paginatedLeaves = sortedLeaves.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -358,27 +371,50 @@ const LeaveManagement: React.FC = () => {
     apiBaseUrl,
   ]);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Actions with correct API endpoints ─────────────────────────────────────
 
   const handleApproveReject = async (action: "approve" | "reject") => {
     if (!selectedLeave) return;
+
     try {
-      const payload: ApprovePayload = {
+      const basePayload = {
         approver_employee_code: callerEmployeeCode,
         lantern360_leave_id: selectedLeave.lantern360_leave_id,
-        remarks: remarks || (action === "approve" ? "Approved" : "Rejected"),
       };
-      const response = await fetch(`${apiBaseUrl}/leaves/erp-approve-leave`, {
+
+      const endpoint =
+        action === "approve"
+          ? `${apiBaseUrl}/leaves/erp-approve-leave`
+          : `${apiBaseUrl}/leaves/erp-reject-leave`;
+
+      let payload;
+      if (action === "approve") {
+        // For approval, only send required fields (remarks might be optional)
+        payload = remarks ? { ...basePayload, remarks } : basePayload;
+      } else {
+        // For rejection, reason is required
+        payload = { ...basePayload, reason: remarks || "Rejected" };
+      }
+
+      console.log("Sending payload:", payload); // Debug log
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await response.json();
-      if (data.message.success) {
+      console.log("Response:", data); // Debug log
+
+      // Both APIs return the same response structure
+      if (data.message?.success) {
         await fetchLeaves();
         closeModal();
       } else {
-        setError(data.message.message || "Failed to process request");
+        setError(
+          data.message?.message || data.error || `Failed to ${action} request`,
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -493,8 +529,8 @@ const LeaveManagement: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen">
-      <div className="px-4 sm:px-6 py-6">
+    <div className="w-full bg-gray-50 min-h-screen overflow-x-hidden">
+      <div className="px-4 sm:px-6  max-w-7xl">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
@@ -510,7 +546,7 @@ const LeaveManagement: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors text-black"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white"
                 >
                   <Filter className="w-4 h-4" />
                   <span className="text-sm">Filters</span>
@@ -580,7 +616,7 @@ const LeaveManagement: React.FC = () => {
               <div className="mt-3 flex justify-end">
                 <button
                   onClick={fetchLeaves}
-                  className="px-4 py-2 bg-lantern-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Apply Filters
                 </button>
@@ -605,7 +641,7 @@ const LeaveManagement: React.FC = () => {
                 Try again
               </button>
             </div>
-          ) : leaves.length === 0 ? (
+          ) : sortedLeaves.length === 0 ? (
             <div className="p-12 text-center">
               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">
@@ -617,8 +653,9 @@ const LeaveManagement: React.FC = () => {
             </div>
           ) : (
             <>
+              {/* Table with horizontal scroll - responsive width */}
               <div className="overflow-x-auto">
-                <table className="w-full divide-y divide-gray-200 text-sm">
+                <table className="  w-full divide-y divide-gray-200 text-sm table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

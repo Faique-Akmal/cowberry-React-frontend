@@ -40,6 +40,9 @@ interface LeaveBalanceResponse {
   leave_balances: LeaveBalance[];
 }
 
+// Static leave types to add to dropdown only (not in balance table)
+const STATIC_LEAVE_TYPES = ["Leave Without Pay", "Compensatory Leave"];
+
 const LeaveApplicationPage: React.FC = () => {
   // State for form data
   const [formData, setFormData] = useState<LeaveApplicationForm>({
@@ -63,6 +66,7 @@ const LeaveApplicationPage: React.FC = () => {
 
   // State for leave balances
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+  const [allLeaveTypes, setAllLeaveTypes] = useState<string[]>([]);
   const [loadingBalances, setLoadingBalances] = useState(false);
   const [selectedEmployeeCode, setSelectedEmployeeCode] = useState<string>("");
   const [employeeName, setEmployeeName] = useState<string>("");
@@ -131,24 +135,57 @@ const LeaveApplicationPage: React.FC = () => {
       const responseData = response.data.message;
 
       if (responseData.success) {
-        setLeaveBalances(responseData.leave_balances || []);
+        // Get existing leave balances from API
+        const apiLeaveBalances = responseData.leave_balances || [];
+
+        // Set leave balances for table (only from API)
+        setLeaveBalances(apiLeaveBalances);
+
+        // Create combined leave types for dropdown (API types + static types)
+        const apiLeaveTypes = apiLeaveBalances.map(
+          (balance) => balance.leave_type,
+        );
+        const combinedLeaveTypes = [...apiLeaveTypes];
+
+        // Add static leave types if they don't already exist
+        STATIC_LEAVE_TYPES.forEach((staticType) => {
+          if (!combinedLeaveTypes.includes(staticType)) {
+            combinedLeaveTypes.push(staticType);
+          }
+        });
+
+        setAllLeaveTypes(combinedLeaveTypes);
         setEmployeeName(responseData.employee_name || "");
         setFiscalYear(responseData.fiscal_year || "");
 
-        if (
-          responseData.leave_balances &&
-          responseData.leave_balances.length > 0
-        ) {
+        if (combinedLeaveTypes.length > 0) {
           setFormData((prev) => ({
             ...prev,
-            leaveType: responseData.leave_balances[0].leave_type,
+            leaveType: combinedLeaveTypes[0],
           }));
         }
       } else {
+        // If API returns unsuccessfully, still show static leave types in dropdown
+        const apiLeaveTypes: string[] = [];
+        const combinedLeaveTypes = [...apiLeaveTypes];
+
+        STATIC_LEAVE_TYPES.forEach((staticType) => {
+          if (!combinedLeaveTypes.includes(staticType)) {
+            combinedLeaveTypes.push(staticType);
+          }
+        });
+
+        setAllLeaveTypes(combinedLeaveTypes);
+        setLeaveBalances([]);
         setError(responseData.message || "Failed to fetch leave balances");
       }
     } catch (err: any) {
       console.error("Error fetching leave balances:", err);
+
+      // If API fails, still show static leave types in dropdown
+      setAllLeaveTypes(STATIC_LEAVE_TYPES);
+      setLeaveBalances([]);
+
       if (err.response) {
         const errorMessage =
           err.response.data?.message ||
@@ -167,14 +204,32 @@ const LeaveApplicationPage: React.FC = () => {
 
   // Get remaining balance for selected leave type
   const getRemainingBalance = (): number | null => {
+    // For static leave types, return appropriate values
+    if (formData.leaveType === "Leave Without Pay") {
+      return 999; // Unlimited for Leave Without Pay
+    }
+
+    if (formData.leaveType === "Compensatory Leave") {
+      return 0; // No balance limit, but show 0
+    }
+
+    // For API leave types, get from balances
     const balance = leaveBalances.find(
       (b) => b.leave_type === formData.leaveType,
     );
     return balance ? balance.remaining : null;
   };
 
-  // Get leave balance details
+  // Get leave balance details for display
   const getLeaveBalanceDetails = () => {
+    // Don't show details for static leave types in balance table
+    if (
+      formData.leaveType === "Leave Without Pay" ||
+      formData.leaveType === "Compensatory Leave"
+    ) {
+      return null;
+    }
+
     const balance = leaveBalances.find(
       (b) => b.leave_type === formData.leaveType,
     );
@@ -209,6 +264,11 @@ const LeaveApplicationPage: React.FC = () => {
 
     // Allow Leave Without Pay regardless of balance
     if (formData.leaveType === "Leave Without Pay") {
+      return true;
+    }
+
+    // Allow Compensatory Leave (no strict balance check)
+    if (formData.leaveType === "Compensatory Leave") {
       return true;
     }
 
@@ -419,14 +479,16 @@ const LeaveApplicationPage: React.FC = () => {
       if (remainingBalance !== null && remainingBalance > 0) {
         if (
           requestedDays > remainingBalance &&
-          formData.leaveType !== "Leave Without Pay"
+          formData.leaveType !== "Leave Without Pay" &&
+          formData.leaveType !== "Compensatory Leave"
         ) {
           errors.leaveType = `Insufficient leave balance! You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
         }
       } else if (
         remainingBalance !== null &&
         remainingBalance <= 0 &&
-        formData.leaveType !== "Leave Without Pay"
+        formData.leaveType !== "Leave Without Pay" &&
+        formData.leaveType !== "Compensatory Leave"
       ) {
         errors.leaveType = `No leave balance available for ${formData.leaveType}. You have ${remainingBalance} days remaining.`;
       }
@@ -459,7 +521,8 @@ const LeaveApplicationPage: React.FC = () => {
     if (
       remainingBalance !== null &&
       requestedDays > remainingBalance &&
-      formData.leaveType !== "Leave Without Pay"
+      formData.leaveType !== "Leave Without Pay" &&
+      formData.leaveType !== "Compensatory Leave"
     ) {
       const errorMsg = `Cannot submit: You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
       setError(errorMsg);
@@ -500,7 +563,7 @@ const LeaveApplicationPage: React.FC = () => {
           : formatDate(formData.endDate),
         reason: formData.reason,
         totalDays: requestedDays,
-        halfDay: isHalfDay, // Add the halfDay flag for all leave types
+        halfDay: isHalfDay,
         ...(isHalfDay &&
           formData.halfDayShift && {
             halfDayShift: formData.halfDayShift,
@@ -516,7 +579,6 @@ const LeaveApplicationPage: React.FC = () => {
         const successMsg = `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || responseData.data?.leave_application || "N/A"}`;
         setSuccess(successMsg);
 
-        // Success toast
         toast.success(successMsg, {
           duration: 5000,
           position: "bottom-right",
@@ -549,7 +611,6 @@ const LeaveApplicationPage: React.FC = () => {
         setError(errorMessage);
       }
 
-      // Error toast
       toast.error(`Failed to submit leave: ${errorMessage}`, {
         duration: 5000,
         position: "bottom-right",
@@ -563,8 +624,7 @@ const LeaveApplicationPage: React.FC = () => {
   // Reset form
   const handleReset = () => {
     setFormData({
-      leaveType:
-        leaveBalances.length > 0 ? leaveBalances[0].leave_type : "Casual Leave",
+      leaveType: allLeaveTypes.length > 0 ? allLeaveTypes[0] : "Casual Leave",
       startDate: null,
       endDate: null,
       reason: "",
@@ -627,7 +687,7 @@ const LeaveApplicationPage: React.FC = () => {
             </div>
           )}
 
-          {/* Leave Balance Summary Table */}
+          {/* Leave Balance Summary Table - Only show API leave types, not static ones */}
           {leaveBalances.length > 0 && (
             <div className="mx-6 mb-6 bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
               <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -726,9 +786,9 @@ const LeaveApplicationPage: React.FC = () => {
                     : "border-gray-300"
                 }`}
               >
-                {leaveBalances.map((balance) => (
-                  <option key={balance.leave_type} value={balance.leave_type}>
-                    {balance.leave_type}
+                {allLeaveTypes.map((leaveType) => (
+                  <option key={leaveType} value={leaveType}>
+                    {leaveType}
                   </option>
                 ))}
               </select>
@@ -821,7 +881,9 @@ const LeaveApplicationPage: React.FC = () => {
             {!isHalfDay &&
               formData.startDate &&
               formData.endDate &&
-              remainingBalance !== null && (
+              remainingBalance !== null &&
+              formData.leaveType !== "Leave Without Pay" &&
+              formData.leaveType !== "Compensatory Leave" && (
                 <div
                   className={`mb-4 p-3 rounded-md ${requestedDays > remainingBalance ? "bg-red-50 border border-red-200" : "bg-yellow-50 border border-yellow-200"}`}
                 >
@@ -939,13 +1001,15 @@ const LeaveApplicationPage: React.FC = () => {
                   isSubmitting ||
                   (remainingBalance !== null &&
                     requestedDays > remainingBalance &&
-                    formData.leaveType !== "Leave Without Pay")
+                    formData.leaveType !== "Leave Without Pay" &&
+                    formData.leaveType !== "Compensatory Leave")
                 }
                 className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lantern-blue-600 hover:bg-blue-700 ${
                   isSubmitting ||
                   (remainingBalance !== null &&
                     requestedDays > remainingBalance &&
-                    formData.leaveType !== "Leave Without Pay")
+                    formData.leaveType !== "Leave Without Pay" &&
+                    formData.leaveType !== "Compensatory Leave")
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}

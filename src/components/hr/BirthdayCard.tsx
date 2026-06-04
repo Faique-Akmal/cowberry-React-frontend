@@ -268,7 +268,7 @@ const BirthdayCardList: React.FC = () => {
                     <div className="relative shrink-0">
                       <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg backdrop-blur-sm group-hover/card:scale-110 transition-transform duration-300 bg-lantern-blue-600">
                         <span className="text-2xl">
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.full_name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center shadow-lg animate-bounce">

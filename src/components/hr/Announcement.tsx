@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { io, Socket } from "socket.io-client";
 import { useTheme } from "../../context/ThemeContext";
 import API from "../../api/axios";
 
@@ -36,6 +37,7 @@ const CreateAnnouncement = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [socketConnected, setSocketConnected] = useState(false);
   const [categories] = useState([
     { value: "general", label: "General", icon: "📢" },
     { value: "maintenance", label: "Maintenance", icon: "🛠️" },
@@ -45,6 +47,19 @@ const CreateAnnouncement = () => {
     { value: "urgent", label: "Urgent", icon: "🚨" },
   ]);
 
+  const socketRef = useRef<Socket | null>(null);
+
+  // ── Auth token ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("adminToken") ||
+      sessionStorage.getItem("token");
+    setAuthToken(token);
+  }, []);
+
+  // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
     const token =
       localStorage.getItem("token") ||
@@ -52,52 +67,72 @@ const CreateAnnouncement = () => {
       localStorage.getItem("adminToken") ||
       sessionStorage.getItem("token");
 
-    setAuthToken(token);
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+
+    if (!token || !SOCKET_URL) {
+      console.warn("Missing token or VITE_SOCKET_URL — skipping socket init.");
+      return;
+    }
+
+    const cleanToken = token.replace(/^["']|["']$/g, "");
+
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      auth: { token: cleanToken },
+      path: "/socket.io",
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("✅ CreateAnnouncement socket connected:", socket.id);
+      setSocketConnected(true);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+      setSocketConnected(false);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket connect error:", err.message);
+      setSocketConnected(false);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, []);
 
+  // ── Auto-clear success banner ──────────────────────────────────────────────
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      const timer = setTimeout(() => setSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [success]);
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value, type } = e.target;
-
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: checked,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handlePriorityClick = (priority: "low" | "medium" | "high") => {
-    setFormData((prev) => ({
-      ...prev,
-      priority,
-    }));
-  };
+  const handlePriorityClick = (priority: "low" | "medium" | "high") =>
+    setFormData((prev) => ({ ...prev, priority }));
 
-  const handleCategoryClick = (category: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      category,
-    }));
-  };
+  const handleCategoryClick = (category: string) =>
+    setFormData((prev) => ({ ...prev, category }));
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -112,6 +147,7 @@ const CreateAnnouncement = () => {
     }
   };
 
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -176,6 +212,24 @@ const CreateAnnouncement = () => {
       );
 
       if (response.data.success) {
+        // ── Emit via socket so all connected clients see it immediately ──
+        const savedAnnouncement = response.data.data;
+
+        if (socketRef.current?.connected) {
+          // Broadcast to all subscribers of the announcements room
+          socketRef.current.emit("new_announcement", {
+            ...savedAnnouncement,
+            timestamp: new Date().toISOString(),
+          });
+          console.log("📡 Emitted new_announcement via socket");
+        } else {
+          // Socket not connected — the REST API + polling fallback in
+          // NotificationDropdown will still pick it up within 30 s.
+          console.warn(
+            "Socket not connected; announcement saved via REST only.",
+          );
+        }
+
         setSuccess(true);
         setFormData({
           title: "",
@@ -228,6 +282,7 @@ const CreateAnnouncement = () => {
     window.location.href = "/login";
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-50">
       <div className="max-w-4xl mx-auto">
@@ -242,7 +297,7 @@ const CreateAnnouncement = () => {
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                   Create New Announcement
                 </h1>
-                <p className="text-gray-600 mt-2">
+                <p className="text-gray-600 mt-2 flex items-center gap-2">
                   Share important updates and information with your team
                 </p>
               </div>
@@ -261,11 +316,15 @@ const CreateAnnouncement = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-xl text-gray-900">
-                  Announcement Created Successfully!
+                  Announcement Published!
                 </h3>
                 <p className="text-gray-600 mt-1">
-                  Your announcement has been published and is now visible to
-                  users.
+                  Your announcement has been saved and broadcast live to all
+                  connected users
+                  {socketConnected
+                    ? " via socket"
+                    : " (socket offline — polling fallback active)"}
+                  .
                 </p>
               </div>
             </div>
@@ -301,10 +360,10 @@ const CreateAnnouncement = () => {
           </div>
         )}
 
-        {/* Main Form Container */}
+        {/* Main Form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-6 md:p-8">
-            {/* Basic Information Section */}
+            {/* Basic Information */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -316,7 +375,6 @@ const CreateAnnouncement = () => {
               </div>
 
               <div className="space-y-6">
-                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Announcement Title *
@@ -333,7 +391,6 @@ const CreateAnnouncement = () => {
                   />
                 </div>
 
-                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Short Description *
@@ -349,7 +406,6 @@ const CreateAnnouncement = () => {
                   />
                 </div>
 
-                {/* Full Content */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Content *
@@ -368,7 +424,7 @@ const CreateAnnouncement = () => {
               </div>
             </div>
 
-            {/* Settings Section */}
+            {/* Settings */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -380,7 +436,6 @@ const CreateAnnouncement = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Priority Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Priority Level
@@ -425,7 +480,6 @@ const CreateAnnouncement = () => {
                   </div>
                 </div>
 
-                {/* Category Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Category
@@ -458,7 +512,7 @@ const CreateAnnouncement = () => {
               </div>
             </div>
 
-            {/* Schedule Section */}
+            {/* Schedule */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -512,7 +566,7 @@ const CreateAnnouncement = () => {
               </div>
             </div>
 
-            {/* Submit Button Section */}
+            {/* Submit */}
             <div className="pt-8 border-t border-gray-200">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -523,19 +577,24 @@ const CreateAnnouncement = () => {
                     <h3 className="font-bold text-gray-900">
                       Ready to Publish
                     </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {socketConnected
+                        ? "Will broadcast instantly to all users"
+                        : "Will save and sync on next poll"}
+                    </p>
                   </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading || !authToken}
-                  className={`bg-lantern-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all duration-300 ${
+                  className={`bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all duration-300 ${
                     loading || !authToken ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Publishing...</span>
                     </span>
                   ) : !authToken ? (

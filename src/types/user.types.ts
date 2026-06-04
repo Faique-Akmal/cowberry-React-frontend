@@ -124,6 +124,7 @@ export interface PaginationState {
 export interface HRManager {
   id: number;
   name: string;
+  fullName: string;
   email: string;
   employeeCode: string;
   designation: string | null;

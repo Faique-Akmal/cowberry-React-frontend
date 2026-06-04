@@ -30,7 +30,7 @@ interface EditUserModalProps {
 
 interface Manager {
   id: number;
-  full_name: string;
+  fullName: string;
   name?: string;
   email: string;
   designation?: string;
@@ -146,7 +146,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const filteredHrManagers = hrManagers.filter(
     (manager) =>
-      (manager.full_name || manager.name || "")
+      (manager.fullName || manager.name || "")
         .toLowerCase()
         .includes(hrManagerSearch.toLowerCase()) ||
       manager.email?.toLowerCase().includes(hrManagerSearch.toLowerCase()) ||
@@ -157,7 +157,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const filteredReportingManagers = reportingManagers.filter(
     (manager) =>
-      (manager.full_name || manager.name || "")
+      (manager.fullName || manager.name || "")
         .toLowerCase()
         .includes(reportingManagerSearch.toLowerCase()) ||
       manager.email
@@ -169,25 +169,25 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   );
 
   const getSelectedHrManagerName = () => {
-    if (user.hrManager) {
-      return user.hrManager.name || "";
-    }
     if (editForm.hrManagerId) {
       const hrManager = hrManagers.find((m) => m.id === editForm.hrManagerId);
-      return hrManager ? hrManager.full_name || hrManager.name || "" : "";
+      if (hrManager) return hrManager.fullName || hrManager.name || "";
+    }
+    if (user.hrManager) {
+      return user.hrManager.fullName || user.hrManager.name || "";
     }
     return hrManagerSearch;
   };
 
   const getSelectedReportingManagerName = () => {
-    if (user.reportee) {
-      return user.reportee.name || "";
-    }
     if (editForm.reporteeId) {
       const reportee = reportingManagers.find(
         (m) => m.id === editForm.reporteeId,
       );
-      return reportee ? reportee.full_name || reportee.name || "" : "";
+      if (reportee) return reportee.fullName || reportee.name || "";
+    }
+    if (user.reportee) {
+      return user.reportee.fullName || user.reportee.name || "";
     }
     return reportingManagerSearch;
   };
@@ -201,7 +201,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     } as React.ChangeEvent<HTMLInputElement>;
     onFormChange(event);
     setShowHrManagerDropdown(false);
-    setHrManagerSearch(manager.full_name || manager.name || "");
+    setHrManagerSearch(manager.fullName || manager.name || "");
   };
 
   const handleReportingManagerSelect = (manager: Manager) => {
@@ -213,7 +213,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     } as React.ChangeEvent<HTMLInputElement>;
     onFormChange(event);
     setShowReportingManagerDropdown(false);
-    setReportingManagerSearch(manager.full_name || manager.name || "");
+    setReportingManagerSearch(manager.fullName || manager.name || "");
   };
 
   useEffect(() => {
@@ -238,8 +238,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-2 mt-4">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden rounded-xl">
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-900 w-full h-full flex flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4 shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-6">
@@ -398,7 +398,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             }`}
                           >
                             <div className="font-medium text-gray-900 dark:text-white">
-                              {manager.full_name || manager.name || "Unknown"}
+                              {manager.fullName || "unknown"}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
                               {manager.email} •{" "}
@@ -419,8 +419,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   )}
                   {(editForm.hrManagerId || user.hrManager) && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected HR Manager name:{" "}
-                      {user.hrManager?.name || user.hrManager?.id}
+                      Selected HR Manager name:
+                      {user.hrManager?.fullName || user.hrManager?.id}
                     </p>
                   )}
                 </div>
@@ -482,7 +482,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                               }`}
                             >
                               <div className="font-medium text-gray-900 dark:text-white">
-                                {manager.full_name || "Unknown"}
+                                {manager.fullName || "Unknown"}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {manager.email} •{" "}
@@ -565,7 +565,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     </select>
                   )}
                 </div>
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Designation
                   </label>
@@ -576,7 +576,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                     onChange={onFormChange}
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
-                </div>
+                </div> */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Role *

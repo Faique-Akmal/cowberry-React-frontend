@@ -430,6 +430,7 @@ const AppSidebar: React.FC = () => {
         className={`sidebar-container fixed top-0 rounded-r-2xl left-0 h-screen z-50 transition-all duration-300
           text-gray-900 dark:text-blue-light-25
           shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
+           hidden lg:block              
           ${isExpanded || isMobileOpen ? "w-[240px]" : "lg:w-[80px] w-[240px]"}
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
         style={{

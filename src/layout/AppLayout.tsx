@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
+import MobileBottomNav from "./MobileBottomNav";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
@@ -11,6 +12,7 @@ const LayoutContent: React.FC = () => {
     <div className="min-h-screen xl:flex">
       <div>
         <AppSidebar />
+        <MobileBottomNav />
         <Backdrop />
       </div>
       <div

@@ -99,20 +99,20 @@ const AppHeader: React.FC = () => {
     >
       <div className="flex items-center justify-between w-full px-4 lg:px-6">
         {/* Left — Sidebar toggle */}
-        <div className="flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-3">
           <button
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
             className="
-              flex items-center justify-center
-              w-10 h-10 rounded-lg
-              border border-gray-200 dark:border-gray-700
-              text-gray-500 dark:text-gray-400
-              hover:bg-gray-100 dark:hover:bg-gray-800
-              hover:text-gray-900 dark:hover:text-gray-100
-              active:scale-95
-              transition-all duration-150
-            "
+      flex items-center justify-center
+      w-10 h-10 rounded-lg
+      border border-gray-200 dark:border-gray-700
+      text-gray-500 dark:text-gray-400
+      hover:bg-gray-100 dark:hover:bg-gray-800
+      hover:text-gray-900 dark:hover:text-gray-100
+      active:scale-95
+      transition-all duration-150
+    "
           >
             {isMobile && isMobileOpen ? (
               <svg

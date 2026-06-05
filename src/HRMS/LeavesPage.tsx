@@ -46,18 +46,6 @@ interface ApiResponse {
   };
 }
 
-interface ApprovePayload {
-  approver_employee_code: string;
-  lantern360_leave_id: string;
-  remarks?: string;
-}
-
-interface RejectPayload {
-  approver_employee_code: string;
-  lantern360_leave_id: string;
-  reason: string;
-}
-
 interface ModifyPayload {
   caller_employee_code: string;
   lantern360_leave_id: string;
@@ -226,7 +214,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
                   type="button"
                   onClick={() => selectDate(day)}
                   className={`w-8 h-8 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-colors
-                    ${isSelected ? "bg-blue-600 text-white" : isToday ? "border border-blue-400 text-blue-600 hover:bg-blue-50" : "text-gray-700 hover:bg-gray-100"}`}
+                    ${isSelected ? "bg-lantern-blue-600 text-white" : isToday ? "border border-blue-400 text-blue-600 hover:bg-blue-50" : "text-gray-700 hover:bg-gray-100"}`}
                 >
                   {day}
                 </button>
@@ -266,7 +254,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
   );
 };
 
-// ─── Leave Details Modal Component ───────────────────────────────────────────
+// ─── Leave Details Modal ──────────────────────────────────────────────────────
 
 interface LeaveDetailsModalProps {
   leave: LeaveRecord;
@@ -288,24 +276,23 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
   getStatusBadge,
 }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="w-full bg-gray-50 min-h-screen overflow-x-hidden">
+      <div className="px-4 sm:px-6 max-w-7xl">
         {/* Header */}
-        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900">
             Leave Request Details
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-4 space-y-4">
-          {/* Status Badge */}
+        {/* Scrollable Content */}
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="flex justify-end">
             <span
               className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadge(leave.status)}`}
@@ -314,13 +301,11 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
             </span>
           </div>
 
-          {/* Employee Information */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Employee Information
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4" /> Employee Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <p className="text-xs text-gray-500">Employee Name</p>
                 <p className="text-sm font-medium text-gray-900">
@@ -336,21 +321,17 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Leave Details */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4" />
-              Leave Details
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" /> Leave Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-xs text-gray-500">Leave Type</p>
                 <p className="text-sm font-medium text-gray-900">
                   {leave.leave_type}
                   {leave.half_day && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      (Half Day)
-                    </span>
+                    <span className="ml-1 text-xs text-gray-500">(Half)</span>
                   )}
                 </p>
               </div>
@@ -361,19 +342,19 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">From Date</p>
+                <p className="text-xs text-gray-500">From</p>
                 <p className="text-sm font-medium text-gray-900">
                   {formatDate(leave.from_date)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">To Date</p>
+                <p className="text-xs text-gray-500">To</p>
                 <p className="text-sm font-medium text-gray-900">
                   {formatDate(leave.to_date)}
                 </p>
               </div>
               {leave.half_day && leave.half_day_date && (
-                <div>
+                <div className="col-span-2">
                   <p className="text-xs text-gray-500">Half Day Date</p>
                   <p className="text-sm font-medium text-gray-900">
                     {formatDate(leave.half_day_date)}
@@ -383,24 +364,20 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Reason */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Reason for Leave
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Reason for Leave
             </h3>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">
               {leave.reason || "No reason provided"}
             </p>
           </div>
 
-          {/* Application Details */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Application Details
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Application Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-xs text-gray-500">Applied On</p>
                 <p className="text-sm font-medium text-gray-900">
@@ -414,7 +391,7 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
                 </p>
               </div>
               {leave.approved_on && (
-                <div>
+                <div className="col-span-2">
                   <p className="text-xs text-gray-500">Approved/Rejected On</p>
                   <p className="text-sm font-medium text-gray-900">
                     {formatDate(leave.approved_on)}
@@ -424,31 +401,27 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Additional Info */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-              <UserCheck className="w-4 h-4" />
-              Additional Information
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <UserCheck className="w-4 h-4" /> Additional Information
             </h3>
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <p className="text-xs text-gray-500">Leave Application ID</p>
-                <p className="text-sm font-mono text-gray-900">
-                  {leave.leave_application}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Lantern360 Leave ID</p>
-                <p className="text-sm font-mono text-gray-900">
-                  {leave.lantern360_leave_id}
-                </p>
-              </div>
+            <div>
+              <p className="text-xs text-gray-500">Leave Application ID</p>
+              <p className="text-sm font-mono text-gray-900 break-all">
+                {leave.leave_application}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Lantern360 Leave ID</p>
+              <p className="text-sm font-mono text-gray-900 break-all">
+                {leave.lantern360_leave_id}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-gray-200 flex flex-wrap justify-end gap-2 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -485,10 +458,118 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
   );
 };
 
+// ─── Mobile Leave Card ────────────────────────────────────────────────────────
+
+interface LeaveCardProps {
+  leave: LeaveRecord;
+  onView: (leave: LeaveRecord) => void;
+  onApprove: (leave: LeaveRecord, mode: "approve") => void;
+  onReject: (leave: LeaveRecord, mode: "reject") => void;
+  onModify: (leave: LeaveRecord, mode: "modify") => void;
+  formatDate: (d: string) => string;
+  getStatusBadge: (s: string) => string;
+}
+
+const LeaveCard: React.FC<LeaveCardProps> = ({
+  leave,
+  onView,
+  onApprove,
+  onReject,
+  onModify,
+  formatDate,
+  getStatusBadge,
+}) => (
+  <div
+    className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm active:bg-gray-50 transition-colors"
+    onClick={() => onView(leave)}
+  >
+    <div className="flex items-start justify-between gap-2 mb-3">
+      <div className="min-w-0">
+        <p className="font-semibold text-gray-900 truncate">
+          {leave.employee_name}
+        </p>
+        <p className="text-xs text-gray-500">{leave.employee_code}</p>
+      </div>
+      <span
+        className={`inline-flex flex-shrink-0 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(leave.status)}`}
+      >
+        {leave.status}
+      </span>
+    </div>
+
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+      <div>
+        <p className="text-xs text-gray-400">Leave Type</p>
+        <p className="text-sm text-gray-800 font-medium">
+          {leave.leave_type}
+          {leave.half_day && (
+            <span className="text-xs text-gray-500 ml-1">(Half)</span>
+          )}
+        </p>
+      </div>
+      <div>
+        <p className="text-xs text-gray-400">Days</p>
+        <p className="text-sm text-gray-800 font-medium">
+          {leave.total_days} day{leave.total_days !== 1 ? "s" : ""}
+        </p>
+      </div>
+      <div>
+        <p className="text-xs text-gray-400">From</p>
+        <p className="text-sm text-gray-800">{formatDate(leave.from_date)}</p>
+      </div>
+      <div>
+        <p className="text-xs text-gray-400">To</p>
+        <p className="text-sm text-gray-800">{formatDate(leave.to_date)}</p>
+      </div>
+    </div>
+
+    {leave.reason && (
+      <p className="text-xs text-gray-500 mb-3 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">
+        {leave.reason}
+      </p>
+    )}
+
+    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+      <p className="text-xs text-gray-400">
+        Applied {formatDate(leave.applied_on)}
+      </p>
+      <div
+        className="flex items-center gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {leave.status === "Open" && (
+          <>
+            <button
+              onClick={() => onApprove(leave, "approve")}
+              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
+              title="Approve"
+            >
+              <CheckCircle className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => onReject(leave, "reject")}
+              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+              title="Reject"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => onModify(leave, "modify")}
+          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+          title="Modify"
+        >
+          <Edit2 className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const LeaveManagement: React.FC = () => {
-  // Read once from localStorage on mount — stable refs
   const callerEmployeeCode = useRef(
     localStorage.getItem("employee_code") ?? "",
   ).current;
@@ -505,11 +586,9 @@ const LeaveManagement: React.FC = () => {
   );
   const [remarks, setRemarks] = useState<string>("");
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
-  // Filters
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -525,16 +604,13 @@ const LeaveManagement: React.FC = () => {
     reason: "",
   });
 
-  // Sort leaves by applied_on date (newest first)
   const sortedLeaves = React.useMemo(() => {
-    return [...leaves].sort((a, b) => {
-      return (
-        new Date(b.applied_on).getTime() - new Date(a.applied_on).getTime()
-      );
-    });
+    return [...leaves].sort(
+      (a, b) =>
+        new Date(b.applied_on).getTime() - new Date(a.applied_on).getTime(),
+    );
   }, [leaves]);
 
-  // Pagination helpers
   const totalItems = sortedLeaves.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const paginatedLeaves = sortedLeaves.slice(
@@ -542,12 +618,9 @@ const LeaveManagement: React.FC = () => {
     currentPage * itemsPerPage,
   );
 
-  // ── Fetch (HR API only) ────────────────────────────────────────────────────
-
   const fetchLeaves = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
       const params = new URLSearchParams({
         caller_employee_code: callerEmployeeCode,
@@ -555,23 +628,20 @@ const LeaveManagement: React.FC = () => {
         to_date: toDate,
         limit: "1000",
       });
-
       if (statusFilter !== "All") params.append("status", statusFilter);
       if (employeeCodeFilter)
         params.append("employee_code", employeeCodeFilter);
 
-      const url = `${apiBaseUrl}/leaves/erp-hr-leaves?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-
+      const response = await fetch(
+        `${apiBaseUrl}/leaves/erp-hr-leaves?${params.toString()}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
-
       const data: ApiResponse = await response.json();
-
       if (data.message.success) {
         setLeaves(data.message.leaves);
         setCurrentPage(1);
@@ -596,49 +666,38 @@ const LeaveManagement: React.FC = () => {
     apiBaseUrl,
   ]);
 
-  // ── Actions with correct API endpoints ─────────────────────────────────────
-
   const handleApproveReject = async (action: "approve" | "reject") => {
     if (!selectedLeave) return;
-
     try {
       const basePayload = {
         approver_employee_code: callerEmployeeCode,
         lantern360_leave_id: selectedLeave.lantern360_leave_id,
       };
-
       const endpoint =
         action === "approve"
           ? `${apiBaseUrl}/leaves/erp-approve-leave`
           : `${apiBaseUrl}/leaves/erp-reject-leave`;
-
-      let payload;
-      if (action === "approve") {
-        payload = remarks ? { ...basePayload, remarks } : basePayload;
-      } else {
-        payload = { ...basePayload, reason: remarks || "Rejected" };
-      }
-
-      console.log("Sending payload:", payload);
+      const payload =
+        action === "approve"
+          ? remarks
+            ? { ...basePayload, remarks }
+            : basePayload
+          : { ...basePayload, reason: remarks || "Rejected" };
 
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await response.json();
-      console.log("Response:", data);
-
       if (data.message?.success) {
         await fetchLeaves();
         closeModal();
         closeDetailsModal();
-      } else {
+      } else
         setError(
           data.message?.message || data.error || `Failed to ${action} request`,
         );
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     }
@@ -667,9 +726,7 @@ const LeaveManagement: React.FC = () => {
         await fetchLeaves();
         closeModal();
         closeDetailsModal();
-      } else {
-        setError(data.message.message || "Failed to modify leave");
-      }
+      } else setError(data.message.message || "Failed to modify leave");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     }
@@ -701,30 +758,14 @@ const LeaveManagement: React.FC = () => {
     setSelectedLeave(null);
     setRemarks("");
   };
-
   const openDetailsModal = (leave: LeaveRecord) => {
     setSelectedLeave(leave);
     setIsDetailsModalOpen(true);
   };
-
   const closeDetailsModal = () => {
     setIsDetailsModalOpen(false);
     setSelectedLeave(null);
   };
-
-  const handleApproveFromDetails = (leave: LeaveRecord) => {
-    openActionModal(leave, "approve");
-  };
-
-  const handleRejectFromDetails = (leave: LeaveRecord) => {
-    openActionModal(leave, "reject");
-  };
-
-  const handleModifyFromDetails = (leave: LeaveRecord) => {
-    openActionModal(leave, "modify");
-  };
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -750,7 +791,6 @@ const LeaveManagement: React.FC = () => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
-
   const handleItemsPerPageChange = (value: number) => {
     setItemsPerPage(value);
     setCurrentPage(1);
@@ -776,37 +816,40 @@ const LeaveManagement: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen overflow-x-hidden">
-      <div className="px-4 sm:px-6 max-w-7xl">
+    // KEY FIX: min-h-screen + overflow-y-auto on the page root so mobile can scroll
+    <div className="w-full bg-gray-50 min-h-screen">
+      {/* KEY FIX: px-4 only, no max-w that clips on mobile, pb-8 so last card isn't cut off */}
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {" "}
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white">
+                <h1 className="text-xl font-bold text-white">
                   Leave Management
                 </h1>
-                <p className="text-sm text-blue-100 mt-1">
+                <p className="text-sm text-blue-100 mt-0.5">
                   Manage all employee leave requests
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white"
+                  className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white text-sm"
                 >
                   <Filter className="w-4 h-4" />
-                  <span className="text-sm">Filters</span>
+                  <span>Filters</span>
                   <ChevronDown
                     className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
                   />
                 </button>
                 <button
                   onClick={fetchLeaves}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  <span className="text-sm">Refresh</span>
+                  <span className="hidden sm:inline">Refresh</span>
                 </button>
               </div>
             </div>
@@ -814,9 +857,8 @@ const LeaveManagement: React.FC = () => {
 
           {/* ── Filters Panel ── */}
           {showFilters && (
-            <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50 rounded-b-lg">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Status */}
+            <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
@@ -824,7 +866,7 @@ const LeaveManagement: React.FC = () => {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm"
                   >
                     <option value="All">All</option>
                     <option value="Open">Open</option>
@@ -833,7 +875,18 @@ const LeaveManagement: React.FC = () => {
                     <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee Code
+                  </label>
+                  <input
+                    type="text"
+                    value={employeeCodeFilter}
+                    onChange={(e) => setEmployeeCodeFilter(e.target.value)}
+                    placeholder="Filter by employee"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
                 <DatePicker
                   label="From Date"
                   value={fromDate}
@@ -844,22 +897,7 @@ const LeaveManagement: React.FC = () => {
                   value={toDate}
                   onChange={setToDate}
                 />
-
-                {/* Employee Code filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Code
-                  </label>
-                  <input
-                    type="text"
-                    value={employeeCodeFilter}
-                    onChange={(e) => setEmployeeCodeFilter(e.target.value)}
-                    placeholder="Filter by employee"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
               </div>
-
               <div className="mt-3 flex justify-end">
                 <button
                   onClick={fetchLeaves}
@@ -872,61 +910,78 @@ const LeaveManagement: React.FC = () => {
           )}
         </div>
 
-        {/* ── Table Card ── */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        {/* ── Content ── */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-center">
+            <p className="text-red-700 mb-2">{error}</p>
+            <button
+              onClick={fetchLeaves}
+              className="text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : sortedLeaves.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-1">
+              No leave requests found
+            </h3>
+            <p className="text-gray-500 text-sm">
+              No leave applications match your current filters.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* ── Mobile: Card List (hidden on md+) ── */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {paginatedLeaves.map((leave) => (
+                <LeaveCard
+                  key={leave.lantern360_leave_id}
+                  leave={leave}
+                  onView={openDetailsModal}
+                  onApprove={(l, m) => openActionModal(l, m)}
+                  onReject={(l, m) => openActionModal(l, m)}
+                  onModify={(l, m) => openActionModal(l, m)}
+                  formatDate={formatDate}
+                  getStatusBadge={getStatusBadge}
+                />
+              ))}
             </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center m-6">
-              <p className="text-red-700">{error}</p>
-              <button
-                onClick={fetchLeaves}
-                className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-              >
-                Try again
-              </button>
-            </div>
-          ) : sortedLeaves.length === 0 ? (
-            <div className="p-12 text-center">
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No leave requests found
-              </h3>
-              <p className="text-gray-500">
-                No leave applications match your current filters.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Table with horizontal scroll - responsive width */}
+
+            {/* ── Desktop: Table (hidden below md) ── */}
+            <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* KEY FIX: overflow-x-auto on the wrapper, remove table-fixed */}
               <div className="overflow-x-auto">
-                <table className="w-full divide-y divide-gray-200 text-sm table-fixed">
+                <table className="w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Employee
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Leave Type
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Duration
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Days
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Reason
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Applied On
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Actions
                       </th>
                     </tr>
@@ -938,15 +993,15 @@ const LeaveManagement: React.FC = () => {
                         className="hover:bg-gray-50 transition-colors cursor-pointer"
                         onClick={() => openDetailsModal(leave)}
                       >
-                        <td className="px-4 py-3 whitespace-nowrap truncate">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="font-medium text-gray-900">
                             {leave.employee_name}
                           </div>
-                          <div className="text-gray-500 text-xs truncate">
+                          <div className="text-gray-500 text-xs">
                             {leave.employee_code}
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap truncate">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {leave.leave_type}
                           {leave.half_day && (
                             <span className="ml-1 text-xs text-gray-500">
@@ -954,7 +1009,7 @@ const LeaveManagement: React.FC = () => {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 truncate">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
                           {formatDate(leave.from_date)}
                           {leave.from_date !== leave.to_date && (
                             <> – {formatDate(leave.to_date)}</>
@@ -971,7 +1026,7 @@ const LeaveManagement: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 max-w-xs">
-                          <div className="text-gray-900 break-words line-clamp-2">
+                          <div className="text-gray-900 line-clamp-2">
                             {leave.reason}
                           </div>
                         </td>
@@ -1005,7 +1060,6 @@ const LeaveManagement: React.FC = () => {
                                 </button>
                               </>
                             )}
-                            {/* HR can always modify */}
                             <button
                               onClick={() => openActionModal(leave, "modify")}
                               className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
@@ -1020,68 +1074,63 @@ const LeaveManagement: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              {/* ── Pagination ── */}
-              <div className="border-t border-gray-200 px-4 sm:px-6 py-4">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                  <div className="flex items-center gap-3 text-sm text-gray-700">
-                    <span>
-                      Showing{" "}
-                      {totalItems === 0
-                        ? 0
-                        : (currentPage - 1) * itemsPerPage + 1}
-                      –{Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
-                      {totalItems}
-                    </span>
-                    <select
-                      value={itemsPerPage}
-                      onChange={(e) =>
-                        handleItemsPerPageChange(Number(e.target.value))
-                      }
-                      className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {[5, 10, 20, 50, 100].map((n) => (
-                        <option key={n} value={n}>
-                          {n} per page
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`p-1.5 rounded-lg border ${currentPage === 1 ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    {getPageNumbers().map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                          currentPage === pageNum
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
+            {/* ── Pagination ── */}
+            <div className="mt-4 bg-white rounded-xl border border-gray-200 px-4 py-3">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span className="text-xs sm:text-sm">
+                    {totalItems === 0
+                      ? 0
+                      : (currentPage - 1) * itemsPerPage + 1}
+                    –{Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
+                    {totalItems}
+                  </span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) =>
+                      handleItemsPerPageChange(Number(e.target.value))
+                    }
+                    className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {[5, 10, 20, 50, 100].map((n) => (
+                      <option key={n} value={n}>
+                        {n} / page
+                      </option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-lg border ${currentPage === 1 ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {getPageNumbers().map((pageNum) => (
                     <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`p-1.5 rounded-lg border ${currentPage === totalPages ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`w-9 h-9 rounded-lg text-sm border transition-colors ${currentPage === pageNum ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      {pageNum}
                     </button>
-                  </div>
+                  ))}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-lg border ${currentPage === totalPages ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Leave Details Modal ── */}
@@ -1089,27 +1138,34 @@ const LeaveManagement: React.FC = () => {
         <LeaveDetailsModal
           leave={selectedLeave}
           onClose={closeDetailsModal}
-          onApprove={handleApproveFromDetails}
-          onReject={handleRejectFromDetails}
-          onModify={handleModifyFromDetails}
+          onApprove={(l) => openActionModal(l, "approve")}
+          onReject={(l) => openActionModal(l, "reject")}
+          onModify={(l) => openActionModal(l, "modify")}
           formatDate={formatDate}
           getStatusBadge={getStatusBadge}
         />
       )}
 
-      {/* ── Action Modal (Approve/Reject/Modify) ── */}
+      {/* ── Action Modal (Approve / Reject / Modify) ── */}
       {isModalOpen && selectedLeave && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
+        // KEY FIX: slides up from bottom on mobile (items-end), centered on sm+
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] flex flex-col">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h2 className="text-base font-semibold text-gray-900">
                 {modalMode === "approve" && "Approve Leave Request"}
                 {modalMode === "reject" && "Reject Leave Request"}
                 {modalMode === "modify" && "Modify Leave Request"}
               </h2>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="px-6 py-4">
+            <div className="px-5 py-4 overflow-y-auto flex-1">
               {modalMode === "modify" ? (
                 <div className="space-y-4">
                   <div>
@@ -1124,7 +1180,7 @@ const LeaveManagement: React.FC = () => {
                           leave_type: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="Casual Leave">Casual Leave</option>
                       <option value="Sick Leave">Sick Leave</option>
@@ -1159,7 +1215,7 @@ const LeaveManagement: React.FC = () => {
                           half_day: e.target.checked,
                         })
                       }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                     />
                     <label
                       htmlFor="halfDay"
@@ -1187,30 +1243,30 @@ const LeaveManagement: React.FC = () => {
                         setModifyForm({ ...modifyForm, reason: e.target.value })
                       }
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                 </div>
               ) : (
-                <div>
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-1">
-                    <p className="text-sm text-gray-600">
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                    <p className="text-sm text-gray-700">
                       <span className="font-medium">Employee:</span>{" "}
                       {selectedLeave.employee_name} (
                       {selectedLeave.employee_code})
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-700">
                       <span className="font-medium">Leave:</span>{" "}
                       {selectedLeave.leave_type} ({selectedLeave.total_days} day
                       {selectedLeave.total_days !== 1 ? "s" : ""})
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-700">
                       <span className="font-medium">Date:</span>{" "}
                       {formatDate(selectedLeave.from_date)}
                       {selectedLeave.from_date !== selectedLeave.to_date &&
                         ` – ${formatDate(selectedLeave.to_date)}`}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-700">
                       <span className="font-medium">Reason:</span>{" "}
                       {selectedLeave.reason}
                     </p>
@@ -1218,7 +1274,7 @@ const LeaveManagement: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {modalMode === "approve"
-                        ? "Approval Remarks"
+                        ? "Approval Remarks (optional)"
                         : "Rejection Reason"}
                     </label>
                     <textarea
@@ -1227,17 +1283,17 @@ const LeaveManagement: React.FC = () => {
                       rows={3}
                       placeholder={
                         modalMode === "approve"
-                          ? "Add approval remarks (optional)"
+                          ? "Add approval remarks…"
                           : "Provide reason for rejection"
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-5 py-4 border-t border-gray-200 flex justify-end gap-2 flex-shrink-0">
               <button
                 onClick={closeModal}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"

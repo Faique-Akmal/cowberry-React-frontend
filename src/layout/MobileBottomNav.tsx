@@ -209,7 +209,7 @@ export default function MobileBottomNav() {
           width: 320,
           height: 180,
           borderRadius: "160px 160px 0 0",
-          background: "blue-100",
+          background: "rgba(255,255,255,0.95)",
           border: "0.5px solid #e2e8f0",
           zIndex: 41,
           transformOrigin: "bottom center",
@@ -347,7 +347,7 @@ export default function MobileBottomNav() {
                       {item.icon}
                     </span>
                   </div>
-                  <span className="text-[9px] font-medium text-lantern-blue-600 dark:text-blue-300 whitespace-nowrap">
+                  <span className="text-[11px] font-medium text-lantern-blue-600 dark:text-blue-300 whitespace-nowrap">
                     {item.label}
                   </span>
                 </button>

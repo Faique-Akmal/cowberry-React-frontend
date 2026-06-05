@@ -429,7 +429,13 @@ export default function SignInForm() {
 
   return (
     <>
-      <div className="flex px-4 sm:px-6 flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg ">
+      <div
+        className="
+         p-3 mx-3 my-4
+        sm:p-0 sm:mx-0 sm:my-0
+  sm:border-0 sm:rounded-none
+  border-5 border-lantern-blue-600 flex px-4 sm:px-6 flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg "
+      >
         {/* Main animated container with dropping effect */}
         <div
           className={`
@@ -442,7 +448,7 @@ export default function SignInForm() {
           `}
         >
           {/* Logo with bounce animation */}
-          <div className="max-w-90 h-60 mx-auto pt-8">
+          <div className="max-w-90 h-60 mx-auto pt-8 sm:pt-12 flex items-center justify-center">
             <img
               src="lantern-logo.png"
               alt="cowberry-logo"
@@ -465,7 +471,7 @@ export default function SignInForm() {
           </div>
 
           {/* Welcome text with enhanced dropping effect */}
-          <div className="flex items-center justify-center w-full h-10 pb-4">
+          <div className="flex items-center justify-center w-full h-10 pb-4 ">
             <h1
               className={`
                 text-2xl font-bold relative

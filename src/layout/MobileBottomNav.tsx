@@ -12,6 +12,7 @@ import { UserCircleIcon } from "../icons";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { GridIcon, PlugInIcon } from "../icons";
 import { PiUsersThreeBold } from "react-icons/pi";
+import { MessageCircle } from "lucide-react";
 
 // ── Role helpers (mirrors AppSidebar logic exactly) ──────────────────────────
 function normalizeRole(role: string | null): string | null {
@@ -45,15 +46,15 @@ type ArcItem = {
 
 // ── Nav config (role arrays mirror AppSidebar navItems exactly) ───────────────
 const buildArcItems = (): ArcItem[] => [
-  {
-    icon: <UserCircleIcon className="w-5 h-5" />,
-    label: "Check-in",
-    path: "/employeecheckin",
-    role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
-  },
+  // {
+  //   icon: <UserCircleIcon className="w-5 h-5" />,
+  //   label: "Check-logs",
+  //   path: "/employeecheckin",
+  //   role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+  // },
   {
     icon: <MdListAlt className="text-xl" />,
-    label: "Travel",
+    label: "Travel session",
     path: "/tracking-admin",
     role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
   },
@@ -90,7 +91,7 @@ const buildArcItems = (): ArcItem[] => [
   },
   {
     icon: <MdOutlineAdd className="text-xl" />,
-    label: "Add",
+    label: "Add Data",
     subItems: [
       {
         label: "Zone",
@@ -114,10 +115,16 @@ const buildArcItems = (): ArcItem[] => [
   },
   {
     icon: <MdAnnouncement className="text-xl" />,
-    label: "Announce",
+    label: "Announcement",
     path: "/announcementList",
     role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
   },
+  // {
+  //   icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
+  //   label: "allUsers",
+  //   path: "/all-users",
+  //   role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+  // },
 ];
 
 // ── Arc math ─────────────────────────────────────────────────────────────────
@@ -194,7 +201,7 @@ export default function MobileBottomNav() {
 
       {/* Semicircle shell */}
       <div
-        className="lg:hidden fixed pointer-events-none"
+        className="lg:hidden fixed pointer-events-none "
         style={{
           bottom: 64,
           left: "50%",
@@ -202,7 +209,7 @@ export default function MobileBottomNav() {
           width: 320,
           height: 180,
           borderRadius: "160px 160px 0 0",
-          background: "white",
+          background: "blue-100",
           border: "0.5px solid #e2e8f0",
           zIndex: 41,
           transformOrigin: "bottom center",
@@ -351,7 +358,7 @@ export default function MobileBottomNav() {
       })}
 
       {/* Bottom bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 h-16 px-4">
+      <div className="lg:hidden fixed bottom-0  left-0 right-0 z-50 flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 h-16 px-4">
         {/* Home — always visible */}
         <Link
           to="/home"
@@ -361,6 +368,19 @@ export default function MobileBottomNav() {
           <MdOutlineHome className="text-2xl" />
           <span className="text-[9px] font-medium">Home</span>
         </Link>
+        {hasAccess(
+          ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+          userRole,
+        ) && (
+          <Link
+            to="/employeecheckin"
+            className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-colors
+              ${isActive("/employeecheckin") ? "text-lantern-blue-600" : "text-gray-500 dark:text-gray-400"}`}
+          >
+            <UserCircleIcon className="text-2xl" />
+            <span className="text-[9px] font-medium">Logs</span>
+          </Link>
+        )}
 
         {/* Center toggle */}
         <button
@@ -386,8 +406,22 @@ export default function MobileBottomNav() {
             className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-colors
               ${isActive("/all-users") ? "text-lantern-blue-600" : "text-gray-500 dark:text-gray-400"}`}
           >
-            <MdOutlinePeople className="text-2xl" />
+            <PiUsersThreeBold className="text-2xl" />
             <span className="text-[9px] font-medium">All Users</span>
+          </Link>
+        )}
+
+        {hasAccess(
+          ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+          userRole,
+        ) && (
+          <Link
+            to="/chat"
+            className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-colors
+              ${isActive("/chat") ? "text-lantern-blue-600" : "text-gray-500 dark:text-gray-400"}`}
+          >
+            <MessageCircle className="text-2xl" />
+            <span className="text-[9px] font-medium">Chat</span>
           </Link>
         )}
       </div>

@@ -179,7 +179,7 @@ const EmployeeStatus = () => {
 
   return (
     <div
-      className="relative rounded-2xl p-6 h-full overflow-hidden group transition-all duration-500 hover:shadow-2xl"
+      className="relative rounded-2xl p-6 h-full overflow-hidden group transition-all duration-500 hover:shadow-2xl mb-6"
       style={{
         ...currentGlassStyle,
         background: isDarkMode

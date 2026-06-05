@@ -216,8 +216,8 @@ layer(base);
       linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)),
       url("/lantern-logo.png");
     background-repeat: no-repeat;
-    background-position: center center;
-    background-size: 90% 96%;
+    background-position: center;
+    background-size: 100% auto;
     background-attachment: fixed;
     background-color: rgba(255, 255, 255, 0.9);
   }

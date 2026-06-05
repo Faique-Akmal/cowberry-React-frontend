@@ -56,36 +56,17 @@ export default function Home() {
         {/* Chart */}
         <div className="col-span-1 md:col-span-2 xl:col-span-12">
           <EmployeeChart />
-          {/* <div className="col-span-1 md:col-span-1 xl:col-span-4">
-      <BirthdaysToday />
-    </div> */}
         </div>
-
-        {/* Customers */}
-        {/* <div className="col-span-1 md:col-span-1 xl:col-span-4">
-      <Customers />
-    </div> */}
 
         {/* Birthdays */}
         <div className="col-span-1 md:col-span-1 xl:col-span-12 ">
           <BirthdaysToday />
         </div>
 
-        {/* Job Applications + Rejections */}
-        {/* {/* <div className="col-span-1 md:col-span-2 xl:col-span-4 flex flex-col gap-4">
-      <JobApplicationCard />
-      <JobRejectionCard />
-    </div> */}
-
         {/* Employee Status */}
         <div className="col-span-1 md:col-span-2 xl:col-span-12">
           <EmployeeStatus />
         </div>
-
-        {/* Map */}
-        {/* <div className="col-span-1 md:col-span-2 xl:col-span-12">
-      <MapComponent />
-    </div> */}
       </div>
     </>
   );

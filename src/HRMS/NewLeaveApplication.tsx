@@ -650,7 +650,7 @@ const LeaveApplicationPage: React.FC = () => {
   const remainingBalance = getRemainingBalance();
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-8 mb-10">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="px-6 py-4 bg-lantern-blue-600 text-white">
@@ -986,7 +986,7 @@ const LeaveApplicationPage: React.FC = () => {
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end space-x-4 ">
               <button
                 type="button"
                 onClick={handleReset}

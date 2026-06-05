@@ -817,7 +817,7 @@ const LeaveManagement: React.FC = () => {
 
   return (
     // KEY FIX: min-h-screen + overflow-y-auto on the page root so mobile can scroll
-    <div className="w-full bg-gray-50 min-h-screen">
+    <div className="w-full bg-gray-50 min-h-screen mb-10">
       {/* KEY FIX: px-4 only, no max-w that clips on mobile, pb-8 so last card isn't cut off */}
       <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
         {/* ── Header ── */}

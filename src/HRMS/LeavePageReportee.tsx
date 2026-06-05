@@ -749,7 +749,7 @@ const LeaveManagementReportee: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen mb-10">
       <div className="w-full">
         {/* ── Header ── */}
         <div className="bg-lantern-blue-600 px-4 pt-4 pb-4">

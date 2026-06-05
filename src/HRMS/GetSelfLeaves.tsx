@@ -499,7 +499,7 @@ const LeaveStatus: React.FC<LeaveStatusProps> = ({ token }) => {
   }
 
   return (
-    <div className="w-full max-w-full overflow-hidden bg-gray-50 min-h-screen">
+    <div className="w-full max-w-full overflow-hidden bg-gray-50 min-h-screen mb-10">
       <div className="px-4 sm:px-6 py-6">
         {/* ── Header ── */}
         <div className="mb-6">

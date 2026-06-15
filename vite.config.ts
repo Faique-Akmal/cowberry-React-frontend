@@ -22,7 +22,7 @@ export default defineConfig({
     // Proxy configuration to fix CORS issues
     proxy: {
       "/api": {
-        target: "https://cowberry.frappe.cloud",
+        target: "https://cowberry.m.frappe.cloud",
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path,

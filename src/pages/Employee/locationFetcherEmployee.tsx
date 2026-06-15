@@ -257,6 +257,7 @@ export default function AttendanceList() {
   const [users, setUsers] = useState<
     {
       userId: number;
+      fullName: string;
       username: string;
       employeeCode: string;
       department?: string;
@@ -1677,7 +1678,9 @@ export default function AttendanceList() {
           (a, b) =>
             new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
         ),
-        center: [21.1702, 72.8311], // Default center
+        center: group.sessions.length
+          ? getMapCenter(group.sessions[0])
+          : [21.1702, 72.8311],
         zoom: 13, // Default zoom
       });
 
@@ -1825,7 +1828,7 @@ export default function AttendanceList() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (session) =>
-          session.username.toLowerCase().includes(query) ||
+          session.fullName.toLowerCase().includes(query) ||
           session.employeeCode.toLowerCase().includes(query),
       );
     }
@@ -1939,7 +1942,7 @@ export default function AttendanceList() {
         const query = searchQuery.toLowerCase();
         sessionsToExport = sessionsToExport.filter(
           (session) =>
-            session.username.toLowerCase().includes(query) ||
+            session.fullName.toLowerCase().includes(query) ||
             session.employeeCode.toLowerCase().includes(query),
         );
       }
@@ -2419,7 +2422,7 @@ export default function AttendanceList() {
                 <option value="">All Users</option>
                 {users.map((user) => (
                   <option key={user.userId} value={user.userId.toString()}>
-                    {user.username} ({user.employeeCode})
+                    {user.fullName} ({user.employeeCode})
                     {user.department && ` - ${user.department}`}
                     {user.allocatedArea && ` [${user.allocatedArea}]`}
                   </option>
@@ -2954,7 +2957,7 @@ export default function AttendanceList() {
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">
-                          {session.username}
+                          {session.fullName}
                           <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
                             ({session.employeeCode})
                           </span>
@@ -3073,7 +3076,7 @@ export default function AttendanceList() {
             className={`${glassmorphismClasses.modal} w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col`}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-amber-600/90 to-orange-600/90 backdrop-blur-sm p-4 text-white flex-shrink-0">
+            <div className="bg-lantern-blue-600 backdrop-blur-sm p-2 text-white flex-shrink-0">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg flex-shrink-0">
@@ -3180,15 +3183,15 @@ export default function AttendanceList() {
                   <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/10 dark:border-gray-700/50">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-sm text-white dark:text-gray-300">
                           Total Sessions
                         </p>
-                        <p className="text-2xl font-bold text-purple-500">
+                        <p className="text-2xl font-bold text-white">
                           {farmerTravelData.length}
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-sm text-white dark:text-gray-300">
                           Active Sessions
                         </p>
                         <p className="text-2xl font-bold text-green-500">
@@ -3196,7 +3199,7 @@ export default function AttendanceList() {
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-sm text-white dark:text-gray-300">
                           Total Distance
                         </p>
                         <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -3210,7 +3213,7 @@ export default function AttendanceList() {
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-sm text-white dark:text-gray-300">
                           Total Farmers Met
                         </p>
                         <p className="text-2xl font-bold text-orange-500">
@@ -3239,8 +3242,8 @@ export default function AttendanceList() {
                         <div className="bg-gradient-to-r from-gray-500/10 via-gray-600/10 to-gray-700/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                             <div className="flex items-center gap-3">
-                              <div className="bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-xl">
-                                <FaRoute className="text-purple-500 dark:text-purple-400" />
+                              <div className=" backdrop-blur-sm p-2 rounded-xl">
+                                <FaRoute className="text-lantern-blue-600 " />
                               </div>
                               <div>
                                 <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -3304,12 +3307,12 @@ export default function AttendanceList() {
 
                             <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
                               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                                <FaUser />
+                                <FaUser className="text-lantern-blue-600" />
                                 <span className="text-sm font-medium">
                                   Farmers Met
                                 </span>
                               </div>
-                              <p className="text-lg font-bold text-purple-500">
+                              <p className="text-lg font-bold text-lantern-blue-600">
                                 {farmerCount}
                               </p>
                             </div>
@@ -3347,8 +3350,8 @@ export default function AttendanceList() {
                           {farmerCount > 0 && session.farmerData?.data && (
                             <div className="mb-6">
                               <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                                <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-lg">
-                                  <FaUser className="text-purple-500" />
+                                <div className="p-2  backdrop-blur-sm rounded-lg">
+                                  <FaUser className="text-lantern-blue-600" />
                                 </div>
                                 Farmers Met During This Session ({farmerCount})
                               </h4>
@@ -3370,7 +3373,7 @@ export default function AttendanceList() {
                                             {formatDateTime(farmer.createdAt)}
                                           </p>
                                         </div>
-                                        <span className="px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-purple-500/20 to-pink-600/20 border border-purple-400/30 text-purple-700 dark:text-purple-400 text-xs font-semibold rounded-full">
+                                        <span className="px-2 py-1 backdrop-blur-sm  border border-purple-400/30 text-lantern-blue-600 dark:text-purple-400 text-xs font-semibold rounded-full">
                                           ID: {farmer.id}
                                         </span>
                                       </div>
@@ -3824,7 +3827,7 @@ export default function AttendanceList() {
                     <FaUser className="text-2xl" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{mapView.username}</h2>
+                    <h2 className="text-2xl font-bold">{mapView.fullName}</h2>
                     <p className="text-blue-100">
                       Employee Code: {mapView.employeeCode} • Session ID: #
                       {mapView.sessionId}
@@ -3908,7 +3911,7 @@ export default function AttendanceList() {
                       <div className="text-sm">
                         <strong>🟢 Start Point</strong>
                         <br />
-                        <strong>User:</strong> {mapView.username}
+                        <strong>User:</strong> {mapView.fullName}
                         <br />
                         <strong>Time:</strong>{" "}
                         {formatDateTime(mapView.startTime)}
@@ -3945,7 +3948,7 @@ export default function AttendanceList() {
                             : "🔴 End Point"}
                         </strong>
                         <br />
-                        <strong>User:</strong> {mapView.username}
+                        <strong>User:</strong> {mapView.fullName}
                         <br />
                         <strong>Time:</strong>{" "}
                         {!mapView.endTime

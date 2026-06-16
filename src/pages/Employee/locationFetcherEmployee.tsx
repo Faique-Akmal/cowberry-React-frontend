@@ -3214,7 +3214,7 @@ export default function AttendanceList() {
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-white dark:text-gray-300">
-                          Total Farmers Met
+                          Total Events
                         </p>
                         <p className="text-2xl font-bold text-orange-500">
                           {farmerTravelData.reduce(
@@ -3309,7 +3309,7 @@ export default function AttendanceList() {
                               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
                                 <FaUser className="text-lantern-blue-600" />
                                 <span className="text-sm font-medium">
-                                  Farmers Met
+                                  Events
                                 </span>
                               </div>
                               <p className="text-lg font-bold text-lantern-blue-600">
@@ -3353,7 +3353,7 @@ export default function AttendanceList() {
                                 <div className="p-2  backdrop-blur-sm rounded-lg">
                                   <FaUser className="text-lantern-blue-600" />
                                 </div>
-                                Farmers Met During This Session ({farmerCount})
+                                Events in this session ({farmerCount})
                               </h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {session.farmerData.data.map(

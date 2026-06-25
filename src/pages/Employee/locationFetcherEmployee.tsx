@@ -70,6 +70,7 @@ interface TravelSession {
   totalDistance: number;
   department?: string;
   allocatedArea?: string;
+  totalSessions?: number;
 }
 
 interface LocationLog {
@@ -311,12 +312,16 @@ export default function AttendanceList() {
   // Current user info from localStorage
   const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
 
+  const [totalSessionsCount, setTotalSessionsCount] = useState<number>(0);
+
   // NEW: State for session logs
   const [sessionLogs, setSessionLogs] = useState<Record<number, LocationLog[]>>(
     {},
   );
   const [loadingLogs, setLoadingLogs] = useState<Record<number, boolean>>({});
   const [logsPagination, setLogsPagination] = useState<Record<number, any>>({});
+
+  const [isSearching, setIsSearching] = useState(false);
 
   // Custom icons for markers
   const customIcons = {
@@ -964,6 +969,10 @@ export default function AttendanceList() {
       if (res.data.success) {
         const sessions = res.data.data || [];
 
+        // ALWAYS store the total sessions count from API
+        // This will reflect the filtered total based on the query params
+        setTotalSessionsCount(res.data.totalSessions || sessions.length);
+
         // Apply role-based filtering on frontend as well (double safety)
         let filteredSessions = sessions;
         if (currentUserInfo?.userRole) {
@@ -1367,21 +1376,42 @@ export default function AttendanceList() {
   };
 
   // search query
-
-  // Add this new function to search across all pages
-  const searchAllSessions = async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      // If search is empty, do normal fetch
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) {
+      // If search is empty, load normal data
       fetchTravelSessions(1, false);
       return;
     }
 
+    setIsSearching(true);
+    searchAllSessions(searchQuery);
+    // setIsSearching will be set to false inside searchAllSessions
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+    fetchTravelSessions(1, false);
+  };
+
+  // Update the searchAllSessions function
+  const searchAllSessions = async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      // If search is empty, do normal fetch
+      fetchTravelSessions(1, false);
+      setIsSearching(false);
+      return;
+    }
+
     setIsLoading(true);
+    setIsSearching(true);
+
     try {
       let allSessions: TravelSession[] = [];
       let page = 1;
       let hasMore = true;
       const maxPages = 10; // Limit to prevent infinite loop
+      let apiTotalSessions = 0;
 
       while (hasMore && page <= maxPages) {
         const params: any = {
@@ -1421,6 +1451,11 @@ export default function AttendanceList() {
           const sessions = res.data.data || [];
           allSessions = [...allSessions, ...sessions];
 
+          // Store the total sessions from the first page
+          if (page === 1) {
+            apiTotalSessions = res.data.totalSessions || sessions.length;
+          }
+
           hasMore = res.data.hasNextPage || false;
           page++;
         } else {
@@ -1433,6 +1468,9 @@ export default function AttendanceList() {
       if (currentUserInfo?.userRole) {
         filteredSessions = filterSessionsByRole(allSessions);
       }
+
+      // Update the total sessions count with the API total (which includes all filters)
+      setTotalSessionsCount(apiTotalSessions);
 
       // Update state with all found sessions
       setTravelSessions(filteredSessions);
@@ -1470,6 +1508,7 @@ export default function AttendanceList() {
       console.error("Failed to search sessions", err);
     } finally {
       setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -2423,6 +2462,7 @@ export default function AttendanceList() {
         </div>
 
         {/* Stats Cards */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
@@ -2433,8 +2473,14 @@ export default function AttendanceList() {
                   Total Sessions
                 </p>
                 <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {totalSessions}
+                  {totalSessionsCount}
                 </p>
+                {/* Show filter indicator if filters are active */}
+                {(isDateFilterActive || selectedUser || searchQuery) && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Filtered results
+                  </p>
+                )}
               </div>
               <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
                 <FaListAlt className="text-blue-500 text-xl" />
@@ -2442,6 +2488,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Active Sessions card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2460,6 +2507,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Total Distance card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2478,6 +2526,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Users card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2496,36 +2545,73 @@ export default function AttendanceList() {
             </div>
           </div>
         </div>
-
         {/* Filters */}
         <div
           className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* Search Employee */}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaSearch className="inline mr-2" />
                 Search Employee
               </label>
-              <input
-                type="text"
-                placeholder="Search by name or employee code..."
-                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                value={searchQuery}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSearchQuery(value);
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or employee code..."
+                  className={`w-full px-4 py-2 pl-10 pr-24 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchQuery(value);
 
-                  // If search is empty, load normal data
-                  if (!value.trim()) {
-                    fetchTravelSessions(1, false);
-                  } else {
-                    // Search across all pages
-                    searchAllSessions(value);
-                  }
-                }}
-              />
+                    // If search is cleared, automatically load all data
+                    if (!value.trim()) {
+                      fetchTravelSessions(1, false);
+                    }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearchSubmit();
+                    }
+                  }}
+                />
+
+                {/* Search Icon inside input */}
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <FaSearch className="text-sm" />
+                </div>
+
+                {/* Buttons container - inside input on the right */}
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {searchQuery && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                      title="Clear search"
+                    >
+                      <FaTimes className="text-sm" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleSearchSubmit}
+                    className="px-3 py-1.5 bg-lantern-blue-600 hover:bg-lantern-blue-700 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
+                  >
+                    <FaSearch className="text-xs" />
+                    <span className="hidden sm:inline">Search</span>
+                  </button>
+                </div>
+              </div>
+
+              {isSearching && (
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <FaSpinner className="animate-spin" />
+                  Searching for "{searchQuery}"...
+                </div>
+              )}
             </div>
 
             {/* User Filter - Uncommented and improved */}
@@ -3213,7 +3299,7 @@ export default function AttendanceList() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
+                      <div className="w-10 h-10 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
                         {session.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div>

@@ -1366,6 +1366,113 @@ export default function AttendanceList() {
     setFarmerDataError(null);
   };
 
+  // search query
+
+  // Add this new function to search across all pages
+  const searchAllSessions = async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      // If search is empty, do normal fetch
+      fetchTravelSessions(1, false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let allSessions: TravelSession[] = [];
+      let page = 1;
+      let hasMore = true;
+      const maxPages = 10; // Limit to prevent infinite loop
+
+      while (hasMore && page <= maxPages) {
+        const params: any = {
+          page: page,
+          limit: 100, // Get more results per page
+          search: searchTerm,
+        };
+
+        // Add your existing filters
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+        if (selectedUser) params.userId = selectedUser;
+
+        // Add role-based filters
+        if (currentUserInfo?.userRole) {
+          const userRole = currentUserInfo.userRole.toLowerCase();
+          if (!userRole.includes("admin") && !userRole.includes("hr")) {
+            if (userRole.includes("manager") && currentUserInfo.department) {
+              params.department = currentUserInfo.department;
+            }
+            if (
+              (userRole.includes("zonal") ||
+                userRole.includes("zonalmanager")) &&
+              currentUserInfo.allocatedArea
+            ) {
+              params.allocatedArea = currentUserInfo.allocatedArea;
+            }
+          }
+        }
+
+        const res = await API.get<ApiPaginationResponse>(
+          "/admin/travel-sessions",
+          { params },
+        );
+
+        if (res.data.success) {
+          const sessions = res.data.data || [];
+          allSessions = [...allSessions, ...sessions];
+
+          hasMore = res.data.hasNextPage || false;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Apply role-based filtering
+      let filteredSessions = allSessions;
+      if (currentUserInfo?.userRole) {
+        filteredSessions = filterSessionsByRole(allSessions);
+      }
+
+      // Update state with all found sessions
+      setTravelSessions(filteredSessions);
+
+      // Update users list
+      const uniqueUsers = Array.from(
+        new Map(
+          filteredSessions.map((session) => [
+            session.userId,
+            {
+              userId: session.userId,
+              fullName: session.fullName,
+              employeeCode: session.employeeCode,
+              department: session.department || "Unknown",
+              allocatedArea: session.allocatedArea || "Unknown",
+            },
+          ]),
+        ).values(),
+      );
+
+      const filteredUsers = filterUsersByRole(uniqueUsers);
+      setUsers(filteredUsers);
+
+      // Update grouped view
+      const grouped = groupSessionsByUserAndDate(filteredSessions);
+      setGroupedView(grouped);
+
+      // Disable pagination since we loaded all results
+      setCurrentPage(1);
+      setTotalPages(1);
+      setHasMore(false);
+
+      setLastUpdateTime(new Date());
+    } catch (err) {
+      console.error("Failed to search sessions", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatDateTime = useCallback((dateTimeStr: string) => {
     if (!dateTimeStr) return "-";
     const date = new Date(dateTimeStr);
@@ -2394,7 +2501,8 @@ export default function AttendanceList() {
         <div
           className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Search Employee */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaSearch className="inline mr-2" />
@@ -2405,11 +2513,23 @@ export default function AttendanceList() {
                 placeholder="Search by name or employee code..."
                 className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQuery(value);
+
+                  // If search is empty, load normal data
+                  if (!value.trim()) {
+                    fetchTravelSessions(1, false);
+                  } else {
+                    // Search across all pages
+                    searchAllSessions(value);
+                  }
+                }}
               />
             </div>
 
-            <div>
+            {/* User Filter - Uncommented and improved */}
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaUser className="inline mr-2" />
                 Filter by User
@@ -2428,70 +2548,211 @@ export default function AttendanceList() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
-            {/* Date Range Filter */}
-            <div className="lg:col-span-2">
+            {/* Single Date Range Picker - Improved */}
+            <div className="lg:col-span-1">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <FaCalendarAlt className="inline mr-2" />
-                  Filter by Date Range
+                  Date Range
                 </label>
                 {isDateFilterActive && (
                   <button
                     onClick={clearDateFilter}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
                   >
-                    Clear Date Filter
+                    Clear
                   </button>
                 )}
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                    value={startDate}
-                    placeholder="start date"
-                    onChange={(e) => setStartDate(e.target.value)}
-                    max={endDate || new Date().toISOString().split("T")[0]}
-                  />
-                </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Select date range"
+                  className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30 cursor-pointer`}
+                  value={
+                    startDate && endDate
+                      ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+                      : startDate
+                        ? `From ${new Date(startDate).toLocaleDateString()}`
+                        : endDate
+                          ? `Until ${new Date(endDate).toLocaleDateString()}`
+                          : "Select date range"
+                  }
+                  readOnly
+                  onClick={() => {
+                    // Toggle date picker visibility
+                    const picker = document.getElementById("dateRangePicker");
+                    if (picker) {
+                      picker.classList.toggle("hidden");
+                    }
+                  }}
+                />
 
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate}
-                    max={new Date().toISOString().split("T")[0]}
-                  />
+                {/* Date Range Picker Dropdown */}
+                <div
+                  id="dateRangePicker"
+                  className="relative top-full left-0 right-0 mt-2 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 hidden"
+                  style={{ minWidth: "300px" }}
+                >
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        className={`w-full px-3 py-2 ${glassmorphismClasses.input} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          // Auto-close after selection if both dates are set
+                          if (e.target.value && endDate) {
+                            document
+                              .getElementById("dateRangePicker")
+                              ?.classList.add("hidden");
+                          }
+                        }}
+                        max={endDate || new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        className={`w-full px-3 py-2 ${glassmorphismClasses.input} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                        value={endDate}
+                        onChange={(e) => {
+                          setEndDate(e.target.value);
+                          // Auto-close after selection if both dates are set
+                          if (startDate && e.target.value) {
+                            document
+                              .getElementById("dateRangePicker")
+                              ?.classList.add("hidden");
+                          }
+                        }}
+                        min={startDate}
+                        max={new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Selection Buttons */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const sevenDaysAgo = new Date(today);
+                        sevenDaysAgo.setDate(today.getDate() - 7);
+                        setStartDate(sevenDaysAgo.toISOString().split("T")[0]);
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const thirtyDaysAgo = new Date(today);
+                        thirtyDaysAgo.setDate(today.getDate() - 30);
+                        setStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      Last 30 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const firstDayOfMonth = new Date(
+                          today.getFullYear(),
+                          today.getMonth(),
+                          1,
+                        );
+                        setStartDate(
+                          firstDayOfMonth.toISOString().split("T")[0],
+                        );
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  {/* Apply/Cancel Buttons */}
+                  <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                        // Trigger fetch with date range
+                        fetchTravelSessions(1, false);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Date Range Summary */}
               {isDateFilterActive && (
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <FaCalendarAlt className="text-xs" />
-                  <span>
-                    Showing sessions{" "}
-                    {startDate &&
-                      `from ${new Date(startDate).toLocaleDateString()}`}
-                    {startDate && endDate && " to "}
-                    {endDate &&
-                      `${!startDate ? "until " : ""}${new Date(endDate).toLocaleDateString()}`}
+                  <FaCalendarAlt className="text-xs flex-shrink-0" />
+                  <span className="truncate">
+                    {startDate && endDate
+                      ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+                      : startDate
+                        ? `From ${new Date(startDate).toLocaleDateString()}`
+                        : endDate
+                          ? `Until ${new Date(endDate).toLocaleDateString()}`
+                          : ""}
                   </span>
                 </div>
               )}
             </div>
 
+            {/* View Mode */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaChartLine className="inline mr-2" />
@@ -2504,7 +2765,7 @@ export default function AttendanceList() {
                 }
                 value={viewMode}
               >
-                <option value="grouped">Group session</option>
+                <option value="grouped">Group Session</option>
                 <option value="individual">Individual Sessions</option>
               </select>
             </div>

@@ -1397,6 +1397,8 @@ export default function AttendanceList() {
   const handleClearSearch = () => {
     setSearchQuery("");
     setIsSearching(false);
+    setCurrentPage(1);
+    setHasMore(true);
     fetchTravelSessions(1, false);
   };
 
@@ -1942,7 +1944,16 @@ export default function AttendanceList() {
     setCurrentPage(1);
     setHasMore(true);
     fetchTravelSessions(1, false);
-  }, [startDate, endDate, selectedUser, searchQuery]);
+  }, [startDate, endDate, selectedUser]);
+
+  // Handle search query changes separately
+  useEffect(() => {
+    // Only fetch when searchQuery changes and is not empty
+    if (searchQuery.trim()) {
+      // Search is handled by the search button, not auto-fetch
+      // Don't auto-fetch here
+    }
+  }, [searchQuery]);
 
   // Apply role-based filtering to the displayed sessions
   const filteredSessions = useMemo(() => {
@@ -2469,6 +2480,7 @@ export default function AttendanceList() {
 
         {/* Stats Cards */}
         {/* Stats Cards */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
@@ -2479,12 +2491,15 @@ export default function AttendanceList() {
                   Total Sessions
                 </p>
                 <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {totalSessionsCount}
+                  {/* Show filtered count when filters are active, otherwise show API total */}
+                  {isDateFilterActive || selectedUser || searchQuery
+                    ? totalSessions
+                    : totalSessionsCount}
                 </p>
                 {/* Show filter indicator if filters are active */}
                 {(isDateFilterActive || selectedUser || searchQuery) && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Filtered results
+                    Filtered results (of {totalSessionsCount} total)
                   </p>
                 )}
               </div>

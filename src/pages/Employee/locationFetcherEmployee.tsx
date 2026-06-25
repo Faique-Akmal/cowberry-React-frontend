@@ -1294,11 +1294,27 @@ export default function AttendanceList() {
     }
 
     try {
+      // Build params with date filtering
+      const params: any = { userId };
+
+      // If sessionDate is provided, use it as both start and end date
+      if (sessionDate) {
+        params.startDate = sessionDate;
+        params.endDate = sessionDate;
+      } else {
+        // Optionally use global date filters if available
+        // You can pass the global startDate and endDate from your component state
+        if (startDate) {
+          params.startDate = startDate;
+        }
+        if (endDate) {
+          params.endDate = endDate;
+        }
+      }
+
       const response = await API.get(
         `/tracking/locationlog/get_travel_sessions`,
-        {
-          params: { userId },
-        },
+        { params },
       );
 
       const data = response.data;
@@ -1328,18 +1344,8 @@ export default function AttendanceList() {
           }),
         );
 
-        let filteredSessions = allSessions;
-
-        if (sessionDate) {
-          filteredSessions = allSessions.filter((session) => {
-            const sessionDateStr = formatDateOnly(
-              session.date || session.startTime,
-            );
-            return sessionDateStr === sessionDate;
-          });
-        }
-
-        setFarmerTravelData(filteredSessions);
+        // No need to filter on frontend since backend already filters
+        setFarmerTravelData(allSessions);
         setShowFarmerDataModal(true);
       } else {
         setFarmerDataError(data.message || "No travel data found");

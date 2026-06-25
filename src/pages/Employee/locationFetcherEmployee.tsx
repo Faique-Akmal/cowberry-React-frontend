@@ -70,6 +70,7 @@ interface TravelSession {
   totalDistance: number;
   department?: string;
   allocatedArea?: string;
+  totalSessions?: number;
 }
 
 interface LocationLog {
@@ -311,12 +312,16 @@ export default function AttendanceList() {
   // Current user info from localStorage
   const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
 
+  const [totalSessionsCount, setTotalSessionsCount] = useState<number>(0);
+
   // NEW: State for session logs
   const [sessionLogs, setSessionLogs] = useState<Record<number, LocationLog[]>>(
     {},
   );
   const [loadingLogs, setLoadingLogs] = useState<Record<number, boolean>>({});
   const [logsPagination, setLogsPagination] = useState<Record<number, any>>({});
+
+  const [isSearching, setIsSearching] = useState(false);
 
   // Custom icons for markers
   const customIcons = {
@@ -964,6 +969,10 @@ export default function AttendanceList() {
       if (res.data.success) {
         const sessions = res.data.data || [];
 
+        // ALWAYS store the total sessions count from API
+        // This will reflect the filtered total based on the query params
+        setTotalSessionsCount(res.data.totalSessions || sessions.length);
+
         // Apply role-based filtering on frontend as well (double safety)
         let filteredSessions = sessions;
         if (currentUserInfo?.userRole) {
@@ -1285,11 +1294,27 @@ export default function AttendanceList() {
     }
 
     try {
+      // Build params with date filtering
+      const params: any = { userId };
+
+      // If sessionDate is provided, use it as both start and end date
+      if (sessionDate) {
+        params.startDate = sessionDate;
+        params.endDate = sessionDate;
+      } else {
+        // Optionally use global date filters if available
+        // You can pass the global startDate and endDate from your component state
+        if (startDate) {
+          params.startDate = startDate;
+        }
+        if (endDate) {
+          params.endDate = endDate;
+        }
+      }
+
       const response = await API.get(
         `/tracking/locationlog/get_travel_sessions`,
-        {
-          params: { userId },
-        },
+        { params },
       );
 
       const data = response.data;
@@ -1319,18 +1344,8 @@ export default function AttendanceList() {
           }),
         );
 
-        let filteredSessions = allSessions;
-
-        if (sessionDate) {
-          filteredSessions = allSessions.filter((session) => {
-            const sessionDateStr = formatDateOnly(
-              session.date || session.startTime,
-            );
-            return sessionDateStr === sessionDate;
-          });
-        }
-
-        setFarmerTravelData(filteredSessions);
+        // No need to filter on frontend since backend already filters
+        setFarmerTravelData(allSessions);
         setShowFarmerDataModal(true);
       } else {
         setFarmerDataError(data.message || "No travel data found");
@@ -1364,6 +1379,143 @@ export default function AttendanceList() {
     setShowFarmerDataModal(false);
     setFarmerTravelData([]);
     setFarmerDataError(null);
+  };
+
+  // search query
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) {
+      // If search is empty, load normal data
+      fetchTravelSessions(1, false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchAllSessions(searchQuery);
+    // setIsSearching will be set to false inside searchAllSessions
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+    fetchTravelSessions(1, false);
+  };
+
+  // Update the searchAllSessions function
+  const searchAllSessions = async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      // If search is empty, do normal fetch
+      fetchTravelSessions(1, false);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setIsSearching(true);
+
+    try {
+      let allSessions: TravelSession[] = [];
+      let page = 1;
+      let hasMore = true;
+      const maxPages = 10; // Limit to prevent infinite loop
+      let apiTotalSessions = 0;
+
+      while (hasMore && page <= maxPages) {
+        const params: any = {
+          page: page,
+          limit: 100, // Get more results per page
+          search: searchTerm,
+        };
+
+        // Add your existing filters
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+        if (selectedUser) params.userId = selectedUser;
+
+        // Add role-based filters
+        if (currentUserInfo?.userRole) {
+          const userRole = currentUserInfo.userRole.toLowerCase();
+          if (!userRole.includes("admin") && !userRole.includes("hr")) {
+            if (userRole.includes("manager") && currentUserInfo.department) {
+              params.department = currentUserInfo.department;
+            }
+            if (
+              (userRole.includes("zonal") ||
+                userRole.includes("zonalmanager")) &&
+              currentUserInfo.allocatedArea
+            ) {
+              params.allocatedArea = currentUserInfo.allocatedArea;
+            }
+          }
+        }
+
+        const res = await API.get<ApiPaginationResponse>(
+          "/admin/travel-sessions",
+          { params },
+        );
+
+        if (res.data.success) {
+          const sessions = res.data.data || [];
+          allSessions = [...allSessions, ...sessions];
+
+          // Store the total sessions from the first page
+          if (page === 1) {
+            apiTotalSessions = res.data.totalSessions || sessions.length;
+          }
+
+          hasMore = res.data.hasNextPage || false;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Apply role-based filtering
+      let filteredSessions = allSessions;
+      if (currentUserInfo?.userRole) {
+        filteredSessions = filterSessionsByRole(allSessions);
+      }
+
+      // Update the total sessions count with the API total (which includes all filters)
+      setTotalSessionsCount(apiTotalSessions);
+
+      // Update state with all found sessions
+      setTravelSessions(filteredSessions);
+
+      // Update users list
+      const uniqueUsers = Array.from(
+        new Map(
+          filteredSessions.map((session) => [
+            session.userId,
+            {
+              userId: session.userId,
+              fullName: session.fullName,
+              employeeCode: session.employeeCode,
+              department: session.department || "Unknown",
+              allocatedArea: session.allocatedArea || "Unknown",
+            },
+          ]),
+        ).values(),
+      );
+
+      const filteredUsers = filterUsersByRole(uniqueUsers);
+      setUsers(filteredUsers);
+
+      // Update grouped view
+      const grouped = groupSessionsByUserAndDate(filteredSessions);
+      setGroupedView(grouped);
+
+      // Disable pagination since we loaded all results
+      setCurrentPage(1);
+      setTotalPages(1);
+      setHasMore(false);
+
+      setLastUpdateTime(new Date());
+    } catch (err) {
+      console.error("Failed to search sessions", err);
+    } finally {
+      setIsLoading(false);
+      setIsSearching(false);
+    }
   };
 
   const formatDateTime = useCallback((dateTimeStr: string) => {
@@ -2316,6 +2468,7 @@ export default function AttendanceList() {
         </div>
 
         {/* Stats Cards */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
@@ -2326,8 +2479,14 @@ export default function AttendanceList() {
                   Total Sessions
                 </p>
                 <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {totalSessions}
+                  {totalSessionsCount}
                 </p>
+                {/* Show filter indicator if filters are active */}
+                {(isDateFilterActive || selectedUser || searchQuery) && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Filtered results
+                  </p>
+                )}
               </div>
               <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
                 <FaListAlt className="text-blue-500 text-xl" />
@@ -2335,6 +2494,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Active Sessions card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2353,6 +2513,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Total Distance card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2371,6 +2532,7 @@ export default function AttendanceList() {
             </div>
           </div>
 
+          {/* Users card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2389,27 +2551,77 @@ export default function AttendanceList() {
             </div>
           </div>
         </div>
-
         {/* Filters */}
         <div
           className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Search Employee */}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaSearch className="inline mr-2" />
                 Search Employee
               </label>
-              <input
-                type="text"
-                placeholder="Search by name or employee code..."
-                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or employee code..."
+                  className={`w-full px-4 py-2 pl-10 pr-24 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchQuery(value);
+
+                    // If search is cleared, automatically load all data
+                    if (!value.trim()) {
+                      fetchTravelSessions(1, false);
+                    }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearchSubmit();
+                    }
+                  }}
+                />
+
+                {/* Search Icon inside input */}
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <FaSearch className="text-sm" />
+                </div>
+
+                {/* Buttons container - inside input on the right */}
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {searchQuery && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                      title="Clear search"
+                    >
+                      <FaTimes className="text-sm" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleSearchSubmit}
+                    className="px-3 py-1.5 bg-lantern-blue-600 hover:bg-lantern-blue-700 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
+                  >
+                    <FaSearch className="text-xs" />
+                    <span className="hidden sm:inline">Search</span>
+                  </button>
+                </div>
+              </div>
+
+              {isSearching && (
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <FaSpinner className="animate-spin" />
+                  Searching for "{searchQuery}"...
+                </div>
+              )}
             </div>
 
-            <div>
+            {/* User Filter - Uncommented and improved */}
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaUser className="inline mr-2" />
                 Filter by User
@@ -2428,70 +2640,211 @@ export default function AttendanceList() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
-            {/* Date Range Filter */}
-            <div className="lg:col-span-2">
+            {/* Single Date Range Picker - Improved */}
+            <div className="lg:col-span-1">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <FaCalendarAlt className="inline mr-2" />
-                  Filter by Date Range
+                  Date Range
                 </label>
                 {isDateFilterActive && (
                   <button
                     onClick={clearDateFilter}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
                   >
-                    Clear Date Filter
+                    Clear
                   </button>
                 )}
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                    value={startDate}
-                    placeholder="start date"
-                    onChange={(e) => setStartDate(e.target.value)}
-                    max={endDate || new Date().toISOString().split("T")[0]}
-                  />
-                </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Select date range"
+                  className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30 cursor-pointer`}
+                  value={
+                    startDate && endDate
+                      ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+                      : startDate
+                        ? `From ${new Date(startDate).toLocaleDateString()}`
+                        : endDate
+                          ? `Until ${new Date(endDate).toLocaleDateString()}`
+                          : "Select date range"
+                  }
+                  readOnly
+                  onClick={() => {
+                    // Toggle date picker visibility
+                    const picker = document.getElementById("dateRangePicker");
+                    if (picker) {
+                      picker.classList.toggle("hidden");
+                    }
+                  }}
+                />
 
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate}
-                    max={new Date().toISOString().split("T")[0]}
-                  />
+                {/* Date Range Picker Dropdown */}
+                <div
+                  id="dateRangePicker"
+                  className="relative top-full left-0 right-0 mt-2 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 hidden"
+                  style={{ minWidth: "300px" }}
+                >
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        className={`w-full px-3 py-2 ${glassmorphismClasses.input} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          // Auto-close after selection if both dates are set
+                          if (e.target.value && endDate) {
+                            document
+                              .getElementById("dateRangePicker")
+                              ?.classList.add("hidden");
+                          }
+                        }}
+                        max={endDate || new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        className={`w-full px-3 py-2 ${glassmorphismClasses.input} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                        value={endDate}
+                        onChange={(e) => {
+                          setEndDate(e.target.value);
+                          // Auto-close after selection if both dates are set
+                          if (startDate && e.target.value) {
+                            document
+                              .getElementById("dateRangePicker")
+                              ?.classList.add("hidden");
+                          }
+                        }}
+                        min={startDate}
+                        max={new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Selection Buttons */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const sevenDaysAgo = new Date(today);
+                        sevenDaysAgo.setDate(today.getDate() - 7);
+                        setStartDate(sevenDaysAgo.toISOString().split("T")[0]);
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const thirtyDaysAgo = new Date(today);
+                        thirtyDaysAgo.setDate(today.getDate() - 30);
+                        setStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      Last 30 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const firstDayOfMonth = new Date(
+                          today.getFullYear(),
+                          today.getMonth(),
+                          1,
+                        );
+                        setStartDate(
+                          firstDayOfMonth.toISOString().split("T")[0],
+                        );
+                        setEndDate(today.toISOString().split("T")[0]);
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  {/* Apply/Cancel Buttons */}
+                  <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                      }}
+                      className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        document
+                          .getElementById("dateRangePicker")
+                          ?.classList.add("hidden");
+                        // Trigger fetch with date range
+                        fetchTravelSessions(1, false);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Date Range Summary */}
               {isDateFilterActive && (
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <FaCalendarAlt className="text-xs" />
-                  <span>
-                    Showing sessions{" "}
-                    {startDate &&
-                      `from ${new Date(startDate).toLocaleDateString()}`}
-                    {startDate && endDate && " to "}
-                    {endDate &&
-                      `${!startDate ? "until " : ""}${new Date(endDate).toLocaleDateString()}`}
+                  <FaCalendarAlt className="text-xs flex-shrink-0" />
+                  <span className="truncate">
+                    {startDate && endDate
+                      ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+                      : startDate
+                        ? `From ${new Date(startDate).toLocaleDateString()}`
+                        : endDate
+                          ? `Until ${new Date(endDate).toLocaleDateString()}`
+                          : ""}
                   </span>
                 </div>
               )}
             </div>
 
+            {/* View Mode */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaChartLine className="inline mr-2" />
@@ -2504,7 +2857,7 @@ export default function AttendanceList() {
                 }
                 value={viewMode}
               >
-                <option value="grouped">Group session</option>
+                <option value="grouped">Group Session</option>
                 <option value="individual">Individual Sessions</option>
               </select>
             </div>
@@ -2952,7 +3305,7 @@ export default function AttendanceList() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500/80 to-indigo-600/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
+                      <div className="w-10 h-10 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
                         {session.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div>

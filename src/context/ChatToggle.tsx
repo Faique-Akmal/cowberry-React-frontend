@@ -22,7 +22,7 @@ const ChatToggle = () => {
   return (
     <Link
       to="/chat"
-      className={`fixed hidden sm:flex  z-[9999] bottom-25 right-1 bg-lantern-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-lantern-blue-400 transition-all duration-300 hover:scale-110 active:scale-95 ${
+      className={`fixed hidden sm:flex  z-[9999] bottom-15 right-5 bg-lantern-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-lantern-blue-400 transition-all duration-300 hover:scale-110 active:scale-95 ${
         isVisible
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-10 pointer-events-none"

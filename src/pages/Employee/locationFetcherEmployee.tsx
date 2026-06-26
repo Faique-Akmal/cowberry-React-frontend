@@ -1,4 +1,3 @@
-// fully functional code for location fetcher
 // src/components/admin/TravelSessions.tsx
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 
@@ -149,7 +148,6 @@ interface MultiSessionMapView {
   userId: number;
   username: string;
   fullName: string;
-
   employeeCode: string;
   date: string;
   sessions: TravelSession[];
@@ -196,6 +194,65 @@ interface SessionLogsResponse {
   };
   data: LocationLog[];
 }
+
+// ============ FIX: Utility function to filter logs by session time ============
+const filterLogsBySessionTime = (
+  logs: LocationLog[],
+  sessionStartTime: string,
+  sessionEndTime?: string,
+): LocationLog[] => {
+  if (!logs || logs.length === 0) return [];
+
+  const sessionStart = new Date(sessionStartTime).getTime();
+  const sessionEnd = sessionEndTime ? new Date(sessionEndTime).getTime() : null;
+
+  // Get the session date (without time)
+  const sessionDate = new Date(sessionStartTime);
+  sessionDate.setHours(0, 0, 0, 0);
+  const sessionDateStart = sessionDate.getTime();
+  const sessionDateEnd = sessionDateStart + 24 * 60 * 60 * 1000 - 1; // End of the day
+
+  // Filter logs that fall within the session's date and time range
+  return logs.filter((log) => {
+    const logTime = new Date(log.timestamp).getTime();
+
+    // First, check if log is on the same date as the session
+    const logDate = new Date(log.timestamp);
+    logDate.setHours(0, 0, 0, 0);
+    const logDateOnly = logDate.getTime();
+
+    // If log is not on the same date as session, filter it out
+    if (logDateOnly !== sessionDateStart) {
+      return false;
+    }
+
+    // If session has ended, check if log is between start and end time
+    if (sessionEnd) {
+      return logTime >= sessionStart && logTime <= sessionEnd;
+    }
+
+    // For active sessions, allow logs from session start to current time
+    // with a small buffer for timezone differences
+    const now = new Date().getTime();
+    return logTime >= sessionStart && logTime <= now;
+  });
+};
+
+// ============ FIX: Filter and map logs to session ============
+const filterAndMapLogsToSession = (
+  logs: LocationLog[],
+  session: TravelSession,
+): LocationLog[] => {
+  if (!logs || logs.length === 0) return [];
+  if (!session) return logs;
+
+  // Filter logs by the session's actual time range
+  return filterLogsBySessionTime(
+    logs,
+    session.startTime,
+    session.endTime || undefined,
+  );
+};
 
 // Glassmorphism CSS classes
 const glassmorphismClasses = {
@@ -371,7 +428,6 @@ export default function AttendanceList() {
   useEffect(() => {
     const getUserInfo = () => {
       try {
-        // Try to get user data from localStorage
         const userDataStr = localStorage.getItem("user");
         let userData = null;
         if (userDataStr) {
@@ -382,7 +438,6 @@ export default function AttendanceList() {
           }
         }
 
-        // Try multiple possible keys for role
         let userRole = "";
         if (localStorage.getItem("userRole")) {
           userRole = localStorage.getItem("userRole") || "";
@@ -398,7 +453,6 @@ export default function AttendanceList() {
           userRole = userData.user_role;
         }
 
-        // Get department
         let department = localStorage.getItem("department") || "";
         if (!department && userData?.department) {
           department = userData.department;
@@ -406,7 +460,6 @@ export default function AttendanceList() {
           department = userData.dept;
         }
 
-        // Get allocated area
         let allocatedArea = localStorage.getItem("allocatedarea") || "";
         if (!allocatedArea && userData?.allocatedArea) {
           allocatedArea = userData.allocatedArea;
@@ -454,7 +507,6 @@ export default function AttendanceList() {
         };
       }
 
-      // Sort sessions by start time to identify the first session
       const sortedSessions = [...sessions].sort(
         (a, b) =>
           new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
@@ -463,13 +515,11 @@ export default function AttendanceList() {
       const firstSession = sortedSessions[0];
       const firstSessionDistance = firstSession.totalDistance || 0;
 
-      // Calculate total of all sessions
       const originalTotalDistance = sortedSessions.reduce(
         (sum, session) => sum + (session.totalDistance || 0),
         0,
       );
 
-      // Subtract first session's distance
       const adjustedDistance = Math.max(
         0,
         originalTotalDistance - firstSessionDistance,
@@ -484,7 +534,7 @@ export default function AttendanceList() {
     [],
   );
 
-  // Function to fetch logs for a specific session
+  // ============ FIX: Updated fetchSessionLogs with filtering ============
   const fetchSessionLogs = async (sessionId: number, page: number = 1) => {
     setLoadingLogs((prev) => ({ ...prev, [sessionId]: true }));
 
@@ -499,11 +549,53 @@ export default function AttendanceList() {
       if (response.data.success) {
         const logs = response.data.data;
 
-        // Update session logs
+        // Get the session from cache or state
+        const session =
+          sessionsMap[`${sessionId}`] ||
+          travelSessions.find((s) => s.sessionId === sessionId);
+
+        let filteredLogs = logs;
+
+        // ============ FIX: Filter logs by session time ============
+        if (session) {
+          filteredLogs = filterAndMapLogsToSession(logs, session);
+
+          // Log filtering info for debugging
+          if (filteredLogs.length < logs.length) {
+            console.group(`Session ${sessionId} - Log Filtering`);
+            console.log(`Total logs from API: ${logs.length}`);
+            console.log(
+              `Filtered logs (matching session): ${filteredLogs.length}`,
+            );
+            console.log(`Removed: ${logs.length - filteredLogs.length} logs`);
+            console.log(
+              `Session date: ${new Date(session.startTime).toLocaleDateString()}`,
+            );
+            console.log(
+              `Session start: ${new Date(session.startTime).toLocaleString()}`,
+            );
+            console.log(
+              `Session end: ${session.endTime ? new Date(session.endTime).toLocaleString() : "Active"}`,
+            );
+            if (logs.length > 0) {
+              console.log(`Log date range:`, {
+                first: new Date(logs[0].timestamp).toLocaleDateString(),
+                last: new Date(
+                  logs[logs.length - 1].timestamp,
+                ).toLocaleDateString(),
+              });
+            }
+            console.groupEnd();
+          }
+        }
+
+        // Update session logs with filtered logs
         setSessionLogs((prev) => ({
           ...prev,
           [sessionId]:
-            page === 1 ? logs : [...(prev[sessionId] || []), ...logs],
+            page === 1
+              ? filteredLogs
+              : [...(prev[sessionId] || []), ...filteredLogs],
         }));
 
         // Store pagination info
@@ -512,7 +604,7 @@ export default function AttendanceList() {
           [sessionId]: response.data.pagination,
         }));
 
-        return logs;
+        return filteredLogs;
       }
     } catch (error) {
       console.error(`Failed to fetch logs for session ${sessionId}:`, error);
@@ -528,11 +620,10 @@ export default function AttendanceList() {
     (sessions: TravelSession[]): GroupedSession[] => {
       const groupedMap = new Map<string, GroupedSession>();
 
-      // First sort sessions by date (newest first)
       const sortedSessions = [...sessions].sort((a, b) => {
         const dateA = new Date(a.startTime);
         const dateB = new Date(b.startTime);
-        return dateB.getTime() - dateA.getTime(); // Newest first
+        return dateB.getTime() - dateA.getTime();
       });
 
       sortedSessions.forEach((session) => {
@@ -543,7 +634,6 @@ export default function AttendanceList() {
           groupedMap.set(groupKey, {
             userId: session.userId,
             username: session.username,
-
             employeeCode: session.employeeCode,
             fullName: session.fullName,
             date: dateKey,
@@ -555,7 +645,7 @@ export default function AttendanceList() {
             activeSessions: session.endTime ? 0 : 1,
             startTime: session.startTime,
             endTime: session.endTime || session.startTime,
-            totalPoints: sessionLogs[session.sessionId]?.length || 0,
+            totalPoints: 0,
             isLoading: false,
             hasMoreSessions: false,
             allSessionsLoaded: true,
@@ -563,12 +653,10 @@ export default function AttendanceList() {
         } else {
           const existingGroup = groupedMap.get(groupKey)!;
 
-          // Check if session already exists in the group
           const sessionExists = existingGroup.sessions.some(
             (s) => s.sessionId === session.sessionId,
           );
           if (!sessionExists) {
-            // Add session to the group while maintaining chronological order
             const insertIndex = existingGroup.sessions.findIndex(
               (s) =>
                 new Date(s.startTime).getTime() >
@@ -583,8 +671,6 @@ export default function AttendanceList() {
 
             existingGroup.totalSessions += 1;
             existingGroup.activeSessions += session.endTime ? 0 : 1;
-            existingGroup.totalPoints +=
-              sessionLogs[session.sessionId]?.length || 0;
 
             if (
               new Date(session.startTime) < new Date(existingGroup.startTime)
@@ -600,21 +686,28 @@ export default function AttendanceList() {
         }
       });
 
-      // Calculate adjusted distances for each group
       const groups = Array.from(groupedMap.values()).map((group) => {
         const distanceData = calculateAdjustedGroupDistance(group.sessions);
+
+        // Calculate total points from filtered logs
+        let totalPoints = 0;
+        group.sessions.forEach((session) => {
+          const logs = sessionLogs[session.sessionId] || [];
+          // Use filtered logs for point count
+          const filteredLogs = filterAndMapLogsToSession(logs, session);
+          totalPoints += filteredLogs.length;
+        });
 
         return {
           ...group,
           totalDistance: distanceData.totalDistance,
           firstSessionDistance: distanceData.firstSessionDistance,
           originalTotalDistance: distanceData.originalTotalDistance,
+          totalPoints: totalPoints,
         };
       });
 
-      // Sort groups by latest session time of each user
       return groups.sort((a, b) => {
-        // Get the latest session start time for each group
         const getLatestSessionTime = (group: GroupedSession): Date => {
           const latestSession = group.sessions.reduce((latest, current) => {
             const latestTime = new Date(latest.startTime).getTime();
@@ -627,7 +720,6 @@ export default function AttendanceList() {
         const aLatestTime = getLatestSessionTime(a);
         const bLatestTime = getLatestSessionTime(b);
 
-        // Sort by latest session time (descending - newest first)
         return bLatestTime.getTime() - aLatestTime.getTime();
       });
     },
@@ -655,7 +747,6 @@ export default function AttendanceList() {
   useEffect(() => {
     if (currentUserInfo) {
       fetchTravelSessions();
-      // Load all sessions for export
       loadAllSessionsForExport();
     }
   }, [currentUserInfo]);
@@ -669,7 +760,6 @@ export default function AttendanceList() {
 
       const userRole = currentUserInfo.userRole.toLowerCase();
 
-      // HR/Admin/SuperAdmin should see everything
       if (
         userRole.includes("admin") ||
         userRole.includes("superadmin") ||
@@ -678,17 +768,15 @@ export default function AttendanceList() {
         return sessions;
       }
 
-      // Manager: filter by department
       if (userRole.includes("manager")) {
         const managerDepartment = currentUserInfo.department
           ?.toLowerCase()
           .trim();
         if (!managerDepartment) {
           console.warn("Manager role but no department found");
-          return []; // Don't show anything if no department
+          return [];
         }
 
-        // Filter sessions where session department matches manager's department
         const filtered = sessions.filter((session) => {
           const sessionDept = (session.department || "").toLowerCase().trim();
           return sessionDept === managerDepartment;
@@ -697,15 +785,13 @@ export default function AttendanceList() {
         return filtered;
       }
 
-      // Zonal Manager: filter by allocated area
       if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
         const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
         if (!zonalArea) {
           console.warn("ZonalManager role but no allocated area found");
-          return []; // Don't show anything if no area
+          return [];
         }
 
-        // Filter sessions where session allocated area matches zonal manager's area
         const filtered = sessions.filter((session) => {
           const sessionArea = (session.allocatedArea || "")
             .toLowerCase()
@@ -730,7 +816,6 @@ export default function AttendanceList() {
 
       const userRole = currentUserInfo.userRole.toLowerCase();
 
-      // HR/Admin/SuperAdmin should see all users
       if (
         userRole.includes("admin") ||
         userRole.includes("superadmin") ||
@@ -739,7 +824,6 @@ export default function AttendanceList() {
         return usersList;
       }
 
-      // Manager: filter by department
       if (userRole.includes("manager")) {
         const managerDepartment = currentUserInfo.department
           ?.toLowerCase()
@@ -757,7 +841,6 @@ export default function AttendanceList() {
         return filtered;
       }
 
-      // Zonal Manager: filter by allocated area
       if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
         const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
         if (!zonalArea) {
@@ -808,7 +891,7 @@ export default function AttendanceList() {
   // Auto-refresh logic
   useEffect(() => {
     if (autoRefresh) {
-      const refreshInterval = activeSessionsOnly ? 10000 : 30000; // 10s for active, 30s for all
+      const refreshInterval = activeSessionsOnly ? 10000 : 30000;
 
       locationIntervalRef.current = setInterval(() => {
         if (activeSessionsOnly) {
@@ -837,7 +920,7 @@ export default function AttendanceList() {
       let hasMore = true;
 
       while (hasMore) {
-        const params: any = { page: currentPage, limit: 100 }; // Load 100 per page
+        const params: any = { page: currentPage, limit: 100 };
 
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
@@ -878,7 +961,6 @@ export default function AttendanceList() {
     const farmerDataMap: Record<string, any> = {};
 
     try {
-      // Process in batches to avoid overwhelming the server
       const batchSize = 5;
       for (let i = 0; i < userIds.length; i += batchSize) {
         const batchUserIds = userIds.slice(i, i + batchSize);
@@ -912,7 +994,6 @@ export default function AttendanceList() {
         });
 
         await Promise.all(batchPromises);
-        // Add delay between batches
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
@@ -936,17 +1017,14 @@ export default function AttendanceList() {
     try {
       const params: any = { page };
 
-      // Add date filters if they exist
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       if (selectedUser) params.userId = selectedUser;
       if (searchQuery) params.search = searchQuery;
 
-      // Add role-based filters to API call if not admin/hr
       if (currentUserInfo?.userRole) {
         const userRole = currentUserInfo.userRole.toLowerCase();
 
-        // Only add role-based filters for non-admin users
         if (!userRole.includes("admin") && !userRole.includes("hr")) {
           if (userRole.includes("manager") && currentUserInfo.department) {
             params.department = currentUserInfo.department;
@@ -969,11 +1047,8 @@ export default function AttendanceList() {
       if (res.data.success) {
         const sessions = res.data.data || [];
 
-        // ALWAYS store the total sessions count from API
-        // This will reflect the filtered total based on the query params
         setTotalSessionsCount(res.data.totalSessions || sessions.length);
 
-        // Apply role-based filtering on frontend as well (double safety)
         let filteredSessions = sessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(sessions);
@@ -981,7 +1056,6 @@ export default function AttendanceList() {
 
         if (append) {
           setTravelSessions((prev) => {
-            // Filter out duplicates
             const existingIds = new Set(prev.map((s) => s.sessionId));
             const newSessions = filteredSessions.filter(
               (s) => !existingIds.has(s.sessionId),
@@ -992,12 +1066,10 @@ export default function AttendanceList() {
           setTravelSessions(filteredSessions);
         }
 
-        // Update users list from all loaded sessions
         const allLoadedSessions = append
           ? [...travelSessions, ...filteredSessions]
           : filteredSessions;
 
-        // Extract unique users from filtered sessions only
         const uniqueUsers = Array.from(
           new Map(
             filteredSessions.map((session) => [
@@ -1013,12 +1085,9 @@ export default function AttendanceList() {
           ).values(),
         );
 
-        // Apply role-based filtering to users
         const filteredUsers = filterUsersByRole(uniqueUsers);
-
         setUsers(filteredUsers);
 
-        // Update sessions map
         const newCache: Record<string, TravelSession> = {};
         filteredSessions.forEach((session) => {
           const key = `${session.userId}-${session.sessionId}`;
@@ -1026,11 +1095,9 @@ export default function AttendanceList() {
         });
         setSessionsMap((prev) => ({ ...prev, ...newCache }));
 
-        // Update grouped view with all loaded sessions
         const grouped = groupSessionsByUserAndDate(allLoadedSessions);
         setGroupedView(grouped);
 
-        // Update pagination info from your API response
         setCurrentPage(res.data.currentPage || 1);
         setTotalPages(res.data.totalPages || 1);
         setHasMore(res.data.hasNextPage || false);
@@ -1055,13 +1122,11 @@ export default function AttendanceList() {
 
   // Load more sessions for a specific user on a specific date
   const loadMoreSessionsForUser = async (userId: number, date: string) => {
-    // Find the group
     const groupIndex = groupedView.findIndex(
       (g) => g.userId === userId && g.date === date,
     );
     if (groupIndex === -1) return;
 
-    // Mark group as loading
     setGroupedView((prev) => {
       const updated = [...prev];
       updated[groupIndex] = {
@@ -1072,15 +1137,13 @@ export default function AttendanceList() {
     });
 
     try {
-      // Fetch ALL sessions for this user on this date
       const params: any = {
         userId,
         startDate: date,
         endDate: date,
-        per_page: 1000, // Get all sessions for this user/date
+        per_page: 1000,
       };
 
-      // Add role-based filters
       if (currentUserInfo?.userRole) {
         const userRole = currentUserInfo.userRole.toLowerCase();
 
@@ -1106,29 +1169,23 @@ export default function AttendanceList() {
       if (res.data.success) {
         const userDateSessions = res.data.data || [];
 
-        // Apply role-based filtering
         let filteredSessions = userDateSessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(userDateSessions);
         }
 
-        // Update the sessions for this user/date
         setTravelSessions((prev) => {
-          // Remove existing sessions for this user/date
           const filtered = prev.filter(
             (s) =>
               !(s.userId === userId && formatDateOnly(s.startTime) === date),
           );
-          // Add new sessions
           return [...filtered, ...filteredSessions];
         });
 
-        // Update grouped view
         setGroupedView((prev) => {
           const updated = [...prev];
           const group = updated[groupIndex];
 
-          // Get unique sessions
           const existingSessionIds = new Set(
             group.sessions.map((s) => s.sessionId),
           );
@@ -1137,7 +1194,6 @@ export default function AttendanceList() {
           );
 
           if (newSessions.length > 0) {
-            // Combine and sort sessions
             const allSessions = [...group.sessions, ...newSessions].sort(
               (a, b) =>
                 new Date(b.startTime).getTime() -
@@ -1169,7 +1225,6 @@ export default function AttendanceList() {
           return updated;
         });
 
-        // Update sessions map
         const newCache: Record<string, TravelSession> = {};
         filteredSessions.forEach((session) => {
           const key = `${session.userId}-${session.sessionId}`;
@@ -1179,7 +1234,6 @@ export default function AttendanceList() {
       }
     } catch (err) {
       console.error("Failed to fetch more sessions for user", err);
-      // Reset loading state on error
       setGroupedView((prev) => {
         const updated = [...prev];
         updated[groupIndex] = {
@@ -1196,7 +1250,6 @@ export default function AttendanceList() {
     try {
       const params: any = {};
 
-      // Add role-based filters
       if (currentUserInfo?.userRole) {
         const userRole = currentUserInfo.userRole.toLowerCase();
 
@@ -1218,25 +1271,21 @@ export default function AttendanceList() {
       if (res.data.success) {
         const allSessions = res.data.data || [];
 
-        // Apply role-based filtering
         let filteredSessions = allSessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(allSessions);
         }
 
-        // Update only active sessions
         setTravelSessions((prevSessions) => {
           const updatedSessions = [...prevSessions];
           const activeSessionMap = new Map<number, TravelSession>();
 
-          // Create map of active sessions from new data
           filteredSessions.forEach((session: TravelSession) => {
             if (!session.endTime) {
               activeSessionMap.set(session.sessionId, session);
             }
           });
 
-          // Update existing active sessions
           updatedSessions.forEach((session, index) => {
             if (!session.endTime && activeSessionMap.has(session.sessionId)) {
               updatedSessions[index] = activeSessionMap.get(session.sessionId)!;
@@ -1244,12 +1293,10 @@ export default function AttendanceList() {
             }
           });
 
-          // Add new active sessions
           activeSessionMap.forEach((session) => {
             updatedSessions.push(session);
           });
 
-          // Sort with newest dates first
           return updatedSessions.sort((a, b) => {
             const dateA = new Date(a.startTime);
             const dateB = new Date(b.startTime);
@@ -1257,7 +1304,6 @@ export default function AttendanceList() {
           });
         });
 
-        // Update sessions map
         filteredSessions.forEach((session: TravelSession) => {
           if (!session.endTime) {
             const key = `${session.userId}-${session.sessionId}`;
@@ -1265,7 +1311,6 @@ export default function AttendanceList() {
           }
         });
 
-        // Update grouped view
         const grouped = groupSessionsByUserAndDate(travelSessions);
         setGroupedView(grouped);
 
@@ -1294,16 +1339,12 @@ export default function AttendanceList() {
     }
 
     try {
-      // Build params with date filtering
       const params: any = { userId };
 
-      // If sessionDate is provided, use it as both start and end date
       if (sessionDate) {
         params.startDate = sessionDate;
         params.endDate = sessionDate;
       } else {
-        // Optionally use global date filters if available
-        // You can pass the global startDate and endDate from your component state
         if (startDate) {
           params.startDate = startDate;
         }
@@ -1344,7 +1385,6 @@ export default function AttendanceList() {
           }),
         );
 
-        // No need to filter on frontend since backend already filters
         setFarmerTravelData(allSessions);
         setShowFarmerDataModal(true);
       } else {
@@ -1384,14 +1424,12 @@ export default function AttendanceList() {
   // search query
   const handleSearchSubmit = () => {
     if (!searchQuery.trim()) {
-      // If search is empty, load normal data
       fetchTravelSessions(1, false);
       return;
     }
 
     setIsSearching(true);
     searchAllSessions(searchQuery);
-    // setIsSearching will be set to false inside searchAllSessions
   };
 
   const handleClearSearch = () => {
@@ -1402,10 +1440,8 @@ export default function AttendanceList() {
     fetchTravelSessions(1, false);
   };
 
-  // Update the searchAllSessions function
   const searchAllSessions = async (searchTerm: string) => {
     if (!searchTerm.trim()) {
-      // If search is empty, do normal fetch
       fetchTravelSessions(1, false);
       setIsSearching(false);
       return;
@@ -1418,22 +1454,20 @@ export default function AttendanceList() {
       let allSessions: TravelSession[] = [];
       let page = 1;
       let hasMore = true;
-      const maxPages = 10; // Limit to prevent infinite loop
+      const maxPages = 10;
       let apiTotalSessions = 0;
 
       while (hasMore && page <= maxPages) {
         const params: any = {
           page: page,
-          limit: 100, // Get more results per page
+          limit: 100,
           search: searchTerm,
         };
 
-        // Add your existing filters
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
         if (selectedUser) params.userId = selectedUser;
 
-        // Add role-based filters
         if (currentUserInfo?.userRole) {
           const userRole = currentUserInfo.userRole.toLowerCase();
           if (!userRole.includes("admin") && !userRole.includes("hr")) {
@@ -1459,7 +1493,6 @@ export default function AttendanceList() {
           const sessions = res.data.data || [];
           allSessions = [...allSessions, ...sessions];
 
-          // Store the total sessions from the first page
           if (page === 1) {
             apiTotalSessions = res.data.totalSessions || sessions.length;
           }
@@ -1471,19 +1504,15 @@ export default function AttendanceList() {
         }
       }
 
-      // Apply role-based filtering
       let filteredSessions = allSessions;
       if (currentUserInfo?.userRole) {
         filteredSessions = filterSessionsByRole(allSessions);
       }
 
-      // Update the total sessions count with the API total (which includes all filters)
       setTotalSessionsCount(apiTotalSessions);
 
-      // Update state with all found sessions
       setTravelSessions(filteredSessions);
 
-      // Update users list
       const uniqueUsers = Array.from(
         new Map(
           filteredSessions.map((session) => [
@@ -1502,11 +1531,9 @@ export default function AttendanceList() {
       const filteredUsers = filterUsersByRole(uniqueUsers);
       setUsers(filteredUsers);
 
-      // Update grouped view
       const grouped = groupSessionsByUserAndDate(filteredSessions);
       setGroupedView(grouped);
 
-      // Disable pagination since we loaded all results
       setCurrentPage(1);
       setTotalPages(1);
       setHasMore(false);
@@ -1549,13 +1576,11 @@ export default function AttendanceList() {
     const str = String(coord).trim();
     if (!str) return 0;
 
-    // Remove any non-numeric characters except decimal point and minus sign
     const cleaned = str.replace(/[^\d.-]/g, "");
     if (!cleaned) return 0;
 
     const parsed = parseFloat(cleaned);
 
-    // Validate latitude range
     if (Math.abs(parsed) > 90) return 0;
 
     return isNaN(parsed) ? 0 : parsed;
@@ -1581,7 +1606,7 @@ export default function AttendanceList() {
   // Helper function to calculate distance between two coordinates in meters
   const calculateDistance = useCallback(
     (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-      const R = 6371e3; // Earth's radius in meters
+      const R = 6371e3;
       const φ1 = (lat1 * Math.PI) / 180;
       const φ2 = (lat2 * Math.PI) / 180;
       const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -1592,7 +1617,7 @@ export default function AttendanceList() {
         Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-      return R * c; // Distance in meters
+      return R * c;
     },
     [],
   );
@@ -1609,7 +1634,6 @@ export default function AttendanceList() {
         const current = points[i];
         const next = points[i + 1];
 
-        // Simple moving average smoothing
         const smoothedLat = (prev[0] + current[0] + next[0]) / 3;
         const smoothedLng = (prev[1] + current[1] + next[1]) / 3;
 
@@ -1622,45 +1646,43 @@ export default function AttendanceList() {
     [],
   );
 
-  // IMPROVED: Build polyline path with gap handling and smoothing
+  // ============ FIX: Updated buildPolylinePath with filtered logs ============
   const buildPolylinePath = useCallback(
     (session: TravelSession): [number, number][] => {
       const logs = sessionLogs[session.sessionId] || [];
+
+      // Filter logs by session time range
+      const filteredLogs = filterAndMapLogsToSession(logs, session);
+
       const path: [number, number][] = [];
 
-      if (logs.length === 0) return path;
+      if (filteredLogs.length === 0) return path;
 
-      // Sort logs by timestamp to ensure chronological order
-      const sortedLogs = [...logs].sort(
+      const sortedLogs = [...filteredLogs].sort(
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
 
-      // Collect all valid coordinates
       sortedLogs.forEach((log) => {
         if (isValidCoordinate(log.latitude, log.longitude)) {
           const currentPoint: [number, number] = [
             parseCoordinate(log.latitude),
             parseCoordinate(log.longitude),
           ];
-
-          // Always add the point if coordinates are valid
-          // Leaflet will automatically draw the line between points
           path.push(currentPoint);
         }
       });
 
-      // Apply smoothing to make the path look more natural
       return smoothPath(path);
     },
     [isValidCoordinate, parseCoordinate, smoothPath, sessionLogs],
   );
 
+  // ============ FIX: Updated getMapCenter with filtered logs ============
   const getMapCenter = useCallback(
     (session: TravelSession): [number, number] => {
       if (!session) return [21.1702, 72.8311];
 
-      // Try to use start coordinates first
       if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
         return [
           parseCoordinate(session.startLatitude),
@@ -1668,10 +1690,11 @@ export default function AttendanceList() {
         ];
       }
 
-      // Fallback to logs if available
       const logs = sessionLogs[session.sessionId] || [];
-      if (logs.length > 0) {
-        const validLogs = logs.filter((log) =>
+      const filteredLogs = filterAndMapLogsToSession(logs, session);
+
+      if (filteredLogs.length > 0) {
+        const validLogs = filteredLogs.filter((log) =>
           isValidCoordinate(log.latitude, log.longitude),
         );
 
@@ -1688,19 +1711,18 @@ export default function AttendanceList() {
         }
       }
 
-      // Default fallback
       return [21.1702, 72.8311];
     },
     [isValidCoordinate, parseCoordinate, sessionLogs],
   );
 
+  // ============ FIX: Updated getMapZoom with filtered logs ============
   const getMapZoom = useCallback(
     (session: TravelSession): number => {
       if (!session) return 13;
 
       const validPoints: [number, number][] = [];
 
-      // Add start point if valid
       if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
         validPoints.push([
           parseCoordinate(session.startLatitude),
@@ -1708,7 +1730,6 @@ export default function AttendanceList() {
         ]);
       }
 
-      // Add end point if valid
       if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
         validPoints.push([
           parseCoordinate(session.endLatitude),
@@ -1716,9 +1737,10 @@ export default function AttendanceList() {
         ]);
       }
 
-      // Add log points
       const logs = sessionLogs[session.sessionId] || [];
-      logs.forEach((log) => {
+      const filteredLogs = filterAndMapLogsToSession(logs, session);
+
+      filteredLogs.forEach((log) => {
         if (isValidCoordinate(log.latitude, log.longitude)) {
           validPoints.push([
             parseCoordinate(log.latitude),
@@ -1745,21 +1767,28 @@ export default function AttendanceList() {
     [isValidCoordinate, parseCoordinate, sessionLogs],
   );
 
-  // Detect pauses function using logs from sessionLogs state
+  // ============ FIX: Updated detectPauses with filtered logs ============
   const detectPauses = useCallback(
     (sessionId: number): PauseInterval[] => {
       const logs = sessionLogs[sessionId] || [];
-      if (logs.length < 2) return [];
+
+      const session =
+        travelSessions.find((s) => s.sessionId === sessionId) ||
+        sessionsMap[`${sessionId}`];
+
+      const filteredLogs = session
+        ? filterAndMapLogsToSession(logs, session)
+        : logs;
+
+      if (filteredLogs.length < 2) return [];
 
       const pauses: PauseInterval[] = [];
       let currentPause: PauseInterval | null = null;
 
-      for (let i = 0; i < logs.length; i++) {
-        const log = logs[i];
+      for (let i = 0; i < filteredLogs.length; i++) {
+        const log = filteredLogs[i];
 
-        // Check if this log has pause flag set to true
         if (log.pause === true) {
-          // If we're not in a pause interval, start one
           if (!currentPause) {
             currentPause = {
               start: log,
@@ -1767,17 +1796,14 @@ export default function AttendanceList() {
               durationMinutes: 0,
             };
           } else {
-            // Update the end of the current pause
             currentPause.end = log;
           }
         } else if (currentPause) {
-          // Calculate duration when pause ends
           const startTime = new Date(currentPause.start.timestamp);
           const endTime = new Date(currentPause.end.timestamp);
           currentPause.durationMinutes =
             (endTime.getTime() - startTime.getTime()) / 60000;
 
-          // Only add if duration is meaningful (>= 1 minute)
           if (currentPause.durationMinutes >= 1) {
             pauses.push(currentPause);
           }
@@ -1785,7 +1811,6 @@ export default function AttendanceList() {
         }
       }
 
-      // Handle case where last log is still in pause
       if (currentPause) {
         const startTime = new Date(currentPause.start.timestamp);
         const endTime = new Date(currentPause.end.timestamp);
@@ -1799,14 +1824,13 @@ export default function AttendanceList() {
 
       return pauses;
     },
-    [sessionLogs],
+    [sessionLogs, travelSessions, sessionsMap],
   );
 
   const openMap = async (session: TravelSession) => {
     setMapView(session);
     setLastUpdateTime(new Date());
 
-    // Fetch logs for this session if not already loaded
     if (!sessionLogs[session.sessionId]) {
       await fetchSessionLogs(session.sessionId, 1);
     }
@@ -1822,10 +1846,9 @@ export default function AttendanceList() {
 
   const openMultiSessionMap = useCallback(
     async (group: GroupedSession) => {
-      // Set the multi-session view immediately
       setMultiSessionMapView({
         userId: group.userId,
-        fullName: group.fullName,
+        fullName: group.fullName || "",
         employeeCode: group.employeeCode,
         date: group.date,
         sessions: group.sessions.sort(
@@ -1835,10 +1858,9 @@ export default function AttendanceList() {
         center: group.sessions.length
           ? getMapCenter(group.sessions[0])
           : [21.1702, 72.8311],
-        zoom: 13, // Default zoom
+        zoom: 13,
       });
 
-      // Fetch logs for all sessions in the group
       const logPromises = group.sessions.map((session) => {
         if (!sessionLogs[session.sessionId]) {
           return fetchSessionLogs(session.sessionId, 1);
@@ -1848,13 +1870,11 @@ export default function AttendanceList() {
 
       await Promise.all(logPromises);
 
-      // Recalculate center and zoom after logs are loaded
       const allPoints: [number, number][] = [];
 
       group.sessions.forEach((session) => {
         const logs = sessionLogs[session.sessionId] || [];
 
-        // Add start point
         if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
           allPoints.push([
             parseCoordinate(session.startLatitude),
@@ -1862,7 +1882,6 @@ export default function AttendanceList() {
           ]);
         }
 
-        // Add end point
         if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
           allPoints.push([
             parseCoordinate(session.endLatitude),
@@ -1870,8 +1889,8 @@ export default function AttendanceList() {
           ]);
         }
 
-        // Add log points
-        logs.forEach((log) => {
+        const filteredLogs = filterAndMapLogsToSession(logs, session);
+        filteredLogs.forEach((log) => {
           if (isValidCoordinate(log.latitude, log.longitude)) {
             allPoints.push([
               parseCoordinate(log.latitude),
@@ -1902,7 +1921,6 @@ export default function AttendanceList() {
         else zoom = 16;
       }
 
-      // Update the multi-session view with calculated center and zoom
       setMultiSessionMapView((prev) =>
         prev
           ? {
@@ -1915,7 +1933,7 @@ export default function AttendanceList() {
 
       setLastUpdateTime(new Date());
     },
-    [isValidCoordinate, parseCoordinate, sessionLogs],
+    [isValidCoordinate, parseCoordinate, sessionLogs, getMapCenter],
   );
 
   const closeMultiSessionMap = () => {
@@ -1923,43 +1941,32 @@ export default function AttendanceList() {
   };
 
   const manualRefresh = () => {
-    // Reset to page 1 when manually refreshing
     fetchTravelSessions(1, false);
-    // Also refresh all sessions for export
     loadAllSessionsForExport();
   };
 
-  // Clear date filter function
   const clearDateFilter = () => {
     setStartDate("");
     setEndDate("");
   };
 
-  // Check if date filter is active
   const isDateFilterActive = startDate || endDate;
 
-  // Apply filters when they change
   useEffect(() => {
-    // Reset to page 1 when filters change
     setCurrentPage(1);
     setHasMore(true);
     fetchTravelSessions(1, false);
   }, [startDate, endDate, selectedUser]);
 
-  // Handle search query changes separately
   useEffect(() => {
-    // Only fetch when searchQuery changes and is not empty
     if (searchQuery.trim()) {
-      // Search is handled by the search button, not auto-fetch
-      // Don't auto-fetch here
+      // Search is handled by the search button
     }
   }, [searchQuery]);
 
-  // Apply role-based filtering to the displayed sessions
   const filteredSessions = useMemo(() => {
     let filtered = [...travelSessions];
 
-    // Filter by date range
     if (startDate || endDate) {
       filtered = filtered.filter((session) => {
         const sessionDate = new Date(session.startTime);
@@ -1996,18 +2003,14 @@ export default function AttendanceList() {
       );
     }
 
-    // Sort by date descending (newest first) but keep natural order within same date
     return filtered.sort((a, b) => {
       const dateA = new Date(a.startTime).getTime();
       const dateB = new Date(b.startTime).getTime();
 
-      // Sort by date descending
       if (Math.abs(dateA - dateB) > 86400000) {
-        // More than 1 day difference
-        return dateB - dateA; // Newer dates first
+        return dateB - dateA;
       }
 
-      // If same date, keep original order (by sessionId)
       return a.sessionId - b.sessionId;
     });
   }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
@@ -2024,21 +2027,20 @@ export default function AttendanceList() {
     0,
   );
 
-  // Build session polyline path for multi-session view
   const buildSessionPolylinePath = useCallback(
     (session: TravelSession): [number, number][] => {
       const logs = sessionLogs[session.sessionId] || [];
+      const filteredLogs = filterAndMapLogsToSession(logs, session);
+
       const path: [number, number][] = [];
 
-      if (logs.length === 0) return path;
+      if (filteredLogs.length === 0) return path;
 
-      // Sort logs by timestamp to ensure chronological order
-      const sortedLogs = [...logs].sort(
+      const sortedLogs = [...filteredLogs].sort(
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
 
-      // Collect all valid coordinates
       sortedLogs.forEach((log) => {
         if (isValidCoordinate(log.latitude, log.longitude)) {
           path.push([
@@ -2048,7 +2050,6 @@ export default function AttendanceList() {
         }
       });
 
-      // Apply smoothing to make the path look more natural
       return smoothPath(path);
     },
     [isValidCoordinate, parseCoordinate, smoothPath, sessionLogs],
@@ -2059,15 +2060,12 @@ export default function AttendanceList() {
     try {
       setIsExporting(true);
 
-      // Use cached allSessions instead of fetching from API
       let sessionsToExport = [...allSessions];
 
-      // Apply role-based filtering
       if (currentUserInfo?.userRole) {
         sessionsToExport = filterSessionsByRole(sessionsToExport);
       }
 
-      // Apply date filters
       if (startDate || endDate) {
         sessionsToExport = sessionsToExport.filter((session) => {
           try {
@@ -2093,14 +2091,12 @@ export default function AttendanceList() {
         });
       }
 
-      // Apply user filter
       if (selectedUser) {
         sessionsToExport = sessionsToExport.filter(
           (session) => session.userId.toString() === selectedUser,
         );
       }
 
-      // Apply search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         sessionsToExport = sessionsToExport.filter(
@@ -2116,7 +2112,6 @@ export default function AttendanceList() {
         return;
       }
 
-      // Group sessions
       const groupedData = groupSessionsByUserAndDate(sessionsToExport);
 
       if (groupedData.length === 0) {
@@ -2125,19 +2120,10 @@ export default function AttendanceList() {
         return;
       }
 
-      // Process groups for CSV
       const groupedDataWithFarmerInfo = groupedData.map((group, index) => {
         const userDateKey = `${group.userId}-${group.date}`;
-
-        // Try to get farmer data from cache first
         let sessionFarmerData = allFarmerData[userDateKey] || [];
 
-        // If not in cache, fetch it (but this should be rare)
-        if (sessionFarmerData.length === 0) {
-          // We could fetch it here, but for now we'll proceed without it
-        }
-
-        // Calculate totals
         const firstSessionStart = new Date(group.startTime);
         const lastSessionEnd = new Date(group.endTime);
         const totalDuration = Math.round(
@@ -2154,7 +2140,6 @@ export default function AttendanceList() {
           return sum + pauses.length;
         }, 0);
 
-        // Count total farmers met
         let totalFarmersMet = 0;
         const sessionDetails = group.sessions.map((session, sessionIndex) => {
           const matchingFarmerData = sessionFarmerData.find(
@@ -2165,7 +2150,6 @@ export default function AttendanceList() {
           totalFarmersMet += farmerCount;
           const farmers = matchingFarmerData?.farmerData?.data || [];
 
-          // Format farmer descriptions
           const farmerDescriptions = farmers
             .map(
               (farmer: any, farmerIndex: number) =>
@@ -2232,7 +2216,6 @@ export default function AttendanceList() {
             group.activeSessions > 0 ? "Has Active Sessions" : "All Completed",
           Notes: `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
 
-          // Individual session columns
           ...sessionDetails.reduce((acc, session, idx) => {
             const prefix = `Session ${session.sessionNumber}`;
             return {
@@ -2252,7 +2235,6 @@ export default function AttendanceList() {
         };
       });
 
-      // Sort by date (newest first)
       const sortedData = groupedDataWithFarmerInfo.sort((a, b) => {
         const dateCompare =
           new Date(b.Date).getTime() - new Date(a.Date).getTime();
@@ -2260,13 +2242,11 @@ export default function AttendanceList() {
         return b["User ID"] - a["User ID"];
       });
 
-      // Determine maximum number of sessions for headers
       const maxSessions = Math.max(
         ...groupedData.map((group) => group.sessions.length),
         1,
       );
 
-      // Build headers
       const baseHeaders = [
         "fullName",
         "Employee Code",
@@ -2290,7 +2270,6 @@ export default function AttendanceList() {
         "Notes",
       ];
 
-      // Add session-specific headers
       const sessionHeaders = [];
       for (let i = 1; i <= maxSessions; i++) {
         sessionHeaders.push(
@@ -2306,7 +2285,6 @@ export default function AttendanceList() {
 
       const allHeaders = [...baseHeaders, ...sessionHeaders];
 
-      // Build CSV content
       const csvContent = [
         allHeaders.join(","),
         ...sortedData.map((row) =>
@@ -2315,7 +2293,6 @@ export default function AttendanceList() {
               const value = row[header];
               if (value === null || value === undefined) return '""';
               const stringValue = String(value);
-              // Escape CSV special characters
               if (/[,"\n\r]/.test(stringValue)) {
                 return `"${stringValue.replace(/"/g, '""')}"`;
               }
@@ -2325,7 +2302,6 @@ export default function AttendanceList() {
         ),
       ].join("\r\n");
 
-      // Create and download file
       const blob = new Blob(["\ufeff" + csvContent], {
         type: "text/csv;charset=utf-8;",
       });
@@ -2345,7 +2321,6 @@ export default function AttendanceList() {
       link.click();
       document.body.removeChild(link);
 
-      // Clean up
       setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error("Export failed:", error);
@@ -2410,18 +2385,6 @@ export default function AttendanceList() {
             </div>
             <p className="text-gray-600 dark:text-gray-300">
               Track employee travel activities and paths
-              {/* {currentUserInfo?.userRole && (
-                <span className="ml-2 text-sm opacity-75">
-                  (Viewing:{" "}
-                  {currentUserInfo.userRole.includes("manager") &&
-                  !currentUserInfo.userRole.includes("zonal")
-                    ? `My Department (${currentUserInfo.department || "Not set"})`
-                    : currentUserInfo.userRole.includes("zonal")
-                      ? `My Area (${currentUserInfo.allocatedArea || "Not set"})`
-                      : "All"}
-                  )
-                </span>
-              )} */}
             </p>
           </div>
 
@@ -2479,8 +2442,6 @@ export default function AttendanceList() {
         </div>
 
         {/* Stats Cards */}
-        {/* Stats Cards */}
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
@@ -2491,12 +2452,10 @@ export default function AttendanceList() {
                   Total Sessions
                 </p>
                 <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {/* Show filtered count when filters are active, otherwise show API total */}
                   {isDateFilterActive || selectedUser || searchQuery
                     ? totalSessions
                     : totalSessionsCount}
                 </p>
-                {/* Show filter indicator if filters are active */}
                 {(isDateFilterActive || selectedUser || searchQuery) && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                     Filtered results (of {totalSessionsCount} total)
@@ -2509,7 +2468,6 @@ export default function AttendanceList() {
             </div>
           </div>
 
-          {/* Active Sessions card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2528,7 +2486,6 @@ export default function AttendanceList() {
             </div>
           </div>
 
-          {/* Total Distance card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2547,7 +2504,6 @@ export default function AttendanceList() {
             </div>
           </div>
 
-          {/* Users card */}
           <div
             className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
           >
@@ -2566,13 +2522,13 @@ export default function AttendanceList() {
             </div>
           </div>
         </div>
+
         {/* Filters */}
         <div
           className={`${glassmorphismClasses.card} rounded-2xl p-4 mb-6 backdrop-blur-lg`}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* Search Employee */}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <FaSearch className="inline mr-2" />
@@ -2588,7 +2544,6 @@ export default function AttendanceList() {
                     const value = e.target.value;
                     setSearchQuery(value);
 
-                    // If search is cleared, automatically load all data
                     if (!value.trim()) {
                       fetchTravelSessions(1, false);
                     }
@@ -2600,12 +2555,10 @@ export default function AttendanceList() {
                   }}
                 />
 
-                {/* Search Icon inside input */}
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
                   <FaSearch className="text-sm" />
                 </div>
 
-                {/* Buttons container - inside input on the right */}
                 <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {searchQuery && (
                     <button
@@ -2635,29 +2588,7 @@ export default function AttendanceList() {
               )}
             </div>
 
-            {/* User Filter - Uncommented and improved */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <FaUser className="inline mr-2" />
-                Filter by User
-              </label>
-              <select
-                className={`w-full px-4 py-2 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                value={selectedUser}
-              >
-                <option value="">All Users</option>
-                {users.map((user) => (
-                  <option key={user.userId} value={user.userId.toString()}>
-                    {user.fullName} ({user.employeeCode})
-                    {user.department && ` - ${user.department}`}
-                    {user.allocatedArea && ` [${user.allocatedArea}]`}
-                  </option>
-                ))}
-              </select>
-            </div> */}
-
-            {/* Single Date Range Picker - Improved */}
+            {/* Date Range Picker */}
             <div className="lg:col-span-1">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2690,7 +2621,6 @@ export default function AttendanceList() {
                   }
                   readOnly
                   onClick={() => {
-                    // Toggle date picker visibility
                     const picker = document.getElementById("dateRangePicker");
                     if (picker) {
                       picker.classList.toggle("hidden");
@@ -2715,7 +2645,6 @@ export default function AttendanceList() {
                         value={startDate}
                         onChange={(e) => {
                           setStartDate(e.target.value);
-                          // Auto-close after selection if both dates are set
                           if (e.target.value && endDate) {
                             document
                               .getElementById("dateRangePicker")
@@ -2735,7 +2664,6 @@ export default function AttendanceList() {
                         value={endDate}
                         onChange={(e) => {
                           setEndDate(e.target.value);
-                          // Auto-close after selection if both dates are set
                           if (startDate && e.target.value) {
                             document
                               .getElementById("dateRangePicker")
@@ -2748,7 +2676,6 @@ export default function AttendanceList() {
                     </div>
                   </div>
 
-                  {/* Quick Selection Buttons */}
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => {
@@ -2814,7 +2741,6 @@ export default function AttendanceList() {
                     </button>
                   </div>
 
-                  {/* Apply/Cancel Buttons */}
                   <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => {
@@ -2831,7 +2757,6 @@ export default function AttendanceList() {
                         document
                           .getElementById("dateRangePicker")
                           ?.classList.add("hidden");
-                        // Trigger fetch with date range
                         fetchTravelSessions(1, false);
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
@@ -2842,7 +2767,6 @@ export default function AttendanceList() {
                 </div>
               </div>
 
-              {/* Date Range Summary */}
               {isDateFilterActive && (
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
                   <FaCalendarAlt className="text-xs flex-shrink-0" />
@@ -2885,7 +2809,6 @@ export default function AttendanceList() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center mt-9 p-10">
             <LoadingAnimation />
-
             <p className="text-gray-600 dark:text-gray-300">
               Loading travel sessions...
             </p>
@@ -2933,7 +2856,6 @@ export default function AttendanceList() {
                   },
                 );
 
-                // Check if this group might have more sessions than shown
                 const hasMoreSessions =
                   group.sessions.length > 0 && !group.allSessionsLoaded;
 
@@ -2947,7 +2869,7 @@ export default function AttendanceList() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-lantern-blue-600 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {group.fullName.charAt(0).toUpperCase()}
+                            {group.fullName?.charAt(0).toUpperCase() || "U"}
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -3147,6 +3069,15 @@ export default function AttendanceList() {
                             const isActive = !session.endTime;
                             const isFirstSession = sessionIndex === 0;
 
+                            // Check if logs were filtered
+                            const logs = sessionLogs[session.sessionId] || [];
+                            const filteredLogs = filterAndMapLogsToSession(
+                              logs,
+                              session,
+                            );
+                            const filteredLogCount =
+                              logs.length - filteredLogs.length;
+
                             return (
                               <div
                                 key={session.sessionId}
@@ -3164,7 +3095,7 @@ export default function AttendanceList() {
                                       {sessionIndex + 1}
                                     </div>
                                     <div>
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-medium text-gray-800 dark:text-white">
                                           Session #{session.sessionId}
                                           {isFirstSession && (
@@ -3177,6 +3108,14 @@ export default function AttendanceList() {
                                           <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
                                             <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
                                             LIVE - Updating
+                                          </span>
+                                        )}
+                                        {/* ============ FIX: Show filtered logs warning ============ */}
+                                        {filteredLogCount > 0 && (
+                                          <span className="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                            <FaInfoCircle className="text-xs" />
+                                            {filteredLogCount} offline logs
+                                            filtered
                                           </span>
                                         )}
                                       </div>
@@ -3313,6 +3252,11 @@ export default function AttendanceList() {
               );
               const isActive = !session.endTime;
 
+              // Check if logs were filtered
+              const logs = sessionLogs[session.sessionId] || [];
+              const filteredLogs = filterAndMapLogsToSession(logs, session);
+              const filteredLogCount = logs.length - filteredLogs.length;
+
               return (
                 <div
                   key={session.sessionId}
@@ -3337,6 +3281,13 @@ export default function AttendanceList() {
                           {session.allocatedArea && (
                             <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                               [{session.allocatedArea}]
+                            </span>
+                          )}
+                          {/* ============ FIX: Show filtered logs warning ============ */}
+                          {filteredLogCount > 0 && (
+                            <span className="ml-2 px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full inline-flex items-center gap-1">
+                              <FaInfoCircle className="text-xs" />
+                              {filteredLogCount} offline logs filtered
                             </span>
                           )}
                         </h3>
@@ -3994,7 +3945,6 @@ export default function AttendanceList() {
                 {/* Pause markers for each session */}
                 {showPauseMarkers &&
                   multiSessionMapView.sessions.map((session, sessionIndex) => {
-                    // Only detect pauses based on backend pause flags
                     const pauses = detectPauses(session.sessionId);
                     return pauses.map((pause, pauseIndex) => {
                       const pauseLog = pause.start;
@@ -4081,16 +4031,14 @@ export default function AttendanceList() {
                                         ).toFixed(6)}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className="w-2 h-2 rounded-full"
-                                        style={{
-                                          backgroundColor:
-                                            getSessionColor(sessionIndex),
-                                        }}
-                                      ></div>
-                                      <span>Session Color</span>
-                                    </div>
+                                    <div
+                                      className="w-2 h-2 rounded-full"
+                                      style={{
+                                        backgroundColor:
+                                          getSessionColor(sessionIndex),
+                                      }}
+                                    ></div>
+                                    <span>Session Color</span>
                                   </div>
                                 </div>
                               </div>
@@ -4105,8 +4053,11 @@ export default function AttendanceList() {
                 {showLogMarkersMulti &&
                   multiSessionMapView.sessions.map((session, sessionIndex) => {
                     const logs = sessionLogs[session.sessionId] || [];
-                    return logs.slice(0, 50).map((log, logIndex) => {
-                      // Limit to 50 points per session for performance
+                    const filteredLogs = filterAndMapLogsToSession(
+                      logs,
+                      session,
+                    );
+                    return filteredLogs.slice(0, 50).map((log, logIndex) => {
                       if (isValidCoordinate(log.latitude, log.longitude)) {
                         const isPausePoint = log.pause;
 
@@ -4337,7 +4288,6 @@ export default function AttendanceList() {
                 {/* Pause markers */}
                 {showPauseMarkers &&
                   (() => {
-                    // Only detect pauses based on backend pause flags
                     const pauses = detectPauses(mapView.sessionId);
                     return pauses.map((pause, pauseIndex) => {
                       const pauseLog = pause.start;
@@ -4436,7 +4386,11 @@ export default function AttendanceList() {
                 {showLogMarkers &&
                   (() => {
                     const logs = sessionLogs[mapView.sessionId] || [];
-                    return logs.map((log, logIndex) => {
+                    const filteredLogs = filterAndMapLogsToSession(
+                      logs,
+                      mapView,
+                    );
+                    return filteredLogs.map((log, logIndex) => {
                       if (isValidCoordinate(log.latitude, log.longitude)) {
                         const isPausePoint = log.pause === true;
 
@@ -4501,7 +4455,7 @@ export default function AttendanceList() {
                                   </div>
                                   <div>
                                     <strong>Point #:</strong> {logIndex + 1} of{" "}
-                                    {logs.length}
+                                    {filteredLogs.length}
                                   </div>
                                   {log.pause && (
                                     <div className="text-amber-600 font-medium">

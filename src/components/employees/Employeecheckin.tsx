@@ -17,6 +17,7 @@ import {
   Tag,
   ChevronUp,
   ChevronDown,
+  Calendar1,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -360,6 +361,15 @@ const EmployeeCheckin = () => {
 
             {/* Right section - Buttons */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => (window.location.href = "/attandance-calendar")}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
+        bg-lantern-blue-600 hover:bg-lantern-yellow-400
+        text-white rounded-lg text-sm"
+              >
+                <Calendar1 className="w-3.5 h-3.5" />
+                <span>Calendar</span>
+              </button>
               <button
                 onClick={exportToCSV}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5

@@ -48,6 +48,7 @@ import ChatToggle from "./context/ChatToggle";
 import { useSocketStore } from "./store/useSocketStore";
 import { IncomingCall } from "./components/chat/CallModal";
 import LeaveManagementReportee from "./HRMS/LeavePageReportee";
+import AttendanceCalendar from "./HRMS/AttandanceCalendar";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -126,6 +127,16 @@ export default function App() {
               <AttendanceGuard>
                 {" "}
                 <EmployeeCheckin />{" "}
+              </AttendanceGuard>
+            }
+          ></Route>
+
+          <Route
+            path="/attandance-calendar"
+            element={
+              <AttendanceGuard>
+                {" "}
+                <AttendanceCalendar />{" "}
               </AttendanceGuard>
             }
           ></Route>

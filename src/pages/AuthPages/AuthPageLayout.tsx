@@ -1,52 +1,64 @@
-import React from "react";
-// import GridShape from "../../components/common/GridShape";
-// import { Link } from "react-router";
-// import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
+import React, { useState, useEffect } from "react";
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Array of your 3 images
+  const images = [
+    "lantern_banner.png",
+    "lanternloginbanner4.png",
+    "lanternloginbanner3.png",
+    "lanternbanner.png",
+  ];
+
+  useEffect(() => {
+    // Change image every 3 seconds (3000ms)
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) =>
+        prevIndex === images.length - 1 ? 0 : prevIndex + 1,
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="relative bg-white z-1 dark:bg-gray-900">
       <div className="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900 sm:p-0">
         {children}
-        <div className="items-center hidden w-full lg:w-1/2 bg-lantern-try-500 lg:grid">
-          <div className="relative w-full flex items-center justify-center z-1">
-            <div className="overflow-hidden w-full max-h-screen">
-              {/* <video 
-              className="w-full h-full"
-              src="/videos/cowberry_welcome_Banner.mp4" 
-              autoPlay 
-              muted 
-              loop></video> */}
+        <div className="items-center hidden w-full lg:w-1/2 bg-white/90 lg:flex lg:justify-center lg:items-center">
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+            {/* Carousel Images */}
+            {images.map((image, index) => (
               <img
-                className="object-cover w-full pb-8 h-screen "
-                src="lantern-logo-full.png"
-                alt="lantern Welcome Banner"
+                key={index}
+                className={`absolute w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+                  index === currentIndex ? "opacity-100" : "opacity-0"
+                }`}
+                src={image}
+                alt={`Welcome Banner ${index + 1}`}
               />
-            </div>
-            {/* <!-- ===== Common Grid Shape Start ===== --> */}
-            {/* <GridShape /> */}
-            {/* <div className="flex flex-col items-center max-w-xs">             
-              <Link to="/" className="block mb-4">
-                <img
-                  width={231}
-                  height={48}
-                  src="/images/logo/auth-logo.svg"
-                  alt="Logo"
+            ))}
+
+            {/* Dots indicator */}
+            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-10">
+              {images.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentIndex ? "bg-white w-6" : "bg-white/50"
+                  }`}
+                  onClick={() => setCurrentIndex(index)}
+                  aria-label={`Go to slide ${index + 1}`}
                 />
-              </Link>
-              <p className="text-center text-gray-400 dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
-              </p>
-            </div> */}
+              ))}
+            </div>
           </div>
         </div>
-        {/* <div className="fixed z-50 hidden bottom-6 right-6 sm:block">
-          <ThemeTogglerTwo />
-        </div> */}
       </div>
     </div>
   );

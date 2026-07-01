@@ -138,6 +138,142 @@ const AttendanceCalendar: React.FC = () => {
     return [];
   }, []);
 
+  // Process attendance data with the current month
+  const processAttendanceData = useCallback(
+    (employee: Employee, logs: CheckLog[], targetDate: Date) => {
+      const attendanceMap: Record<string, AttendanceRecord> = {};
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get all dates in the target month
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // First, process all logs to get actual attendance data
+      const logsByDate: Record<string, CheckLog[]> = {};
+
+      logs.forEach((log) => {
+        const dateObj = new Date(log.timestamp);
+        const dateKey = dateObj.toDateString();
+        const dayOfWeek = dateObj.getDay();
+
+        // Skip Sundays
+        if (dayOfWeek === 0) return;
+
+        if (!logsByDate[dateKey]) {
+          logsByDate[dateKey] = [];
+        }
+        logsByDate[dateKey].push(log);
+      });
+
+      // Now initialize all days in the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(year, month, day);
+        const dateKey = dateObj.toDateString();
+        const dayOfWeek = dateObj.getDay();
+
+        // Check if date is in the future
+        const isFutureDate = dateObj > today;
+
+        // Skip Sundays (day 0 is Sunday)
+        if (dayOfWeek === 0) {
+          attendanceMap[dateKey] = {
+            date: dateKey,
+            status: "sunday",
+          };
+        } else if (isFutureDate) {
+          // Future dates - no status
+          attendanceMap[dateKey] = {
+            date: dateKey,
+            status: "future",
+          };
+        } else {
+          // Check if we have logs for this date
+          if (logsByDate[dateKey]) {
+            // We'll process this later
+            attendanceMap[dateKey] = {
+              date: dateKey,
+              status: "absent", // Temporary, will be updated
+            };
+          } else {
+            // No logs - absent
+            attendanceMap[dateKey] = {
+              date: dateKey,
+              status: "absent",
+            };
+          }
+        }
+      }
+
+      // Process actual logs for each date
+      Object.keys(logsByDate).forEach((dateKey) => {
+        const dateLogs = logsByDate[dateKey];
+        const record = attendanceMap[dateKey];
+
+        if (!record) return;
+
+        let hasCheckIn = false;
+        let hasCheckOut = false;
+        let checkInTime = "";
+        let checkOutTime = "";
+
+        dateLogs.forEach((log) => {
+          if (log.logType === "check_in") {
+            hasCheckIn = true;
+            checkInTime = log.timestamp;
+          } else if (log.logType === "check_out") {
+            hasCheckOut = true;
+            checkOutTime = log.timestamp;
+          }
+        });
+
+        // Determine status based on logs
+        const dateObj = new Date(dateKey);
+        const isToday = dateObj.toDateString() === today.toDateString();
+
+        if (hasCheckIn && hasCheckOut) {
+          // Both check-in and check-out present
+          const checkIn = new Date(checkInTime);
+          const checkOut = new Date(checkOutTime);
+          const hoursWorked =
+            (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+          record.workingHours = hoursWorked;
+          record.checkIn = checkInTime;
+          record.checkOut = checkOutTime;
+
+          if (hoursWorked < 6) {
+            record.status = "half-day";
+          } else {
+            record.status = "present";
+          }
+        } else if (hasCheckIn && !hasCheckOut) {
+          // Only check-in present
+          record.checkIn = checkInTime;
+
+          if (isToday) {
+            // Today with only check-in - mark as "Checked In"
+            record.status = "today-checked-in";
+          } else {
+            // Past date with only check-in - half day
+            record.status = "half-day";
+          }
+        }
+      });
+
+      setEmployeeAttendance([
+        {
+          userId: employee.userId,
+          employeeCode: employee.employee_code,
+          fullName: employee.fullName,
+          username: employee.username,
+          attendance: attendanceMap,
+        },
+      ]);
+    },
+    [],
+  );
+
   // Fetch attendance for selected employee
   const fetchEmployeeAttendance = useCallback(async () => {
     if (!selectedEmployee) return;
@@ -157,157 +293,40 @@ const AttendanceCalendar: React.FC = () => {
       const employeeLogs = allLogs.filter(
         (log) => log.userId === selectedEmployee.userId,
       );
-      processAttendanceData(selectedEmployee, employeeLogs);
+
+      // Pass the current date to process attendance for the correct month
+      processAttendanceData(selectedEmployee, employeeLogs, currentDate);
     } catch (err) {
       console.error("Error fetching attendance:", err);
       setError("Failed to load attendance data");
     } finally {
       setLoading(false);
     }
-  }, [selectedEmployee, fetchAllCheckLogs]);
+  }, [selectedEmployee, currentDate, fetchAllCheckLogs, processAttendanceData]);
 
+  // Initial fetch of employees
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [fetchEmployees]);
 
+  // Fetch attendance whenever selected employee OR current month changes
   useEffect(() => {
     if (selectedEmployee) {
       fetchEmployeeAttendance();
     }
-  }, [selectedEmployee]);
+  }, [selectedEmployee, currentDate, fetchEmployeeAttendance]); // Added currentDate as dependency
 
-  const processAttendanceData = (employee: Employee, logs: CheckLog[]) => {
-    const attendanceMap: Record<string, AttendanceRecord> = {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Get all dates in the current month
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // First, process all logs to get actual attendance data
-    const logsByDate: Record<string, CheckLog[]> = {};
-    const processedDates = new Set<string>();
-
-    logs.forEach((log) => {
-      const dateObj = new Date(log.timestamp);
-      const dateKey = dateObj.toDateString();
-      const dayOfWeek = dateObj.getDay();
-
-      // Skip Sundays
-      if (dayOfWeek === 0) return;
-
-      if (!logsByDate[dateKey]) {
-        logsByDate[dateKey] = [];
-      }
-      logsByDate[dateKey].push(log);
-      processedDates.add(dateKey);
-    });
-
-    // Now initialize all days in the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateObj = new Date(year, month, day);
-      const dateKey = dateObj.toDateString();
-      const dayOfWeek = dateObj.getDay();
-
-      // Check if date is in the future
-      const isFutureDate = dateObj > today;
-
-      // Skip Sundays (day 0 is Sunday)
-      if (dayOfWeek === 0) {
-        attendanceMap[dateKey] = {
-          date: dateKey,
-          status: "sunday",
-        };
-      } else if (isFutureDate) {
-        // Future dates - no status
-        attendanceMap[dateKey] = {
-          date: dateKey,
-          status: "future",
-        };
+  // Navigate month handler - this will trigger the useEffect above
+  const navigateMonth = (direction: "prev" | "next") => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === "prev") {
+        newDate.setMonth(prev.getMonth() - 1);
       } else {
-        // Check if we have logs for this date
-        if (logsByDate[dateKey]) {
-          // We'll process this later
-          attendanceMap[dateKey] = {
-            date: dateKey,
-            status: "absent", // Temporary, will be updated
-          };
-        } else {
-          // No logs - absent
-          attendanceMap[dateKey] = {
-            date: dateKey,
-            status: "absent",
-          };
-        }
+        newDate.setMonth(prev.getMonth() + 1);
       }
-    }
-
-    // Process actual logs for each date
-    Object.keys(logsByDate).forEach((dateKey) => {
-      const dateLogs = logsByDate[dateKey];
-      const record = attendanceMap[dateKey];
-
-      if (!record) return;
-
-      let hasCheckIn = false;
-      let hasCheckOut = false;
-      let checkInTime = "";
-      let checkOutTime = "";
-
-      dateLogs.forEach((log) => {
-        if (log.logType === "check_in") {
-          hasCheckIn = true;
-          checkInTime = log.timestamp;
-        } else if (log.logType === "check_out") {
-          hasCheckOut = true;
-          checkOutTime = log.timestamp;
-        }
-      });
-
-      // Determine status based on logs
-      const dateObj = new Date(dateKey);
-      const isToday = dateObj.toDateString() === today.toDateString();
-
-      if (hasCheckIn && hasCheckOut) {
-        // Both check-in and check-out present
-        const checkIn = new Date(checkInTime);
-        const checkOut = new Date(checkOutTime);
-        const hoursWorked =
-          (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
-        record.workingHours = hoursWorked;
-        record.checkIn = checkInTime;
-        record.checkOut = checkOutTime;
-
-        if (hoursWorked < 6) {
-          record.status = "half-day";
-        } else {
-          record.status = "present";
-        }
-      } else if (hasCheckIn && !hasCheckOut) {
-        // Only check-in present
-        record.checkIn = checkInTime;
-
-        if (isToday) {
-          // Today with only check-in - mark as "Checked In"
-          record.status = "today-checked-in";
-        } else {
-          // Past date with only check-in - half day
-          record.status = "half-day";
-        }
-      }
+      return newDate;
     });
-
-    setEmployeeAttendance([
-      {
-        userId: employee.userId,
-        employeeCode: employee.employee_code,
-        fullName: employee.fullName,
-        username: employee.username,
-        attendance: attendanceMap,
-      },
-    ]);
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -397,18 +416,6 @@ const AttendanceCalendar: React.FC = () => {
 
   const days = getDaysInMonth(currentDate);
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev);
-      if (direction === "prev") {
-        newDate.setMonth(prev.getMonth() - 1);
-      } else {
-        newDate.setMonth(prev.getMonth() + 1);
-      }
-      return newDate;
-    });
-  };
 
   const getAttendanceSummary = () => {
     if (employeeAttendance.length === 0) return null;
@@ -658,11 +665,6 @@ const AttendanceCalendar: React.FC = () => {
                   >
                     <div className="text-sm text-gray-500 mb-2">
                       {day.date.getDate()}
-                      {/* {day.isToday && (
-                        <span className="ml-1 text-[10px] text-blue-500 font-bold">
-                          Today
-                        </span>
-                      )} */}
                     </div>
                     {record && isCurrentMonth && record.status !== "future" && (
                       <div className="flex flex-col items-center gap-1">

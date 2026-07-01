@@ -15,6 +15,9 @@ import {
   FileText,
   Clock,
   UserCheck,
+  ShieldAlert,
+  Home,
+  ArrowLeft,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -567,6 +570,64 @@ const LeaveCard: React.FC<LeaveCardProps> = ({
   </div>
 );
 
+// ─── No Access Component ──────────────────────────────────────────────────────
+
+const NoAccessPage: React.FC = () => {
+  const handleGoBack = () => {
+    window.history.back();
+  };
+
+  const handleGoHome = () => {
+    window.location.href = "/home";
+  };
+
+  return (
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center transform transition-all hover:scale-[1.01] duration-300">
+        {/* Animated Shield Icon */}
+        <div className="relative inline-block mb-6">
+          <div className="absolute inset-0 bg-red-100 rounded-full blur-2xl opacity-50 animate-pulse"></div>
+          <div className="relative bg-gradient-to-br from-red-50 to-red-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-12 h-12 text-red-500" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <p className="text-gray-500 text-sm mb-6">
+          You do not have permission to access this page.
+        </p>
+
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-6"></div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={handleGoBack}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go Back
+          </button>
+          <button
+            onClick={handleGoHome}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+          >
+            <Home className="w-4 h-4" />
+            Home Page
+          </button>
+        </div>
+
+        {/* Error Code */}
+        <p className="text-xs text-gray-400 mt-6">
+          Error Code: 403 - Forbidden
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const LeaveManagement: React.FC = () => {
@@ -578,6 +639,7 @@ const LeaveManagement: React.FC = () => {
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAccessDenied, setIsAccessDenied] = useState<boolean>(false);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
@@ -621,6 +683,7 @@ const LeaveManagement: React.FC = () => {
   const fetchLeaves = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setIsAccessDenied(false);
     try {
       const params = new URLSearchParams({
         caller_employee_code: callerEmployeeCode,
@@ -639,9 +702,27 @@ const LeaveManagement: React.FC = () => {
           headers: { "Content-Type": "application/json" },
         },
       );
-      if (!response.ok)
+
+      // Check for 404 or 403 status codes
+      if (response.status === 404 || response.status === 403) {
+        setIsAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data: ApiResponse = await response.json();
+
+      // Check if the response indicates no access
+      if (data.message && data.message.success === false) {
+        setIsAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
       if (data.message.success) {
         setLeaves(data.message.leaves);
         setCurrentPage(1);
@@ -649,11 +730,23 @@ const LeaveManagement: React.FC = () => {
         setError("Failed to fetch leaves");
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while fetching leaves",
-      );
+      // Check if error message contains 404 or access related keywords
+      const errorMessage = err instanceof Error ? err.message : "";
+      if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("403") ||
+        errorMessage.toLowerCase().includes("access") ||
+        errorMessage.toLowerCase().includes("forbidden") ||
+        errorMessage.toLowerCase().includes("not found")
+      ) {
+        setIsAccessDenied(true);
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching leaves",
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -689,6 +782,14 @@ const LeaveManagement: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 404 || response.status === 403) {
+        setIsAccessDenied(true);
+        closeModal();
+        closeDetailsModal();
+        return;
+      }
+
       const data = await response.json();
       if (data.message?.success) {
         await fetchLeaves();
@@ -699,7 +800,18 @@ const LeaveManagement: React.FC = () => {
           data.message?.message || data.error || `Failed to ${action} request`,
         );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error ? err.message : "";
+      if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("403") ||
+        errorMessage.toLowerCase().includes("access")
+      ) {
+        setIsAccessDenied(true);
+        closeModal();
+        closeDetailsModal();
+      } else {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     }
   };
 
@@ -721,6 +833,14 @@ const LeaveManagement: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 404 || response.status === 403) {
+        setIsAccessDenied(true);
+        closeModal();
+        closeDetailsModal();
+        return;
+      }
+
       const data = await response.json();
       if (data.message.success) {
         await fetchLeaves();
@@ -728,7 +848,18 @@ const LeaveManagement: React.FC = () => {
         closeDetailsModal();
       } else setError(data.message.message || "Failed to modify leave");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error ? err.message : "";
+      if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("403") ||
+        errorMessage.toLowerCase().includes("access")
+      ) {
+        setIsAccessDenied(true);
+        closeModal();
+        closeDetailsModal();
+      } else {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     }
   };
 
@@ -813,18 +944,20 @@ const LeaveManagement: React.FC = () => {
     fetchLeaves();
   }, [fetchLeaves]);
 
+  // Show No Access page if access is denied
+  if (isAccessDenied) {
+    return <NoAccessPage />;
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    // KEY FIX: min-h-screen + overflow-y-auto on the page root so mobile can scroll
     <div className="w-full bg-gray-50 min-h-screen mb-10">
-      {/* KEY FIX: px-4 only, no max-w that clips on mobile, pb-8 so last card isn't cut off */}
       <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              {" "}
               <div>
                 <h1 className="text-xl font-bold text-white">
                   Leave Management
@@ -955,7 +1088,6 @@ const LeaveManagement: React.FC = () => {
 
             {/* ── Desktop: Table (hidden below md) ── */}
             <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              {/* KEY FIX: overflow-x-auto on the wrapper, remove table-fixed */}
               <div className="overflow-x-auto">
                 <table className="w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50">
@@ -1148,7 +1280,6 @@ const LeaveManagement: React.FC = () => {
 
       {/* ── Action Modal (Approve / Reject / Modify) ── */}
       {isModalOpen && selectedLeave && (
-        // KEY FIX: slides up from bottom on mobile (items-end), centered on sm+
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] flex flex-col">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">

@@ -254,6 +254,58 @@ const filterAndMapLogsToSession = (
   );
 };
 
+// ============ FIX: Role-based filtering helper functions ============
+// Helper to normalize role string for comparison
+const normalizeRole = (role: string): string => {
+  if (!role) return "";
+  return role.toLowerCase().trim();
+};
+
+// Check if user has admin or HR role (can see all)
+const isAdminOrHR = (role: string): boolean => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "admin" ||
+    normalized === "superadmin" ||
+    normalized === "hr" ||
+    normalized === "hr_manager" ||
+    normalized.includes("admin") ||
+    normalized.includes("hr")
+  );
+};
+
+// Check if user is a Manager
+const isManager = (role: string): boolean => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "manager" ||
+    normalized === "manager" ||
+    normalized.includes("manager")
+  );
+};
+
+// Check if user is a Zonal Manager
+const isZonalManager = (role: string): boolean => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "zonalmanager" ||
+    normalized === "zonal_manager" ||
+    normalized === "zonal manager" ||
+    normalized.includes("zonal")
+  );
+};
+
+// Check if user is HOD
+const isHOD = (role: string): boolean => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "hod" ||
+    normalized === "h.o.d." ||
+    normalized === "h.o.d" ||
+    normalized.includes("hod")
+  );
+};
+
 // Glassmorphism CSS classes
 const glassmorphismClasses = {
   card: "backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/50 shadow-xl",
@@ -296,7 +348,7 @@ const SESSION_COLORS = [
   "#DC143C",
   "#FF8C00",
   "#9932CC",
-  "#20B2AA",
+  "#20B2CD",
 ];
 
 const getSessionColor = (index: number): string => {
@@ -424,6 +476,7 @@ export default function AttendanceList() {
     }),
   };
 
+  // ============ FIX: Updated getUserInfo with better role detection ============
   // Get current user info from localStorage
   useEffect(() => {
     const getUserInfo = () => {
@@ -438,6 +491,7 @@ export default function AttendanceList() {
           }
         }
 
+        // Try multiple sources for role
         let userRole = "";
         if (localStorage.getItem("userRole")) {
           userRole = localStorage.getItem("userRole") || "";
@@ -453,6 +507,7 @@ export default function AttendanceList() {
           userRole = userData.user_role;
         }
 
+        // Try multiple sources for department
         let department = localStorage.getItem("department") || "";
         if (!department && userData?.department) {
           department = userData.department;
@@ -460,6 +515,7 @@ export default function AttendanceList() {
           department = userData.dept;
         }
 
+        // Try multiple sources for allocated area
         let allocatedArea = localStorage.getItem("allocatedarea") || "";
         if (!allocatedArea && userData?.allocatedArea) {
           allocatedArea = userData.allocatedArea;
@@ -469,10 +525,17 @@ export default function AttendanceList() {
           allocatedArea = userData.allocated_area;
         }
 
+        // Log the retrieved info for debugging
+        console.log("User Info Retrieved:", {
+          userRole,
+          department,
+          allocatedArea,
+        });
+
         setCurrentUserInfo({
-          userRole: userRole.toLowerCase(),
-          department: department,
-          allocatedArea: allocatedArea,
+          userRole: userRole.toLowerCase().trim(),
+          department: department.toLowerCase().trim(),
+          allocatedArea: allocatedArea.toLowerCase().trim(),
         });
       } catch (error) {
         console.error("Error getting user info from localStorage:", error);
@@ -482,6 +545,165 @@ export default function AttendanceList() {
 
     getUserInfo();
   }, []);
+
+  // ============ FIX: Updated filterSessionsByRole with correct logic ============
+  const filterSessionsByRole = useCallback(
+    (sessions: TravelSession[]): TravelSession[] => {
+      if (!currentUserInfo?.userRole) {
+        return sessions;
+      }
+
+      const userRole = currentUserInfo.userRole.toLowerCase().trim();
+
+      // Admin or HR - can see all sessions
+      if (isAdminOrHR(userRole)) {
+        return sessions;
+      }
+
+      // Manager - can only see sessions of their department users
+      if (isManager(userRole) || isHOD(userRole)) {
+        const managerDepartment = currentUserInfo.department
+          ?.toLowerCase()
+          .trim();
+        if (!managerDepartment) {
+          console.warn("Manager/HOD role but no department found");
+          return [];
+        }
+
+        const filtered = sessions.filter((session) => {
+          const sessionDept = (session.department || "").toLowerCase().trim();
+          return sessionDept === managerDepartment;
+        });
+
+        console.log(
+          `Filtered ${filtered.length} sessions for ${userRole} in department: ${managerDepartment}`,
+        );
+        return filtered;
+      }
+
+      // Zonal Manager - can only see sessions of users in their zone
+      if (isZonalManager(userRole)) {
+        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
+        if (!zonalArea) {
+          console.warn("ZonalManager role but no allocated area found");
+          return [];
+        }
+
+        const filtered = sessions.filter((session) => {
+          const sessionArea = (session.allocatedArea || "")
+            .toLowerCase()
+            .trim();
+          return sessionArea === zonalArea;
+        });
+
+        console.log(
+          `Filtered ${filtered.length} sessions for ${userRole} in zone: ${zonalArea}`,
+        );
+        return filtered;
+      }
+
+      // Default: return all sessions if no specific role matches
+      return sessions;
+    },
+    [currentUserInfo],
+  );
+
+  // ============ FIX: Updated filterUsersByRole with correct logic ============
+  const filterUsersByRole = useCallback(
+    (usersList: typeof users): typeof users => {
+      if (!currentUserInfo?.userRole) {
+        return usersList;
+      }
+
+      const userRole = currentUserInfo.userRole.toLowerCase().trim();
+
+      // Admin or HR - can see all users
+      if (isAdminOrHR(userRole)) {
+        return usersList;
+      }
+
+      // Manager or HOD - can only see users in their department
+      if (isManager(userRole) || isHOD(userRole)) {
+        const managerDepartment = currentUserInfo.department
+          ?.toLowerCase()
+          .trim();
+        if (!managerDepartment) {
+          console.warn("Manager/HOD role but no department found");
+          return [];
+        }
+
+        const filtered = usersList.filter((user) => {
+          const userDept = (user.department || "").toLowerCase().trim();
+          return userDept === managerDepartment;
+        });
+
+        console.log(
+          `Filtered ${filtered.length} users for ${userRole} in department: ${managerDepartment}`,
+        );
+        return filtered;
+      }
+
+      // Zonal Manager - can only see users in their zone
+      if (isZonalManager(userRole)) {
+        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
+        if (!zonalArea) {
+          console.warn("ZonalManager role but no allocated area found");
+          return [];
+        }
+
+        const filtered = usersList.filter((user) => {
+          const userArea = (user.allocatedArea || "").toLowerCase().trim();
+          return userArea === zonalArea;
+        });
+
+        console.log(
+          `Filtered ${filtered.length} users for ${userRole} in zone: ${zonalArea}`,
+        );
+        return filtered;
+      }
+
+      // Default: return all users
+      return usersList;
+    },
+    [currentUserInfo],
+  );
+
+  // ============ FIX: Check if user has permission to view a specific session ============
+  const hasPermissionToViewSession = useCallback(
+    (session: TravelSession): boolean => {
+      if (!currentUserInfo?.userRole) {
+        return true;
+      }
+
+      const userRole = currentUserInfo.userRole.toLowerCase().trim();
+
+      // Admin or HR - can view all
+      if (isAdminOrHR(userRole)) {
+        return true;
+      }
+
+      // Manager or HOD - can only view sessions of their department
+      if (isManager(userRole) || isHOD(userRole)) {
+        const managerDepartment = currentUserInfo.department
+          ?.toLowerCase()
+          .trim();
+        if (!managerDepartment) return false;
+        const sessionDept = (session.department || "").toLowerCase().trim();
+        return sessionDept === managerDepartment;
+      }
+
+      // Zonal Manager - can only view sessions of their zone
+      if (isZonalManager(userRole)) {
+        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
+        if (!zonalArea) return false;
+        const sessionArea = (session.allocatedArea || "").toLowerCase().trim();
+        return sessionArea === zonalArea;
+      }
+
+      return true;
+    },
+    [currentUserInfo],
+  );
 
   // Format date without time (YYYY-MM-DD)
   const formatDateOnly = useCallback((dateTimeStr: string): string => {
@@ -751,258 +973,6 @@ export default function AttendanceList() {
     }
   }, [currentUserInfo]);
 
-  // Filter sessions based on user role
-  const filterSessionsByRole = useCallback(
-    (sessions: TravelSession[]): TravelSession[] => {
-      if (!currentUserInfo?.userRole) {
-        return sessions;
-      }
-
-      const userRole = currentUserInfo.userRole.toLowerCase();
-
-      if (
-        userRole.includes("admin") ||
-        userRole.includes("superadmin") ||
-        userRole.includes("hr")
-      ) {
-        return sessions;
-      }
-
-      if (userRole.includes("manager")) {
-        const managerDepartment = currentUserInfo.department
-          ?.toLowerCase()
-          .trim();
-        if (!managerDepartment) {
-          console.warn("Manager role but no department found");
-          return [];
-        }
-
-        const filtered = sessions.filter((session) => {
-          const sessionDept = (session.department || "").toLowerCase().trim();
-          return sessionDept === managerDepartment;
-        });
-
-        return filtered;
-      }
-
-      if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
-        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
-        if (!zonalArea) {
-          console.warn("ZonalManager role but no allocated area found");
-          return [];
-        }
-
-        const filtered = sessions.filter((session) => {
-          const sessionArea = (session.allocatedArea || "")
-            .toLowerCase()
-            .trim();
-          return sessionArea === zonalArea;
-        });
-
-        return filtered;
-      }
-
-      return sessions;
-    },
-    [currentUserInfo],
-  );
-
-  // Filter users based on user role
-  const filterUsersByRole = useCallback(
-    (usersList: typeof users): typeof users => {
-      if (!currentUserInfo?.userRole) {
-        return usersList;
-      }
-
-      const userRole = currentUserInfo.userRole.toLowerCase();
-
-      if (
-        userRole.includes("admin") ||
-        userRole.includes("superadmin") ||
-        userRole.includes("hr")
-      ) {
-        return usersList;
-      }
-
-      if (userRole.includes("manager")) {
-        const managerDepartment = currentUserInfo.department
-          ?.toLowerCase()
-          .trim();
-        if (!managerDepartment) {
-          console.warn("Manager role but no department found");
-          return [];
-        }
-
-        const filtered = usersList.filter((user) => {
-          const userDept = (user.department || "").toLowerCase().trim();
-          return userDept === managerDepartment;
-        });
-
-        return filtered;
-      }
-
-      if (userRole.includes("zonal") || userRole.includes("zonalmanager")) {
-        const zonalArea = currentUserInfo.allocatedArea?.toLowerCase().trim();
-        if (!zonalArea) {
-          console.warn("ZonalManager role but no allocated area found");
-          return [];
-        }
-
-        const filtered = usersList.filter((user) => {
-          const userArea = (user.allocatedArea || "").toLowerCase().trim();
-          return userArea === zonalArea;
-        });
-
-        return filtered;
-      }
-
-      return usersList;
-    },
-    [currentUserInfo],
-  );
-
-  // Infinite scroll observer for main pagination
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasMore &&
-          !isLoading &&
-          !isLoadingMore
-        ) {
-          loadMoreSessions();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [hasMore, isLoading, isLoadingMore]);
-
-  // Auto-refresh logic
-  useEffect(() => {
-    if (autoRefresh) {
-      const refreshInterval = activeSessionsOnly ? 10000 : 30000;
-
-      locationIntervalRef.current = setInterval(() => {
-        if (activeSessionsOnly) {
-          fetchActiveSessionsOnly();
-        } else {
-          fetchTravelSessions();
-        }
-      }, refreshInterval);
-    }
-
-    return () => {
-      if (locationIntervalRef.current) {
-        clearInterval(locationIntervalRef.current);
-        locationIntervalRef.current = null;
-      }
-    };
-  }, [autoRefresh, activeSessionsOnly]);
-
-  // Load all sessions for export (with pagination)
-  const loadAllSessionsForExport = async () => {
-    setIsLoadingAllSessions(true);
-    try {
-      let allSessions: TravelSession[] = [];
-      let currentPage = 1;
-      let totalPages = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const params: any = { page: currentPage, limit: 100 };
-
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
-
-        const res = await API.get<ApiPaginationResponse>(
-          "/admin/travel-sessions",
-          { params },
-        );
-
-        if (res.data.success) {
-          const sessions = res.data.data || [];
-          allSessions = [...allSessions, ...sessions];
-
-          currentPage = res.data.currentPage || currentPage;
-          totalPages = res.data.totalPages || totalPages;
-          hasMore = res.data.hasNextPage || false;
-
-          if (currentPage < totalPages) {
-            currentPage++;
-          } else {
-            hasMore = false;
-          }
-        } else {
-          hasMore = false;
-        }
-      }
-
-      setAllSessions(allSessions);
-    } catch (err) {
-      console.error("Failed to load all sessions for export", err);
-    } finally {
-      setIsLoadingAllSessions(false);
-    }
-  };
-
-  // Load farmer data for all sessions
-  const loadAllFarmerData = async (userIds: number[], dates: string[]) => {
-    const farmerDataMap: Record<string, any> = {};
-
-    try {
-      const batchSize = 5;
-      for (let i = 0; i < userIds.length; i += batchSize) {
-        const batchUserIds = userIds.slice(i, i + batchSize);
-        const batchDates = dates.slice(i, i + batchSize);
-
-        const batchPromises = batchUserIds.map(async (userId, index) => {
-          const date = batchDates[index];
-          try {
-            const response = await API.get(
-              `/tracking/locationlog/get_travel_sessions`,
-              {
-                params: {
-                  userId,
-                  startDate: date,
-                  endDate: date,
-                },
-                timeout: 10000,
-              },
-            );
-
-            if (response.data.success && response.data.sessions?.data) {
-              const key = `${userId}-${date}`;
-              farmerDataMap[key] = response.data.sessions.data;
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching farmer data for user ${userId}`,
-              error,
-            );
-          }
-        });
-
-        await Promise.all(batchPromises);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-
-      setAllFarmerData(farmerDataMap);
-    } catch (err) {
-      console.error("Failed to load farmer data", err);
-    }
-  };
-
   // Fetch all travel sessions with pagination
   const fetchTravelSessions = async (
     page: number = 1,
@@ -1022,21 +992,25 @@ export default function AttendanceList() {
       if (selectedUser) params.userId = selectedUser;
       if (searchQuery) params.search = searchQuery;
 
+      // ============ FIX: Apply role-based filtering at API level ============
       if (currentUserInfo?.userRole) {
-        const userRole = currentUserInfo.userRole.toLowerCase();
+        const userRole = currentUserInfo.userRole.toLowerCase().trim();
 
-        if (!userRole.includes("admin") && !userRole.includes("hr")) {
-          if (userRole.includes("manager") && currentUserInfo.department) {
+        // Manager or HOD - filter by department at API level
+        if (isManager(userRole) || isHOD(userRole)) {
+          if (currentUserInfo.department) {
             params.department = currentUserInfo.department;
           }
+        }
 
-          if (
-            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
-            currentUserInfo.allocatedArea
-          ) {
+        // Zonal Manager - filter by allocated area at API level
+        if (isZonalManager(userRole)) {
+          if (currentUserInfo.allocatedArea) {
             params.allocatedArea = currentUserInfo.allocatedArea;
           }
         }
+
+        // Admin/HR - no additional filters
       }
 
       const res = await API.get<ApiPaginationResponse>(
@@ -1049,6 +1023,7 @@ export default function AttendanceList() {
 
         setTotalSessionsCount(res.data.totalSessions || sessions.length);
 
+        // ============ FIX: Apply role-based filtering on the response ============
         let filteredSessions = sessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(sessions);
@@ -1070,6 +1045,7 @@ export default function AttendanceList() {
           ? [...travelSessions, ...filteredSessions]
           : filteredSessions;
 
+        // ============ FIX: Filter users based on role ============
         const uniqueUsers = Array.from(
           new Map(
             filteredSessions.map((session) => [
@@ -1144,18 +1120,18 @@ export default function AttendanceList() {
         per_page: 1000,
       };
 
+      // ============ FIX: Apply role-based filtering at API level ============
       if (currentUserInfo?.userRole) {
-        const userRole = currentUserInfo.userRole.toLowerCase();
+        const userRole = currentUserInfo.userRole.toLowerCase().trim();
 
-        if (!userRole.includes("admin") && !userRole.includes("hr")) {
-          if (userRole.includes("manager") && currentUserInfo.department) {
+        if (isManager(userRole) || isHOD(userRole)) {
+          if (currentUserInfo.department) {
             params.department = currentUserInfo.department;
           }
+        }
 
-          if (
-            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
-            currentUserInfo.allocatedArea
-          ) {
+        if (isZonalManager(userRole)) {
+          if (currentUserInfo.allocatedArea) {
             params.allocatedArea = currentUserInfo.allocatedArea;
           }
         }
@@ -1169,6 +1145,7 @@ export default function AttendanceList() {
       if (res.data.success) {
         const userDateSessions = res.data.data || [];
 
+        // ============ FIX: Apply role-based filtering ============
         let filteredSessions = userDateSessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(userDateSessions);
@@ -1250,18 +1227,18 @@ export default function AttendanceList() {
     try {
       const params: any = {};
 
+      // ============ FIX: Apply role-based filtering ============
       if (currentUserInfo?.userRole) {
-        const userRole = currentUserInfo.userRole.toLowerCase();
+        const userRole = currentUserInfo.userRole.toLowerCase().trim();
 
-        if (!userRole.includes("admin") && !userRole.includes("hr")) {
-          if (userRole.includes("manager") && currentUserInfo.department) {
+        if (isManager(userRole) || isHOD(userRole)) {
+          if (currentUserInfo.department) {
             params.department = currentUserInfo.department;
           }
+        }
 
-          if (
-            (userRole.includes("zonal") || userRole.includes("zonalmanager")) &&
-            currentUserInfo.allocatedArea
-          ) {
+        if (isZonalManager(userRole)) {
+          if (currentUserInfo.allocatedArea) {
             params.allocatedArea = currentUserInfo.allocatedArea;
           }
         }
@@ -1271,6 +1248,7 @@ export default function AttendanceList() {
       if (res.data.success) {
         const allSessions = res.data.data || [];
 
+        // ============ FIX: Apply role-based filtering ============
         let filteredSessions = allSessions;
         if (currentUserInfo?.userRole) {
           filteredSessions = filterSessionsByRole(allSessions);
@@ -1468,17 +1446,18 @@ export default function AttendanceList() {
         if (endDate) params.endDate = endDate;
         if (selectedUser) params.userId = selectedUser;
 
+        // ============ FIX: Apply role-based filtering ============
         if (currentUserInfo?.userRole) {
-          const userRole = currentUserInfo.userRole.toLowerCase();
-          if (!userRole.includes("admin") && !userRole.includes("hr")) {
-            if (userRole.includes("manager") && currentUserInfo.department) {
+          const userRole = currentUserInfo.userRole.toLowerCase().trim();
+
+          if (isManager(userRole) || isHOD(userRole)) {
+            if (currentUserInfo.department) {
               params.department = currentUserInfo.department;
             }
-            if (
-              (userRole.includes("zonal") ||
-                userRole.includes("zonalmanager")) &&
-              currentUserInfo.allocatedArea
-            ) {
+          }
+
+          if (isZonalManager(userRole)) {
+            if (currentUserInfo.allocatedArea) {
               params.allocatedArea = currentUserInfo.allocatedArea;
             }
           }
@@ -1504,6 +1483,7 @@ export default function AttendanceList() {
         }
       }
 
+      // ============ FIX: Apply role-based filtering ============
       let filteredSessions = allSessions;
       if (currentUserInfo?.userRole) {
         filteredSessions = filterSessionsByRole(allSessions);
@@ -1513,6 +1493,7 @@ export default function AttendanceList() {
 
       setTravelSessions(filteredSessions);
 
+      // ============ FIX: Filter users based on role ============
       const uniqueUsers = Array.from(
         new Map(
           filteredSessions.map((session) => [
@@ -2003,6 +1984,11 @@ export default function AttendanceList() {
       );
     }
 
+    // ============ FIX: Apply role-based filtering on filtered sessions ============
+    if (currentUserInfo?.userRole) {
+      filtered = filterSessionsByRole(filtered);
+    }
+
     return filtered.sort((a, b) => {
       const dateA = new Date(a.startTime).getTime();
       const dateB = new Date(b.startTime).getTime();
@@ -2013,7 +1999,15 @@ export default function AttendanceList() {
 
       return a.sessionId - b.sessionId;
     });
-  }, [startDate, endDate, selectedUser, searchQuery, travelSessions]);
+  }, [
+    startDate,
+    endDate,
+    selectedUser,
+    searchQuery,
+    travelSessions,
+    currentUserInfo,
+    filterSessionsByRole,
+  ]);
 
   useEffect(() => {
     const grouped = groupSessionsByUserAndDate(filteredSessions);
@@ -2062,6 +2056,7 @@ export default function AttendanceList() {
 
       let sessionsToExport = [...allSessions];
 
+      // ============ FIX: Apply role-based filtering for export ============
       if (currentUserInfo?.userRole) {
         sessionsToExport = filterSessionsByRole(sessionsToExport);
       }
@@ -2329,6 +2324,171 @@ export default function AttendanceList() {
       setIsExporting(false);
     }
   };
+
+  // Load all sessions for export (with pagination)
+  const loadAllSessionsForExport = async () => {
+    setIsLoadingAllSessions(true);
+    try {
+      let allSessions: TravelSession[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const params: any = { page: currentPage, limit: 100 };
+
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+
+        // ============ FIX: Apply role-based filtering for export ============
+        if (currentUserInfo?.userRole) {
+          const userRole = currentUserInfo.userRole.toLowerCase().trim();
+
+          if (isManager(userRole) || isHOD(userRole)) {
+            if (currentUserInfo.department) {
+              params.department = currentUserInfo.department;
+            }
+          }
+
+          if (isZonalManager(userRole)) {
+            if (currentUserInfo.allocatedArea) {
+              params.allocatedArea = currentUserInfo.allocatedArea;
+            }
+          }
+        }
+
+        const res = await API.get<ApiPaginationResponse>(
+          "/admin/travel-sessions",
+          { params },
+        );
+
+        if (res.data.success) {
+          const sessions = res.data.data || [];
+          allSessions = [...allSessions, ...sessions];
+
+          currentPage = res.data.currentPage || currentPage;
+          totalPages = res.data.totalPages || totalPages;
+          hasMore = res.data.hasNextPage || false;
+
+          if (currentPage < totalPages) {
+            currentPage++;
+          } else {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // ============ FIX: Apply role-based filtering ============
+      let filteredSessions = allSessions;
+      if (currentUserInfo?.userRole) {
+        filteredSessions = filterSessionsByRole(allSessions);
+      }
+
+      setAllSessions(filteredSessions);
+    } catch (err) {
+      console.error("Failed to load all sessions for export", err);
+    } finally {
+      setIsLoadingAllSessions(false);
+    }
+  };
+
+  // Load farmer data for all sessions
+  const loadAllFarmerData = async (userIds: number[], dates: string[]) => {
+    const farmerDataMap: Record<string, any> = {};
+
+    try {
+      const batchSize = 5;
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batchUserIds = userIds.slice(i, i + batchSize);
+        const batchDates = dates.slice(i, i + batchSize);
+
+        const batchPromises = batchUserIds.map(async (userId, index) => {
+          const date = batchDates[index];
+          try {
+            const response = await API.get(
+              `/tracking/locationlog/get_travel_sessions`,
+              {
+                params: {
+                  userId,
+                  startDate: date,
+                  endDate: date,
+                },
+                timeout: 10000,
+              },
+            );
+
+            if (response.data.success && response.data.sessions?.data) {
+              const key = `${userId}-${date}`;
+              farmerDataMap[key] = response.data.sessions.data;
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching farmer data for user ${userId}`,
+              error,
+            );
+          }
+        });
+
+        await Promise.all(batchPromises);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      setAllFarmerData(farmerDataMap);
+    } catch (err) {
+      console.error("Failed to load farmer data", err);
+    }
+  };
+
+  // Auto-refresh logic
+  useEffect(() => {
+    if (autoRefresh) {
+      const refreshInterval = activeSessionsOnly ? 10000 : 30000;
+
+      locationIntervalRef.current = setInterval(() => {
+        if (activeSessionsOnly) {
+          fetchActiveSessionsOnly();
+        } else {
+          fetchTravelSessions();
+        }
+      }, refreshInterval);
+    }
+
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [autoRefresh, activeSessionsOnly]);
+
+  // Infinite scroll observer for main pagination
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !isLoading &&
+          !isLoadingMore
+        ) {
+          loadMoreSessions();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoading, isLoadingMore]);
 
   const renderOdometerImage = (imageData: string) => {
     if (!imageData || imageData.trim() === "") {

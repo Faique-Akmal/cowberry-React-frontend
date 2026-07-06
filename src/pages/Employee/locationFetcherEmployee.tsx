@@ -61,6 +61,7 @@ interface TravelSession {
   startTime: string;
   startLatitude: string;
   startLongitude: string;
+  role?: string;
   endTime: string;
   endLatitude: string;
   endLongitude: string;
@@ -299,10 +300,10 @@ const isZonalManager = (role: string): boolean => {
 const isHOD = (role: string): boolean => {
   const normalized = normalizeRole(role);
   return (
-    normalized === "hod" ||
-    normalized === "h.o.d." ||
-    normalized === "h.o.d" ||
-    normalized.includes("hod")
+    normalized === "headofdepartment" ||
+    normalized === "headofdepartment" ||
+    normalized === "headofdepartment" ||
+    normalized.includes("headofdepartment")
   );
 };
 
@@ -720,37 +721,66 @@ export default function AttendanceList() {
       totalDistance: number;
       firstSessionDistance: number;
       originalTotalDistance: number;
+      excludedSessions: number;
     } => {
       if (sessions.length === 0) {
         return {
           totalDistance: 0,
           firstSessionDistance: 0,
           originalTotalDistance: 0,
+          excludedSessions: 0,
         };
       }
 
+      // sort by start time
       const sortedSessions = [...sessions].sort(
         (a, b) =>
           new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
       );
 
-      const firstSession = sortedSessions[0];
-      const firstSessionDistance = firstSession.totalDistance || 0;
+      const role = (sortedSessions[0].role || "")
+        .toLowerCase()
+        .replace(/\s/g, "");
+      console.log(
+        "User:",
+        sortedSessions[0].fullName,
+        "Role:",
+        role,
+        "Sessions:",
+        sortedSessions.length,
+      );
 
       const originalTotalDistance = sortedSessions.reduce(
-        (sum, session) => sum + (session.totalDistance || 0),
+        (sum, s) => sum + (s.totalDistance || 0),
         0,
       );
 
-      const adjustedDistance = Math.max(
-        0,
-        originalTotalDistance - firstSessionDistance,
-      );
+      // Exclude first session ONLY for fieldemployee
+      const shouldExcludeFirst = role === "fieldemployee";
+      console.log({
+        user: sortedSessions[0].fullName,
+        role,
+        shouldExcludeFirst,
+        originalDistance: originalTotalDistance,
+        firstSessionDistance: sortedSessions[0].totalDistance,
+      });
+
+      if (!shouldExcludeFirst) {
+        return {
+          totalDistance: originalTotalDistance,
+          firstSessionDistance: 0,
+          originalTotalDistance,
+          excludedSessions: 0,
+        };
+      }
+
+      const firstSessionDistance = sortedSessions[0].totalDistance || 0;
 
       return {
-        totalDistance: adjustedDistance,
-        firstSessionDistance: firstSessionDistance,
-        originalTotalDistance: originalTotalDistance,
+        totalDistance: originalTotalDistance - firstSessionDistance,
+        firstSessionDistance,
+        originalTotalDistance,
+        excludedSessions: 1,
       };
     },
     [],
@@ -909,8 +939,22 @@ export default function AttendanceList() {
       });
 
       const groups = Array.from(groupedMap.values()).map((group) => {
+        console.log(
+          group.fullName,
+          group.sessions.map((s) => ({
+            sessionId: s.sessionId,
+            role: s.role,
+            distance: s.totalDistance,
+          })),
+        );
         const distanceData = calculateAdjustedGroupDistance(group.sessions);
-
+        console.log("distanceData", {
+          user: group.fullName,
+          role: group.sessions[0].role,
+          totalDistance: distanceData.totalDistance,
+          firstSessionDistance: distanceData.firstSessionDistance,
+          originalTotalDistance: distanceData.originalTotalDistance,
+        });
         // Calculate total points from filtered logs
         let totalPoints = 0;
         group.sessions.forEach((session) => {
@@ -2178,6 +2222,7 @@ export default function AttendanceList() {
           fullName: group.fullName,
           "Employee Code": group.employeeCode,
           Department: group.sessions[0]?.department || "N/A",
+          Role: group.sessions[0]?.role || "N/A",
           "Allocated Area": group.sessions[0]?.allocatedArea || "N/A",
           Date: group.date,
           "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
@@ -2200,7 +2245,7 @@ export default function AttendanceList() {
           "First Session Distance (km)": (
             group.firstSessionDistance / 1000
           ).toFixed(2),
-          "Payable Distance excluding first session(km)": (
+          "Payable Distance(km)": (
             totalDistanceExcludingFirst / 1000
           ).toFixed(2),
           "Payable Amount (₹)": reimbursementAmount,
@@ -2246,6 +2291,7 @@ export default function AttendanceList() {
         "fullName",
         "Employee Code",
         "Department",
+        "Role",
         "Allocated Area",
         "Date",
         "Formatted Date",
@@ -2256,7 +2302,7 @@ export default function AttendanceList() {
         "Original Total Distance (km)",
         "Original Total Reimbursement(km)",
         "First Session Distance (km)",
-        "Payable Distance excluding first session(km)",
+        "Payable Distance(km)",
         "Payable Amount (₹)",
         "Total Farmers Met",
         "Duration (minutes)",
@@ -3227,7 +3273,13 @@ export default function AttendanceList() {
                               session.endTime,
                             );
                             const isActive = !session.endTime;
-                            const isFirstSession = sessionIndex === 0;
+                            const normalizedRole = (session.role || "")
+                              .toLowerCase()
+                              .replace(/\s+/g, "");
+
+                            const isFirstSession =
+                              normalizedRole === "fieldemployee" &&
+                              sessionIndex === 0;
 
                             // Check if logs were filtered
                             const logs = sessionLogs[session.sessionId] || [];
@@ -3812,16 +3864,22 @@ export default function AttendanceList() {
                           {/* Odometer Images Section */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                              <h4 className="text-md font-semibold p-2 text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                 Start Odometer
                               </h4>
                               {renderOdometerImage(session.startOdometerImage)}
+                              <div className="mt-2 border p-2    border-gray-300/20 dark:border-gray-600/30 pt-2">
+                                <p>{session.startDescription}</p>
+                              </div>
                             </div>
                             <div>
-                              <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                              <h4 className="text-md font-semibold p-2 text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                 End Odometer
                               </h4>
                               {renderOdometerImage(session.endOdometerImage)}
+                              <div className="mt-2 border p-2 border-gray-300/20 dark:border-gray-600/30 pt-2">
+                                <p>{session.endDescription}</p>
+                              </div>
                             </div>
                           </div>
 

@@ -2233,22 +2233,23 @@ export default function AttendanceList() {
           }),
           "Start Time": formatDateTime(group.startTime),
           "End Time": formatDateTime(group.endTime),
+           "Payable Distance(km)": (
+            totalDistanceExcludingFirst / 1000
+          ).toFixed(2),
+          "Payable Amount (₹)": reimbursementAmount,
           "Total Sessions": group.totalSessions,
           "Active Sessions": group.activeSessions,
-          "Original Total Distance (km)": (
+          "Total Distance (km)": (
             group.originalTotalDistance / 1000
           ).toFixed(2),
-          "Original Total Reimbursement(km)": (
+          "Total Reimbursement(km)": (
             (group.originalTotalDistance / 1000) *
             3.5
           ).toFixed(2),
           "First Session Distance (km)": (
             group.firstSessionDistance / 1000
           ).toFixed(2),
-          "Payable Distance(km)": (
-            totalDistanceExcludingFirst / 1000
-          ).toFixed(2),
-          "Payable Amount (₹)": reimbursementAmount,
+         
           "Total Farmers Met": totalFarmersMet,
           "Duration (minutes)": totalDuration,
           "Total Pauses Count": totalPauses,
@@ -2297,13 +2298,14 @@ export default function AttendanceList() {
         "Formatted Date",
         "Start Time",
         "End Time",
+         "Payable Distance(km)",
+        "Payable Amount (₹)",
         "Total Sessions",
         "Active Sessions",
-        "Original Total Distance (km)",
-        "Original Total Reimbursement(km)",
+        "Total Distance (km)",
+        "Total Reimbursement(km)",
         "First Session Distance (km)",
-        "Payable Distance(km)",
-        "Payable Amount (₹)",
+       
         "Total Farmers Met",
         "Duration (minutes)",
         "Total Pauses Count",

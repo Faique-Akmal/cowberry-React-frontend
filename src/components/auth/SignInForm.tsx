@@ -11,7 +11,7 @@ import ForgotPasswordModal from "./ForgotPasswordModal";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
-// Access Restriction Modal Component (Updated)
+// Access Restriction Modal Component (unchanged)
 const AccessRestrictionModal = ({
   isOpen,
   onClose,
@@ -23,7 +23,6 @@ const AccessRestrictionModal = ({
 }) => {
   if (!isOpen) return null;
 
-  // Get appropriate message based on role
   const getRestrictionMessage = () => {
     if (userRole?.toLowerCase() === "fieldemployee") {
       return {
@@ -97,11 +96,48 @@ const AccessRestrictionModal = ({
   );
 };
 
+// Small inline icons for the mobile layout (avoids depending on an icon lib you may not have)
+const MailIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-600">
+    <path
+      d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-11Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path
+      d="m4 7 7.386 5.55a1 1 0 0 0 1.228 0L20 7"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-600">
+    <rect
+      x="5"
+      y="10.5"
+      width="14"
+      height="9"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M8 10.5V7.5a4 4 0 1 1 8 0v3"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 export default function SignInForm() {
   const { t } = useTranslation();
   const { login } = useAuth();
 
-  const [loginType, setLoginType] = useState<"user">("user"); // 'user' or 'admin'
+  const [loginType, setLoginType] = useState<"user">("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -115,24 +151,17 @@ export default function SignInForm() {
 
   const navigate = useNavigate();
 
-  // forgotPasswordModal
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-
   const openForgotModal = () => setIsForgotModalOpen(true);
   const closeForgotModal = () => setIsForgotModalOpen(false);
 
   useEffect(() => {
-    // Trigger animation after component mounts
     setIsMounted(true);
   }, []);
 
-  // Function to check if user role is allowed to access the web app
   const isAllowedRole = (role: string): boolean => {
     if (!role) return false;
-
     const normalizedRole = role.toLowerCase().trim();
-
-    // List of allowed roles
     const allowedRoles = [
       "admin",
       "hr",
@@ -143,16 +172,13 @@ export default function SignInForm() {
       "head_of_department",
       "hod",
     ];
-
     return allowedRoles.includes(normalizedRole);
   };
 
-  // Function to determine login endpoint based on login type
   const getLoginEndpoint = () => {
     return loginType === "admin" ? "/admin/login" : "/auth/login";
   };
 
-  // Function to handle admin login with the correct response format
   const handleAdminLogin = async (response: any) => {
     const { token, admin, message } = response.data;
 
@@ -167,24 +193,18 @@ export default function SignInForm() {
 
     const adminRole = admin?.role || "admin";
 
-    // Check if admin role is allowed
     if (!isAllowedRole(adminRole)) {
       setRestrictedUserRole(adminRole);
       setShowAccessRestrictionModal(true);
-
-      // Clear any tokens that might have been set
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
-
       toast.error(`Access denied for role: ${adminRole}`, {
         id: loadingToast,
       });
-
       setIsLoading(false);
       return;
     }
 
-    // Store admin-specific data in localStorage
     localStorage.setItem("userRole", adminRole);
     localStorage.setItem("userId", admin?.id || "");
     localStorage.setItem("username", admin?.username || "");
@@ -193,25 +213,21 @@ export default function SignInForm() {
     localStorage.setItem("isAdmin", "true");
 
     try {
-      await login(token, token); // Using same token for both refresh and access
+      await login(token, token);
 
-      // Store "Keep me logged in" preference
       if (isChecked) {
         localStorage.setItem("rememberMe", "true");
       } else {
         localStorage.removeItem("rememberMe");
       }
 
-      // Show success message
       const successMessage = message || t("toast.Logged in successfully");
       setMessage(successMessage);
 
-      // Update the loading toast to success
       toast.success(`Welcome back, ${admin.username} 🍁`, {
         id: loadingToast,
       });
 
-      // Navigate to home for admin
       setTimeout(() => {
         navigate("/home", { replace: true });
       }, 100);
@@ -224,20 +240,14 @@ export default function SignInForm() {
     }
   };
 
-  // Function to handle user login (HR, Manager, Zonal Manager, etc.)
   const handleUserLogin = async (response: any) => {
     const { user, tokens, message } = response.data;
-
-    // Get user role
     const userRole = user?.role || "";
 
-    // Check if user role is allowed to access the web app
     if (!isAllowedRole(userRole)) {
-      // Show restriction modal with the actual role
       setRestrictedUserRole(userRole);
       setShowAccessRestrictionModal(true);
 
-      // Clear any tokens that might have been set
       if (tokens?.access) {
         localStorage.removeItem("accessToken");
       }
@@ -245,7 +255,6 @@ export default function SignInForm() {
         localStorage.removeItem("refreshToken");
       }
 
-      // Show error toast
       toast.error(
         `Access denied. Role "${userRole}" does not have permission to use the web portal.`,
         {
@@ -254,10 +263,9 @@ export default function SignInForm() {
       );
 
       setIsLoading(false);
-      return; // Stop further execution
+      return;
     }
 
-    // Store user data in localStorage (only if role is allowed)
     localStorage.setItem("userRole", userRole);
     localStorage.setItem(
       "full_name",
@@ -278,26 +286,22 @@ export default function SignInForm() {
       user?.isActiveEmployee ? "true" : "false",
     );
 
-    // Set tokens in auth context
     if (tokens?.access && tokens?.refresh) {
       try {
         await login(tokens.refresh, tokens.access);
 
-        // Store "Keep me logged in" preference
         if (isChecked) {
           localStorage.setItem("rememberMe", "true");
         } else {
           localStorage.removeItem("rememberMe");
         }
 
-        // Show success message
         const successMessage = message || t("Logged in successfully");
         setMessage(successMessage);
         toast.success(`Welcome back, ${user.full_name || user.username} 🍁`, {
           id: loadingToast,
         });
 
-        // Navigate to home
         setTimeout(() => {
           navigate("/home", { replace: true });
         }, 100);
@@ -328,7 +332,6 @@ export default function SignInForm() {
       navigator.userAgent,
     );
 
-    // Basic validation
     if (!email.trim() || !password.trim()) {
       setMessage(t("message.Please enter both email and password."));
       toast.error(t("Please enter both email and password."), {
@@ -354,7 +357,6 @@ export default function SignInForm() {
           await handleUserLogin(response);
         }
       } else {
-        // If we have a message, show it
         if (response.data?.error || response.data?.message) {
           const errorMsg = response.data.error || response.data.message;
           setMessage(errorMsg);
@@ -370,7 +372,6 @@ export default function SignInForm() {
       console.error("Login error:", error);
 
       if (error.response) {
-        // Server responded with error status
         const status = error.response.status;
         const data = error.response.data;
 
@@ -405,14 +406,12 @@ export default function SignInForm() {
           });
         }
       } else if (error.request) {
-        // Request was made but no response received
         const errorMsg = t(
           "message.Cannot connect to server. Please check your connection.",
         );
         setMessage(errorMsg);
         toast.error(errorMsg);
       } else {
-        // Something else happened
         const errorMsg = t(
           "message.An unexpected error occurred. Please try again.",
         );
@@ -423,31 +422,158 @@ export default function SignInForm() {
       }
     } finally {
       setIsLoading(false);
-      // Don't dismiss toast here - let the success/error handlers do it
     }
   };
 
   return (
     <>
+      {/* ============ MOBILE / SMALL SCREEN UI (below md) ============ */}
+      <div className="md:hidden relative min-h-screen overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-black dark:to-black">
+        {/* Decorative shapes */}
+        <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-700 rounded-full opacity-95" />
+        <div className="absolute top-[28%] -right-10 w-32 h-32 bg-amber-200 rounded-full opacity-70" />
+        <div className="absolute -bottom-24 -left-10 w-full h-56 bg-blue-700 rounded-t-[50%] opacity-95" />
+
+        <div className="relative z-10 flex flex-col items-center px-5 pt-14 pb-10">
+          {/* Logo */}
+          <img
+            src="lantern-logo-full.png"
+            alt="lantern-logo"
+            className={`h-60 mb-1 transition-all duration-700 ease-out ${
+              isMounted
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-6"
+            }`}
+          />
+
+          {/* Heading */}
+          <h1
+            className={`text-2xl font-bold text-gray-900 dark:text-white mt-1 transition-all duration-700 ease-out ${
+              isMounted
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-4"
+            }`}
+          >
+            {t("Welcomes You")}
+          </h1>
+          <p
+            className={`text-sm text-gray-500 dark:text-gray-400 mt-1 mb-7 transition-all duration-700 ease-out ${
+              isMounted
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-2"
+            }`}
+          >
+            {t("Sign in to continue to your account")}
+          </p>
+
+          {/* Card */}
+          <form
+            onSubmit={handleLogin}
+            className={`w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 space-y-4 transition-all duration-700 ease-out ${
+              isMounted
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-6"
+            }`}
+          >
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label>
+                {t("email")} <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-blue-50 dark:bg-blue-950 rounded">
+                  <MailIcon />
+                </span>
+                <Input
+                  placeholder={t("Enter your email")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  autoComplete="email"
+                  type="email"
+                  className="pl-11"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label>
+                {t("register.Password")} <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-blue-50 dark:bg-blue-950 rounded">
+                  <LockIcon />
+                </span>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t("register.Enter your password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  className="pl-11 pr-16"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm font-medium text-blue-600"
+                >
+                  {showPassword ? (
+                    <EyeIcon className="size-4 fill-blue-600" />
+                  ) : (
+                    <EyeCloseIcon className="size-4 fill-blue-600" />
+                  )}
+                  {showPassword ? t("Hide") : t("Show")}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember + Forgot */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <Checkbox checked={isChecked} onChange={setIsChecked} />
+                <span className="text-xs text-gray-600 dark:text-gray-300">
+                  {t("Keep me logged in")}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={openForgotModal}
+                className="text-xs text-blue-600 hover:underline"
+                disabled={isLoading}
+              >
+                {t("Forgot Password?")}
+              </button>
+            </div>
+
+            {/* Login button */}
+            <Button
+              type="submit"
+              className="w-full !rounded-xl !bg-gradient-to-r !from-blue-700 !to-blue-500 !py-3 !text-white font-semibold shadow-md active:scale-[0.98] transition-transform"
+              disabled={isLoading}
+            >
+              {isLoading ? t("button.Signing in...") : t("button.Sign in")}
+            </Button>
+          </form>
+        </div>
+      </div>
+
+      {/* ============ EXISTING DESKTOP / TABLET UI (md and up) — unchanged ============ */}
       <div
         className="
-         p-3 mx-3 my-4
-        sm:p-0 sm:mx-0 sm:my-0
-  sm:border-0 sm:rounded-none
-   flex px-4 sm:px-6 flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg "
+          hidden md:flex
+          p-3 mx-3 my-4
+          sm:p-0 sm:mx-0 sm:my-0
+          sm:border-0 sm:rounded-none
+          px-4 sm:px-6 flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg"
       >
-        {/* Main animated container with dropping effect */}
         <div
           className={`
             transition-all duration-700 ease-out
-            ${
-              isMounted
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-8"
-            }
+            ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"}
           `}
         >
-          {/* Logo with bounce animation */}
           <div className="max-w-90 h-60 mx-auto pt-8 sm:pt-12 flex items-center justify-center">
             <img
               src="lantern-logo.png"
@@ -455,11 +581,7 @@ export default function SignInForm() {
               className={`
                 inline-flex items-center justify-center text-sm text-gray-500 hover:text-gray-700
                 transition-all duration-800 ease-out
-                ${
-                  isMounted
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 -translate-y-10"
-                }
+                ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"}
                 hover:scale-105 transition-transform duration-300
               `}
               style={{
@@ -470,17 +592,12 @@ export default function SignInForm() {
             />
           </div>
 
-          {/* Welcome text with enhanced dropping effect */}
           <div className="flex items-center justify-center w-full h-10 pb-4 ">
             <h1
               className={`
                 text-2xl font-bold relative
                 transition-all duration-900 ease-out
-                ${
-                  isMounted
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 -translate-y-12"
-                }
+                ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-12"}
               `}
               style={{
                 animation: isMounted
@@ -493,11 +610,7 @@ export default function SignInForm() {
                 className={`
                   text-xs text-black dark:text-white
                   transition-all duration-1000 ease-out
-                  ${
-                    isMounted
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 -translate-y-6"
-                  }
+                  ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"}
                 `}
                 style={{
                   animationDelay: isMounted ? "0.2s" : "0s",
@@ -508,16 +621,11 @@ export default function SignInForm() {
             </h1>
           </div>
 
-          {/* Form container with staggered animation */}
           <div
             className={`
               flex flex-col justify-center flex-1 w-full max-w-md mx-auto
               transition-all duration-700 ease-out
-              ${
-                isMounted
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              }
+              ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
             `}
             style={{
               animationDelay: isMounted ? "0.3s" : "0s",
@@ -525,7 +633,6 @@ export default function SignInForm() {
           >
             <form onSubmit={handleLogin}>
               <div className="space-y-3">
-                {/* Email Input with animation */}
                 <div
                   className="capitalize space-y-2"
                   style={{
@@ -555,7 +662,6 @@ export default function SignInForm() {
                   />
                 </div>
 
-                {/* Password Input with animation */}
                 <div
                   className="capitalize space-y-2"
                   style={{
@@ -593,7 +699,6 @@ export default function SignInForm() {
                   </div>
                 </div>
 
-                {/* Checkbox and Forgot Password with animation */}
                 <div
                   className="flex items-center justify-between"
                   style={{
@@ -624,7 +729,6 @@ export default function SignInForm() {
                   </button>
                 </div>
 
-                {/* Submit Button with animation */}
                 <div
                   style={{
                     animation: isMounted
@@ -655,60 +759,26 @@ export default function SignInForm() {
         </div>
       </div>
 
-      {/* CSS Animations */}
+      {/* CSS Animations (only used by desktop UI) */}
       <style>{`
         @keyframes logoDrop {
-          0% {
-            opacity: 0;
-            transform: translateY(-40px) scale(0.9);
-          }
-          60% {
-            opacity: 1;
-            transform: translateY(10px) scale(1.05);
-          }
-          80% {
-            transform: translateY(-2px) scale(1.02);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+          0% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+          60% { opacity: 1; transform: translateY(10px) scale(1.05); }
+          80% { transform: translateY(-2px) scale(1.02); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        
         @keyframes welcomeDrop {
-          0% {
-            opacity: 0;
-            transform: translateY(-60px) scale(0.85) rotateX(-90deg);
-            text-shadow: 0 10px 20px rgba(0,0,0,0.3);
-          }
-          50% {
-            opacity: 1;
-            transform: translateY(15px) scale(1.08) rotateX(10deg);
-            text-shadow: 0 15px 30px rgba(0,0,0,0.4);
-          }
-          70% {
-            transform: translateY(-5px) scale(1.03) rotateX(-5deg);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1) rotateX(0);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          }
+          0% { opacity: 0; transform: translateY(-60px) scale(0.85) rotateX(-90deg); text-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+          50% { opacity: 1; transform: translateY(15px) scale(1.08) rotateX(10deg); text-shadow: 0 15px 30px rgba(0,0,0,0.4); }
+          70% { transform: translateY(-5px) scale(1.03) rotateX(-5deg); }
+          100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         }
-        
         @keyframes formElementDrop {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
-      {/* Modals */}
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={closeForgotModal}

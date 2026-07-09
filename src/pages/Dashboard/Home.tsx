@@ -38,7 +38,7 @@ export default function Home() {
                 border dark:border-gray-700/30 border-dashed "
       >
         <h1 className="text-3xl font-bold text-black dark:text-white uppercase">
-          {greeting} {localStorage.getItem("full_name")}!
+          {greeting} ,{localStorage.getItem("full_name")}!
         </h1>
         <p className="text-gray-900 dark:text-gray-300 mt-1">
           Welcome to your Dashboard

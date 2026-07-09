@@ -7,7 +7,7 @@ export default function AuthLayout({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Array of your 3 images
+  // Array of your images
   const images = [
     "lantern_banner.png",
     "lanternloginbanner4.png",
@@ -16,7 +16,6 @@ export default function AuthLayout({
   ];
 
   useEffect(() => {
-    // Change image every 3 seconds (3000ms)
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) =>
         prevIndex === images.length - 1 ? 0 : prevIndex + 1,
@@ -28,15 +27,18 @@ export default function AuthLayout({
 
   return (
     <div className="relative bg-white z-1 dark:bg-gray-900">
-      <div className="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900 sm:p-0">
-        {children}
-        <div className="items-center hidden w-full lg:w-1/2 bg-white/90 lg:flex lg:justify-center lg:items-center">
-          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <div className="relative flex flex-col md:flex-row justify-center w-full min-h-screen dark:bg-gray-900 sm:p-0">
+        {/* Login side — full width on mobile/tablet, half width from md up */}
+        <div className="w-full md:w-1/2 flex flex-col">{children}</div>
+
+        {/* Banner side — hidden below md, half width from md up */}
+        <div className="hidden md:flex md:w-1/2 items-center bg-white/90 justify-center">
+          <div className="relative w-full h-full min-h-screen flex items-center justify-center overflow-hidden">
             {/* Carousel Images */}
             {images.map((image, index) => (
               <img
                 key={index}
-                className={`absolute w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+                className={`absolute w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
                   index === currentIndex ? "opacity-100" : "opacity-0"
                 }`}
                 src={image}

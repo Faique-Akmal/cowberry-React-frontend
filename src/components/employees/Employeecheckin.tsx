@@ -523,7 +523,7 @@ const EmployeeCheckin = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1 min-w-0 relative">
+                  <div className="flex-1 min-w-0 relative ">
                     <div className="relative">
                       <div
                         className="

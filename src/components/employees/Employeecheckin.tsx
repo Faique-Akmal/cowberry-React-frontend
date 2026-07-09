@@ -64,7 +64,6 @@ interface GroupedLog {
   checkOutLocation?: string | null;
 }
 
-// New interface for the detail modal
 interface LogDetail {
   fullName: string;
   employee_code: string;
@@ -110,11 +109,9 @@ const EmployeeCheckin = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const itemsPerPage = 20;
 
-  // Ref for the infinite scroll container
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Fetch check logs with pagination
   const fetchCheckLogs = useCallback(
     async (page = 1, append = false) => {
       try {
@@ -173,7 +170,6 @@ const EmployeeCheckin = () => {
     [logs],
   );
 
-  // Group logs by user and date - Updated to include location data
   const groupLogsByUserAndDate = (logs: CheckLog[]): GroupedLog[] => {
     const grouped = new Map<string, GroupedLog>();
 
@@ -223,7 +219,6 @@ const EmployeeCheckin = () => {
     });
   };
 
-  // Handle row click to show details
   const handleRowClick = (log: GroupedLog) => {
     const detail: LogDetail = {
       fullName: log.fullName,
@@ -248,7 +243,6 @@ const EmployeeCheckin = () => {
     setShowDetailModal(true);
   };
 
-  // Open Google Maps with coordinates
   const openGoogleMaps = (
     latitude: number | null,
     longitude: number | null,
@@ -261,11 +255,15 @@ const EmployeeCheckin = () => {
     window.open(url, "_blank");
   };
 
+  const closeModal = () => {
+    setShowDetailModal(false);
+    setSelectedLogDetail(null);
+  };
+
   useEffect(() => {
     fetchCheckLogs(1);
   }, []);
 
-  // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (loading || loadingMore || !hasMore) return;
 
@@ -299,7 +297,6 @@ const EmployeeCheckin = () => {
     }
   };
 
-  // Apply filters
   useEffect(() => {
     let result = groupLogsByUserAndDate(logs);
 
@@ -341,7 +338,6 @@ const EmployeeCheckin = () => {
     setFilteredLogs(result);
   }, [logs, searchQuery, searchType, startDate, endDate]);
 
-  // Get unique users count
   const uniqueUsersCount = new Set(logs.map((log) => log.userId)).size;
 
   const formatDate = (dateString: string) => {
@@ -407,7 +403,8 @@ const EmployeeCheckin = () => {
       className="
         w-full
         max-w-[100vw]
-        overflow-x-hidden
+        h-screen
+        overflow-hidden
         bg-gradient-to-br from-white/10 via-white/5 to-white/2
         dark:from-gray-900/20 dark:via-gray-900/10 dark:to-gray-900/5
         backdrop-blur-2xl
@@ -417,6 +414,7 @@ const EmployeeCheckin = () => {
         rounded-3xl 
         p-3 sm:p-4 lg:p-6
         relative
+        flex flex-col
       "
     >
       <PageMeta
@@ -425,11 +423,10 @@ const EmployeeCheckin = () => {
       />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
 
-      {/* Header */}
-      <div className="mb-4 relative z-10">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 relative z-10">
         <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-            {/* Left section */}
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-blue-500 flex-shrink-0" />
               <div>
@@ -440,7 +437,6 @@ const EmployeeCheckin = () => {
               </div>
             </div>
 
-            {/* Right section - Buttons */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => (window.location.href = "/attandance-calendar")}
@@ -495,7 +491,6 @@ const EmployeeCheckin = () => {
           <div className="flex justify-end"></div>
           {showFilters && (
             <>
-              {/* Filters Section */}
               <div
                 className="
               bg-gradient-to-br from-white/40 to-white/20
@@ -762,335 +757,345 @@ const EmployeeCheckin = () => {
         </div>
       </div>
 
-      {/* Table Section */}
-      <div
-        className="
-          bg-gradient-to-br from-white/40 to-white/20
-          dark:from-gray-800/40 dark:to-gray-900/20
-          backdrop-blur-xl
-          border border-white/40 dark:border-gray-700/40
-          rounded-xl sm:rounded-2xl
-          shadow-[0_8px_32px_rgba(31,38,135,0.1)]
-          dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-          overflow-hidden
-        "
-      >
+      {/* Table Section - Scrollable */}
+      <div className="flex-1 min-h-0 flex flex-col">
         <div
           className="
-            p-3 sm:p-4
-            border-b border-white/30 dark:border-gray-700/30
-            bg-gradient-to-r from-white/50 to-transparent
-            dark:from-gray-800/50 dark:to-transparent
+            flex-1
+            bg-gradient-to-br from-white/40 to-white/20
+            dark:from-gray-800/40 dark:to-gray-900/20
+            backdrop-blur-xl
+            border border-white/40 dark:border-gray-700/40
+            rounded-xl sm:rounded-2xl
+            shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+            dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+            overflow-hidden
+            flex flex-col
           "
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
-                Employee Logs
-              </h2>
-              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                Showing {filteredLogs.length} logs • Page {currentPage} •{" "}
-                {hasMore ? "Scroll to load more" : "All logs loaded"} • Click
-                any row to view details
+          <div
+            className="
+              flex-shrink-0
+              p-3 sm:p-4
+              border-b border-white/30 dark:border-gray-700/30
+              bg-gradient-to-r from-white/50 to-transparent
+              dark:from-gray-800/50 dark:to-transparent
+            "
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
+                  Employee Logs
+                </h2>
+                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                  Showing {filteredLogs.length} logs • Page {currentPage} •{" "}
+                  {hasMore ? "Scroll to load more" : "All logs loaded"} • Click
+                  any row to view details
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span
+                  className="
+                    px-2 py-1
+                    bg-white/50 dark:bg-gray-700/50
+                    backdrop-blur-sm
+                    border border-white/60 dark:border-gray-600/60
+                    rounded-md
+                    text-xs text-gray-700 dark:text-gray-300
+                    whitespace-nowrap
+                  "
+                >
+                  {filteredLogs.length} total
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-6 text-center">
+              <LoadingAnimation />
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Loading check logs...
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span
+          ) : filteredLogs.length === 0 ? (
+            <div className="p-6 text-center">
+              <div
                 className="
-                  px-2 py-1
-                  bg-white/50 dark:bg-gray-700/50
+                  w-12 h-12 mx-auto mb-2
+                  bg-gradient-to-br from-gray-200/50 to-gray-300/30
+                  dark:from-gray-700/50 dark:to-gray-800/30
                   backdrop-blur-sm
-                  border border-white/60 dark:border-gray-600/60
-                  rounded-md
-                  text-xs text-gray-700 dark:text-gray-300
-                  whitespace-nowrap
+                  border border-gray-300/60 dark:border-gray-600/60
+                  rounded-xl flex items-center justify-center
                 "
               >
-                {filteredLogs.length} total
-              </span>
+                <Eye className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                No logs found
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Try adjusting your filters or check back later
+              </p>
             </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="p-6 text-center">
-            <LoadingAnimation />
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Loading check logs...
-            </p>
-          </div>
-        ) : filteredLogs.length === 0 ? (
-          <div className="p-6 text-center">
-            <div
-              className="
-                w-12 h-12 mx-auto mb-2
-                bg-gradient-to-br from-gray-200/50 to-gray-300/30
-                dark:from-gray-700/50 dark:to-gray-800/30
-                backdrop-blur-sm
-                border border-gray-300/60 dark:border-gray-600/60
-                rounded-xl flex items-center justify-center
-              "
-            >
-              <Eye className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              No logs found
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Try adjusting your filters or check back later
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <div className="min-w-[640px] sm:min-w-0">
-                <div className="overflow-hidden">
-                  <table className="w-full">
-                    <thead
-                      className="
-                        bg-gradient-to-r from-white/60 to-white/40
-                        dark:from-gray-800/60 dark:to-gray-900/40
-                        backdrop-blur-md
-                      "
-                    >
-                      <tr>
-                        {[
-                          {
-                            key: "fullName",
-                            label: "fullName",
-                            className: "w-[180px] sm:w-auto",
-                          },
-                          {
-                            key: "employee_code",
-                            label: "Employee Code",
-                            className: "w-[120px] sm:w-auto",
-                          },
-                          {
-                            key: "date",
-                            label: "Date",
-                            className: "w-[100px] sm:w-auto",
-                          },
-                          {
-                            key: "check_in",
-                            label: "Check-in",
-                            className: "w-[80px] sm:w-auto",
-                          },
-                          {
-                            key: "check_out",
-                            label: "Check-out",
-                            className: "w-[80px] sm:w-auto",
-                          },
-                          {
-                            key: "status",
-                            label: "Status",
-                            className: "w-[100px] sm:w-auto",
-                          },
-                        ].map((header, idx) => (
-                          <th
-                            key={`${header.key}-${idx}`}
-                            className={`
-                              px-2 sm:px-3 py-2 text-left text-xs font-semibold
-                              text-gray-600 dark:text-gray-300
-                              uppercase tracking-wider
-                              border-b border-white/30 dark:border-gray-700/30
-                              backdrop-blur-sm
-                              whitespace-nowrap
-                              ${header.className}
-                            `}
-                          >
-                            {header.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
-                      {filteredLogs.map((log, index) => (
-                        <tr
-                          key={`${log.userId}-${log.date}-${index}`}
-                          onClick={() => handleRowClick(log)}
-                          className="
-                            hover:bg-white/30 dark:hover:bg-gray-800/30
-                            transition-all duration-300
-                            backdrop-blur-sm
-                            cursor-pointer
-                          "
-                        >
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="
-                                  w-6 h-6 sm:w-8 sm:h-8 rounded-lg
-                                  bg-gradient-to-br from-blue-500/20 to-cyan-500/20
-                                  border border-blue-500/30
-                                  flex items-center justify-center
-                                  backdrop-blur-sm
-                                  flex-shrink-0
-                                "
-                              >
-                                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                                  {log.fullName.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                {log.fullName}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                              <div
-                                className="
-                                  p-1 rounded-md
-                                  bg-gradient-to-br from-gray-100/50 to-gray-200/30
-                                  dark:from-gray-700/50 dark:to-gray-800/30
-                                  backdrop-blur-sm
-                                "
-                              >
-                                <Hash className="w-3 h-3" />
-                              </div>
-                              <span className="text-xs sm:text-sm truncate">
-                                {log.employee_code}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                              <div
-                                className="
-                                  p-1 rounded-md
-                                  bg-gradient-to-br from-yellow-100/50 to-orange-100/30
-                                  dark:from-yellow-900/30 dark:to-orange-900/20
-                                  backdrop-blur-sm
-                                "
-                              >
-                                <Calendar className="w-3 h-3" />
-                              </div>
-                              <span className="text-xs truncate">
-                                {formatDate(
-                                  log.checkInTimestamp ||
-                                    log.checkOutTimestamp ||
-                                    "",
-                                )}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            {log.checkInTime ? (
-                              <div className="flex items-center gap-1.5">
-                                <div
-                                  className="
-                                    p-1 rounded-md
-                                    bg-gradient-to-br from-green-100/50 to-emerald-100/30
-                                    dark:from-green-900/30 dark:to-emerald-900/20
-                                    backdrop-blur-sm
-                                  "
-                                ></div>
-                                <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
-                                  {log.checkInTime}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                N/A
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            {log.checkOutTime ? (
-                              <div className="flex items-center gap-1.5">
-                                <div
-                                  className="
-                                    p-1 rounded-md
-                                    bg-gradient-to-br from-red-100/50 to-pink-100/30
-                                    dark:from-red-900/30 dark:to-pink-900/20
-                                    backdrop-blur-sm
-                                  "
-                                ></div>
-                                <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
-                                  {log.checkOutTime}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                N/A
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                            <span
+          ) : (
+            <>
+              <div className="flex-1 overflow-auto">
+                <div className="min-w-[640px] sm:min-w-0">
+                  <div className="overflow-hidden">
+                    <table className="w-full">
+                      <thead
+                        className="
+                          sticky top-0 z-10
+                          bg-gradient-to-r from-white/60 to-white/40
+                          dark:from-gray-800/60 dark:to-gray-900/40
+                          backdrop-blur-md
+                        "
+                      >
+                        <tr>
+                          {[
+                            {
+                              key: "fullName",
+                              label: "fullName",
+                              className: "w-[180px] sm:w-auto",
+                            },
+                            {
+                              key: "employee_code",
+                              label: "Employee Code",
+                              className: "w-[120px] sm:w-auto",
+                            },
+                            {
+                              key: "date",
+                              label: "Date",
+                              className: "w-[100px] sm:w-auto",
+                            },
+                            {
+                              key: "check_in",
+                              label: "Check-in",
+                              className: "w-[80px] sm:w-auto",
+                            },
+                            {
+                              key: "check_out",
+                              label: "Check-out",
+                              className: "w-[80px] sm:w-auto",
+                            },
+                            {
+                              key: "status",
+                              label: "Status",
+                              className: "w-[100px] sm:w-auto",
+                            },
+                          ].map((header, idx) => (
+                            <th
+                              key={`${header.key}-${idx}`}
                               className={`
-                                px-2 py-1 rounded-lg text-xs font-medium
-                                backdrop-blur-sm border inline-block truncate
-                                ${
-                                  log.checkInTime && log.checkOutTime
-                                    ? "bg-gradient-to-r from-blue-100/60 to-cyan-100/40 border-blue-200/60 text-blue-800 dark:from-blue-900/40 dark:to-cyan-900/30 dark:border-blue-700/40 dark:text-blue-300"
-                                    : log.checkInTime
-                                      ? "bg-gradient-to-r from-green-100/60 to-emerald-100/40 border-green-200/60 text-green-800 dark:from-green-900/40 dark:to-emerald-900/30 dark:border-green-700/40 dark:text-green-300"
-                                      : "bg-gradient-to-r from-yellow-100/60 to-amber-100/40 border-yellow-200/60 text-yellow-800 dark:from-yellow-900/40 dark:to-amber-900/30 dark:border-yellow-700/40 dark:text-yellow-300"
-                                }
+                                px-2 sm:px-3 py-2 text-left text-xs font-semibold
+                                text-gray-600 dark:text-gray-300
+                                uppercase tracking-wider
+                                border-b border-white/30 dark:border-gray-700/30
+                                backdrop-blur-sm
+                                whitespace-nowrap
+                                ${header.className}
                               `}
                             >
-                              {log.checkInTime && log.checkOutTime
-                                ? "Complete"
-                                : log.checkInTime
-                                  ? "Checked In"
-                                  : "Checked Out"}
-                            </span>
-                          </td>
+                              {header.label}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
+                        {filteredLogs.map((log, index) => (
+                          <tr
+                            key={`${log.userId}-${log.date}-${index}`}
+                            onClick={() => handleRowClick(log)}
+                            className="
+                              hover:bg-white/30 dark:hover:bg-gray-800/30
+                              transition-all duration-300
+                              backdrop-blur-sm
+                              cursor-pointer
+                            "
+                          >
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="
+                                    w-6 h-6 sm:w-8 sm:h-8 rounded-lg
+                                    bg-gradient-to-br from-blue-500/20 to-cyan-500/20
+                                    border border-blue-500/30
+                                    flex items-center justify-center
+                                    backdrop-blur-sm
+                                    flex-shrink-0
+                                  "
+                                >
+                                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                    {log.fullName.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                  {log.fullName}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                                <div
+                                  className="
+                                    p-1 rounded-md
+                                    bg-gradient-to-br from-gray-100/50 to-gray-200/30
+                                    dark:from-gray-700/50 dark:to-gray-800/30
+                                    backdrop-blur-sm
+                                  "
+                                >
+                                  <Hash className="w-3 h-3" />
+                                </div>
+                                <span className="text-xs sm:text-sm truncate">
+                                  {log.employee_code}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                                <div
+                                  className="
+                                    p-1 rounded-md
+                                    bg-gradient-to-br from-yellow-100/50 to-orange-100/30
+                                    dark:from-yellow-900/30 dark:to-orange-900/20
+                                    backdrop-blur-sm
+                                  "
+                                >
+                                  <Calendar className="w-3 h-3" />
+                                </div>
+                                <span className="text-xs truncate">
+                                  {formatDate(
+                                    log.checkInTimestamp ||
+                                      log.checkOutTimestamp ||
+                                      "",
+                                  )}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              {log.checkInTime ? (
+                                <div className="flex items-center gap-1.5">
+                                  <div
+                                    className="
+                                      p-1 rounded-md
+                                      bg-gradient-to-br from-green-100/50 to-emerald-100/30
+                                      dark:from-green-900/30 dark:to-emerald-900/20
+                                      backdrop-blur-sm
+                                    "
+                                  ></div>
+                                  <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
+                                    {log.checkInTime}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                  N/A
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              {log.checkOutTime ? (
+                                <div className="flex items-center gap-1.5">
+                                  <div
+                                    className="
+                                      p-1 rounded-md
+                                      bg-gradient-to-br from-red-100/50 to-pink-100/30
+                                      dark:from-red-900/30 dark:to-pink-900/20
+                                      backdrop-blur-sm
+                                    "
+                                  ></div>
+                                  <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
+                                    {log.checkOutTime}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                  N/A
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                              <span
+                                className={`
+                                  px-2 py-1 rounded-lg text-xs font-medium
+                                  backdrop-blur-sm border inline-block truncate
+                                  ${
+                                    log.checkInTime && log.checkOutTime
+                                      ? "bg-gradient-to-r from-blue-100/60 to-cyan-100/40 border-blue-200/60 text-blue-800 dark:from-blue-900/40 dark:to-cyan-900/30 dark:border-blue-700/40 dark:text-blue-300"
+                                      : log.checkInTime
+                                        ? "bg-gradient-to-r from-green-100/60 to-emerald-100/40 border-green-200/60 text-green-800 dark:from-green-900/40 dark:to-emerald-900/30 dark:border-green-700/40 dark:text-green-300"
+                                        : "bg-gradient-to-r from-yellow-100/60 to-amber-100/40 border-yellow-200/60 text-yellow-800 dark:from-yellow-900/40 dark:to-amber-900/30 dark:border-yellow-700/40 dark:text-yellow-300"
+                                  }
+                                `}
+                              >
+                                {log.checkInTime && log.checkOutTime
+                                  ? "Complete"
+                                  : log.checkInTime
+                                    ? "Checked In"
+                                    : "Checked Out"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Loading More Indicator */}
-            {loadingMore && (
-              <div className="p-4 text-center border-t border-white/30 dark:border-gray-700/30">
-                <div className="inline-flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                  <span className="text-xs text-gray-600 dark:text-gray-300">
-                    Loading more logs...
+              {loadingMore && (
+                <div className="flex-shrink-0 p-4 text-center border-t border-white/30 dark:border-gray-700/30">
+                  <div className="inline-flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span className="text-xs text-gray-600 dark:text-gray-300">
+                      Loading more logs...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {hasMore && !loadingMore && (
+                <div
+                  ref={loadMoreRef}
+                  className="flex-shrink-0 p-4 text-center border-t border-white/30 dark:border-gray-700/30"
+                >
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Scroll down to load more
                   </span>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Load More Trigger Element (for infinite scroll) */}
-            {hasMore && !loadingMore && (
-              <div
-                ref={loadMoreRef}
-                className="p-4 text-center border-t border-white/30 dark:border-gray-700/30"
-              >
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Scroll down to load more
-                </span>
-              </div>
-            )}
-
-            {/* No More Content */}
-            {!hasMore && filteredLogs.length > 0 && (
-              <div className="p-4 text-center border-t border-white/30 dark:border-gray-700/30">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  All logs loaded ({filteredLogs.length} total)
-                </span>
-              </div>
-            )}
-          </>
-        )}
+              {!hasMore && filteredLogs.length > 0 && (
+                <div className="flex-shrink-0 p-4 text-center border-t border-white/30 dark:border-gray-700/30">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    All logs loaded ({filteredLogs.length} total)
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail Modal - Fixed at top center */}
       {showDetailModal && selectedLogDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-900/90 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]"
+            onClick={closeModal}
+          />
+
+          <div
+            className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-2xl bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-900/90 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-2xl shadow-2xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-white/30 dark:border-gray-700/30 bg-lantern-blue-600 dark:bg-gray-800/80 backdrop-blur-sm rounded-t-2xl">
               <div>
@@ -1103,7 +1108,7 @@ const EmployeeCheckin = () => {
                 </p>
               </div>
               <button
-                onClick={() => setShowDetailModal(false)}
+                onClick={closeModal}
                 className="p-2 rounded-lg bg-black hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <X className="w-5 h-5 text-white dark:text-gray-400" />
@@ -1112,7 +1117,6 @@ const EmployeeCheckin = () => {
 
             {/* Modal Body */}
             <div className="p-4 space-y-4">
-              {/* Date */}
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span>{formatDate(selectedLogDetail.date)}</span>
@@ -1231,14 +1235,14 @@ const EmployeeCheckin = () => {
             {/* Modal Footer */}
             <div className="sticky bottom-0 p-4 border-t border-white/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-b-2xl">
               <button
-                onClick={() => setShowDetailModal(false)}
+                onClick={closeModal}
                 className="w-full px-4 py-2 bg-gray-200/80 hover:bg-gray-300/80 dark:bg-gray-700/80 dark:hover:bg-gray-600/80 rounded-lg text-gray-700 dark:text-gray-300 font-medium transition-colors"
               >
                 Close
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

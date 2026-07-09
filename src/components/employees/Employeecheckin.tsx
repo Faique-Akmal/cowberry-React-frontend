@@ -18,6 +18,8 @@ import {
   ChevronUp,
   ChevronDown,
   Calendar1,
+  MapPin,
+  X,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -31,6 +33,9 @@ interface CheckLog {
   employee_code: string;
   logType: "check_in" | "check_out";
   timestamp: string;
+  latitude?: number;
+  longitude?: number;
+  location?: string | null;
 }
 
 interface CheckLogsResponse {
@@ -51,6 +56,33 @@ interface GroupedLog {
   checkOutTime: string | null;
   checkInTimestamp: string | null;
   checkOutTimestamp: string | null;
+  checkInLatitude?: number | null;
+  checkInLongitude?: number | null;
+  checkOutLatitude?: number | null;
+  checkOutLongitude?: number | null;
+  checkInLocation?: string | null;
+  checkOutLocation?: string | null;
+}
+
+// New interface for the detail modal
+interface LogDetail {
+  fullName: string;
+  employee_code: string;
+  date: string;
+  checkIn: {
+    time: string | null;
+    timestamp: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    location: string | null;
+  };
+  checkOut: {
+    time: string | null;
+    timestamp: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    location: string | null;
+  };
 }
 
 const EmployeeCheckin = () => {
@@ -71,7 +103,11 @@ const EmployeeCheckin = () => {
   const [filteredLogs, setFilteredLogs] = useState<GroupedLog[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [showFilters, setShowFilters] = useState(true); // State for filter visibility
+  const [showFilters, setShowFilters] = useState(true);
+  const [selectedLogDetail, setSelectedLogDetail] = useState<LogDetail | null>(
+    null,
+  );
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const itemsPerPage = 20;
 
   // Ref for the infinite scroll container
@@ -109,14 +145,11 @@ const EmployeeCheckin = () => {
           );
 
           if (append) {
-            // Append new logs to existing ones
             setLogs((prev) => [...prev, ...sortedLogs]);
           } else {
-            // Replace logs with new ones
             setLogs(sortedLogs);
           }
 
-          // Check if there are more pages
           const responseHasMore =
             response.data.hasMore ||
             (response.data.totalPages && page < response.data.totalPages) ||
@@ -125,7 +158,6 @@ const EmployeeCheckin = () => {
           setHasMore(responseHasMore);
           setCurrentPage(page);
 
-          // Group logs by user and date
           const grouped = groupLogsByUserAndDate(
             append ? [...logs, ...sortedLogs] : sortedLogs,
           );
@@ -141,7 +173,7 @@ const EmployeeCheckin = () => {
     [logs],
   );
 
-  // Group logs by user and date
+  // Group logs by user and date - Updated to include location data
   const groupLogsByUserAndDate = (logs: CheckLog[]): GroupedLog[] => {
     const grouped = new Map<string, GroupedLog>();
 
@@ -159,6 +191,12 @@ const EmployeeCheckin = () => {
           checkOutTime: null,
           checkInTimestamp: null,
           checkOutTimestamp: null,
+          checkInLatitude: null,
+          checkInLongitude: null,
+          checkOutLatitude: null,
+          checkOutLongitude: null,
+          checkInLocation: null,
+          checkOutLocation: null,
         });
       }
 
@@ -166,9 +204,15 @@ const EmployeeCheckin = () => {
       if (log.logType === "check_in") {
         entry.checkInTime = formatTime(log.timestamp);
         entry.checkInTimestamp = log.timestamp;
+        entry.checkInLatitude = log.latitude || null;
+        entry.checkInLongitude = log.longitude || null;
+        entry.checkInLocation = log.location || null;
       } else {
         entry.checkOutTime = formatTime(log.timestamp);
         entry.checkOutTimestamp = log.timestamp;
+        entry.checkOutLatitude = log.latitude || null;
+        entry.checkOutLongitude = log.longitude || null;
+        entry.checkOutLocation = log.location || null;
       }
     });
 
@@ -177,6 +221,44 @@ const EmployeeCheckin = () => {
       const dateB = new Date(b.checkInTimestamp || b.checkOutTimestamp || 0);
       return dateB.getTime() - dateA.getTime();
     });
+  };
+
+  // Handle row click to show details
+  const handleRowClick = (log: GroupedLog) => {
+    const detail: LogDetail = {
+      fullName: log.fullName,
+      employee_code: log.employee_code,
+      date: log.date,
+      checkIn: {
+        time: log.checkInTime,
+        timestamp: log.checkInTimestamp,
+        latitude: log.checkInLatitude || null,
+        longitude: log.checkInLongitude || null,
+        location: log.checkInLocation || null,
+      },
+      checkOut: {
+        time: log.checkOutTime,
+        timestamp: log.checkOutTimestamp,
+        latitude: log.checkOutLatitude || null,
+        longitude: log.checkOutLongitude || null,
+        location: log.checkOutLocation || null,
+      },
+    };
+    setSelectedLogDetail(detail);
+    setShowDetailModal(true);
+  };
+
+  // Open Google Maps with coordinates
+  const openGoogleMaps = (
+    latitude: number | null,
+    longitude: number | null,
+  ) => {
+    if (latitude === null || longitude === null) {
+      alert("Location coordinates not available for this entry");
+      return;
+    }
+    const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    window.open(url, "_blank");
   };
 
   useEffect(() => {
@@ -189,7 +271,7 @@ const EmployeeCheckin = () => {
 
     const options = {
       root: null,
-      rootMargin: "100px", // Load more when 100px from bottom
+      rootMargin: "100px",
       threshold: 0.1,
     };
 
@@ -288,7 +370,6 @@ const EmployeeCheckin = () => {
   };
 
   const handleSearch = () => {
-    // Reset and fetch first page with filters
     fetchCheckLogs(1);
   };
 
@@ -543,7 +624,6 @@ const EmployeeCheckin = () => {
                         endDate={endDate}
                         onChange={(update) => {
                           setDateRange(update);
-                          // Automatically search when date range is selected
                           if (update[0] && update[1]) {
                             setTimeout(() => handleSearch(), 100);
                           }
@@ -568,21 +648,6 @@ const EmployeeCheckin = () => {
                         popperClassName="z-[9999]"
                         calendarClassName="z-[9999]"
                         popperPlacement="bottom-start"
-                        // popperModifiers={[
-                        //   {
-                        //     name: "offset",
-                        //     options: {
-                        //       offset: [0, 10],
-                        //     },
-                        //   },
-                        //   {
-                        //     name: "preventOverflow",
-                        //     options: {
-                        //       boundary: "viewport",
-                        //       padding: 10,
-                        //     },
-                        //   },
-                        // ]}
                       />
                     </div>
                   </div>
@@ -725,7 +790,8 @@ const EmployeeCheckin = () => {
               </h2>
               <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
                 Showing {filteredLogs.length} logs • Page {currentPage} •{" "}
-                {hasMore ? "Scroll to load more" : "All logs loaded"}
+                {hasMore ? "Scroll to load more" : "All logs loaded"} • Click
+                any row to view details
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -842,10 +908,12 @@ const EmployeeCheckin = () => {
                       {filteredLogs.map((log, index) => (
                         <tr
                           key={`${log.userId}-${log.date}-${index}`}
+                          onClick={() => handleRowClick(log)}
                           className="
                             hover:bg-white/30 dark:hover:bg-gray-800/30
                             transition-all duration-300
                             backdrop-blur-sm
+                            cursor-pointer
                           "
                         >
                           <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
@@ -1018,6 +1086,160 @@ const EmployeeCheckin = () => {
           </>
         )}
       </div>
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedLogDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-900/90 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-white/30 dark:border-gray-700/30 bg-lantern-blue-600 dark:bg-gray-800/80 backdrop-blur-sm rounded-t-2xl">
+              <div>
+                <h3 className="text-lg font-bold text-white dark:text-gray-200">
+                  Check Log Details
+                </h3>
+                <p className="text-sm text-white dark:text-gray-400">
+                  {selectedLogDetail.fullName} •{" "}
+                  {selectedLogDetail.employee_code}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="p-2 rounded-lg bg-black hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <X className="w-5 h-5 text-white dark:text-gray-400" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              {/* Date */}
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(selectedLogDetail.date)}</span>
+              </div>
+
+              {/* Check-in Details */}
+              <div className="bg-gradient-to-r from-green-50/50 to-emerald-50/30 dark:from-green-900/20 dark:to-emerald-900/10 rounded-xl p-4 border border-green-200/50 dark:border-green-700/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <h4 className="font-semibold text-green-800 dark:text-green-300">
+                      Check-in
+                    </h4>
+                  </div>
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    {selectedLogDetail.checkIn.time || "N/A"}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      {selectedLogDetail.checkIn.latitude &&
+                      selectedLogDetail.checkIn.longitude ? (
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="text-gray-700 dark:text-gray-300">
+                            Lat: {selectedLogDetail.checkIn.latitude.toFixed(6)}
+                            , Lng:{" "}
+                            {selectedLogDetail.checkIn.longitude.toFixed(6)}
+                          </span>
+                          <button
+                            onClick={() =>
+                              openGoogleMaps(
+                                selectedLogDetail.checkIn.latitude,
+                                selectedLogDetail.checkIn.longitude,
+                              )
+                            }
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            Open in Maps
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400 italic">
+                          No location data
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {selectedLogDetail.checkIn.location && (
+                    <div className="text-gray-600 dark:text-gray-400 text-xs pl-6">
+                      📍 {selectedLogDetail.checkIn.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Check-out Details */}
+              <div className="bg-gradient-to-r from-red-50/50 to-pink-50/30 dark:from-red-900/20 dark:to-pink-900/10 rounded-xl p-4 border border-red-200/50 dark:border-red-700/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <h4 className="font-semibold text-red-800 dark:text-red-300">
+                      Check-out
+                    </h4>
+                  </div>
+                  <span className="text-sm text-red-700 dark:text-red-400">
+                    {selectedLogDetail.checkOut.time || "N/A"}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      {selectedLogDetail.checkOut.latitude &&
+                      selectedLogDetail.checkOut.longitude ? (
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="text-gray-700 dark:text-gray-300">
+                            Lat:{" "}
+                            {selectedLogDetail.checkOut.latitude.toFixed(6)},
+                            Lng:{" "}
+                            {selectedLogDetail.checkOut.longitude.toFixed(6)}
+                          </span>
+                          <button
+                            onClick={() =>
+                              openGoogleMaps(
+                                selectedLogDetail.checkOut.latitude,
+                                selectedLogDetail.checkOut.longitude,
+                              )
+                            }
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            Open in Maps
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400 italic">
+                          No location data
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {selectedLogDetail.checkOut.location && (
+                    <div className="text-gray-600 dark:text-gray-400 text-xs pl-6">
+                      📍 {selectedLogDetail.checkOut.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 p-4 border-t border-white/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-b-2xl">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="w-full px-4 py-2 bg-gray-200/80 hover:bg-gray-300/80 dark:bg-gray-700/80 dark:hover:bg-gray-600/80 rounded-lg text-gray-700 dark:text-gray-300 font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

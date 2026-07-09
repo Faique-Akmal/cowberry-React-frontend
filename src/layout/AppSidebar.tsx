@@ -152,12 +152,12 @@ const AppSidebar: React.FC = () => {
         },
       ],
     },
-    {
-      icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
-      name: t("menu.registerUserForm"),
-      path: "/user-register",
-      role: ["admin", "hr"],
-    },
+    // {
+    //   icon: <IoPersonAddOutline className="text-lantern-blue-600" />,
+    //   name: t("menu.registerUserForm"),
+    //   path: "/user-register",
+    //   role: ["admin", "hr"],
+    // },
     {
       icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
       name: t("menu.allUsers"),

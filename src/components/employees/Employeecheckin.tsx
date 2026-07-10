@@ -36,6 +36,10 @@ interface CheckLog {
   latitude?: number;
   longitude?: number;
   location?: string | null;
+  department?: string | null;
+  // NOTE: your sample API response didn't include this field yet.
+  // Add "zone" to your backend's check-logs response for zonal managers to work.
+  zone?: string | null;
 }
 
 interface CheckLogsResponse {
@@ -83,6 +87,44 @@ interface LogDetail {
     location: string | null;
   };
 }
+
+// ---- Role-based visibility ----
+// hr / admin        -> see every log
+// manager           -> see logs where log.department === current user's department
+// zonal manager     -> see logs where log.zone === current user's zone
+// anything else     -> sees nothing (default-deny, safer than leaking data)
+const filterLogsByRole = (rawLogs: CheckLog[]): CheckLog[] => {
+  const role = (localStorage.getItem("userRole") || "").trim().toLowerCase();
+
+  if (role === "hr" || role === "admin") {
+    return rawLogs;
+  }
+
+  if (role === "manager") {
+    const myDepartment = localStorage.getItem("department");
+    if (!myDepartment) return [];
+    return rawLogs.filter(
+      (log) =>
+        (log.department || "").toLowerCase() === myDepartment.toLowerCase(),
+    );
+  }
+
+  if (
+    role === "zonal manager" ||
+    role === "zonal_manager" ||
+    role === "zonalmanager"
+  ) {
+    // If your localStorage key for zone is named differently, change it here.
+    const myZone = localStorage.getItem("zone");
+    if (!myZone) return [];
+    return rawLogs.filter(
+      (log) => (log.zone || "").toLowerCase() === myZone.toLowerCase(),
+    );
+  }
+
+  // Unknown/unhandled role -> show nothing rather than risk leaking data.
+  return [];
+};
 
 const EmployeeCheckin = () => {
   const { themeConfig } = useTheme();
@@ -135,29 +177,33 @@ const EmployeeCheckin = () => {
         });
 
         if (response.data.success) {
-          const logsData = response.data.data;
-          const sortedLogs = logsData.sort(
+          // Apply role-based visibility BEFORE anything else touches the data,
+          // so grouping / search / date filter / CSV export all inherit it.
+          const roleScopedLogs = filterLogsByRole(response.data.data);
+
+          const sortedLogs = roleScopedLogs.sort(
             (a, b) =>
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
           );
 
+          let nextLogs: CheckLog[];
           if (append) {
-            setLogs((prev) => [...prev, ...sortedLogs]);
+            nextLogs = [...logs, ...sortedLogs];
+            setLogs(nextLogs);
           } else {
-            setLogs(sortedLogs);
+            nextLogs = sortedLogs;
+            setLogs(nextLogs);
           }
 
           const responseHasMore =
             response.data.hasMore ||
             (response.data.totalPages && page < response.data.totalPages) ||
-            logsData.length === itemsPerPage;
+            response.data.data.length === itemsPerPage;
 
           setHasMore(responseHasMore);
           setCurrentPage(page);
 
-          const grouped = groupLogsByUserAndDate(
-            append ? [...logs, ...sortedLogs] : sortedLogs,
-          );
+          const grouped = groupLogsByUserAndDate(nextLogs);
           setFilteredLogs(grouped);
         }
       } catch (error) {
@@ -262,6 +308,7 @@ const EmployeeCheckin = () => {
 
   useEffect(() => {
     fetchCheckLogs(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -289,6 +336,7 @@ const EmployeeCheckin = () => {
         observerRef.current.disconnect();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, loadingMore, hasMore]);
 
   const loadMore = () => {
@@ -298,6 +346,9 @@ const EmployeeCheckin = () => {
   };
 
   useEffect(() => {
+    // `logs` already only contains what the current user's role is allowed to see
+    // (filtering happens once, in fetchCheckLogs), so we just group + apply
+    // the UI-level search / date filters here.
     let result = groupLogsByUserAndDate(logs);
 
     if (searchQuery.trim()) {

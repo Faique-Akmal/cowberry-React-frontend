@@ -1,5 +1,6 @@
 // src/components/admin/TravelSessions.tsx
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import ExcelJS from "exceljs";
 
 import API from "../../api/axios";
 import {
@@ -526,8 +527,6 @@ export default function AttendanceList() {
           allocatedArea = userData.allocated_area;
         }
 
-      
-
         setCurrentUserInfo({
           userRole: userRole.toLowerCase().trim(),
           department: department.toLowerCase().trim(),
@@ -571,7 +570,6 @@ export default function AttendanceList() {
           return sessionDept === managerDepartment;
         });
 
-       
         return filtered;
       }
 
@@ -590,7 +588,6 @@ export default function AttendanceList() {
           return sessionArea === zonalArea;
         });
 
-       
         return filtered;
       }
 
@@ -645,7 +642,6 @@ export default function AttendanceList() {
           return userArea === zonalArea;
         });
 
-       
         return filtered;
       }
 
@@ -727,7 +723,6 @@ export default function AttendanceList() {
       const role = (sortedSessions[0].role || "")
         .toLowerCase()
         .replace(/\s/g, "");
-     
 
       const originalTotalDistance = sortedSessions.reduce(
         (sum, s) => sum + (s.totalDistance || 0),
@@ -736,7 +731,6 @@ export default function AttendanceList() {
 
       // Exclude first session ONLY for fieldemployee
       const shouldExcludeFirst = role === "fieldemployee";
-     
 
       if (!shouldExcludeFirst) {
         return {
@@ -788,8 +782,7 @@ export default function AttendanceList() {
           // Log filtering info for debugging
           if (filteredLogs.length < logs.length) {
             console.group(`Session ${sessionId} - Log Filtering`);
-           
-            
+
             console.groupEnd();
           }
         }
@@ -892,9 +885,8 @@ export default function AttendanceList() {
       });
 
       const groups = Array.from(groupedMap.values()).map((group) => {
-       
         const distanceData = calculateAdjustedGroupDistance(group.sessions);
-       
+
         // Calculate total points from filtered logs
         let totalPoints = 0;
         group.sessions.forEach((session) => {
@@ -2050,18 +2042,10 @@ export default function AttendanceList() {
           try {
             const sessionDate = formatDateOnly(session.startTime);
 
-            if (startDate && !endDate) {
-              return sessionDate >= startDate;
-            }
-
-            if (!startDate && endDate) {
-              return sessionDate <= endDate;
-            }
-
-            if (startDate && endDate) {
+            if (startDate && !endDate) return sessionDate >= startDate;
+            if (!startDate && endDate) return sessionDate <= endDate;
+            if (startDate && endDate)
               return sessionDate >= startDate && sessionDate <= endDate;
-            }
-
             return true;
           } catch (error) {
             console.error("Error parsing session date:", error, session);
@@ -2099,7 +2083,7 @@ export default function AttendanceList() {
         return;
       }
 
-      const groupedDataWithFarmerInfo = groupedData.map((group, index) => {
+      const groupedDataWithFarmerInfo = groupedData.map((group) => {
         const userDateKey = `${group.userId}-${group.date}`;
         let sessionFarmerData = allFarmerData[userDateKey] || [];
 
@@ -2136,11 +2120,6 @@ export default function AttendanceList() {
             )
             .join("; ");
 
-          const farmerImageUrls = farmers
-            .map((farmer: any) => farmer.farmerImage || "")
-            .filter((url: string) => url)
-            .join("; ");
-
           return {
             sessionNumber: sessionIndex + 1,
             sessionId: session.sessionId,
@@ -2152,9 +2131,6 @@ export default function AttendanceList() {
             sessionStatus: session.endTime ? "Completed" : "Active",
             farmersCount: farmerCount,
             farmerDescriptions: farmerDescriptions || "None",
-            farmerImageUrls: farmerImageUrls || "None",
-            startOdometerImage: matchingFarmerData?.startOdometerImage || "",
-            endOdometerImage: matchingFarmerData?.endOdometerImage || "",
           };
         });
 
@@ -2173,15 +2149,15 @@ export default function AttendanceList() {
           }),
           "Start Time": formatDateTime(group.startTime),
           "End Time": formatDateTime(group.endTime),
-           "Payable Distance(km)": (
-            totalDistanceExcludingFirst / 1000
-          ).toFixed(2),
+          "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(
+            2,
+          ),
           "Payable Amount (₹)": reimbursementAmount,
           "Total Sessions": group.totalSessions,
           "Active Sessions": group.activeSessions,
-          "Total Distance (km)": (
-            group.originalTotalDistance / 1000
-          ).toFixed(2),
+          "Total Distance (km)": (group.originalTotalDistance / 1000).toFixed(
+            2,
+          ),
           "Total Reimbursement(km)": (
             (group.originalTotalDistance / 1000) *
             3.5
@@ -2189,30 +2165,13 @@ export default function AttendanceList() {
           "First Session Distance (km)": (
             group.firstSessionDistance / 1000
           ).toFixed(2),
-         
           "Total Farmers Met": totalFarmersMet,
           "Duration (minutes)": totalDuration,
           "Total Pauses Count": totalPauses,
           Status:
             group.activeSessions > 0 ? "Has Active Sessions" : "All Completed",
           Notes: `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
-
-          ...sessionDetails.reduce((acc, session, idx) => {
-            const prefix = `Session ${session.sessionNumber}`;
-            return {
-              ...acc,
-              [`${prefix} ID`]: session.sessionId,
-              [`${prefix} Start Time`]: session.sessionStartTime,
-              [`${prefix} End Time`]: session.sessionEndTime,
-              [`${prefix} Distance (km)`]: session.sessionDistance,
-              [`${prefix} Status`]: session.sessionStatus,
-              [`${prefix} Farmers Count`]: session.farmersCount,
-              [`${prefix} Farmer Descriptions`]: session.farmerDescriptions,
-              [`${prefix} Farmer Image URLs`]: session.farmerImageUrls,
-              [`${prefix} Start Odometer Image`]: session.startOdometerImage,
-              [`${prefix} End Odometer Image`]: session.endOdometerImage,
-            };
-          }, {}),
+          sessionDetails,
         };
       });
 
@@ -2220,13 +2179,17 @@ export default function AttendanceList() {
         const dateCompare =
           new Date(b.Date).getTime() - new Date(a.Date).getTime();
         if (dateCompare !== 0) return dateCompare;
-        return b["User ID"] - a["User ID"];
+        return 0;
       });
 
       const maxSessions = Math.max(
-        ...groupedData.map((group) => group.sessions.length),
+        ...groupedData.map((g) => g.sessions.length),
         1,
       );
+
+      // ---------- Build workbook ----------
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Travel Sessions");
 
       const baseHeaders = [
         "fullName",
@@ -2238,14 +2201,13 @@ export default function AttendanceList() {
         "Formatted Date",
         "Start Time",
         "End Time",
-         "Payable Distance(km)",
+        "Payable Distance(km)",
         "Payable Amount (₹)",
         "Total Sessions",
         "Active Sessions",
         "Total Distance (km)",
         "Total Reimbursement(km)",
         "First Session Distance (km)",
-       
         "Total Farmers Met",
         "Duration (minutes)",
         "Total Pauses Count",
@@ -2253,7 +2215,7 @@ export default function AttendanceList() {
         "Notes",
       ];
 
-      const sessionHeaders = [];
+      const sessionHeaders: string[] = [];
       for (let i = 1; i <= maxSessions; i++) {
         sessionHeaders.push(
           `Session ${i} ID`,
@@ -2268,35 +2230,62 @@ export default function AttendanceList() {
 
       const allHeaders = [...baseHeaders, ...sessionHeaders];
 
-      const csvContent = [
-        allHeaders.join(","),
-        ...sortedData.map((row) =>
-          allHeaders
-            .map((header) => {
-              const value = row[header];
-              if (value === null || value === undefined) return '""';
-              const stringValue = String(value);
-              if (/[,"\n\r]/.test(stringValue)) {
-                return `"${stringValue.replace(/"/g, '""')}"`;
-              }
-              return stringValue;
-            })
-            .join(","),
-        ),
-      ].join("\r\n");
+      sheet.columns = allHeaders.map((header) => ({
+        header,
+        key: header,
+        width: header.toLowerCase().includes("description") ? 30 : 18,
+      }));
 
-      const blob = new Blob(["\ufeff" + csvContent], {
-        type: "text/csv;charset=utf-8;",
+      // ---------- Header styling: blue background, white text ----------
+      const headerRow = sheet.getRow(1);
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF1F4E78" }, // blue
+        };
+        cell.font = {
+          color: { argb: "FFFFFFFF" }, // white
+          bold: true,
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+
+      // ---------- Data rows ----------
+      sortedData.forEach((row) => {
+        const rowData: Record<string, any> = {};
+        baseHeaders.forEach((h) => {
+          rowData[h] = (row as any)[h] ?? "";
+        });
+
+        row.sessionDetails.forEach((session) => {
+          const prefix = `Session ${session.sessionNumber}`;
+          rowData[`${prefix} ID`] = session.sessionId;
+          rowData[`${prefix} Start Time`] = session.sessionStartTime;
+          rowData[`${prefix} End Time`] = session.sessionEndTime;
+          rowData[`${prefix} Distance (km)`] = session.sessionDistance;
+          rowData[`${prefix} Status`] = session.sessionStatus;
+          rowData[`${prefix} Farmers Count`] = session.farmersCount;
+          rowData[`${prefix} Farmer Descriptions`] = session.farmerDescriptions;
+        });
+
+        sheet.addRow(rowData);
+      });
+
+      // ---------- Download ----------
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const dateStr = new Date().toISOString().slice(0, 10);
-      const filterInfo = [];
+      const filterInfo: string[] = [];
       if (startDate) filterInfo.push(`from-${startDate}`);
       if (endDate) filterInfo.push(`to-${endDate}`);
       if (selectedUser) filterInfo.push(`user-${selectedUser}`);
       if (searchQuery) filterInfo.push(`search-${searchQuery}`);
-      const filename = `travel_sessions_${filterInfo.length ? filterInfo.join("_") : "all"}_${dateStr}.csv`;
+      const filename = `travel_sessions_${filterInfo.length ? filterInfo.join("_") : "all"}_${dateStr}.xlsx`;
 
       link.href = url;
       link.download = filename;
@@ -3312,10 +3301,32 @@ export default function AttendanceList() {
                                           group.date,
                                         )
                                       }
-                                      className={`px-3 py-2 bg-lantern-blue-600 text-white rounded-xl text-sm font-medium flex items-center gap-2`}
+                                      className={`px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${
+                                        isLoadingFarmerData &&
+                                        selectedUserForFarmerData ===
+                                          session.userId.toString()
+                                          ? "bg-gray-400 cursor-not-allowed"
+                                          : "bg-lantern-blue-600 hover:bg-lantern-blue-700"
+                                      } text-white`}
+                                      disabled={
+                                        isLoadingFarmerData &&
+                                        selectedUserForFarmerData ===
+                                          session.userId.toString()
+                                      }
                                     >
-                                      <FaInfoCircle />
-                                      Details
+                                      {isLoadingFarmerData &&
+                                      selectedUserForFarmerData ===
+                                        session.userId.toString() ? (
+                                        <>
+                                          <FaSpinner className="animate-spin" />
+                                          Loading...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FaInfoCircle />
+                                          Details
+                                        </>
+                                      )}
                                     </button>
                                     <button
                                       onClick={() => openMap(session)}
@@ -3902,75 +3913,88 @@ export default function AttendanceList() {
             className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}
           >
             {/* Map Header */}
-          <div className="bg-lantern-blue-600 backdrop-blur-sm p-3 text-white flex-shrink-0">
-  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-    {/* Left Section - Employee Info */}
-    <div className="flex items-center gap-4 w-full lg:w-auto">
-      <div className="min-w-0 flex-1 lg:flex-none">
-        <h2 className="text-xl sm:text-2xl font-bold truncate">
-          {multiSessionMapView.fullName}
-        </h2>
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-blue-100 text-xs sm:text-sm">
-          <span className="whitespace-nowrap">{multiSessionMapView.employeeCode}</span>
-          <span className="hidden sm:inline">•</span>
-          <span className="whitespace-nowrap">
-            {new Date(multiSessionMapView.date).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-          <span className="hidden sm:inline">•</span>
-          <span className="whitespace-nowrap">
-            {multiSessionMapView.sessions.length} Session
-            {multiSessionMapView.sessions.length > 1 ? "s" : ""}
-          </span>
-        </div>
-      </div>
-    </div>
+            <div className="bg-lantern-blue-600 backdrop-blur-sm p-3 text-white flex-shrink-0">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+                {/* Left Section - Employee Info */}
+                <div className="flex items-center gap-4 w-full lg:w-auto">
+                  <div className="min-w-0 flex-1 lg:flex-none">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">
+                      {multiSessionMapView.fullName}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-blue-100 text-xs sm:text-sm">
+                      <span className="whitespace-nowrap">
+                        {multiSessionMapView.employeeCode}
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="whitespace-nowrap">
+                        {new Date(multiSessionMapView.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="whitespace-nowrap">
+                        {multiSessionMapView.sessions.length} Session
+                        {multiSessionMapView.sessions.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-    {/* Right Section - Action Buttons */}
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
-      <button
-        onClick={() => setShowLogMarkersMulti(!showLogMarkersMulti)}
-        className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
-          showLogMarkersMulti ? "bg-white/30" : "bg-white/10 hover:bg-white/20"
-        }`}
-      >
-        <FaMapPin className="text-sm sm:text-base" />
-        <span className="hidden xs:inline">
-          {showLogMarkersMulti ? "Hide Log Points" : "Show Log Points"}
-        </span>
-        <span className="xs:hidden">
-          {showLogMarkersMulti ? "Hide Logs" : "Show Logs"}
-        </span>
-      </button>
+                {/* Right Section - Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                  <button
+                    onClick={() => setShowLogMarkersMulti(!showLogMarkersMulti)}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
+                      showLogMarkersMulti
+                        ? "bg-white/30"
+                        : "bg-white/10 hover:bg-white/20"
+                    }`}
+                  >
+                    <FaMapPin className="text-sm sm:text-base" />
+                    <span className="hidden xs:inline">
+                      {showLogMarkersMulti
+                        ? "Hide Log Points"
+                        : "Show Log Points"}
+                    </span>
+                    <span className="xs:hidden">
+                      {showLogMarkersMulti ? "Hide Logs" : "Show Logs"}
+                    </span>
+                  </button>
 
-      <button
-        onClick={() => setShowPauseMarkers(!showPauseMarkers)}
-        className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
-          showPauseMarkers ? "bg-white/30" : "bg-white/10 hover:bg-white/20"
-        }`}
-      >
-        <FaPauseCircle className="text-sm sm:text-base" />
-        <span className="hidden xs:inline">
-          {showPauseMarkers ? "Hide Pause Points" : "Show Pause Points"}
-        </span>
-        <span className="xs:hidden">
-          {showPauseMarkers ? "Hide Pause" : "Show Pause"}
-        </span>
-      </button>
+                  <button
+                    onClick={() => setShowPauseMarkers(!showPauseMarkers)}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
+                      showPauseMarkers
+                        ? "bg-white/30"
+                        : "bg-white/10 hover:bg-white/20"
+                    }`}
+                  >
+                    <FaPauseCircle className="text-sm sm:text-base" />
+                    <span className="hidden xs:inline">
+                      {showPauseMarkers
+                        ? "Hide Pause Points"
+                        : "Show Pause Points"}
+                    </span>
+                    <span className="xs:hidden">
+                      {showPauseMarkers ? "Hide Pause" : "Show Pause"}
+                    </span>
+                  </button>
 
-      <button
-        onClick={closeMultiSessionMap}
-        className="bg-red-600 hover:bg-red-900 backdrop-blur-sm p-2 sm:p-4 rounded-xl transition-all flex-shrink-0"
-      >
-        <span className="text-xl sm:text-2xl ">✕</span>
-      </button>
-    </div>
-  </div>
-</div>
+                  <button
+                    onClick={closeMultiSessionMap}
+                    className="bg-red-600 hover:bg-red-900 backdrop-blur-sm p-2 sm:p-4 rounded-xl transition-all flex-shrink-0"
+                  >
+                    <span className="text-xl sm:text-2xl ">✕</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* Map Container */}
             <div className="flex-1 relative">
@@ -4314,55 +4338,57 @@ export default function AttendanceList() {
           <div
             className={`${glassmorphismClasses.modal} w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col`}
           >
-           <div className="bg-lantern-blue-600 backdrop-blur-sm p-4 sm:p-6 text-white flex-shrink-0">
-  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
-    {/* Left Section - Employee Info */}
-    <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
-      <div className="bg-white/20 backdrop-blur-sm p-2 sm:p-3 rounded-xl flex-shrink-0">
-        <FaUser className="text-xl sm:text-2xl" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <h2 className="text-xl sm:text-2xl font-bold truncate">
-          {mapView.fullName}
-        </h2>
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-blue-100 text-xs sm:text-sm">
-          <span className="whitespace-nowrap">
-            Employee: {mapView.employeeCode}
-          </span>
-          <span className="hidden xs:inline text-blue-300">•</span>
-          <span className="whitespace-nowrap">
-            Session: #{mapView.sessionId}
-          </span>
-        </div>
-      </div>
-    </div>
+            <div className="bg-lantern-blue-600 backdrop-blur-sm p-4 sm:p-6 text-white flex-shrink-0">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
+                {/* Left Section - Employee Info */}
+                <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
+                  <div className="bg-white/20 backdrop-blur-sm p-2 sm:p-3 rounded-xl flex-shrink-0">
+                    <FaUser className="text-xl sm:text-2xl" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">
+                      {mapView.fullName}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-blue-100 text-xs sm:text-sm">
+                      <span className="whitespace-nowrap">
+                        Employee: {mapView.employeeCode}
+                      </span>
+                      <span className="hidden xs:inline text-blue-300">•</span>
+                      <span className="whitespace-nowrap">
+                        Session: #{mapView.sessionId}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-    {/* Right Section - Action Buttons */}
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
-      <button
-        onClick={() => setShowLogMarkers(!showLogMarkers)}
-        className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
-          showLogMarkers ? "bg-white/30" : "bg-white/10 hover:bg-white/20"
-        }`}
-      >
-        <FaMapPin className="text-sm sm:text-base" />
-        <span className="hidden xs:inline">
-          {showLogMarkers ? "Hide Log Points" : "Show Log Points"}
-        </span>
-        <span className="xs:hidden">
-          {showLogMarkers ? "Hide Logs" : "Show Logs"}
-        </span>
-      </button>
+                {/* Right Section - Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                  <button
+                    onClick={() => setShowLogMarkers(!showLogMarkers)}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
+                      showLogMarkers
+                        ? "bg-white/30"
+                        : "bg-white/10 hover:bg-white/20"
+                    }`}
+                  >
+                    <FaMapPin className="text-sm sm:text-base" />
+                    <span className="hidden xs:inline">
+                      {showLogMarkers ? "Hide Log Points" : "Show Log Points"}
+                    </span>
+                    <span className="xs:hidden">
+                      {showLogMarkers ? "Hide Logs" : "Show Logs"}
+                    </span>
+                  </button>
 
-      <button
-        onClick={closeMap}
-        className="bg-red-600 hover:bg-red-900 backdrop-blur-sm p-2 sm:p-3 rounded-xl transition-all flex-shrink-0"
-      >
-        <span className="text-xl sm:text-2xl">✕</span>
-      </button>
-    </div>
-  </div>
-</div>
+                  <button
+                    onClick={closeMap}
+                    className="bg-red-600 hover:bg-red-900 backdrop-blur-sm p-2 sm:p-3 rounded-xl transition-all flex-shrink-0"
+                  >
+                    <span className="text-xl sm:text-2xl">✕</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <div className="flex-1 relative">
               {loadingLogs[mapView.sessionId] && (

@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Home,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -279,152 +280,142 @@ const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
   getStatusBadge,
 }) => {
   return (
-    <div className="w-full bg-gray-50 min-h-screen overflow-x-hidden">
-      <div className="px-4 sm:px-6 max-w-7xl">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Leave Request Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+    <div className="p-6">
+      {/* Header with close button integrated */}
+      <div className="flex items-start mb-6 bg-lantern-blue-600 p-4 text-center justify-center rounded-full">
+        <h2 className="text-xl font-bold text-white">Leave Request Details</h2>
+      </div>
+
+      {/* Rest of the content remains the same */}
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <span
+            className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadge(leave.status)}`}
           >
-            <X className="w-5 h-5" />
-          </button>
+            {leave.status}
+          </span>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
-          <div className="flex justify-end">
-            <span
-              className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadge(leave.status)}`}
-            >
-              {leave.status}
-            </span>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4" /> Employee Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-500">Employee Name</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {leave.employee_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Employee Code</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {leave.employee_code}
-                </p>
-              </div>
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <User className="w-4 h-4" /> Employee Information
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-gray-500">Employee Name</p>
+              <p className="text-sm font-medium text-gray-900">
+                {leave.employee_name}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Employee Code</p>
+              <p className="text-sm font-medium text-gray-900">
+                {leave.employee_code}
+              </p>
             </div>
           </div>
+        </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4" /> Leave Details
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-500">Leave Type</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {leave.leave_type}
-                  {leave.half_day && (
-                    <span className="ml-1 text-xs text-gray-500">(Half)</span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Total Days</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {leave.total_days} day{leave.total_days !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">From</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatDate(leave.from_date)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">To</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatDate(leave.to_date)}
-                </p>
-              </div>
-              {leave.half_day && leave.half_day_date && (
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-500">Half Day Date</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {formatDate(leave.half_day_date)}
-                  </p>
-                </div>
-              )}
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4" /> Leave Details
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-gray-500">Leave Type</p>
+              <p className="text-sm font-medium text-gray-900">
+                {leave.leave_type}
+                {leave.half_day && (
+                  <span className="ml-1 text-xs text-gray-500">(Half)</span>
+                )}
+              </p>
             </div>
+            <div>
+              <p className="text-xs text-gray-500">Total Days</p>
+              <p className="text-sm font-medium text-gray-900">
+                {leave.total_days} day{leave.total_days !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">From</p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(leave.from_date)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">To</p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(leave.to_date)}
+              </p>
+            </div>
+            {leave.half_day && leave.half_day_date && (
+              <div className="col-span-2">
+                <p className="text-xs text-gray-500">Half Day Date</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(leave.half_day_date)}
+                </p>
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Reason for Leave
-            </h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">
-              {leave.reason || "No reason provided"}
+        <div className="bg-gray-600 rounded-lg p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+            <FileText className="w-4 h-4" /> Reason for Leave
+          </h3>
+          <p className="text-sm text-white whitespace-pre-wrap">
+            {leave.reason || "No reason provided"}
+          </p>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <Clock className="w-4 h-4" /> Application Details
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-gray-500">Applied On</p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(leave.applied_on)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Approver</p>
+              <p className="text-sm font-medium text-gray-900">
+                {leave.approver_name || "Not assigned"}
+              </p>
+            </div>
+            {leave.approved_on && (
+              <div className="col-span-2">
+                <p className="text-xs text-gray-500">Approved/Rejected On</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(leave.approved_on)}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <UserCheck className="w-4 h-4" /> Additional Information
+          </h3>
+          <div>
+            <p className="text-xs text-gray-500">Leave Application ID</p>
+            <p className="text-sm font-mono text-gray-900 break-all">
+              {leave.leave_application}
             </p>
           </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Application Details
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-500">Applied On</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatDate(leave.applied_on)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Approver</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {leave.approver_name || "Not assigned"}
-                </p>
-              </div>
-              {leave.approved_on && (
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-500">Approved/Rejected On</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {formatDate(leave.approved_on)}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <UserCheck className="w-4 h-4" /> Additional Information
-            </h3>
-            <div>
-              <p className="text-xs text-gray-500">Leave Application ID</p>
-              <p className="text-sm font-mono text-gray-900 break-all">
-                {leave.leave_application}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Lantern360 Leave ID</p>
-              <p className="text-sm font-mono text-gray-900 break-all">
-                {leave.lantern360_leave_id}
-              </p>
-            </div>
+          <div>
+            <p className="text-xs text-gray-500">Lantern360 Leave ID</p>
+            <p className="text-sm font-mono text-gray-900 break-all">
+              {leave.lantern360_leave_id}
+            </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-200 flex flex-wrap justify-end gap-2 flex-shrink-0">
+        <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -657,6 +648,9 @@ const LeaveManagement: React.FC = () => {
   const [employeeCodeFilter, setEmployeeCodeFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
+  // New state for search input value (separate from filter value)
+  const [searchEmployeeCode, setSearchEmployeeCode] = useState<string>("");
+
   const [modifyForm, setModifyForm] = useState({
     leave_type: "",
     from_date: "",
@@ -758,6 +752,19 @@ const LeaveManagement: React.FC = () => {
     callerEmployeeCode,
     apiBaseUrl,
   ]);
+
+  // Handle search button click
+  const handleSearchEmployee = () => {
+    setEmployeeCodeFilter(searchEmployeeCode);
+    // Fetch will be triggered by the useEffect when employeeCodeFilter changes
+  };
+
+  // Handle Enter key press in search input
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearchEmployee();
+    }
+  };
 
   const handleApproveReject = async (action: "approve" | "reject") => {
     if (!selectedLeave) return;
@@ -1012,13 +1019,39 @@ const LeaveManagement: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Employee Code
                   </label>
-                  <input
-                    type="text"
-                    value={employeeCodeFilter}
-                    onChange={(e) => setEmployeeCodeFilter(e.target.value)}
-                    placeholder="Filter by employee"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchEmployeeCode}
+                      onChange={(e) => setSearchEmployeeCode(e.target.value)}
+                      onKeyPress={handleSearchKeyPress}
+                      placeholder="Enter employee code"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      onClick={handleSearchEmployee}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <Search className="w-4 h-4" />
+                      Search
+                    </button>
+                  </div>
+                  {/* Display current filter if applied */}
+                  {employeeCodeFilter && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Filtering by:{" "}
+                      <span className="font-medium">{employeeCodeFilter}</span>
+                      <button
+                        onClick={() => {
+                          setEmployeeCodeFilter("");
+                          setSearchEmployeeCode("");
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-3 h-3 inline" />
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <DatePicker
                   label="From Date"
@@ -1065,7 +1098,9 @@ const LeaveManagement: React.FC = () => {
               No leave requests found
             </h3>
             <p className="text-gray-500 text-sm">
-              No leave applications match your current filters.
+              {employeeCodeFilter
+                ? `No leave applications found for employee: ${employeeCodeFilter}`
+                : "No leave applications match your current filters."}
             </p>
           </div>
         ) : (
@@ -1267,15 +1302,39 @@ const LeaveManagement: React.FC = () => {
 
       {/* ── Leave Details Modal ── */}
       {isDetailsModalOpen && selectedLeave && (
-        <LeaveDetailsModal
-          leave={selectedLeave}
-          onClose={closeDetailsModal}
-          onApprove={(l) => openActionModal(l, "approve")}
-          onReject={(l) => openActionModal(l, "reject")}
-          onModify={(l) => openActionModal(l, "modify")}
-          formatDate={formatDate}
-          getStatusBadge={getStatusBadge}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative">
+            {/* Close button - fixed position */}
+            <button
+              onClick={closeDetailsModal}
+              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors p-1 bg-white rounded-full shadow-md"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="overflow-y-auto max-h-[90vh]">
+              <LeaveDetailsModal
+                leave={selectedLeave}
+                onClose={closeDetailsModal}
+                onApprove={(l) => {
+                  closeDetailsModal();
+                  openActionModal(l, "approve");
+                }}
+                onReject={(l) => {
+                  closeDetailsModal();
+                  openActionModal(l, "reject");
+                }}
+                onModify={(l) => {
+                  closeDetailsModal();
+                  openActionModal(l, "modify");
+                }}
+                formatDate={formatDate}
+                getStatusBadge={getStatusBadge}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Action Modal (Approve / Reject / Modify) ── */}

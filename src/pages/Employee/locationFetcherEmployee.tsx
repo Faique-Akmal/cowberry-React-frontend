@@ -3448,13 +3448,6 @@ export default function AttendanceList() {
                               [{session.allocatedArea}]
                             </span>
                           )}
-                          {/* ============ FIX: Show filtered logs warning ============ */}
-                          {filteredLogCount > 0 && (
-                            <span className="ml-2 px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full inline-flex items-center gap-1">
-                              <FaInfoCircle className="text-xs" />
-                              {filteredLogCount} offline logs filtered
-                            </span>
-                          )}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">

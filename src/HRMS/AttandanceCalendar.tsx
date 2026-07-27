@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import API from "../api/axios";
+import LoadingAnimation from "../pages/UiElements/loadingAnimation";
 
 // Types
 interface CheckLog {
@@ -466,7 +467,7 @@ const AttendanceCalendar: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <LoadingAnimation />
           <p className="text-gray-500">Loading employees...</p>
         </div>
       </div>

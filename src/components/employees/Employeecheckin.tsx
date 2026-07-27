@@ -204,14 +204,17 @@ const EmployeeCheckin = () => {
 
   // Calculate working hours and status (unchanged)
   const calculateStatus = useCallback((log: GroupedLog): string => {
+    // If no check-in or check-out, mark as Absent
     if (!log.checkInTimestamp && !log.checkOutTimestamp) {
       return "Absent";
     }
 
+    // If no check-in, mark as Absent
     if (!log.checkInTimestamp) {
       return "Absent";
     }
 
+    // If no check-out, mark as Checkout Missing
     if (!log.checkOutTimestamp) {
       return "Checkout Missing";
     }
@@ -221,12 +224,17 @@ const EmployeeCheckin = () => {
     const workingHours =
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
 
-    if (workingHours >= 9) {
+    // New logic:
+    // 0 < working hours < 4 → Absent
+    // 4 < working hours < 8.5 → Half Day
+    // working hours > 8.5 → Present
+
+    if (workingHours > 8.5) {
       return "Present";
-    } else if (workingHours > 4.5 && workingHours < 9) {
-      return "Short Day";
-    } else if (workingHours <= 4.5 && workingHours > 0) {
+    } else if (workingHours > 4 && workingHours < 8.5) {
       return "Half Day";
+    } else if (workingHours > 0 && workingHours < 4) {
+      return "Absent";
     } else {
       return "Unknown";
     }
@@ -924,7 +932,7 @@ const EmployeeCheckin = () => {
             flex flex-col
           "
         >
-          <div
+          {/* <div
             className="
               flex-shrink-0
               p-3 sm:p-4
@@ -959,7 +967,7 @@ const EmployeeCheckin = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {isLoading ? (
             <div className="p-6 text-center">
@@ -994,238 +1002,322 @@ const EmployeeCheckin = () => {
             </div>
           ) : (
             <>
-              <div className="flex-1 overflow-auto">
-                <div className="min-w-[640px] sm:min-w-0">
-                  <div className="overflow-hidden">
-                    <table className="w-full">
-                      <thead
-                        className="
-                          sticky top-0 z-10
-                          bg-gradient-to-r from-white/60 to-white/40
-                          dark:from-gray-800/60 dark:to-gray-900/40
-                          backdrop-blur-md
-                        "
-                      >
-                        <tr>
-                          {[
-                            {
-                              key: "fullName",
-                              label: "Full Name",
-                              className: "w-[180px] sm:w-auto",
-                            },
-                            {
-                              key: "employee_code",
-                              label: "Employee Code",
-                              className: "w-[120px] sm:w-auto",
-                            },
-                            {
-                              key: "date",
-                              label: "Date",
-                              className: "w-[100px] sm:w-auto",
-                            },
-                            {
-                              key: "check_in",
-                              label: "Check-in",
-                              className: "w-[80px] sm:w-auto",
-                            },
-                            {
-                              key: "check_out",
-                              label: "Check-out",
-                              className: "w-[80px] sm:w-auto",
-                            },
-                            {
-                              key: "working_hours",
-                              label: "Working Hours",
-                              className: "w-[100px] sm:w-auto",
-                            },
-                            {
-                              key: "status",
-                              label: "Status",
-                              className: "w-[150px] sm:w-auto",
-                            },
-                          ].map((header, idx) => (
-                            <th
-                              key={`${header.key}-${idx}`}
-                              className={`
-                                px-2 sm:px-3 py-2 text-left text-xs font-semibold
-                                text-gray-600 dark:text-gray-300
-                                uppercase tracking-wider
-                                border-b border-white/30 dark:border-gray-700/30
-                                backdrop-blur-sm
-                                whitespace-nowrap
-                                ${header.className}
-                              `}
-                            >
-                              {header.label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
-                        {filteredLogs.map((log, index) => {
-                          const status = calculateStatus(log);
-                          const workingHours = calculateWorkingHours(log);
-                          const statusColor = getStatusColor(status);
-                          const statusIcon = getStatusIcon(status);
-
-                          return (
-                            <tr
-                              key={`${log.userId}-${log.date}-${index}`}
-                              onClick={() => handleRowClick(log)}
-                              className="
-                                hover:bg-white/30 dark:hover:bg-gray-800/30
-                                transition-all duration-300
-                                backdrop-blur-sm
-                                cursor-pointer
-                              "
-                            >
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="
-                                      w-6 h-6 sm:w-8 sm:h-8 rounded-lg
-                                      bg-gradient-to-br from-blue-500/20 to-cyan-500/20
-                                      border border-blue-500/30
-                                      flex items-center justify-center
-                                      backdrop-blur-sm
-                                      flex-shrink-0
-                                    "
-                                  >
-                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                                      {log.fullName.charAt(0).toUpperCase()}
-                                    </span>
-                                  </div>
-                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                    {log.fullName}
-                                  </span>
-                                </div>
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                                  <div
-                                    className="
-                                      p-1 rounded-md
-                                      bg-gradient-to-br from-gray-100/50 to-gray-200/30
-                                      dark:from-gray-700/50 dark:to-gray-800/30
-                                      backdrop-blur-sm
-                                    "
-                                  >
-                                    <Hash className="w-3 h-3" />
-                                  </div>
-                                  <span className="text-xs sm:text-sm truncate">
-                                    {log.employee_code}
-                                  </span>
-                                </div>
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                                  <div
-                                    className="
-                                      p-1 rounded-md
-                                      bg-gradient-to-br from-yellow-100/50 to-orange-100/30
-                                      dark:from-yellow-900/30 dark:to-orange-900/20
-                                      backdrop-blur-sm
-                                    "
-                                  >
-                                    <Calendar className="w-3 h-3" />
-                                  </div>
-                                  <span className="text-xs truncate">
-                                    {formatDate(
-                                      log.checkInTimestamp ||
-                                        log.checkOutTimestamp ||
-                                        "",
-                                    )}
-                                  </span>
-                                </div>
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                {log.checkInTime ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <div
-                                      className="
-                                        p-1 rounded-md
-                                        bg-gradient-to-br from-green-100/50 to-emerald-100/30
-                                        dark:from-green-900/30 dark:to-emerald-900/20
-                                        backdrop-blur-sm
-                                      "
-                                    >
-                                      <LogIn className="w-3 h-3 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
-                                      {log.checkInTime}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                    N/A
-                                  </span>
-                                )}
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                {log.checkOutTime ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <div
-                                      className="
-                                        p-1 rounded-md
-                                        bg-gradient-to-br from-red-100/50 to-pink-100/30
-                                        dark:from-red-900/30 dark:to-pink-900/20
-                                        backdrop-blur-sm
-                                      "
-                                    >
-                                      <LogOut className="w-3 h-3 text-red-600 dark:text-red-400" />
-                                    </div>
-                                    <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
-                                      {log.checkOutTime}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                    N/A
-                                  </span>
-                                )}
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                {workingHours !== "N/A" ? (
-                                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                                    {workingHours}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                    N/A
-                                  </span>
-                                )}
-                              </td>
-
-                              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                                <span
-                                  className={`
-                                    px-2 py-1 rounded-lg text-xs font-medium
-                                    backdrop-blur-sm border inline-flex items-center gap-1
-                                    ${statusColor}
-                                  `}
-                                >
-                                  <span>{statusIcon}</span>
-                                  <span>{status}</span>
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+              {/* Table Section - Scrollable */}
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div
+                  className="
+      flex-1
+      bg-gradient-to-br from-white/40 to-white/20
+      dark:from-gray-800/40 dark:to-gray-900/20
+      backdrop-blur-xl
+      border border-white/40 dark:border-gray-700/40
+      rounded-xl sm:rounded-2xl
+      shadow-[0_8px_32px_rgba(31,38,135,0.1)]
+      dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]
+      overflow-hidden
+      flex flex-col
+    "
+                >
+                  {/* Table Header - This stays at top */}
+                  <div
+                    className="
+        flex-shrink-0
+        p-3 sm:p-4
+        border-b border-white/30 dark:border-gray-700/30
+        bg-gradient-to-r from-white/50 to-transparent
+        dark:from-gray-800/50 dark:to-transparent
+      "
+                  >
+                    {/* <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
+                          Employee Attendance Logs
+                        </h2>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                          Showing {filteredLogs.length} of {uniqueUsersCount}{" "}
+                          employees' logs • Click any row to view details
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span
+                          className="
+              px-2 py-1
+              bg-white/50 dark:bg-gray-700/50
+              backdrop-blur-sm
+              border border-white/60 dark:border-gray-600/60
+              rounded-md
+              text-xs text-gray-700 dark:text-gray-300
+              whitespace-nowrap
+            "
+                        >
+                          {filteredLogs.length} total
+                        </span>
+                      </div>
+                    </div> */}
                   </div>
-                </div>
-              </div>
 
-              <div className="flex-shrink-0 p-3 text-center border-t border-white/30 dark:border-gray-700/30">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  All {filteredLogs.length} matching logs loaded
-                </span>
+                  {isLoading ? (
+                    <div className="p-6 text-center flex-1 flex items-center justify-center">
+                      <div>
+                        <LoadingAnimation />
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Loading attendance logs...
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          This runs once — after that, filtering and export are
+                          instant.
+                        </p>
+                      </div>
+                    </div>
+                  ) : filteredLogs.length === 0 ? (
+                    <div className="p-6 text-center flex-1 flex items-center justify-center">
+                      <div>
+                        <div
+                          className="
+              w-12 h-12 mx-auto mb-2
+              bg-gradient-to-br from-gray-200/50 to-gray-300/30
+              dark:from-gray-700/50 dark:to-gray-800/30
+              backdrop-blur-sm
+              border border-gray-300/60 dark:border-gray-600/60
+              rounded-xl flex items-center justify-center
+            "
+                        >
+                          <Eye className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          No logs found
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Try adjusting your filters or check back later
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Table wrapper with scrolling - removed overflow-hidden */}
+                      <div className="flex-1 overflow-auto">
+                        <div className="min-w-[640px] sm:min-w-0">
+                          <table className="w-full table-auto border-collapse">
+                            <thead
+                              className="
+                  sticky top-0 z-10
+                  bg-gradient-to-r from-white/95 to-white/90
+                  dark:from-gray-800/95 dark:to-gray-900/90
+                  backdrop-blur-md
+                  shadow-[0_2px_4px_rgba(0,0,0,0.05)]
+                "
+                            >
+                              <tr>
+                                {[
+                                  {
+                                    key: "fullName",
+                                    label: "Full Name",
+                                    className: "w-[180px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "employee_code",
+                                    label: "Employee Code",
+                                    className: "w-[120px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "date",
+                                    label: "Date",
+                                    className: "w-[100px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "check_in",
+                                    label: "Check-in",
+                                    className: "w-[80px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "check_out",
+                                    label: "Check-out",
+                                    className: "w-[80px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "working_hours",
+                                    label: "Working Hours",
+                                    className: "w-[100px] sm:w-auto",
+                                  },
+                                  {
+                                    key: "status",
+                                    label: "Status",
+                                    className: "w-[150px] sm:w-auto",
+                                  },
+                                ].map((header, idx) => (
+                                  <th
+                                    key={`${header.key}-${idx}`}
+                                    className={`
+                        px-2 sm:px-3 py-3 text-left text-xs font-semibold
+                        text-gray-600 dark:text-gray-300
+                        uppercase tracking-wider
+                        border-b-2 border-white/30 dark:border-gray-700/30
+                        backdrop-blur-sm
+                        whitespace-nowrap
+                        ${header.className}
+                      `}
+                                  >
+                                    {header.label}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/20 dark:divide-gray-700/20">
+                              {filteredLogs.map((log, index) => {
+                                const status = calculateStatus(log);
+                                const workingHours = calculateWorkingHours(log);
+                                const statusColor = getStatusColor(status);
+                                const statusIcon = getStatusIcon(status);
+
+                                return (
+                                  <tr
+                                    key={`${log.userId}-${log.date}-${index}`}
+                                    onClick={() => handleRowClick(log)}
+                                    className="
+                        hover:bg-white/30 dark:hover:bg-gray-800/30
+                        transition-all duration-300
+                        backdrop-blur-sm
+                        cursor-pointer
+                      "
+                                  >
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          className="
+                              w-6 h-6 sm:w-8 sm:h-8 rounded-lg
+                              bg-gradient-to-br from-blue-500/20 to-cyan-500/20
+                              border border-blue-500/30
+                              flex items-center justify-center
+                              backdrop-blur-sm
+                              flex-shrink-0
+                            "
+                                        >
+                                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                            {log.fullName
+                                              .charAt(0)
+                                              .toUpperCase()}
+                                          </span>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                          {log.fullName}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                                        <span className="text-xs sm:text-sm truncate">
+                                          {log.employee_code}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                                        <div
+                                          className="
+                              p-1 rounded-md
+                              bg-gradient-to-br from-yellow-100/50 to-orange-100/30
+                              dark:from-yellow-900/30 dark:to-orange-900/20
+                              backdrop-blur-sm
+                            "
+                                        >
+                                          <Calendar className="w-3 h-3" />
+                                        </div>
+                                        <span className="text-xs truncate">
+                                          {formatDate(
+                                            log.checkInTimestamp ||
+                                              log.checkOutTimestamp ||
+                                              "",
+                                          )}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      {log.checkInTime ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <div
+                                            className="
+                                p-1 rounded-md
+                                bg-gradient-to-br from-green-100/50 to-emerald-100/30
+                                dark:from-green-900/30 dark:to-emerald-900/20
+                                backdrop-blur-sm
+                              "
+                                          >
+                                            <LogIn className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                          </div>
+                                          <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
+                                            {log.checkInTime}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                          N/A
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      {log.checkOutTime ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <div
+                                            className="
+                                p-1 rounded-md
+                                bg-gradient-to-br from-red-100/50 to-pink-100/30
+                                dark:from-red-900/30 dark:to-pink-900/20
+                                backdrop-blur-sm
+                              "
+                                          >
+                                            <LogOut className="w-3 h-3 text-red-600 dark:text-red-400" />
+                                          </div>
+                                          <span className="text-xs font-medium text-red-700 dark:text-red-400 truncate">
+                                            {log.checkOutTime}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                          N/A
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      {workingHours !== "N/A" ? (
+                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                          {workingHours}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                          N/A
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      <span
+                                        className={`
+                            px-2 py-1 rounded-lg text-xs font-medium
+                            backdrop-blur-sm border inline-flex items-center gap-1
+                            ${statusColor}
+                          `}
+                                      >
+                                        <span>{statusIcon}</span>
+                                        <span>{status}</span>
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                    </>
+                  )}
+                </div>
               </div>
             </>
           )}

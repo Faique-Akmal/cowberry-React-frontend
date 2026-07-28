@@ -203,8 +203,9 @@ const EmployeeCheckin = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Calculate working hours and status (unchanged)
+
   const calculateStatus = useCallback((log: GroupedLog): string => {
-    // If no check-in or check-out, mark as Absent
+    // If no check-in and no check-out, mark as Absent
     if (!log.checkInTimestamp && !log.checkOutTimestamp) {
       return "Absent";
     }
@@ -214,21 +215,34 @@ const EmployeeCheckin = () => {
       return "Absent";
     }
 
-    // If no check-out, mark as Checkout Missing
-    if (!log.checkOutTimestamp) {
+    // Get today's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get the date of the log entry
+    const logDate = new Date(log.checkInTimestamp);
+    logDate.setHours(0, 0, 0, 0);
+
+    // Check if this is today's log
+    const isToday = today.getTime() === logDate.getTime();
+
+    // If no check-out and it's today, show "Checked In" (or "Active")
+    if (!log.checkOutTimestamp && isToday) {
+      return "Active"; // or "Checked In"
+    }
+
+    // If no check-out and it's NOT today, show "Checkout Missing"
+    if (!log.checkOutTimestamp && !isToday) {
       return "Checkout Missing";
     }
 
+    // If both check-in and check-out exist, calculate working hours
     const checkIn = new Date(log.checkInTimestamp);
     const checkOut = new Date(log.checkOutTimestamp);
     const workingHours =
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
 
-    // New logic:
-    // 0 < working hours < 4 → Absent
-    // 4 < working hours < 8.5 → Half Day
-    // working hours > 8.5 → Present
-
+    // Working hours logic
     if (workingHours > 8.5) {
       return "Present";
     } else if (workingHours > 4 && workingHours < 8.5) {
@@ -274,11 +288,11 @@ const EmployeeCheckin = () => {
       case "Half Day":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200";
       case "Checkout Missing":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200";
-      case "Active":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
+      case "Active": // Ensure this is properly colored
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
       case "Absent":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200";
+        return "bg-red-800 text-white dark:bg-gray-900/30 dark:text-gray-400 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200";
     }
@@ -511,11 +525,11 @@ const EmployeeCheckin = () => {
             } else if (statusValue === "Half Day") {
               color = "FFFFFF00";
             } else if (statusValue === "Checkout Missing") {
-              color = "FFFF6B6B";
+              color = "FFFFA500";
             } else if (statusValue === "Active") {
               color = "FF87CEEB";
             } else if (statusValue === "Absent") {
-              color = "FFD3D3D3";
+              color = "FFFF0000";
             }
 
             cell.fill = {

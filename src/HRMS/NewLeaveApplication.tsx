@@ -210,7 +210,7 @@ const LeaveApplicationPage: React.FC = () => {
     }
 
     if (formData.leaveType === "Compensatory Leave") {
-      return 0; // No balance limit, but show 0
+      return 999; // Unlimited for Compensatory Leave
     }
 
     // For API leave types, get from balances
@@ -236,7 +236,7 @@ const LeaveApplicationPage: React.FC = () => {
     return balance;
   };
 
-  // Calculate total days requested
+  // FIXED: Calculate total days requested - handles timezone issues
   const calculateTotalDays = (): number => {
     if (!formData.startDate) return 0;
 
@@ -246,54 +246,68 @@ const LeaveApplicationPage: React.FC = () => {
 
     if (!formData.endDate) return 0;
 
+    // Create new date objects and reset time to midnight to avoid timezone issues
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
 
-    return diffDays + 1;
+    // Calculate the difference in days
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+
+    return diffDays;
   };
 
-  // Validate if requested days exceed available balance
-  const validateLeaveBalance = (requestedDays: number): boolean => {
+  // FIXED: Validate if requested days exceed available balance
+  const validateLeaveBalance = (
+    requestedDays: number,
+  ): { valid: boolean; message: string } => {
     const remainingBalance = getRemainingBalance();
 
+    // If no balance info available, allow (but backend will validate)
     if (remainingBalance === null) {
-      return true; // No balance info available
+      return { valid: true, message: "" };
     }
 
-    // Allow Leave Without Pay regardless of balance
+    // For Leave Without Pay, always allow
     if (formData.leaveType === "Leave Without Pay") {
-      return true;
+      return { valid: true, message: "" };
     }
 
-    // Allow Compensatory Leave (no strict balance check)
+    // For Compensatory Leave, always allow
     if (formData.leaveType === "Compensatory Leave") {
-      return true;
+      return { valid: true, message: "" };
+    }
+
+    // Check if remaining balance is 0 or negative
+    if (remainingBalance <= 0) {
+      return {
+        valid: false,
+        message: `No leave balance available for ${formData.leaveType}. You have 0 days remaining.`,
+      };
     }
 
     // For half day leaves
     if (isHalfDay) {
       if (remainingBalance < 0.5) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          leaveType: `Insufficient leave balance. You have only ${remainingBalance} days remaining. Cannot apply for half day leave.`,
-        }));
-        return false;
+        return {
+          valid: false,
+          message: `Insufficient leave balance. You have only ${remainingBalance.toFixed(2)} days remaining. Cannot apply for half day leave.`,
+        };
       }
-      return true;
+      return { valid: true, message: "" };
     }
 
-    // For full day leaves
+    // For full day leaves - check if requested days exceed remaining
     if (requestedDays > remainingBalance) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        leaveType: `Insufficient leave balance. You have ${remainingBalance} days remaining but requested ${requestedDays} days.`,
-      }));
-      return false;
+      return {
+        valid: false,
+        message: `Insufficient leave balance. You have ${remainingBalance.toFixed(2)} days remaining but requested ${requestedDays} days.`,
+      };
     }
 
-    return true;
+    return { valid: true, message: "" };
   };
 
   // Handle input changes
@@ -400,7 +414,9 @@ const LeaveApplicationPage: React.FC = () => {
       if (formData.leaveType === "Sick Leave") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (date < today) {
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
           setValidationErrors((prev) => ({
             ...prev,
             startDate: "Sick leave cannot be backdated",
@@ -441,7 +457,7 @@ const LeaveApplicationPage: React.FC = () => {
     }
   };
 
-  // Validate form
+  // FIXED: Validate form with proper balance checks
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     const today = new Date();
@@ -456,12 +472,21 @@ const LeaveApplicationPage: React.FC = () => {
 
     // Date validations
     if (formData.startDate && formData.endDate && !isHalfDay) {
-      if (formData.endDate < formData.startDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+
+      if (end < start) {
         errors.endDate = "End date cannot be before start date";
       }
 
-      if (formData.leaveType === "Sick Leave" && formData.startDate < today) {
-        errors.startDate = "Sick leave cannot be backdated";
+      if (formData.leaveType === "Sick Leave") {
+        const selectedDate = new Date(formData.startDate);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          errors.startDate = "Sick leave cannot be backdated";
+        }
       }
     }
 
@@ -470,28 +495,12 @@ const LeaveApplicationPage: React.FC = () => {
       errors.halfDayShift = "Please select a shift for half day leave";
     }
 
-    // Calculate requested days and validate against balance
+    // FIXED: Calculate requested days and validate against balance
     const requestedDays = calculateTotalDays();
+    const balanceValidation = validateLeaveBalance(requestedDays);
 
-    if (!isHalfDay && formData.startDate && formData.endDate) {
-      // Validate that requested days don't exceed remaining balance
-      const remainingBalance = getRemainingBalance();
-      if (remainingBalance !== null && remainingBalance > 0) {
-        if (
-          requestedDays > remainingBalance &&
-          formData.leaveType !== "Leave Without Pay" &&
-          formData.leaveType !== "Compensatory Leave"
-        ) {
-          errors.leaveType = `Insufficient leave balance! You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
-        }
-      } else if (
-        remainingBalance !== null &&
-        remainingBalance <= 0 &&
-        formData.leaveType !== "Leave Without Pay" &&
-        formData.leaveType !== "Compensatory Leave"
-      ) {
-        errors.leaveType = `No leave balance available for ${formData.leaveType}. You have ${remainingBalance} days remaining.`;
-      }
+    if (!balanceValidation.valid) {
+      errors.leaveType = balanceValidation.message;
     }
 
     setValidationErrors(errors);
@@ -508,28 +517,40 @@ const LeaveApplicationPage: React.FC = () => {
     return `${prefix}-${timestamp}-${random}`;
   };
 
+  // FIXED: Format date without timezone conversion issues
+  const formatDate = (date: Date | null): string => {
+    if (!date) return "";
+
+    // Get the local date components to avoid timezone shift
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
   // Handle form submission using the API instance
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Re-validate balance before submission
+    // FIXED: Validate balance first with proper check
     const requestedDays = calculateTotalDays();
-    const remainingBalance = getRemainingBalance();
+    const balanceValidation = validateLeaveBalance(requestedDays);
 
-    if (
-      remainingBalance !== null &&
-      requestedDays > remainingBalance &&
-      formData.leaveType !== "Leave Without Pay" &&
-      formData.leaveType !== "Compensatory Leave"
-    ) {
-      const errorMsg = `Cannot submit: You have only ${remainingBalance.toFixed(2)} days of ${formData.leaveType} remaining, but you are requesting ${requestedDays} days.`;
+    if (!balanceValidation.valid) {
+      const errorMsg = balanceValidation.message;
       setError(errorMsg);
       toast.error(errorMsg, {
         duration: 5000,
         position: "bottom-right",
       });
+      // Set validation error
+      setValidationErrors((prev) => ({
+        ...prev,
+        leaveType: errorMsg,
+      }));
       return;
     }
 
@@ -548,11 +569,6 @@ const LeaveApplicationPage: React.FC = () => {
       if (!employee_code) {
         throw new Error("Employee code not found. Please login again.");
       }
-
-      const formatDate = (date: Date | null): string => {
-        if (!date) return "";
-        return date.toISOString().split("T")[0];
-      };
 
       const payload = {
         employeeCode: employee_code,
@@ -575,18 +591,30 @@ const LeaveApplicationPage: React.FC = () => {
       const response = await API.post("/leaves/apply-erp-leave", payload);
       const responseData = response.data;
 
+      // FIXED: Check if the response from middleware indicates success
       if (responseData.success) {
-        const successMsg = `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || responseData.data?.leave_application || "N/A"}`;
-        setSuccess(successMsg);
+        // Check if the ERP response within the data indicates success
+        const erpSuccess = responseData.data?.message?.success !== false;
 
-        toast.success(successMsg, {
-          duration: 5000,
-          position: "bottom-right",
-          icon: "✅",
-        });
+        if (erpSuccess) {
+          const successMsg = `Leave application submitted successfully! Reference ID: ${responseData.your_reference_id || "N/A"}`;
+          setSuccess(successMsg);
 
-        await fetchLeaveBalances(employee_code);
-        handleReset();
+          toast.success(successMsg, {
+            duration: 5000,
+            position: "bottom-right",
+            icon: "✅",
+          });
+
+          await fetchLeaveBalances(employee_code);
+          handleReset();
+        } else {
+          // ERP returned an error
+          const erpError =
+            responseData.data?.message?.error ||
+            "Insufficient leave balance or validation error in ERP";
+          throw new Error(erpError);
+        }
       } else {
         throw new Error(
           responseData.message || "Failed to submit leave application",
@@ -597,10 +625,12 @@ const LeaveApplicationPage: React.FC = () => {
 
       let errorMessage = "";
 
+      // FIXED: Better error handling for ERP errors
       if (err.response) {
         errorMessage =
           err.response.data?.message ||
           err.response.data?.error ||
+          err.message ||
           "Failed to submit leave application";
         setError(errorMessage);
       } else if (err.request) {
@@ -611,7 +641,7 @@ const LeaveApplicationPage: React.FC = () => {
         setError(errorMessage);
       }
 
-      toast.error(`Failed to submit leave: ${errorMessage}`, {
+      toast.error(errorMessage, {
         duration: 5000,
         position: "bottom-right",
         icon: "❌",
@@ -649,8 +679,15 @@ const LeaveApplicationPage: React.FC = () => {
   const requestedDays = calculateTotalDays();
   const remainingBalance = getRemainingBalance();
 
+  // FIXED: Check if balance is insufficient
+  const isBalanceInsufficient =
+    remainingBalance !== null &&
+    remainingBalance <= 0 &&
+    formData.leaveType !== "Leave Without Pay" &&
+    formData.leaveType !== "Compensatory Leave";
+
   return (
-    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-8 mb-10">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8  mb-10">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="px-6 py-4 bg-lantern-blue-600 text-white">
@@ -767,6 +804,16 @@ const LeaveApplicationPage: React.FC = () => {
             {loadingBalances && (
               <div className="mb-4 p-3 bg-blue-50 border border-lantern-blue-600 rounded-md">
                 <p className="text-blue-600">Loading leave balances...</p>
+              </div>
+            )}
+
+            {/* FIXED: Warning when no balance available */}
+            {isBalanceInsufficient && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 font-medium">
+                  ⚠️ No leave balance available for {formData.leaveType}. You
+                  cannot apply for this leave type.
+                </p>
               </div>
             )}
 
@@ -898,6 +945,11 @@ const LeaveApplicationPage: React.FC = () => {
                         ⚠️ Warning: Requested days exceed available balance!
                       </span>
                     )}
+                    {remainingBalance <= 0 && (
+                      <span className="block mt-1 font-semibold text-red-600">
+                        ⚠️ No balance available for this leave type!
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
@@ -999,6 +1051,7 @@ const LeaveApplicationPage: React.FC = () => {
                 type="submit"
                 disabled={
                   isSubmitting ||
+                  isBalanceInsufficient ||
                   (remainingBalance !== null &&
                     requestedDays > remainingBalance &&
                     formData.leaveType !== "Leave Without Pay" &&
@@ -1006,6 +1059,7 @@ const LeaveApplicationPage: React.FC = () => {
                 }
                 className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lantern-blue-600 hover:bg-blue-700 ${
                   isSubmitting ||
+                  isBalanceInsufficient ||
                   (remainingBalance !== null &&
                     requestedDays > remainingBalance &&
                     formData.leaveType !== "Leave Without Pay" &&

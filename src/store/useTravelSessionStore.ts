@@ -1,0 +1,484 @@
+// src/store/useTravelSessionStore.ts
+// Zustand store for the Travel Sessions admin page.
+//
+// Why this exists:
+// The original component re-fetched the full session list, farmer/travel
+// data, and per-session logs on almost every interaction (opening a map,
+// re-exporting, auto-refresh, etc). This store centralizes that data so it
+// is fetched once and reused:
+//   - `loadAllSessions()` is TTL-cached (SESSIONS_TTL_MS) and dedupes
+//     concurrent calls with an in-flight promise.
+//   - `fetchSessionLogs()` only hits the network if that page isn't already
+//     cached in `sessionLogs`.
+//   - `loadFarmerDataForGroups()` reuses `farmerDataCache`, keyed by
+//     `${userId}:${start}:${end}`, exactly like the previous farmerDataCacheRef.
+//   - `refreshSessions()` / `clearCache()` are the only ways to force a
+//     network round-trip, so manual refresh / auto-refresh stay explicit.
+
+import { create } from "zustand";
+import API from "../api/axios";
+import {
+  TravelSession,
+  LocationLog,
+  UserInfo,
+  UserListItem,
+  ApiPaginationResponse,
+  SessionLogsResponse,
+  GroupedSession,
+} from "../types/travelSession";
+import {
+  filterSessionsByRole,
+  filterUsersByRole,
+  filterAndMapLogsToSession,
+  buildRoleScopedParams,
+  formatDateOnly,
+} from "../utils/travelSessionHelpers";
+
+const SESSIONS_TTL_MS = 60_000; // don't refetch the full list more than once/minute unless forced
+const FARMER_DATA_BATCH_SIZE = 5;
+const FARMER_DATA_BATCH_PAUSE_MS = 300;
+const FARMER_DATA_MAX_PAGES = 50;
+
+interface TravelSessionState {
+  // ---- data ----
+  travelSessions: TravelSession[];
+  sessionsMap: Record<string, TravelSession>;
+  users: UserListItem[];
+  allSessions: TravelSession[];
+  allFarmerData: Record<string, any>;
+  farmerDataCache: Record<string, any[]>;
+  sessionLogs: Record<number, LocationLog[]>;
+  logsPagination: Record<number, any>;
+  currentUserInfo: UserInfo | null;
+  totalSessionsCount: number;
+  lastUpdateTime: Date | null;
+  lastFetchedAt: number | null;
+
+  // ---- loading flags ----
+  isLoadingSessions: boolean;
+  loadingLogs: Record<number, boolean>;
+
+  // ---- in-flight dedupe ----
+  _inFlightSessionsPromise: Promise<void> | null;
+
+  // ---- actions ----
+  setCurrentUserInfo: (info: UserInfo | null) => void;
+  loadAllSessions: (force?: boolean) => Promise<void>;
+  refreshSessions: () => Promise<void>;
+  fetchActiveSessionsOnly: () => Promise<void>;
+  fetchSessionLogs: (
+    sessionId: number,
+    page?: number,
+    opts?: { force?: boolean },
+  ) => Promise<LocationLog[]>;
+  loadFarmerDataForGroups: (
+    groupedData: GroupedSession[],
+  ) => Promise<Record<string, any>>;
+  clearCache: () => void;
+}
+
+export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
+  travelSessions: [],
+  sessionsMap: {},
+  users: [],
+  allSessions: [],
+  allFarmerData: {},
+  farmerDataCache: {},
+  sessionLogs: {},
+  logsPagination: {},
+  currentUserInfo: null,
+  totalSessionsCount: 0,
+  lastUpdateTime: null,
+  lastFetchedAt: null,
+
+  isLoadingSessions: false,
+  loadingLogs: {},
+
+  _inFlightSessionsPromise: null,
+
+  setCurrentUserInfo: (info) => set({ currentUserInfo: info }),
+
+  /**
+   * Loads the full, paginated session list from the API, applies role-based
+   * filtering, and populates travelSessions / users / sessionsMap.
+   *
+   * TTL + in-flight dedupe means calling this from multiple places (initial
+   * mount, filters changing, auto-refresh) will not cause redundant network
+   * traffic as long as `force` isn't passed.
+   */
+  loadAllSessions: async (force = false) => {
+    const state = get();
+
+    if (!force && state._inFlightSessionsPromise) {
+      return state._inFlightSessionsPromise;
+    }
+
+    if (
+      !force &&
+      state.lastFetchedAt &&
+      Date.now() - state.lastFetchedAt < SESSIONS_TTL_MS &&
+      state.travelSessions.length > 0
+    ) {
+      return; // fresh enough, skip network call entirely
+    }
+
+    const run = async () => {
+      set({ isLoadingSessions: true });
+      try {
+        const currentUserInfo = get().currentUserInfo;
+        const roleParams = buildRoleScopedParams(currentUserInfo);
+
+        let allSessionsData: TravelSession[] = [];
+        let currentPageNum = 1;
+        let totalPagesNum = 1;
+        let hasMorePages = true;
+
+        while (hasMorePages) {
+          const params: any = {
+            page: currentPageNum,
+            limit: 100,
+            ...roleParams,
+          };
+
+          const res = await API.get<ApiPaginationResponse>(
+            "/admin/travel-sessions",
+            { params },
+          );
+
+          if (!res.data.success) {
+            hasMorePages = false;
+            break;
+          }
+
+          const sessions = res.data.data || [];
+          allSessionsData = [...allSessionsData, ...sessions];
+
+          currentPageNum = res.data.currentPage || currentPageNum;
+          totalPagesNum = res.data.totalPages || totalPagesNum;
+          hasMorePages = res.data.hasNextPage || false;
+
+          if (currentPageNum < totalPagesNum) currentPageNum++;
+          else hasMorePages = false;
+        }
+
+        const filteredSessions = currentUserInfo?.userRole
+          ? filterSessionsByRole(allSessionsData, currentUserInfo)
+          : allSessionsData;
+
+        const newSessionsMap: Record<string, TravelSession> = {};
+        filteredSessions.forEach((session) => {
+          newSessionsMap[`${session.userId}-${session.sessionId}`] = session;
+        });
+
+        const uniqueUsers = Array.from(
+          new Map(
+            filteredSessions.map((session) => [
+              session.userId,
+              {
+                userId: session.userId,
+                fullName: session.fullName,
+                username: session.username,
+                employeeCode: session.employeeCode,
+                department: session.department || "Unknown",
+                allocatedArea: session.allocatedArea || "Unknown",
+              } as UserListItem,
+            ]),
+          ).values(),
+        );
+
+        set({
+          allSessions: filteredSessions,
+          travelSessions: filteredSessions,
+          sessionsMap: { ...get().sessionsMap, ...newSessionsMap },
+          users: filterUsersByRole(uniqueUsers, currentUserInfo),
+          totalSessionsCount: filteredSessions.length,
+          lastUpdateTime: new Date(),
+          lastFetchedAt: Date.now(),
+        });
+      } catch (err) {
+        console.error("Failed to load travel sessions", err);
+      } finally {
+        set({ isLoadingSessions: false, _inFlightSessionsPromise: null });
+      }
+    };
+
+    const promise = run();
+    set({ _inFlightSessionsPromise: promise });
+    return promise;
+  },
+
+  refreshSessions: () => get().loadAllSessions(true),
+
+  /** Lightweight poll used by auto-refresh: only touches sessions without endTime. */
+  fetchActiveSessionsOnly: async () => {
+    try {
+      const currentUserInfo = get().currentUserInfo;
+      const params = buildRoleScopedParams(currentUserInfo);
+
+      const res = await API.get("/admin/travel-sessions", { params });
+      if (!res.data.success) return;
+
+      const allSessionsData: TravelSession[] = res.data.data || [];
+      const filtered = currentUserInfo?.userRole
+        ? filterSessionsByRole(allSessionsData, currentUserInfo)
+        : allSessionsData;
+
+      set((state) => {
+        const updatedSessions = [...state.travelSessions];
+        const activeSessionMap = new Map<number, TravelSession>();
+
+        filtered.forEach((session) => {
+          if (!session.endTime)
+            activeSessionMap.set(session.sessionId, session);
+        });
+
+        updatedSessions.forEach((session, index) => {
+          if (!session.endTime && activeSessionMap.has(session.sessionId)) {
+            updatedSessions[index] = activeSessionMap.get(session.sessionId)!;
+            activeSessionMap.delete(session.sessionId);
+          }
+        });
+
+        activeSessionMap.forEach((session) => updatedSessions.push(session));
+
+        updatedSessions.sort(
+          (a, b) =>
+            new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+        );
+
+        const newSessionsMap = { ...state.sessionsMap };
+        filtered.forEach((session) => {
+          if (!session.endTime) {
+            newSessionsMap[`${session.userId}-${session.sessionId}`] = session;
+          }
+        });
+
+        return {
+          travelSessions: updatedSessions,
+          sessionsMap: newSessionsMap,
+          lastUpdateTime: new Date(),
+        };
+      });
+    } catch (err) {
+      console.error("Failed to fetch active sessions", err);
+    }
+  },
+
+  /**
+   * Fetches one page of GPS logs for a session. Cached: repeat calls for a
+   * page already in state resolve instantly from memory unless `force`.
+   */
+  fetchSessionLogs: async (sessionId, page = 1, opts) => {
+    const force = opts?.force ?? false;
+    const state = get();
+
+    if (!force && page === 1 && state.sessionLogs[sessionId]?.length) {
+      return state.sessionLogs[sessionId];
+    }
+
+    set((s) => ({ loadingLogs: { ...s.loadingLogs, [sessionId]: true } }));
+
+    try {
+      const response = await API.get<SessionLogsResponse>(
+        `/admin/travel-sessions/${sessionId}/logs`,
+        { params: { page, limit: 100 } },
+      );
+
+      if (!response.data.success) return [];
+
+      const logs = response.data.data;
+      const session =
+        get().sessionsMap[`${sessionId}`] ||
+        get().travelSessions.find((s) => s.sessionId === sessionId);
+
+      const filteredLogs = session
+        ? filterAndMapLogsToSession(logs, session)
+        : logs;
+
+      set((s) => ({
+        sessionLogs: {
+          ...s.sessionLogs,
+          [sessionId]:
+            page === 1
+              ? filteredLogs
+              : [...(s.sessionLogs[sessionId] || []), ...filteredLogs],
+        },
+        logsPagination: {
+          ...s.logsPagination,
+          [sessionId]: response.data.pagination,
+        },
+      }));
+
+      return filteredLogs;
+    } catch (error) {
+      console.error(`Failed to fetch logs for session ${sessionId}:`, error);
+      return [];
+    } finally {
+      set((s) => ({ loadingLogs: { ...s.loadingLogs, [sessionId]: false } }));
+    }
+  },
+
+  /**
+   * Fetches farmer/travel-session detail data for every unique
+   * (userId, exact date) implied by `groupedData`, reusing farmerDataCache
+   * so re-running an export with the same filters costs zero extra requests.
+   *
+   * IMPORTANT: this endpoint only reliably supports single-day queries
+   * (startDate === endDate, e.g. ...?startDate=2026-08-04&endDate=2026-08-04).
+   * Earlier this collapsed every group's date into one min/max range per
+   * user to save requests, but the endpoint does not correctly return every
+   * session across a multi-day range - it would silently drop farmer data
+   * for users who had sessions on more than one date. Querying one call per
+   * (userId, date) - exactly matching the known-good single-day shape -
+   * fixes that, and the per-date cache still makes repeat exports free.
+   */
+  loadFarmerDataForGroups: async (groupedData) => {
+    const farmerDataMap: Record<string, any> = {};
+
+    try {
+      // Unique (userId, date) pairs - one entry per group, not collapsed.
+      const userDatePairs = new Map<string, { userId: number; date: string }>();
+      groupedData.forEach((group) => {
+        const key = `${group.userId}:${group.date}`;
+        if (!userDatePairs.has(key)) {
+          userDatePairs.set(key, { userId: group.userId, date: group.date });
+        }
+      });
+
+      const uniquePairs = Array.from(userDatePairs.values());
+
+      const fetchSessionsForUserDate = async (
+        userId: number,
+        date: string,
+      ): Promise<any[]> => {
+        const cacheKey = `${userId}:${date}`;
+        const cached = get().farmerDataCache[cacheKey];
+        if (cached) return cached;
+
+        const collected: any[] = [];
+        let page = 1;
+        let hasMorePages = true;
+        let expectedCount: number | null = null;
+
+        while (hasMorePages && page <= FARMER_DATA_MAX_PAGES) {
+          try {
+            const response = await API.get(
+              `/tracking/locationlog/get_travel_sessions`,
+              {
+                params: {
+                  userId,
+                  startDate: date,
+                  endDate: date,
+                  page,
+                  limit: 100,
+                },
+                timeout: 15000,
+              },
+            );
+
+            if (!response.data.success) break;
+
+            const pageData: any[] = response.data.sessions?.data || [];
+            collected.push(...pageData);
+
+            if (typeof response.data.sessions?.count === "number") {
+              expectedCount = response.data.sessions.count;
+            }
+
+            const pagination =
+              response.data.sessions?.pagination || response.data.pagination;
+
+            if (pagination && typeof pagination.hasNextPage === "boolean") {
+              hasMorePages = pagination.hasNextPage;
+            } else if (
+              pagination &&
+              typeof pagination.totalPages === "number"
+            ) {
+              hasMorePages = page < pagination.totalPages;
+            } else if (typeof response.data.sessions?.totalPages === "number") {
+              hasMorePages = page < response.data.sessions.totalPages;
+            } else if (
+              typeof response.data.sessions?.hasNextPage === "boolean"
+            ) {
+              hasMorePages = response.data.sessions.hasNextPage;
+            } else if (expectedCount !== null) {
+              // Endpoint reports a total `count` but no real pagination -
+              // trust that count over the page-size heuristic below.
+              hasMorePages = collected.length < expectedCount;
+            } else {
+              hasMorePages = pageData.length >= 100;
+            }
+
+            page++;
+          } catch (error) {
+            console.error(
+              `Error fetching farmer data page ${page} for user ${userId} on ${date}:`,
+              error,
+            );
+            break;
+          }
+        }
+
+        set((s) => ({
+          farmerDataCache: { ...s.farmerDataCache, [cacheKey]: collected },
+        }));
+        return collected;
+      };
+
+      for (let i = 0; i < uniquePairs.length; i += FARMER_DATA_BATCH_SIZE) {
+        const batch = uniquePairs.slice(i, i + FARMER_DATA_BATCH_SIZE);
+
+        const batchPromises = batch.map(async ({ userId, date }) => {
+          try {
+            const sessionsForUserDate = await fetchSessionsForUserDate(
+              userId,
+              date,
+            );
+            sessionsForUserDate.forEach((session: any) => {
+              const sessionDate = formatDateOnly(
+                session.date || session.startTime,
+              );
+              const key = `${userId}-${sessionDate}`;
+              if (!farmerDataMap[key]) farmerDataMap[key] = [];
+              farmerDataMap[key].push(session);
+            });
+          } catch (error) {
+            console.error(
+              `Error fetching farmer data for user ${userId} on ${date}`,
+              error,
+            );
+          }
+        });
+
+        await Promise.all(batchPromises);
+
+        if (i + FARMER_DATA_BATCH_SIZE < uniquePairs.length) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, FARMER_DATA_BATCH_PAUSE_MS),
+          );
+        }
+      }
+
+      set((s) => ({ allFarmerData: { ...s.allFarmerData, ...farmerDataMap } }));
+    } catch (err) {
+      console.error("Failed to load farmer data", err);
+    }
+
+    return farmerDataMap;
+  },
+
+  clearCache: () =>
+    set({
+      travelSessions: [],
+      sessionsMap: {},
+      users: [],
+      allSessions: [],
+      allFarmerData: {},
+      farmerDataCache: {},
+      sessionLogs: {},
+      logsPagination: {},
+      totalSessionsCount: 0,
+      lastUpdateTime: null,
+      lastFetchedAt: null,
+    }),
+}));

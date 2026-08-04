@@ -698,6 +698,7 @@ export default function AttendanceList() {
   }, []);
 
   // ============ FIX: Updated calculateAdjustedGroupDistance - NO EXCLUSIONS ============
+  // ============ FIX: Updated calculateAdjustedGroupDistance ============
   const calculateAdjustedGroupDistance = useCallback(
     (
       sessions: TravelSession[],
@@ -716,7 +717,7 @@ export default function AttendanceList() {
         };
       }
 
-      // sort by start time
+      // sort by start time (earliest first)
       const sortedSessions = [...sessions].sort(
         (a, b) =>
           new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
@@ -727,10 +728,13 @@ export default function AttendanceList() {
         0,
       );
 
+      // Get the first session's distance
+      const firstSessionDistance = sortedSessions[0]?.totalDistance || 0;
+
       // ALL sessions included for ALL roles - NO EXCLUSIONS
       return {
         totalDistance: originalTotalDistance,
-        firstSessionDistance: 0,
+        firstSessionDistance: firstSessionDistance, // FIXED: Set actual first session distance
         originalTotalDistance,
         excludedSessions: 0,
       };

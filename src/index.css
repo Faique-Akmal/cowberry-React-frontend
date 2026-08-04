@@ -190,6 +190,33 @@ layer(base);
   --z-index-999999: 999999;
 }
 
+/* Add these to your global styles for better responsive behavior */
+@media (max-width: 1024px) {
+  .lg\\:flex {
+    display: none !important;
+  }
+}
+
+/* Smooth image transitions */
+.carousel-image {
+  transition: opacity 1s ease-in-out;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 640px) {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom */
+  }
+
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh; /* For dynamic viewport height */
+  }
+}
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still

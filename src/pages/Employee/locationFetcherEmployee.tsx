@@ -382,6 +382,7 @@ export default function AttendanceList() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSessionsOnly, setActiveSessionsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedSessionDate, setSelectedSessionDate] = useState<string>("");
 
@@ -433,6 +434,7 @@ export default function AttendanceList() {
   const [logsPagination, setLogsPagination] = useState<Record<number, any>>({});
 
   const [isSearching, setIsSearching] = useState(false);
+  const [showStats, setShowStats] = useState(true);
 
   // Custom icons for markers
   const customIcons = {
@@ -695,7 +697,7 @@ export default function AttendanceList() {
     return date.toISOString().split("T")[0];
   }, []);
 
-  // Calculate distance minus first session distance
+  // ============ FIX: Updated calculateAdjustedGroupDistance - NO EXCLUSIONS ============
   const calculateAdjustedGroupDistance = useCallback(
     (
       sessions: TravelSession[],
@@ -720,34 +722,17 @@ export default function AttendanceList() {
           new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
       );
 
-      const role = (sortedSessions[0].role || "")
-        .toLowerCase()
-        .replace(/\s/g, "");
-
       const originalTotalDistance = sortedSessions.reduce(
         (sum, s) => sum + (s.totalDistance || 0),
         0,
       );
 
-      // Exclude first session ONLY for fieldemployee
-      const shouldExcludeFirst = role === "fieldemployee";
-
-      if (!shouldExcludeFirst) {
-        return {
-          totalDistance: originalTotalDistance,
-          firstSessionDistance: 0,
-          originalTotalDistance,
-          excludedSessions: 0,
-        };
-      }
-
-      const firstSessionDistance = sortedSessions[0].totalDistance || 0;
-
+      // ALL sessions included for ALL roles - NO EXCLUSIONS
       return {
-        totalDistance: originalTotalDistance - firstSessionDistance,
-        firstSessionDistance,
+        totalDistance: originalTotalDistance,
+        firstSessionDistance: 0,
         originalTotalDistance,
-        excludedSessions: 1,
+        excludedSessions: 0,
       };
     },
     [],
@@ -778,13 +763,6 @@ export default function AttendanceList() {
         // ============ FIX: Filter logs by session time ============
         if (session) {
           filteredLogs = filterAndMapLogsToSession(logs, session);
-
-          // Log filtering info for debugging
-          if (filteredLogs.length < logs.length) {
-            console.group(`Session ${sessionId} - Log Filtering`);
-
-            console.groupEnd();
-          }
         }
 
         // Update session logs with filtered logs
@@ -954,6 +932,7 @@ export default function AttendanceList() {
     page: number = 1,
     append: boolean = false,
   ) => {
+    console.trace("fetchTravelSessions");
     if (page === 1) {
       setIsLoading(true);
     } else {
@@ -1377,12 +1356,13 @@ export default function AttendanceList() {
 
   // search query
   const handleSearchSubmit = () => {
+    setAppliedSearch(searchQuery);
+
     if (!searchQuery.trim()) {
       fetchTravelSessions(1, false);
       return;
     }
 
-    setIsSearching(true);
     searchAllSessions(searchQuery);
   };
 
@@ -1915,12 +1895,6 @@ export default function AttendanceList() {
     fetchTravelSessions(1, false);
   }, [startDate, endDate, selectedUser]);
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      // Search is handled by the search button
-    }
-  }, [searchQuery]);
-
   const filteredSessions = useMemo(() => {
     let filtered = [...travelSessions];
 
@@ -1951,8 +1925,9 @@ export default function AttendanceList() {
       );
     }
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (appliedSearch) {
+      const query = appliedSearch.toLowerCase();
+
       filtered = filtered.filter(
         (session) =>
           session.fullName.toLowerCase().includes(query) ||
@@ -2170,7 +2145,7 @@ export default function AttendanceList() {
           "Total Pauses Count": totalPauses,
           Status:
             group.activeSessions > 0 ? "Has Active Sessions" : "All Completed",
-          Notes: `Excluding first session distance: ${(group.firstSessionDistance / 1000).toFixed(2)} km`,
+          Notes: "All sessions included for all roles",
           sessionDetails,
         };
       });
@@ -2205,14 +2180,14 @@ export default function AttendanceList() {
         "Payable Amount (₹)",
         "Total Sessions",
         "Active Sessions",
-        "Total Distance (km)",
-        "Total Reimbursement(km)",
+        // "Total Distance (km)",
+        // "Total Reimbursement(km)",
         "First Session Distance (km)",
         "Total Farmers Met",
         "Duration (minutes)",
         "Total Pauses Count",
-        "Status",
-        "Notes",
+        // "Status",
+        // "Notes",
       ];
 
       const sessionHeaders: string[] = [];
@@ -2579,85 +2554,119 @@ export default function AttendanceList() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div
-            className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Total Sessions
-                </p>
-                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {isDateFilterActive || selectedUser || searchQuery
-                    ? totalSessions
-                    : totalSessionsCount}
-                </p>
-                {(isDateFilterActive || selectedUser || searchQuery) && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Filtered results (of {totalSessionsCount} total)
-                  </p>
-                )}
-              </div>
-              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
-                <FaListAlt className="text-blue-500 text-xl" />
-              </div>
-            </div>
+        <div className="relative mb-6">
+          {/* Toggle Button - Positioned in top right corner */}
+          <div className="absolute -top-8 right-0 z-10">
+            <button
+              onClick={() => setShowStats(!showStats)}
+              className={`flex items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 ${
+                showStats
+                  ? "bg-lantern-blue-600 hover:bg-blue-900 text-white shadow-lg"
+                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+              }`}
+              title={showStats ? "Hide statistics" : "Show statistics"}
+            >
+              {showStats ? (
+                <>
+                  <FaTimes className="text-sm" />
+                  <span className="text-sm font-medium hidden sm:inline">
+                    Hide Stats
+                  </span>
+                </>
+              ) : (
+                <>
+                  <FaChartLine className="text-sm" />
+                  <span className="text-sm font-medium hidden sm:inline">
+                    Show Stats
+                  </span>
+                </>
+              )}
+            </button>
           </div>
 
-          <div
-            className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Active Sessions
-                </p>
-                <p className="text-2xl font-bold mt-1 text-green-500">
-                  {activeSessions}
-                </p>
+          {/* Stats Cards Grid - Conditionally rendered */}
+          {showStats && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-fadeIn">
+              <div
+                className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Total Sessions
+                    </p>
+                    <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
+                      {isDateFilterActive || selectedUser || searchQuery
+                        ? totalSessions
+                        : totalSessionsCount}
+                    </p>
+                    {(isDateFilterActive || selectedUser || searchQuery) && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        Filtered results (of {totalSessionsCount} total)
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
+                    <FaListAlt className="text-blue-500 text-xl" />
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
-                <FaPlayCircle className="text-green-500 text-xl" />
-              </div>
-            </div>
-          </div>
 
-          <div
-            className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Total Distance
-                </p>
-                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {(totalDistance / 1000).toFixed(1)} km
-                </p>
+              <div
+                className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Active Sessions
+                    </p>
+                    <p className="text-2xl font-bold mt-1 text-green-500">
+                      {activeSessions}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
+                    <FaPlayCircle className="text-green-500 text-xl" />
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
-                <FaRoad className="text-purple-500 text-xl" />
-              </div>
-            </div>
-          </div>
 
-          <div
-            className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Users
-                </p>
-                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                  {users.length}
-                </p>
+              <div
+                className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Total Distance
+                    </p>
+                    <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
+                      {(totalDistance / 1000).toFixed(1)} km
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
+                    <FaRoad className="text-purple-500 text-xl" />
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-600/20 backdrop-blur-sm rounded-xl">
-                <FaUser className="text-orange-500 text-xl" />
+
+              <div
+                className={`${glassmorphismClasses.statCard} rounded-2xl p-4 backdrop-blur-lg transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Users
+                    </p>
+                    <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
+                      {users.length}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-600/20 backdrop-blur-sm rounded-xl">
+                    <FaUser className="text-orange-500 text-xl" />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -2674,18 +2683,13 @@ export default function AttendanceList() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search by name or employee code..."
+                  placeholder="Search by name or emp code..."
                   className={`w-full px-4 py-2 pl-10 pr-24 ${glassmorphismClasses.input} rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-blue-500/30`}
                   value={searchQuery}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setSearchQuery(value);
-
-                    if (!value.trim()) {
-                      fetchTravelSessions(1, false);
-                    }
+                    setSearchQuery(e.target.value);
                   }}
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       handleSearchSubmit();
                     }
@@ -3061,16 +3065,6 @@ export default function AttendanceList() {
                                 <p className="text-lg font-bold text-gray-800 dark:text-white">
                                   {(group.totalDistance / 1000).toFixed(1)} km
                                 </p>
-                                {group.firstSessionDistance > 0 &&
-                                  group.totalSessions > 1 && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                      (Excluding first session:{" "}
-                                      {(
-                                        group.firstSessionDistance / 1000
-                                      ).toFixed(1)}{" "}
-                                      km)
-                                    </p>
-                                  )}
                               </div>
                               <div className="text-center">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -3132,16 +3126,6 @@ export default function AttendanceList() {
                           <p className="text-sm font-semibold text-gray-800 dark:text-white">
                             {(group.totalDistance / 1000).toFixed(2)} km
                           </p>
-                          {group.firstSessionDistance > 0 &&
-                            group.totalSessions > 1 && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Original:{" "}
-                                {(group.originalTotalDistance / 1000).toFixed(
-                                  2,
-                                )}{" "}
-                                km
-                              </p>
-                            )}
                         </div>
 
                         <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
@@ -3204,13 +3188,6 @@ export default function AttendanceList() {
                               session.endTime,
                             );
                             const isActive = !session.endTime;
-                            const normalizedRole = (session.role || "")
-                              .toLowerCase()
-                              .replace(/\s+/g, "");
-
-                            const isFirstSession =
-                              normalizedRole === "fieldemployee" &&
-                              sessionIndex === 0;
 
                             // Check if logs were filtered
                             const logs = sessionLogs[session.sessionId] || [];
@@ -3241,11 +3218,6 @@ export default function AttendanceList() {
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-medium text-gray-800 dark:text-white">
                                           Session #{session.sessionId}
-                                          {isFirstSession && (
-                                            <span className="ml-2 px-2 py-1 backdrop-blur-sm bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-                                              First Session (Excluded)
-                                            </span>
-                                          )}
                                         </span>
                                         {isActive && (
                                           <span className="px-2 py-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
@@ -3281,14 +3253,6 @@ export default function AttendanceList() {
                                           {Math.floor(sessionDuration.hours)}h{" "}
                                           {sessionDuration.minutes}m
                                         </span>
-                                        {isFirstSession && (
-                                          <>
-                                            <span>•</span>
-                                            <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                              Distance excluded from total
-                                            </span>
-                                          </>
-                                        )}
                                       </div>
                                     </div>
                                   </div>

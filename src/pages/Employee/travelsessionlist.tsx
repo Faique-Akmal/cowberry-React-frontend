@@ -63,7 +63,7 @@ import {
   detectPauses as detectPausesHelper,
   filterAndMapLogsToSession,
 } from "../../utils/travelSessionHelpers";
-import { exportTravelSessionsToExcel } from "../../utils/exportTravelSessionsToExcel";
+import { exportAllTravelSessionsFromAPI } from "../../utils/exportTravelSessionsToExcel";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -528,72 +528,31 @@ export default function AttendanceList() {
   };
 
   // ---------------------------------------------------------------------
-  // Export to Excel — reuses cached session/farmer data from the store
-  // wherever possible (loadFarmerDataForGroups hits farmerDataCache first).
+  // Export to Excel — pulls sessions + farmer data in a single call from
+  // the all-in-one export API, instead of grouping cached sessions and
+  // loading farmer data per group.
   // ---------------------------------------------------------------------
   const exportToCSV = async () => {
+    if (!startDate || !endDate) {
+      alert("Please select both a start date and an end date to export.");
+      return;
+    }
+
     try {
       setIsExporting(true);
 
-      let sessionsToExport = [...allSessions];
-
-      if (startDate || endDate) {
-        sessionsToExport = sessionsToExport.filter((session) => {
-          const sessionDate = formatDateOnly(session.startTime);
-          if (startDate && !endDate) return sessionDate >= startDate;
-          if (!startDate && endDate) return sessionDate <= endDate;
-          if (startDate && endDate)
-            return sessionDate >= startDate && sessionDate <= endDate;
-          return true;
-        });
-      }
-
-      if (selectedUser) {
-        sessionsToExport = sessionsToExport.filter(
-          (s) => s.userId.toString() === selectedUser,
-        );
-      }
-
-      if (appliedSearch) {
-        const query = appliedSearch.toLowerCase();
-        sessionsToExport = sessionsToExport.filter(
-          (s) =>
-            s.fullName.toLowerCase().includes(query) ||
-            s.employeeCode.toLowerCase().includes(query),
-        );
-      }
-
-      if (sessionsToExport.length === 0) {
-        alert("No travel sessions found with the current filters.");
-        return;
-      }
-
-      const groupedData = groupSessionsByUserAndDate(
-        sessionsToExport,
-        sessionLogs,
-      );
-
-      if (groupedData.length === 0) {
-        alert("No grouped sessions found after processing.");
-        return;
-      }
-
-      const farmerDataByKey = await loadFarmerDataForGroups(groupedData);
-
-      await exportTravelSessionsToExcel(
-        groupedData,
-        farmerDataByKey,
-        detectPauses,
-        {
-          startDate,
-          endDate,
-          selectedUser,
-          appliedSearch,
-        },
-      );
-    } catch (error) {
+      await exportAllTravelSessionsFromAPI(startDate, endDate, {
+        startDate,
+        endDate,
+        selectedUser,
+        appliedSearch,
+      });
+    } catch (error: any) {
       console.error("Export failed:", error);
-      alert("Failed to export data. Please check console for details.");
+      alert(
+        error?.message ||
+          "Failed to export data. Please check console for details.",
+      );
     } finally {
       setIsExporting(false);
     }
@@ -660,66 +619,82 @@ export default function AttendanceList() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               {lastUpdateTime && (
-                <span className="flex items-center gap-1 backdrop-blur-sm bg-white/20 dark:bg-gray-800/30 px-3 py-1 rounded-lg">
-                  <FaClock className="text-xs" />
+                <span className="flex items-center gap-1 backdrop-blur-sm bg-white/20 dark:bg-gray-800/30 px-3 py-1 rounded-lg whitespace-nowrap">
+                  <FaClock className="text-xs flex-shrink-0" />
                   Updated: {lastUpdateTime.toLocaleTimeString()}
                 </span>
               )}
             </div>
 
-            <button
-              onClick={exportToCSV}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isExporting ? "bg-gray-400" : "bg-lantern-blue-600 hover:bg-lantern-yellow-400"} text-white transition-all`}
-              title="Export grouped sessions with detailed farmer data"
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <FaSync className="animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <FaFileCsv />
-                  Export To CSV
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={exportToCSV}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                  isExporting
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-lantern-blue-600 hover:bg-lantern-yellow-400"
+                } text-white transition-all whitespace-nowrap`}
+                title="Export grouped sessions with detailed farmer data"
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <FaSync className="animate-spin flex-shrink-0" />
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaFileCsv className="flex-shrink-0" />
+                    <span>Export To CSV</span>
+                  </>
+                )}
+              </button>
 
-            <button
-              onClick={manualRefresh}
-              disabled={isLoadingSessions}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all`}
-              title="Force refresh (ignores cache)"
-            >
-              <FaSync className={isLoadingSessions ? "animate-spin" : ""} />
-              Refresh
-            </button>
+              <button
+                onClick={manualRefresh}
+                disabled={isLoadingSessions}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all whitespace-nowrap ${
+                  isLoadingSessions ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                title="Force refresh (ignores cache)"
+              >
+                <FaSync
+                  className={
+                    isLoadingSessions
+                      ? "animate-spin flex-shrink-0"
+                      : "flex-shrink-0"
+                  }
+                />
+                <span>Refresh</span>
+              </button>
 
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                autoRefresh
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
-              } transition-all`}
-              title={autoRefresh ? "Auto-refresh is ON" : "Auto-refresh is OFF"}
-            >
-              {autoRefresh ? (
-                <>
-                  <FaSync className="animate-spin" />
-                  Auto Refresh (ON)
-                </>
-              ) : (
-                <>
-                  <FaSync />
-                  Auto Refresh (OFF)
-                </>
-              )}
-            </button>
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                  autoRefresh
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                } transition-all whitespace-nowrap`}
+                title={
+                  autoRefresh ? "Auto-refresh is ON" : "Auto-refresh is OFF"
+                }
+              >
+                {autoRefresh ? (
+                  <>
+                    <FaSync className="animate-spin flex-shrink-0" />
+                    <span>Auto Refresh (ON)</span>
+                  </>
+                ) : (
+                  <>
+                    <FaSync className="flex-shrink-0" />
+                    <span>Auto Refresh (OFF)</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -153,3 +153,52 @@ export interface SessionLogsResponse {
   };
   data: LocationLog[];
 }
+
+export interface AllTravelSessionsResponse {
+  success: boolean;
+  users: {
+    count: number;
+    data: UserTravelSessions[];
+  };
+}
+
+export interface UserTravelSessions {
+  user: {
+    id: number;
+    username: string;
+    fullName: string;
+    email: string;
+    employeeCode: string;
+    role: string;
+  };
+  sessions: AllTravelSessionItem[];
+}
+
+export interface AllTravelSessionItem {
+  sessionId: number;
+  user: {
+    id: number;
+    username: string;
+    fullName: string;
+    email: string;
+    employeeCode: string;
+    role: string;
+  };
+  startTime: string;
+  endTime: string;
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number;
+  endLongitude: number;
+  startDescription: string;
+  endDescription: string;
+  status: string;
+  isActive: boolean;
+  totalDistance: number;
+  date: string;
+  durationMinutes: number;
+  farmerData: {
+    count: number;
+    data: FarmerData[];
+  };
+}

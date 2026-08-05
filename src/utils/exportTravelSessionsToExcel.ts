@@ -40,9 +40,8 @@ interface ExportRow {
   "Payable Distance(km)": number;
   "Payable Amount (₹)": number;
   "Total Sessions": number;
-  "Active Sessions": number;
-  "First Session Distance (km)": string;
-  "Total Farmers Met": number;
+
+  "No. of Events": number;
   "Duration (minutes)": number;
   sessionDetails: SessionDetail[];
 }
@@ -147,9 +146,8 @@ async function buildAndDownloadWorkbook(
     "Payable Distance(km)",
     "Payable Amount (₹)",
     "Total Sessions",
-    "Active Sessions",
-    "First Session Distance (km)",
-    "Total Farmers Met",
+
+    "No. of Events",
     "Duration (minutes)",
   ];
 
@@ -162,8 +160,8 @@ async function buildAndDownloadWorkbook(
       `Session ${i} End Time`,
       `Session ${i} End Description`,
       `Session ${i} Distance (km)`,
-      `Session ${i} Farmers Count`,
-      `Session ${i} Farmer Descriptions`,
+
+      `Session ${i}  Event Description`,
     );
   }
 
@@ -201,8 +199,8 @@ async function buildAndDownloadWorkbook(
         rowData[`${prefix} End Time`] = session.sessionEndTime;
         rowData[`${prefix} End Description`] = session.endDescription || "";
         rowData[`${prefix} Distance (km)`] = session.sessionDistance;
-        rowData[`${prefix} Farmers Count`] = session.farmersCount;
-        rowData[`${prefix} Farmer Descriptions`] = session.farmerDescriptions;
+
+        rowData[`${prefix}  Event Description`] = session.farmerDescriptions;
       });
     }
 
@@ -238,7 +236,7 @@ async function buildAndDownloadWorkbook(
 export async function exportTravelSessionsToExcel(
   groupedData: GroupedSession[],
   farmerDataByKey: Record<string, any>,
-  detectPauses: (sessionId: number) => { durationMinutes: number }[],
+
   filters: ExportFilters = {},
 ): Promise<void> {
   if (groupedData.length === 0) {
@@ -274,7 +272,7 @@ export async function exportTravelSessionsToExcel(
         const farmerDescriptions = farmers
           .map(
             (farmer: any, farmerIndex: number) =>
-              `Farmer ${farmerIndex + 1}: ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
+              ` ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
           )
           .join("; ");
 
@@ -312,11 +310,8 @@ export async function exportTravelSessionsToExcel(
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
       "Payable Amount (₹)": reimbursementAmount,
       "Total Sessions": group.totalSessions,
-      "Active Sessions": group.activeSessions,
-      "First Session Distance (km)": (
-        group.firstSessionDistance / 1000
-      ).toFixed(2),
-      "Total Farmers Met": totalFarmersMet,
+
+      "No. of Events": totalFarmersMet,
       "Duration (minutes)": totalDuration,
       sessionDetails,
     };
@@ -500,9 +495,8 @@ function buildRowsFromApiData(
         "Payable Distance(km)": "0.00",
         "Payable Amount (₹)": "0.00",
         "Total Sessions": 0,
-        "Active Sessions": 0,
-        "First Session Distance (km)": "0.00",
-        "Total Farmers Met": 0,
+
+        "No. of Events": 0,
         "Duration (minutes)": 0,
         sessionDetails: [],
       };
@@ -535,7 +529,7 @@ function buildRowsFromApiData(
         const farmerDescriptions = farmers
           .map(
             (farmer, farmerIndex) =>
-              `Farmer ${farmerIndex + 1}: ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
+              ` ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
           )
           .join("; ");
 
@@ -577,9 +571,8 @@ function buildRowsFromApiData(
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
       "Payable Amount (₹)": reimbursementAmount,
       "Total Sessions": sortedSessions.length,
-      "Active Sessions": sortedSessions.filter((s) => !s.endTime).length,
-      "First Session Distance (km)": (firstSessionDistance / 1000).toFixed(2),
-      "Total Farmers Met": totalFarmersMet,
+
+      "No. of Events": totalFarmersMet,
       "Duration (minutes)": totalDuration,
       sessionDetails,
     };

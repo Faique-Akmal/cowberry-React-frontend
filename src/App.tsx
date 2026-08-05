@@ -28,7 +28,7 @@ import { Toaster } from "react-hot-toast";
 import RegistrationPage from "./pages/Employee/RegistrationPage";
 
 import AttendanceGuard from "./guards/AttandanceGuard";
-import AttendanceList from "./pages/Employee/locationFetcherEmployee";
+import AttendanceList from "./pages/Employee/travelsessionlist";
 import AllUsers from "./pages/Tables/BasicTables";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import ThemeCustomizer from "./themes/themecutomizer";

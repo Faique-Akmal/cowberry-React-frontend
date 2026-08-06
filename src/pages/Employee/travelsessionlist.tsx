@@ -309,19 +309,19 @@ export default function TravelSessions() {
   // ---------------------------------------------------------------------
   // Auto-refresh
   // ---------------------------------------------------------------------
-  useEffect(() => {
-    if (autoRefresh) {
-      locationIntervalRef.current = setInterval(() => {
-        fetchActiveSessionsOnly();
-      }, AUTO_REFRESH_INTERVAL_MS);
-    }
-    return () => {
-      if (locationIntervalRef.current) {
-        clearInterval(locationIntervalRef.current);
-        locationIntervalRef.current = null;
-      }
-    };
-  }, [autoRefresh, fetchActiveSessionsOnly]);
+  // useEffect(() => {
+  //   if (autoRefresh) {
+  //     locationIntervalRef.current = setInterval(() => {
+  //       fetchActiveSessionsOnly();
+  //     }, AUTO_REFRESH_INTERVAL_MS);
+  //   }
+  //   return () => {
+  //     if (locationIntervalRef.current) {
+  //       clearInterval(locationIntervalRef.current);
+  //       locationIntervalRef.current = null;
+  //     }
+  //   };
+  // }, [autoRefresh, fetchActiveSessionsOnly]);
 
   const manualRefresh = () => refreshSessions();
 
@@ -740,7 +740,7 @@ export default function TravelSessions() {
                   <span>Refresh</span>
                 </button>
 
-                <button
+                {/* <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
                     autoRefresh
@@ -762,7 +762,7 @@ export default function TravelSessions() {
                       <span>Auto Refresh (OFF)</span>
                     </>
                   )}
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

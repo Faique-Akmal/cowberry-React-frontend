@@ -28,17 +28,19 @@ interface SessionDetail {
 }
 
 interface ExportRow {
-  fullName: string;
   "Employee Code": string;
+  fullName: string;
+
   Department: string;
   Role: string;
   "Allocated Area": string;
   Date: string;
-  "Formatted Date": string;
-  "Start Time": string;
-  "End Time": string;
+  // "Formatted Date": string;
   "Payable Distance(km)": number;
   "Payable Amount (₹)": number;
+  "Start Time": string;
+  "End Time": string;
+
   "Total Sessions": number;
 
   "No. of Events": number;
@@ -134,17 +136,19 @@ async function buildAndDownloadWorkbook(
   const sheet = workbook.addWorksheet("Travel Sessions");
 
   const baseHeaders = [
-    "FullName",
     "Employee Code",
+    "Name",
+
     "Department",
     "Role",
     "Allocated Area",
     "Date",
-    "Formatted Date",
-    "Start Time",
-    "End Time",
+    // "Formatted Date",
     "Payable Distance(km)",
     "Payable Amount (₹)",
+    "Start Time",
+    "End Time",
+
     "Total Sessions",
 
     "No. of Events",
@@ -293,18 +297,19 @@ export async function exportTravelSessionsToExcel(
     );
 
     return {
-      fullName: group.fullName,
       "Employee Code": group.employeeCode,
+      fullName: group.fullName,
+
       Department: group.sessions[0]?.department || "N/A",
       Role: group.sessions[0]?.role || "N/A",
       "Allocated Area": group.sessions[0]?.allocatedArea || "N/A",
       Date: group.date,
-      "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-        weekday: "short",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
+      // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
+      //   weekday: "short",
+      //   year: "numeric",
+      //   month: "short",
+      //   day: "numeric",
+      // }),
       "Start Time": formatDateTime(group.startTime),
       "End Time": formatDateTime(group.endTime),
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
@@ -478,22 +483,24 @@ function buildRowsFromApiData(
 
     if (sortedSessions.length === 0) {
       return {
-        FullName: group.fullName,
         "Employee Code": group.employeeCode,
+
+        Name: group.fullName,
         Department: group.departmentName,
         Role: group.role,
         "Allocated Area": group.allocatedArea,
         Date: group.date,
-        "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-          weekday: "short",
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }),
-        "Start Time": "N/A",
-        "End Time": "N/A",
+        // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
+        //   weekday: "short",
+        //   year: "numeric",
+        //   month: "short",
+        //   day: "numeric",
+        // }),
         "Payable Distance(km)": "0.00",
         "Payable Amount (₹)": "0.00",
+        "Start Time": "N/A",
+        "End Time": "N/A",
+
         "Total Sessions": 0,
 
         "No. of Events": 0,
@@ -554,22 +561,24 @@ function buildRowsFromApiData(
     );
 
     return {
-      FullName: group.fullName,
       "Employee Code": group.employeeCode,
+      Name: group.fullName,
+
       Department: group.departmentName,
       Role: group.role,
       "Allocated Area": group.allocatedArea,
       Date: group.date,
-      "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-        weekday: "short",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
-      "Start Time": formatDateTime(group.startTime),
-      "End Time": formatDateTime(group.endTime),
+      // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
+      //   weekday: "short",
+      //   year: "numeric",
+      //   month: "short",
+      //   day: "numeric",
+      // }),
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
       "Payable Amount (₹)": reimbursementAmount,
+      "Start Time": formatDateTime(group.startTime),
+      "End Time": formatDateTime(group.endTime),
+
       "Total Sessions": sortedSessions.length,
 
       "No. of Events": totalFarmersMet,

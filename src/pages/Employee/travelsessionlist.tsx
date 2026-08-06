@@ -446,10 +446,12 @@ export default function TravelSessions() {
   const closeMultiSessionMap = () => setMultiSessionMapView(null);
 
   // ---------------------------------------------------------------------
-  // Farmer / travel detail modal
+  // Updated Farmer / travel detail modal function
+  // Now accepts sessionId to fetch specific session details
   // ---------------------------------------------------------------------
   const handleFetchTravelData = async (
     userId: string,
+    sessionId?: string,
     sessionDate?: string,
   ) => {
     if (!userId) {
@@ -463,48 +465,99 @@ export default function TravelSessions() {
     if (sessionDate) setSelectedSessionDate(sessionDate);
 
     try {
-      const params: any = { userId };
-      if (sessionDate) {
-        params.startDate = sessionDate;
-        params.endDate = sessionDate;
+      let response;
+
+      // If sessionId is provided, fetch specific session details
+      if (sessionId) {
+        response = await API.get(
+          `/tracking/locationlog/get_travel_session/${sessionId}`,
+          { params: { userId } },
+        );
       } else {
-        if (startDateStr) params.startDate = startDateStr;
-        if (endDateStr) params.endDate = endDateStr;
+        // Original logic for fetching all sessions with filters
+        const params: any = { userId };
+        if (sessionDate) {
+          params.startDate = sessionDate;
+          params.endDate = sessionDate;
+        } else {
+          if (startDateStr) params.startDate = startDateStr;
+          if (endDateStr) params.endDate = endDateStr;
+        }
+
+        response = await API.get(`/tracking/locationlog/get_travel_sessions`, {
+          params,
+        });
       }
 
-      const response = await API.get(
-        `/tracking/locationlog/get_travel_sessions`,
-        { params },
-      );
       const data = response.data;
 
-      if (data.success && data.sessions && data.sessions.data) {
-        const allSessionsData: FarmerTravelData[] = data.sessions.data.map(
-          (session: any) => ({
-            sessionId: session.sessionId,
-            userId: session.userId || data.user?.id,
-            startTime: session.startTime,
-            endTime: session.endTime,
-            startLatitude: session.startLatitude,
-            startLongitude: session.startLongitude,
-            endLatitude: session.endLatitude,
-            endLongitude: session.endLongitude,
-            startDescription: session.startDescription || "",
-            endDescription: session.endDescription || "",
-            status: session.status,
-            isActive: session.isActive,
-            totalDistance: session.totalDistance,
-            date: session.date,
-            durationMinutes: session.durationMinutes,
-            startOdometerImage: session.startOdometerImage || "",
-            endOdometerImage: session.endOdometerImage || "",
-            locationLogs: session.locationLogs,
-            farmerData: session.farmerData,
-          }),
-        );
+      // Handle the response for both single and multiple sessions
+      if (data.success) {
+        let sessionsData: FarmerTravelData[] = [];
 
-        setFarmerTravelData(allSessionsData);
-        setShowFarmerDataModal(true);
+        if (sessionId) {
+          // Single session response
+          const session = data.session || data.data;
+          if (session) {
+            sessionsData = [
+              {
+                sessionId: session.sessionId,
+                userId: session.userId || data.user?.id,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                startLatitude: session.startLatitude,
+                startLongitude: session.startLongitude,
+                endLatitude: session.endLatitude,
+                endLongitude: session.endLongitude,
+                startDescription: session.startDescription || "",
+                endDescription: session.endDescription || "",
+                status: session.status,
+                isActive: session.isActive,
+                totalDistance: session.totalDistance,
+                date: session.date,
+                durationMinutes: session.durationMinutes,
+                startOdometerImage: session.startOdometerImage || "",
+                endOdometerImage: session.endOdometerImage || "",
+                locationLogs: session.locationLogs,
+                farmerData: session.farmerData,
+              },
+            ];
+          }
+        } else {
+          // Multiple sessions response
+          if (data.sessions && data.sessions.data) {
+            sessionsData = data.sessions.data.map((session: any) => ({
+              sessionId: session.sessionId,
+              userId: session.userId || data.user?.id,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              startLatitude: session.startLatitude,
+              startLongitude: session.startLongitude,
+              endLatitude: session.endLatitude,
+              endLongitude: session.endLongitude,
+              startDescription: session.startDescription || "",
+              endDescription: session.endDescription || "",
+              status: session.status,
+              isActive: session.isActive,
+              totalDistance: session.totalDistance,
+              date: session.date,
+              durationMinutes: session.durationMinutes,
+              startOdometerImage: session.startOdometerImage || "",
+              endOdometerImage: session.endOdometerImage || "",
+              locationLogs: session.locationLogs,
+              farmerData: session.farmerData,
+            }));
+          }
+        }
+
+        if (sessionsData.length > 0) {
+          setFarmerTravelData(sessionsData);
+          setShowFarmerDataModal(true);
+        } else {
+          setFarmerDataError("No travel data found for the specified session");
+          setFarmerTravelData([]);
+          setShowFarmerDataModal(true);
+        }
       } else {
         setFarmerDataError(data.message || "No travel data found");
         setFarmerTravelData([]);
@@ -828,23 +881,19 @@ export default function TravelSessions() {
               {/* Search Employee */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <FaSearch className="inline mr-2" />
                   Search Employee
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Name or Emp code..."
-                    className="w-full px-4 py-2 pl-10 pr-24 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-500/30"
+                    className="w-full px-4 py-2 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-500/30"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSearchSubmit();
                     }}
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                    <FaSearch className="text-sm" />
-                  </div>
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {searchQuery && (
                       <button
@@ -860,7 +909,6 @@ export default function TravelSessions() {
                       className="px-3 py-1.5  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
                     >
                       <FaSearch className="text-xs" />
-                      {/* <span className="hidden sm:inline">Search</span> */}
                     </button>
                   </div>
                 </div>
@@ -1161,17 +1209,44 @@ export default function TravelSessions() {
                           </p>
                         </div>
 
-                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
-                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                            <FaMapPin className="text-sm" />
-                            <span className="text-xs font-medium">
-                              Total Points
-                            </span>
-                          </div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {group.totalPoints}
-                          </p>
-                        </div>
+                        {/* "Details" button */}
+                        {/* <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center">
+                          <button
+                            onClick={() =>
+                              handleFetchTravelData(
+                                group.userId.toString(),
+                                undefined,
+                                group.date,
+                              )
+                            }
+                            className={`w-full px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                              isLoadingFarmerData &&
+                              selectedUserForFarmerData ===
+                                group.userId.toString()
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                            } text-white`}
+                            disabled={
+                              isLoadingFarmerData &&
+                              selectedUserForFarmerData ===
+                                group.userId.toString()
+                            }
+                          >
+                            {isLoadingFarmerData &&
+                            selectedUserForFarmerData ===
+                              group.userId.toString() ? (
+                              <>
+                                <FaSpinner className="animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                <FaInfoCircle className="text-lg" />
+                                <span className="font-semibold">Details</span>
+                              </>
+                            )}
+                          </button>
+                        </div> */}
                       </div>
 
                       <div className="mb-6">
@@ -1259,10 +1334,11 @@ export default function TravelSessions() {
                                   </div>
 
                                   <div className="flex gap-2">
-                                    <button
+                                    {/* <button
                                       onClick={() =>
                                         handleFetchTravelData(
                                           session.userId.toString(),
+                                          session.sessionId.toString(),
                                           group.date,
                                         )
                                       }
@@ -1292,7 +1368,7 @@ export default function TravelSessions() {
                                           Details
                                         </>
                                       )}
-                                    </button>
+                                    </button> */}
                                     <button
                                       onClick={() => openMap(session)}
                                       className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
@@ -1308,10 +1384,10 @@ export default function TravelSessions() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex flex-col sm:flex-row gap-5">
                         <button
                           onClick={() => openMultiSessionMap(group)}
-                          className="flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-lantern-blue-600 hover:bg-blue-600 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                          className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-lantern-blue-600 hover:bg-blue-600 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
                         >
                           <FaLayerGroup className="text-xl" />
                           View All Sessions on Map
@@ -1320,6 +1396,44 @@ export default function TravelSessions() {
                             {group.sessions.length > 1 ? "s" : ""}
                           </span>
                         </button>
+
+                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl px-6 border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center">
+                          <button
+                            onClick={() =>
+                              handleFetchTravelData(
+                                group.userId.toString(),
+                                undefined,
+                                group.date,
+                              )
+                            }
+                            className={`w-full px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                              isLoadingFarmerData &&
+                              selectedUserForFarmerData ===
+                                group.userId.toString()
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                            } text-white`}
+                            disabled={
+                              isLoadingFarmerData &&
+                              selectedUserForFarmerData ===
+                                group.userId.toString()
+                            }
+                          >
+                            {isLoadingFarmerData &&
+                            selectedUserForFarmerData ===
+                              group.userId.toString() ? (
+                              <>
+                                <FaSpinner className="animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                <FaInfoCircle className="text-lg" />
+                                <span className="font-semibold">Details</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1443,17 +1557,40 @@ export default function TravelSessions() {
                         onClick={() =>
                           handleFetchTravelData(
                             session.userId.toString(),
+                            session.sessionId.toString(),
                             formatDateOnly(session.startTime),
                           )
                         }
-                        className="px-3 py-2  bg-lantern-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
+                        className={`px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${
+                          isLoadingFarmerData &&
+                          selectedUserForFarmerData ===
+                            session.userId.toString()
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-lantern-blue-600 hover:bg-blue-700"
+                        } text-white`}
+                        disabled={
+                          isLoadingFarmerData &&
+                          selectedUserForFarmerData ===
+                            session.userId.toString()
+                        }
                       >
-                        <FaInfoCircle />
-                        Details
+                        {isLoadingFarmerData &&
+                        selectedUserForFarmerData ===
+                          session.userId.toString() ? (
+                          <>
+                            <FaSpinner className="animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <FaInfoCircle />
+                            Details
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => openMap(session)}
-                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
+                        className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
                       >
                         <FaEye />
                         View Map
@@ -1466,7 +1603,7 @@ export default function TravelSessions() {
           </div>
         )}
 
-        {/* Farmer Data Modal */}
+        {/* Farmer Data Modal - Same as before */}
         {showFarmerDataModal && (
           <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
             <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">
@@ -1799,7 +1936,7 @@ export default function TravelSessions() {
           </div>
         )}
 
-        {/* Multi-Session Map Modal */}
+        {/* Multi-Session Map Modal - Same as before */}
         {multiSessionMapView && (
           <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
             <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">
@@ -2249,7 +2386,7 @@ export default function TravelSessions() {
           </div>
         )}
 
-        {/* Single Session Map Modal */}
+        {/* Single Session Map Modal - Same as before */}
         {mapView && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
             <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">

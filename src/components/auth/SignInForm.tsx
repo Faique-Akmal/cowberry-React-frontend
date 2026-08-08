@@ -804,7 +804,7 @@ export default function SignInForm() {
 
               <h1 className="text-center text-2xl font-bold text-gray-900 dark:text-white">
                 {t("Welcome to ")}
-                <span className="text-blue-700">Lantern 360</span>
+                <span className="text-lantern-blue-600">Lantern 360</span>
               </h1>
 
               <div className="flex items-center justify-center gap-2 my-5">
@@ -880,7 +880,7 @@ export default function SignInForm() {
                   <button
                     type="button"
                     onClick={openForgotModal}
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-red-600 hover:underline"
                     disabled={isLoading}
                   >
                     {t("Forgot Password?")}

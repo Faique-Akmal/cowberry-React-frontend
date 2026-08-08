@@ -508,7 +508,9 @@ export default function TravelSessionsMap({
                                 </div>
                                 <div>
                                   <strong>Speed:</strong>{" "}
-                                  {log.speed ? `${log.speed} km/h` : "N/A"}
+                                  {log.speed
+                                    ? `${(log.speed * 3.6).toFixed(2)} km/h`
+                                    : "N/A"}
                                 </div>
                                 <div>
                                   <strong>Battery:</strong>{" "}
@@ -905,7 +907,9 @@ export default function TravelSessionsMap({
                                 </div>
                                 <div>
                                   <strong>Speed:</strong>{" "}
-                                  {log.speed ? `${log.speed} km/h` : "N/A"}
+                                  {log.speed
+                                    ? `${(log.speed * 3.6).toFixed(2)} km/h`
+                                    : "N/A"}
                                 </div>
                                 <div>
                                   <strong>Status:</strong>{" "}

@@ -191,11 +191,6 @@ layer(base);
 }
 
 /* Add these to your global styles for better responsive behavior */
-@media (max-width: 1024px) {
-  .lg\\:flex {
-    display: none !important;
-  }
-}
 
 /* Smooth image transitions */
 .carousel-image {

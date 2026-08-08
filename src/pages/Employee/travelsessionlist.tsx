@@ -1397,7 +1397,7 @@ export default function TravelSessions() {
                           </span>
                         </button>
 
-                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl px-6 border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center">
+                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl px-6 border border-lantern-blue-600 dark:border-gray-700/50 flex items-center justify-center">
                           <button
                             onClick={() =>
                               handleFetchTravelData(
@@ -1606,8 +1606,11 @@ export default function TravelSessions() {
         {/* Farmer Data Modal - Same as before */}
         {showFarmerDataModal && (
           <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">
-              <div className="bg-lantern-blue-600 p-4 text-white flex-shrink-0">
+            <div
+              className={`${glassmorphismClasses.modal} w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col`}
+            >
+              {/* Modal Header */}
+              <div className="bg-lantern-blue-600 backdrop-blur-sm p-2 text-white flex-shrink-0">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg flex-shrink-0">
@@ -1619,7 +1622,14 @@ export default function TravelSessions() {
                       </h2>
                       <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                         <span className="truncate backdrop-blur-sm bg-white/10 px-2 py-1 rounded">
-                          User ID: {selectedUserForFarmerData}
+                          Emp Code:{" "}
+                          {
+                            users.find(
+                              (u) =>
+                                u.userId.toString() ===
+                                selectedUserForFarmerData,
+                            )?.employeeCode
+                          }
                         </span>
                         {users.find(
                           (u) =>
@@ -1634,7 +1644,7 @@ export default function TravelSessions() {
                                   (u) =>
                                     u.userId.toString() ===
                                     selectedUserForFarmerData,
-                                )?.username
+                                )?.fullName
                               }
                             </span>
                           </>
@@ -1676,6 +1686,7 @@ export default function TravelSessions() {
                 </div>
               </div>
 
+              {/* Modal Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 {isLoadingFarmerData ? (
                   <div className="flex items-center justify-center h-64">
@@ -1708,18 +1719,19 @@ export default function TravelSessions() {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {/* Summary Stats */}
                     <div className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/10 dark:border-gray-700/50">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                          <p className="text-sm text-white dark:text-gray-300">
                             Total Sessions
                           </p>
-                          <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                          <p className="text-2xl font-bold text-white">
                             {farmerTravelData.length}
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                          <p className="text-sm text-white dark:text-gray-300">
                             Active Sessions
                           </p>
                           <p className="text-2xl font-bold text-green-500">
@@ -1727,7 +1739,7 @@ export default function TravelSessions() {
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                          <p className="text-sm text-white dark:text-gray-300">
                             Total Distance
                           </p>
                           <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -1741,7 +1753,7 @@ export default function TravelSessions() {
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                          <p className="text-sm text-white dark:text-gray-300">
                             Total Events
                           </p>
                           <p className="text-2xl font-bold text-orange-500">
@@ -1754,7 +1766,8 @@ export default function TravelSessions() {
                       </div>
                     </div>
 
-                    {farmerTravelData.map((session) => {
+                    {/* Sessions List */}
+                    {farmerTravelData.map((session, index) => {
                       const duration = calculateDuration(
                         session.startTime,
                         session.endTime,
@@ -1764,13 +1777,13 @@ export default function TravelSessions() {
                       return (
                         <div
                           key={session.sessionId}
-                          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-700/50 mb-6"
+                          className={`${glassmorphismClasses.card} rounded-2xl overflow-hidden backdrop-blur-lg mb-6`}
                         >
-                          <div className="bg-gradient-to-r from-gray-50/50 to-gray-100/50 dark:from-gray-700/30 dark:to-gray-600/30 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                          <div className="bg-gradient-to-r from-gray-500/10 via-gray-600/10 to-gray-700/10 px-6 py-4 border-b border-white/10 dark:border-gray-700/50">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                               <div className="flex items-center gap-3">
-                                <div className="bg-lantern-blue-600 p-2 rounded-xl shadow-lg">
-                                  <FaRoute className="text-white" />
+                                <div className=" backdrop-blur-sm p-2 rounded-xl">
+                                  <FaRoute className="text-lantern-blue-600 " />
                                 </div>
                                 <div>
                                   <h3 className="font-bold text-lg text-gray-800 dark:text-white">
@@ -1806,8 +1819,9 @@ export default function TravelSessions() {
                           </div>
 
                           <div className="p-6">
+                            {/* Session Details Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                              <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
                                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
                                   <FaClock />
                                   <span className="text-sm font-medium">
@@ -1819,7 +1833,7 @@ export default function TravelSessions() {
                                 </p>
                               </div>
 
-                              <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
                                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
                                   <FaRoad />
                                   <span className="text-sm font-medium">
@@ -1831,47 +1845,55 @@ export default function TravelSessions() {
                                 </p>
                               </div>
 
-                              <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
                                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                                  <FaUser className="text-blue-600" />
+                                  <FaUser className="text-lantern-blue-600" />
                                   <span className="text-sm font-medium">
                                     Events
                                   </span>
                                 </div>
-                                <p className="text-lg font-bold text-blue-600">
+                                <p className="text-lg font-bold text-lantern-blue-600">
                                   {farmerCount}
+                                </p>
+                              </div>
+
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+                                  <FaMapPin />
+                                  <span className="text-sm font-medium">
+                                    Location Logs
+                                  </span>
+                                </div>
+                                <p className="text-lg font-bold text-blue-500">
+                                  {session.locationLogs?.count || 0}
                                 </p>
                               </div>
                             </div>
 
+                            {/* Odometer Images Section */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                               <div>
-                                <h4 className="text-md font-semibold p-2 text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                   Start Odometer
                                 </h4>
                                 {renderOdometerImage(
                                   session.startOdometerImage,
                                 )}
-                                <div className="mt-2 border p-2 border-gray-300/20 dark:border-gray-600/30 pt-2">
-                                  <p>{session.startDescription}</p>
-                                </div>
                               </div>
                               <div>
-                                <h4 className="text-md font-semibold p-2 text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                   End Odometer
                                 </h4>
                                 {renderOdometerImage(session.endOdometerImage)}
-                                <div className="mt-2 border p-2 border-gray-300/20 dark:border-gray-600/30 pt-2">
-                                  <p>{session.endDescription}</p>
-                                </div>
                               </div>
                             </div>
 
+                            {/* Farmer Data Section */}
                             {farmerCount > 0 && session.farmerData?.data && (
                               <div className="mb-6">
                                 <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                                  <div className="p-2 backdrop-blur-sm rounded-lg">
-                                    <FaUser className="text-blue-600" />
+                                  <div className="p-2  backdrop-blur-sm rounded-lg">
+                                    <FaUser className="text-lantern-blue-600" />
                                   </div>
                                   Events in this session ({farmerCount})
                                 </h4>
@@ -1880,7 +1902,7 @@ export default function TravelSessions() {
                                     (farmer, farmerIndex) => (
                                       <div
                                         key={farmer.id || farmerIndex}
-                                        className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50"
+                                        className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50"
                                       >
                                         <div className="flex justify-between items-start mb-3">
                                           <div>
@@ -1893,7 +1915,7 @@ export default function TravelSessions() {
                                               {formatDateTime(farmer.createdAt)}
                                             </p>
                                           </div>
-                                          <span className="px-2 py-1 backdrop-blur-sm border border-purple-400/30 text-blue-600 dark:text-purple-400 text-xs font-semibold rounded-full">
+                                          <span className="px-2 py-1 backdrop-blur-sm  border border-purple-400/30 text-lantern-blue-600 dark:text-purple-400 text-xs font-semibold rounded-full">
                                             ID: {farmer.id}
                                           </span>
                                         </div>
@@ -1935,7 +1957,6 @@ export default function TravelSessions() {
             </div>
           </div>
         )}
-
         {/* Multi-Session Map Modal - Same as before */}
         {multiSessionMapView && (
           <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
@@ -2363,7 +2384,7 @@ export default function TravelSessions() {
                                         <div>
                                           <strong>Speed:</strong>{" "}
                                           {log.speed
-                                            ? `${log.speed} km/h`
+                                            ? `${(log.speed * 3.6).toFixed(2)} km/h`
                                             : "N/A"}
                                         </div>
                                         <div>
@@ -2388,7 +2409,7 @@ export default function TravelSessions() {
 
         {/* Single Session Map Modal - Same as before */}
         {mapView && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-white/40 backdrop-blur-xl flex items-center justify-center p-4">
             <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">
               <div className="bg-lantern-blue-600 p-4 sm:p-6 text-white flex-shrink-0">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
@@ -2720,7 +2741,9 @@ export default function TravelSessions() {
                                     </div>
                                     <div>
                                       <strong>Speed:</strong>{" "}
-                                      {log.speed ? `${log.speed} km/h` : "N/A"}
+                                      {log.speed
+                                        ? `${(log.speed * 3.6).toFixed(2)} km/h`
+                                        : "N/A"}
                                     </div>
                                     <div>
                                       <strong>Battery:</strong>{" "}

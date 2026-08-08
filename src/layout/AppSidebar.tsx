@@ -15,6 +15,12 @@ import SidebarWidget from "./SidebarWidget";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { FaCalendarAlt } from "react-icons/fa";
+import UnorderedListIcon from "../AnimatedIcons/unordered-list-icon";
+import LogoutIcon from "../AnimatedIcons/logout-icon";
+import UsersGroupIcon from "../AnimatedIcons/users-group-icon";
+import BrandTelegramIcon from "../AnimatedIcons/brand-telegram-icon";
+import UserIcon from "../AnimatedIcons/user-icon";
+import ClockIcon from "../AnimatedIcons/clock-icon";
 
 type SubItem = {
   name: string;
@@ -82,32 +88,30 @@ const AppSidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     {
-      icon: <GridIcon className="text-lantern-blue-600" />,
+      icon: (
+        <GridIcon className="text-lantern-blue-600 transition-transform duration-300 hover:translate-x-2 hover:-translate-y-2" />
+      ),
       name: t("menu.dashboard"),
       path: "/home",
       role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
     },
-    // {
-    //   icon: <ChatIcon className="text-lantern-blue-600" />,
-    //   name: t("menu.chat"),
-    //   path: "/chat",
-    //   role: ["admin", "headofdepartment", "zonalmanager", "manager", "hr"],
-    // },
 
     {
-      icon: <UserCircleIcon className="text-lantern-blue-600" />,
+      icon: <ClockIcon className="text-lantern-blue-600" />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
     {
-      icon: <MdListAlt className="text-lantern-blue-600" />,
+      icon: <UnorderedListIcon className="text-lantern-blue-600" />,
       name: t("menu.TravelSessions"),
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },
     {
-      icon: <MdOutlineAdd className="text-lantern-blue-600" />,
+      icon: (
+        <MdOutlineAdd className="text-lantern-blue-600 transition-transform duration-500 hover:rotate-180" />
+      ),
       name: t("Add / Manage"),
       subItems: [
         { name: t("Add Zones"), path: "/add-zones", role: ["admin", "hr"] },
@@ -120,14 +124,16 @@ const AppSidebar: React.FC = () => {
       ],
     },
     {
-      icon: <MdAnnouncement className="text-lantern-blue-600" />,
+      icon: <BrandTelegramIcon className="text-lantern-blue-600" />,
       name: t("menu.announcement"),
       path: "/announcementList",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
 
     {
-      icon: <FaCalendarAlt className="text-lantern-blue-600" />,
+      icon: (
+        <FaCalendarAlt className="text-lantern-blue-600 transition-transform duration-300 hover:scale-125" />
+      ),
       name: t("Leaves Management"),
       subItems: [
         {
@@ -159,7 +165,7 @@ const AppSidebar: React.FC = () => {
     //   role: ["admin", "hr"],
     // },
     {
-      icon: <PiUsersThreeBold className="text-lantern-blue-600" />,
+      icon: <UsersGroupIcon className="text-lantern-blue-600" />,
       name: t("menu.allUsers"),
       path: "/all-users",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
@@ -168,7 +174,7 @@ const AppSidebar: React.FC = () => {
 
   const othersItems: NavItem[] = [
     {
-      icon: <PlugInIcon className="text-red-700" />,
+      icon: <LogoutIcon className="text-red-700" />,
       name: "LogOut",
       path: "/logout",
     },

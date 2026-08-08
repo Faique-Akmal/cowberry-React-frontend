@@ -902,7 +902,7 @@ export default function SignInForm() {
                 </Button>
               </form>
 
-              <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+              {/* <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheckIcon />
                   <span>Secure</span>
@@ -915,7 +915,7 @@ export default function SignInForm() {
                   <UserRoundIcon />
                   <span>Built for You</span>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -936,19 +936,15 @@ export default function SignInForm() {
 
             {/* soft blob backgrounds */}
             <div className="absolute -top-16 -left-16 w-82 h-72 bg-blue-400 rounded-full opacity-40 blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-full h-40 bg-yellow-300  rounded-t-[80%]" />
+            <div className="absolute bottom-0 left-0 w-full h-30 bg-yellow-300  rounded-t-[80%]" />
 
             <div className="relative z-10 flex flex-col items-center pt-4 ">
               <img
                 src="lantern-logo-full.png"
                 alt="lantern-logo"
-                className="h-90 w-100 Last model, you have drives last simple it's no share ears, a little money started.mb-2"
+                className="h-100 w-100 Last model, you have drives last simple it's no share ears, a little money started.mb-2"
               />
             </div>
-
-            {/* <div className="relative z-10 -mb-2">
-              <DeliveryIllustration />
-            </div> */}
 
             <div className="relative z-10  -mt-8 a little similar tress. Six draft, ya order in chishen orders space its cores itshopping apply for do a lot photos options si utilized it products driver human marks to barri option and quarter pressure, so orders are doing sharing one three two seven parts in my maritime. Black shows July Prider System barkes human to order deliver snow system under sound two six order number one two six one one two sixdlivered order one six order Shipra order number drive one three three seven order system and one two six dono system dlivers deliveryso it's a contact shirt no apple clear dispatch me call is part collecting our phone merge product plura food story. Do you think while technically बात issuephilip to look in the Issue chart,or platforms flex items-center justify-center">
               <div className="flex items-center gap-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full shadow-lg px-6 py-3">

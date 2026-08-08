@@ -96,7 +96,7 @@ const AccessRestrictionModal = ({
   );
 };
 
-// Small inline icons for the mobile layout (avoids depending on an icon lib you may not have)
+// Small inline icons (shared by mobile + desktop layouts)
 const MailIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-600">
     <path
@@ -130,6 +130,227 @@ const LockIcon = () => (
       strokeWidth="1.5"
       strokeLinecap="round"
     />
+  </svg>
+);
+
+const ShieldCheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-blue-600">
+    <path
+      d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+    <path
+      d="m9 12 2 2 4-4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const UserRoundIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-blue-600">
+    <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    <path
+      d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-700">
+    <rect
+      x="4"
+      y="5.5"
+      width="16"
+      height="14.5"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.6"
+    />
+    <path
+      d="M4 9.5h16M8 3.5v3M16 3.5v3"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const LeafIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-700">
+    <path
+      d="M5 19c9 1 14-4 14-13-9 0-14 4-14 13Z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M5 19c0-5 2.5-8.5 7-10.5"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const PinIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-blue-700">
+    <path
+      d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="9.5" r="2.3" stroke="currentColor" strokeWidth="1.6" />
+  </svg>
+);
+
+// Right-side illustration for the desktop / tablet layout
+const DeliveryIllustration = () => (
+  <svg
+    viewBox="0 0 600 380"
+    className="w-full h-auto max-w-[560px] mx-auto"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* soft glow behind logo */}
+    <ellipse cx="300" cy="90" rx="220" ry="90" fill="white" opacity="0.15" />
+
+    {/* city skyline */}
+    <g opacity="0.35" fill="#ffffff">
+      <rect x="10" y="190" width="34" height="120" rx="2" />
+      <rect x="52" y="160" width="26" height="150" rx="2" />
+      <rect x="86" y="210" width="30" height="100" rx="2" />
+      <rect x="470" y="150" width="30" height="160" rx="2" />
+      <rect x="508" y="195" width="26" height="115" rx="2" />
+      <rect x="540" y="170" width="34" height="140" rx="2" />
+      <rect x="120" y="230" width="22" height="80" rx="2" />
+      <rect x="440" y="215" width="22" height="95" rx="2" />
+    </g>
+    <g opacity="0.25">
+      <path
+        d="M0 260 Q60 235 120 258 T240 255 T360 260 T480 250 T600 258 V380 H0 Z"
+        fill="#ffffff"
+      />
+    </g>
+
+    {/* trees */}
+    <g opacity="0.9">
+      <circle cx="60" cy="260" r="16" fill="#1e40af" opacity="0.35" />
+      <rect
+        x="57"
+        y="272"
+        width="6"
+        height="18"
+        fill="#1e40af"
+        opacity="0.35"
+      />
+      <circle cx="540" cy="270" r="18" fill="#1e40af" opacity="0.35" />
+      <rect
+        x="536"
+        y="284"
+        width="7"
+        height="20"
+        fill="#1e40af"
+        opacity="0.35"
+      />
+    </g>
+
+    {/* road */}
+    <path
+      d="M0 330 Q150 300 300 320 T600 310 V380 H0 Z"
+      fill="#ffffff"
+      opacity="0.5"
+    />
+    <path
+      d="M0 330 Q150 300 300 320 T600 310"
+      stroke="#ffffff"
+      strokeOpacity="0.9"
+      strokeWidth="3"
+      strokeDasharray="14 12"
+      fill="none"
+    />
+
+    {/* dashed path to pin */}
+    <path
+      d="M330 316 Q420 300 470 250"
+      stroke="#1e3a8a"
+      strokeWidth="2.5"
+      strokeDasharray="6 6"
+      fill="none"
+      opacity="0.6"
+    />
+    {/* destination pin */}
+    <g transform="translate(452, 210)">
+      <path
+        d="M18 0C8 0 0 8 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8 28 0 18 0Z"
+        fill="#1e3a8a"
+      />
+      <circle cx="18" cy="18" r="7" fill="white" />
+      <circle cx="18" cy="49" r="4" fill="#1e3a8a" opacity="0.35" />
+    </g>
+
+    {/* scooter + rider */}
+    <g transform="translate(230, 250)">
+      {/* shadow */}
+      <ellipse cx="70" cy="86" rx="72" ry="8" fill="#0f2a6b" opacity="0.25" />
+
+      {/* rear wheel */}
+      <circle cx="14" cy="78" r="16" fill="#1e3a8a" />
+      <circle cx="14" cy="78" r="7" fill="#dbeafe" />
+      {/* front wheel */}
+      <circle cx="118" cy="78" r="16" fill="#1e3a8a" />
+      <circle cx="118" cy="78" r="7" fill="#dbeafe" />
+
+      {/* scooter body */}
+      <path
+        d="M8 78 Q6 55 30 52 L70 50 Q90 50 96 62 L118 78"
+        stroke="#1e3a8a"
+        strokeWidth="7"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <rect x="60" y="34" width="20" height="18" rx="4" fill="#f59e0b" />
+      <path
+        d="M96 62 L110 40"
+        stroke="#1e3a8a"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+
+      {/* rider legs */}
+      <path
+        d="M58 60 Q66 70 60 78"
+        stroke="#0f2a6b"
+        strokeWidth="8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* rider body */}
+      <path d="M55 24 Q40 30 46 52 Q50 60 60 60" fill="#2563eb" />
+      {/* rider arm to handlebar */}
+      <path
+        d="M52 30 Q80 26 108 40"
+        stroke="#2563eb"
+        strokeWidth="8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* helmet */}
+      <circle cx="50" cy="14" r="14" fill="#1e3a8a" />
+      <path d="M38 14a12 12 0 0 1 24 0" fill="#3b82f6" />
+      <rect x="46" y="18" width="14" height="7" rx="3" fill="#dbeafe" />
+
+      {/* delivery box */}
+      <rect x="0" y="30" width="22" height="22" rx="3" fill="#f59e0b" />
+      <path d="M0 38 H22 M11 30 V52" stroke="#b45309" strokeWidth="1.5" />
+    </g>
   </svg>
 );
 
@@ -427,7 +648,7 @@ export default function SignInForm() {
 
   return (
     <>
-      {/* ============ MOBILE / SMALL SCREEN UI (below md) ============ */}
+      {/* ============ MOBILE / SMALL SCREEN UI (below md) — unchanged ============ */}
       <div className="md:hidden relative min-h-screen overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-black dark:to-black">
         {/* Decorative shapes */}
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-700 rounded-full opacity-95" />
@@ -559,124 +780,74 @@ export default function SignInForm() {
         </div>
       </div>
 
-      {/* ============ EXISTING DESKTOP / TABLET UI (md and up) — unchanged ============ */}
-      <div
-        className="
-          hidden md:flex
-          p-3 mx-3 my-4
-          sm:p-0 sm:mx-0 sm:my-0
-          sm:border-0 sm:rounded-none
-          px-4 sm:px-6 flex-col flex-1 dark:bg-black dark:text-white bg-white rounded-2xl shadow-lg"
-      >
+      {/* ============ DESKTOP / TABLET UI (md and up) — matches reference design ============ */}
+      <div className="hidden md:flex h-screen w-full items-center justify-center bg-blue-50 dark:bg-gray-950 p-4 overflow-hidden">
         <div
           className={`
-            transition-all duration-700 ease-out
-            ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"}
-          `}
+      w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_1fr]
+      bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden
+      transition-all duration-700 ease-out
+      h-[92vh] max-h-[850px]
+      ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+    `}
         >
-          <div className="max-w-90 h-60 mx-auto pt-8 sm:pt-12 flex items-center justify-center">
-            <img
-              src="lantern-logo.png"
-              alt="cowberry-logo"
-              className={`
-                inline-flex items-center justify-center text-sm text-gray-500 hover:text-gray-700
-                transition-all duration-800 ease-out
-                ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"}
-                hover:scale-105 transition-transform duration-300
-              `}
-              style={{
-                animation: isMounted
-                  ? "logoDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
-                  : "none",
-              }}
-            />
-          </div>
+          {/* ---------- LEFT: sign-in card ---------- */}
+          <div className="flex flex-col justify-center px-8 py-10 sm:px-12">
+            <div className="w-full max-w-sm mx-auto">
+              <div className="flex justify-center mb-2">
+                <img
+                  src="lantern-logo.png"
+                  alt="lantern-logo"
+                  className="h-28 w-auto"
+                />
+              </div>
 
-          <div className="flex items-center justify-center w-full h-10 pb-4 ">
-            <h1
-              className={`
-                text-2xl font-bold relative
-                transition-all duration-900 ease-out
-                ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-12"}
-              `}
-              style={{
-                animation: isMounted
-                  ? "welcomeDrop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
-                  : "none",
-              }}
-            >
-              {t("Welcome to Lantern ")}
-              <sub
-                className={`
-                  text-xs text-black dark:text-white
-                  transition-all duration-1000 ease-out
-                  ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"}
-                `}
-                style={{
-                  animationDelay: isMounted ? "0.2s" : "0s",
-                }}
-              >
-                360
-              </sub>
-            </h1>
-          </div>
+              <h1 className="text-center text-2xl font-bold text-gray-900 dark:text-white">
+                {t("Welcome to ")}
+                <span className="text-blue-700">Lantern 360</span>
+              </h1>
 
-          <div
-            className={`
-              flex flex-col justify-center flex-1 w-full max-w-md mx-auto
-              transition-all duration-700 ease-out
-              ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
-            `}
-            style={{
-              animationDelay: isMounted ? "0.3s" : "0s",
-            }}
-          >
-            <form onSubmit={handleLogin}>
-              <div className="space-y-3">
-                <div
-                  className="capitalize space-y-2"
-                  style={{
-                    animation: isMounted
-                      ? "formElementDrop 0.6s ease-out 0.4s forwards"
-                      : "none",
-                    opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
-                  }}
-                >
+              <div className="flex items-center justify-center gap-2 my-5">
+                <span className="h-px w-10 bg-gray-200 dark:bg-gray-700" />
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-700" />
+                <span className="h-px w-10 bg-gray-200 dark:bg-gray-700" />
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
                   <Label>
                     {loginType === "admin" ? "Admin Email" : t("email")}{" "}
                     <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    placeholder={
-                      loginType === "admin"
-                        ? "Enter admin email"
-                        : t("Enter your email")
-                    }
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    autoComplete="email"
-                    type="email"
-                    className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-lantern-blue-600"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-blue-50 dark:bg-blue-950 rounded">
+                      <MailIcon />
+                    </span>
+                    <Input
+                      placeholder={
+                        loginType === "admin"
+                          ? "Enter admin email"
+                          : t("Enter your email")
+                      }
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      autoComplete="email"
+                      type="email"
+                      className="pl-11 transition-all duration-300 focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
                 </div>
 
-                <div
-                  className="capitalize space-y-2"
-                  style={{
-                    animation: isMounted
-                      ? "formElementDrop 0.6s ease-out 0.5s forwards"
-                      : "none",
-                    opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
-                  }}
-                >
+                <div className="space-y-1.5">
                   <Label>
                     {t("register.Password")}{" "}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-blue-50 dark:bg-blue-950 rounded">
+                      <LockIcon />
+                    </span>
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder={t("register.Enter your password")}
@@ -684,11 +855,11 @@ export default function SignInForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
                       autoComplete="current-password"
-                      className="transition-all duration-300 hover:scale-[1.02] focus:scale-[1.02] focus:ring-2 focus:ring-lantern-blue-600"
+                      className="pl-11 pr-11 transition-all duration-300 focus:ring-2 focus:ring-blue-600"
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2 hover:scale-110 transition-transform duration-300"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform duration-300"
                     >
                       {showPassword ? (
                         <EyeIcon className="size-5 fill-gray-500" />
@@ -699,22 +870,9 @@ export default function SignInForm() {
                   </div>
                 </div>
 
-                <div
-                  className="flex items-center justify-between"
-                  style={{
-                    animation: isMounted
-                      ? "formElementDrop 0.6s ease-out 0.6s forwards"
-                      : "none",
-                    opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={isChecked}
-                      onChange={setIsChecked}
-                      className="hover:scale-110 transition-transform duration-300"
-                    />
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       {t("Keep me logged in")}
                     </span>
@@ -722,62 +880,97 @@ export default function SignInForm() {
                   <button
                     type="button"
                     onClick={openForgotModal}
-                    className="text-sm text-lantern-blue-600 hover:underline hover:scale-105 transition-all duration-300"
+                    className="text-sm text-blue-600 hover:underline"
                     disabled={isLoading}
                   >
                     {t("Forgot Password?")}
                   </button>
                 </div>
 
-                <div
-                  style={{
-                    animation: isMounted
-                      ? "formElementDrop 0.6s ease-out 0.7s forwards"
-                      : "none",
-                    opacity: isMounted ? 1 : 0,
-                    transform: isMounted ? "translateY(0)" : "translateY(20px)",
-                  }}
+                <Button
+                  type="submit"
+                  className="w-full !rounded-xl !bg-lantern-blue-600 !py-3 !text-white font-semibold shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-300"
+                  disabled={isLoading}
                 >
-                  <Button
-                    type="submit"
-                    className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
-                    size="sm"
-                    disabled={isLoading}
-                  >
-                    {isLoading
-                      ? loginType === "admin"
-                        ? "Signing in as Admin..."
-                        : t("button.Signing in...")
-                      : loginType === "admin"
-                        ? "Sign in as Admin"
-                        : t("button.Sign in")}
-                  </Button>
+                  {isLoading
+                    ? loginType === "admin"
+                      ? "Signing in as Admin..."
+                      : t("button.Signing in...")
+                    : loginType === "admin"
+                      ? "Sign in as Admin"
+                      : t("button.Sign in")}
+                </Button>
+              </form>
+
+              <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheckIcon />
+                  <span>Secure</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheckIcon />
+                  <span>Reliable</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <UserRoundIcon />
+                  <span>Built for You</span>
                 </div>
               </div>
-            </form>
+            </div>
+          </div>
+
+          {/* ---------- RIGHT: illustration panel ---------- */}
+          <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-white dark:from-blue-950 dark:via-gray-900 dark:to-gray-900 px-10 py-10">
+            {/* dotted pattern top-right */}
+            <div
+              className="absolute top-8 right-8 grid grid-cols-8 gap-2 opacity-60"
+              aria-hidden="true"
+            >
+              {Array.from({ length: 32 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="h-1.5 w-1.5 rounded-full bg-blue-700"
+                />
+              ))}
+            </div>
+
+            {/* soft blob backgrounds */}
+            <div className="absolute -top-16 -left-16 w-82 h-72 bg-blue-400 rounded-full opacity-40 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-full h-40 bg-yellow-300  rounded-t-[80%]" />
+
+            <div className="relative z-10 flex flex-col items-center pt-4 ">
+              <img
+                src="lantern-logo-full.png"
+                alt="lantern-logo"
+                className="h-90 w-100 Last model, you have drives last simple it's no share ears, a little money started.mb-2"
+              />
+            </div>
+
+            {/* <div className="relative z-10 -mb-2">
+              <DeliveryIllustration />
+            </div> */}
+
+            <div className="relative z-10  -mt-8 a little similar tress. Six draft, ya order in chishen orders space its cores itshopping apply for do a lot photos options si utilized it products driver human marks to barri option and quarter pressure, so orders are doing sharing one three two seven parts in my maritime. Black shows July Prider System barkes human to order deliver snow system under sound two six order number one two six one one two sixdlivered order one six order Shipra order number drive one three three seven order system and one two six dono system dlivers deliveryso it's a contact shirt no apple clear dispatch me call is part collecting our phone merge product plura food story. Do you think while technically बात issuephilip to look in the Issue chart,or platforms flex items-center justify-center">
+              <div className="flex items-center gap-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full shadow-lg px-6 py-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                  <CalendarIcon />
+                  <span>Attendance</span>
+                </div>
+                <span className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                  <LeafIcon />
+                  <span>Leaves</span>
+                </div>
+                <span className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                  <PinIcon />
+                  <span>Tracking</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* CSS Animations (only used by desktop UI) */}
-      <style>{`
-        @keyframes logoDrop {
-          0% { opacity: 0; transform: translateY(-40px) scale(0.9); }
-          60% { opacity: 1; transform: translateY(10px) scale(1.05); }
-          80% { transform: translateY(-2px) scale(1.02); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes welcomeDrop {
-          0% { opacity: 0; transform: translateY(-60px) scale(0.85) rotateX(-90deg); text-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-          50% { opacity: 1; transform: translateY(15px) scale(1.08) rotateX(10deg); text-shadow: 0 15px 30px rgba(0,0,0,0.4); }
-          70% { transform: translateY(-5px) scale(1.03) rotateX(-5deg); }
-          100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        }
-        @keyframes formElementDrop {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
 
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}

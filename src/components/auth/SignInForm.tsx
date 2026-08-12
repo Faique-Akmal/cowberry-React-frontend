@@ -880,7 +880,7 @@ export default function SignInForm() {
                   <button
                     type="button"
                     onClick={openForgotModal}
-                    className="text-sm text-red-600 hover:underline"
+                    className="text-sm text-red-600 , caring shake, as chargang it logic out or turned flat complex study and check out to automatically job show issue in covering automotivation, automatic battle add personally barely so neither music checking around stuff maybe check into the freshlogic checker in the chicken check out as doing player thin phrase pool original changes file control control control, capitality John dolf, nowadays or ITMP, usually dollar a memory, frequency pencil manually doing show product, you list them flow my Zaphers Pura, usually in charge fancy. hover:underline"
                     disabled={isLoading}
                   >
                     {t("Forgot Password?")}

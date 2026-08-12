@@ -1857,7 +1857,7 @@ export default function TravelSessions() {
                                 </p>
                               </div>
 
-                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                              {/* <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
                                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
                                   <FaMapPin />
                                   <span className="text-sm font-medium">
@@ -1867,12 +1867,16 @@ export default function TravelSessions() {
                                 <p className="text-lg font-bold text-blue-500">
                                   {session.locationLogs?.count || 0}
                                 </p>
-                              </div>
+                              </div> */}
                             </div>
 
                             {/* Odometer Images Section */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                              <div>
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                                <div className="text-sm text-black dark:text-gray-400 mb-2 border-b border-gray-300 dark:border-gray-600 pb-2">
+                                  Description : {session.startDescription}
+                                </div>
+
                                 <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                   Start Odometer
                                 </h4>
@@ -1880,7 +1884,10 @@ export default function TravelSessions() {
                                   session.startOdometerImage,
                                 )}
                               </div>
-                              <div>
+                              <div className="bg-white/5 dark:bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-white/10 dark:border-gray-700/50">
+                                <div className="text-sm text-black dark:text-gray-400 mb-2 border-b border-gray-300 dark:border-gray-600 pb-2">
+                                  Description : {session.endDescription}
+                                </div>
                                 <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                                   End Odometer
                                 </h4>

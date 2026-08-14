@@ -109,6 +109,18 @@ const AppSidebar: React.FC = () => {
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },
     {
+      icon: <UnorderedListIcon className="text-lantern-blue-600" />,
+      name: t("PendingSessions"),
+      path: "/pending-hr-sessions",
+      role: ["admin", "hr"],
+    },
+    {
+      icon: <UnorderedListIcon className="text-lantern-blue-600" />,
+      name: t("PendingSessions"),
+      path: "/pending-reportee-sessions",
+      role: ["admin", "manager", "zonalmanager", "headofdepartment"],
+    },
+    {
       icon: (
         <MdOutlineAdd className="text-lantern-blue-600 transition-transform duration-500 hover:rotate-180" />
       ),

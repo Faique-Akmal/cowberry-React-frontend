@@ -79,6 +79,25 @@ interface LogDetail {
   };
 }
 
+// ============================================================
+// SENTINEL CHECKOUT DETECTION
+// ============================================================
+// Your API sends a system-generated checkout timestamp whenever
+// no real checkout happened. It always lands at local 23:59:59
+// (formatted as "11:59:59 PM"). We check this against the RAW
+// ISO timestamp — never against a formatted display string —
+// because formatted strings vary with locale/spacing and are
+// unreliable to compare.
+const isSentinelCheckout = (timestamp: string | null | undefined): boolean => {
+  if (!timestamp) return false;
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return false;
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
+  const seconds = d.getSeconds();
+  return hours === 23 && minutes === 59 && seconds >= 59;
+};
+
 // Helper functions remain the same
 const filterLogsByRole = (rawLogs: CheckLog[]): CheckLog[] => {
   const role = (localStorage.getItem("userRole") || "").trim().toLowerCase();
@@ -145,7 +164,12 @@ const groupLogsByUserAndDate = (logs: CheckLog[]): GroupedLog[] => {
       entry.checkInLongitude = log.longitude || null;
       entry.checkInLocation = log.location || null;
     } else {
-      entry.checkOutTime = formatTime(log.timestamp);
+      // If this is the system-generated 11:59:59 PM sentinel,
+      // don't show a display time at all — leave checkOutTime null.
+      // We still keep checkOutTimestamp (raw) so status/working-hours
+      // logic downstream knows a "missing checkout" situation exists.
+      const sentinel = isSentinelCheckout(log.timestamp);
+      entry.checkOutTime = sentinel ? null : formatTime(log.timestamp);
       entry.checkOutTimestamp = log.timestamp;
       entry.checkOutLatitude = log.latitude || null;
       entry.checkOutLongitude = log.longitude || null;
@@ -202,8 +226,7 @@ const EmployeeCheckin = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Calculate working hours and status (unchanged)
-
+  // Calculate working hours and status
   const calculateStatus = useCallback((log: GroupedLog): string => {
     // If no check-in and no check-out, mark as Absent
     if (!log.checkInTimestamp && !log.checkOutTimestamp) {
@@ -213,6 +236,11 @@ const EmployeeCheckin = () => {
     // If no check-in, mark as Absent
     if (!log.checkInTimestamp) {
       return "Absent";
+    }
+
+    // System-generated sentinel checkout (11:59:59 PM) = no real checkout
+    if (log.checkOutTimestamp && isSentinelCheckout(log.checkOutTimestamp)) {
+      return "Checkout Missing";
     }
 
     // Get today's date
@@ -226,9 +254,9 @@ const EmployeeCheckin = () => {
     // Check if this is today's log
     const isToday = today.getTime() === logDate.getTime();
 
-    // If no check-out and it's today, show "Checked In" (or "Active")
+    // If no check-out and it's today, show "Active"
     if (!log.checkOutTimestamp && isToday) {
-      return "Active"; // or "Checked In"
+      return "Active";
     }
 
     // If no check-out and it's NOT today, show "Checkout Missing"
@@ -238,7 +266,8 @@ const EmployeeCheckin = () => {
 
     // If both check-in and check-out exist, calculate working hours
     const checkIn = new Date(log.checkInTimestamp);
-    const checkOut = new Date(log.checkOutTimestamp);
+    const checkOut = new Date(log.checkOutTimestamp!);
+
     const workingHours =
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
 
@@ -256,9 +285,14 @@ const EmployeeCheckin = () => {
 
   const calculateWorkingHours = useCallback((log: GroupedLog): string => {
     if (log.checkInTimestamp && log.checkOutTimestamp) {
+      // Sentinel checkout (11:59:59 PM) — no real checkout happened,
+      // so working hours can't be calculated.
+      if (isSentinelCheckout(log.checkOutTimestamp)) {
+        return "N/A";
+      }
+
       const checkIn = new Date(log.checkInTimestamp);
       const checkOut = new Date(log.checkOutTimestamp);
-
       const diffMs = checkOut.getTime() - checkIn.getTime();
 
       if (diffMs < 0) return "N/A";
@@ -289,7 +323,7 @@ const EmployeeCheckin = () => {
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200";
       case "Checkout Missing":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
-      case "Active": // Ensure this is properly colored
+      case "Active":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200";
       case "Absent":
         return "bg-red-800 text-white dark:bg-gray-900/30 dark:text-gray-400 border-gray-200";
@@ -330,6 +364,8 @@ const EmployeeCheckin = () => {
         location: log.checkInLocation || null,
       },
       checkOut: {
+        // checkOutTime is already null here if it was the sentinel value —
+        // set at the grouping stage — so nothing extra needed.
         time: log.checkOutTime,
         timestamp: log.checkOutTimestamp,
         latitude: log.checkOutLatitude || null,
@@ -482,6 +518,8 @@ const EmployeeCheckin = () => {
         const workingHours = calculateWorkingHours(log);
         const rowNumber = index + 2;
 
+        // checkOutTime is already null when it's the sentinel value,
+        // so this naturally falls back to "N/A" — no extra check needed.
         const row = worksheet.addRow({
           sno: index + 1,
           fullName: log.fullName,
@@ -946,43 +984,6 @@ const EmployeeCheckin = () => {
             flex flex-col
           "
         >
-          {/* <div
-            className="
-              flex-shrink-0
-              p-3 sm:p-4
-              border-b border-white/30 dark:border-gray-700/30
-              bg-gradient-to-r from-white/50 to-transparent
-              dark:from-gray-800/50 dark:to-transparent
-            "
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="min-w-0">
-                <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
-                  Employee Attendance Logs
-                </h2>
-                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  Showing {filteredLogs.length} of {uniqueUsersCount} employees'
-                  logs • Click any row to view details
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span
-                  className="
-                    px-2 py-1
-                    bg-white/50 dark:bg-gray-700/50
-                    backdrop-blur-sm
-                    border border-white/60 dark:border-gray-600/60
-                    rounded-md
-                    text-xs text-gray-700 dark:text-gray-300
-                    whitespace-nowrap
-                  "
-                >
-                  {filteredLogs.length} total
-                </span>
-              </div>
-            </div>
-          </div> */}
-
           {isLoading ? (
             <div className="p-6 text-center">
               <LoadingAnimation />
@@ -1032,7 +1033,6 @@ const EmployeeCheckin = () => {
       flex flex-col
     "
                 >
-                  {/* Table Header - This stays at top */}
                   <div
                     className="
         flex-shrink-0
@@ -1041,34 +1041,7 @@ const EmployeeCheckin = () => {
         bg-gradient-to-r from-white/50 to-transparent
         dark:from-gray-800/50 dark:to-transparent
       "
-                  >
-                    {/* <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
-                          Employee Attendance Logs
-                        </h2>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                          Showing {filteredLogs.length} of {uniqueUsersCount}{" "}
-                          employees' logs • Click any row to view details
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span
-                          className="
-              px-2 py-1
-              bg-white/50 dark:bg-gray-700/50
-              backdrop-blur-sm
-              border border-white/60 dark:border-gray-600/60
-              rounded-md
-              text-xs text-gray-700 dark:text-gray-300
-              whitespace-nowrap
-            "
-                        >
-                          {filteredLogs.length} total
-                        </span>
-                      </div>
-                    </div> */}
-                  </div>
+                  ></div>
 
                   {isLoading ? (
                     <div className="p-6 text-center flex-1 flex items-center justify-center">
@@ -1108,7 +1081,6 @@ const EmployeeCheckin = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Table wrapper with scrolling - removed overflow-hidden */}
                       <div className="flex-1 overflow-auto">
                         <div className="min-w-[640px] sm:min-w-0">
                           <table className="w-full table-auto border-collapse">
@@ -1273,6 +1245,10 @@ const EmployeeCheckin = () => {
                                     </td>
 
                                     <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                                      {/* log.checkOutTime is already null when it's the
+                                          11:59:59 PM sentinel, thanks to groupLogsByUserAndDate.
+                                          So this falls through to N/A automatically —
+                                          the raw sentinel value is never shown. */}
                                       {log.checkOutTime ? (
                                         <div className="flex items-center gap-1.5">
                                           <div
@@ -1327,8 +1303,6 @@ const EmployeeCheckin = () => {
                           </table>
                         </div>
                       </div>
-
-                      {/* Footer */}
                     </>
                   )}
                 </div>
@@ -1338,7 +1312,7 @@ const EmployeeCheckin = () => {
         </div>
       </div>
 
-      {/* Detail Modal - Unchanged */}
+      {/* Detail Modal */}
       {showDetailModal && selectedLogDetail && (
         <>
           <div
@@ -1439,8 +1413,10 @@ const EmployeeCheckin = () => {
                       Check-out
                     </h4>
                   </div>
+                  {/* selectedLogDetail.checkOut.time is already null when it's the
+                      11:59:59 PM sentinel — nothing renders here in that case. */}
                   <span className="text-sm text-red-700 dark:text-red-400">
-                    {selectedLogDetail.checkOut.time || "N/A"}
+                    {selectedLogDetail.checkOut.time || ""}
                   </span>
                 </div>
 

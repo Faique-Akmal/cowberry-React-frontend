@@ -33,6 +33,7 @@ import {
   FaChartLine,
   FaSpinner,
   FaPauseCircle,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 // Import FREE MUI DatePicker components
@@ -78,8 +79,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl,
 });
 
-const AUTO_REFRESH_INTERVAL_MS = 30_000;
-
 export default function TravelSessions() {
   // ---------------------------------------------------------------------
   // Zustand store: shared, cached data + fetch actions.
@@ -110,6 +109,8 @@ export default function TravelSessions() {
   // Local, UI-only state
   // ---------------------------------------------------------------------
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedApprovalStatus, setSelectedApprovalStatus] =
+    useState<string>("ALL");
 
   // Date state using Dayjs for MUI DatePicker
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
@@ -273,6 +274,14 @@ export default function TravelSessions() {
       );
     }
 
+    // NEW: Filter by approval status
+    if (selectedApprovalStatus !== "ALL") {
+      filtered = filtered.filter((session) => {
+        const status = session.finalStatus?.toUpperCase() || "PENDING";
+        return status === selectedApprovalStatus.toUpperCase();
+      });
+    }
+
     if (appliedSearch) {
       const query = appliedSearch.toLowerCase();
       filtered = filtered.filter(
@@ -286,7 +295,14 @@ export default function TravelSessions() {
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     );
-  }, [startDateStr, endDateStr, selectedUser, appliedSearch, travelSessions]);
+  }, [
+    startDateStr,
+    endDateStr,
+    selectedUser,
+    selectedApprovalStatus,
+    appliedSearch,
+    travelSessions,
+  ]);
 
   const groupedView: GroupedSession[] = useMemo(
     () => groupSessionsByUserAndDate(filteredSessions, sessionLogs),
@@ -328,6 +344,10 @@ export default function TravelSessions() {
   const clearDateFilter = () => {
     setStartDate(null);
     setEndDate(null);
+  };
+
+  const clearApprovalStatusFilter = () => {
+    setSelectedApprovalStatus("ALL");
   };
 
   const handleSearchSubmit = () => {
@@ -806,13 +826,17 @@ export default function TravelSessions() {
                         Total Sessions
                       </p>
                       <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                        {isDateFilterActive || selectedUser || appliedSearch
+                        {isDateFilterActive ||
+                        selectedUser ||
+                        appliedSearch ||
+                        selectedApprovalStatus !== "ALL"
                           ? totalSessions
                           : totalSessionsCount}
                       </p>
                       {(isDateFilterActive ||
                         selectedUser ||
-                        appliedSearch) && (
+                        appliedSearch ||
+                        selectedApprovalStatus !== "ALL") && (
                         <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                           Filtered results (of {totalSessionsCount} total)
                         </p>
@@ -975,27 +999,31 @@ export default function TravelSessions() {
                 />
               </div>
 
-              {/* View Mode */}
+              {/* NEW: Approval Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <FaChartLine className="inline mr-2" />
-                  View Mode
+                  <FaCheckCircle className="inline mr-2" />
+                  Approval Status
                 </label>
                 <select
                   className="w-full px-4 py-2 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-500/30"
-                  onChange={(e) =>
-                    setViewMode(e.target.value as "grouped" | "individual")
-                  }
-                  value={viewMode}
+                  value={selectedApprovalStatus}
+                  onChange={(e) => setSelectedApprovalStatus(e.target.value)}
                 >
-                  <option value="grouped">Group Session</option>
-                  <option value="individual">Individual Sessions</option>
+                  <option value="ALL">All Status</option>
+                  <option value="APPROVED">✅ Approved</option>
+                  <option value="REJECTED">❌ Rejected</option>
+                  <option value="PENDING">⏳ Pending</option>
                 </select>
               </div>
             </div>
 
             {/* Quick Actions and Clear Filter */}
-            {(startDate || endDate || selectedUser || appliedSearch) && (
+            {(startDate ||
+              endDate ||
+              selectedUser ||
+              appliedSearch ||
+              selectedApprovalStatus !== "ALL") && (
               <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
                 {(startDate || endDate) && (
                   <button
@@ -1013,6 +1041,15 @@ export default function TravelSessions() {
                   >
                     <FaTimes className="text-xs" />
                     Clear User Filter
+                  </button>
+                )}
+                {selectedApprovalStatus !== "ALL" && (
+                  <button
+                    onClick={clearApprovalStatusFilter}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1"
+                  >
+                    <FaTimes className="text-xs" />
+                    Clear Status Filter
                   </button>
                 )}
                 {appliedSearch && (
@@ -1034,6 +1071,8 @@ export default function TravelSessions() {
                         : ""}
                   {selectedUser &&
                     ` • User: ${getUserName(parseInt(selectedUser))}`}
+                  {selectedApprovalStatus !== "ALL" &&
+                    ` • Status: ${selectedApprovalStatus}`}
                   {appliedSearch && ` • Search: "${appliedSearch}"`}
                 </span>
               </div>
@@ -1059,7 +1098,10 @@ export default function TravelSessions() {
                 No Travel Sessions Found
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {isDateFilterActive || selectedUser || appliedSearch
+                {isDateFilterActive ||
+                selectedUser ||
+                appliedSearch ||
+                selectedApprovalStatus !== "ALL"
                   ? "Try adjusting your filters to see more results."
                   : "No travel sessions recorded yet."}
               </p>
@@ -1133,6 +1175,14 @@ export default function TravelSessions() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="flex items-center gap-3">
+                              <div className="text-center">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                  Approved Sessions
+                                </p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                  {group.approvedSessions}
+                                </p>
+                              </div>
                               <div className="text-center">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Sessions
@@ -1334,41 +1384,29 @@ export default function TravelSessions() {
                                   </div>
 
                                   <div className="flex gap-2">
-                                    {/* <button
-                                      onClick={() =>
-                                        handleFetchTravelData(
-                                          session.userId.toString(),
-                                          session.sessionId.toString(),
-                                          group.date,
-                                        )
-                                      }
-                                      className={`px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${
-                                        isLoadingFarmerData &&
-                                        selectedUserForFarmerData ===
-                                          session.userId.toString()
-                                          ? "bg-gray-400 cursor-not-allowed"
-                                          : " bg-lantern-blue-600 hover:bg-blue-700"
-                                      } text-white`}
-                                      disabled={
-                                        isLoadingFarmerData &&
-                                        selectedUserForFarmerData ===
-                                          session.userId.toString()
-                                      }
+                                    <span
+                                      className={`px-2 py-1 backdrop-blur-sm border text-xs font-semibold rounded-full flex items-center gap-1 ${
+                                        session.finalStatus?.toUpperCase() ===
+                                        "APPROVED"
+                                          ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/30 text-green-700 dark:text-green-400"
+                                          : session.finalStatus?.toUpperCase() ===
+                                              "REJECTED"
+                                            ? "bg-gradient-to-r from-red-500/20 to-rose-500/20 border-red-400/30 text-red-700 dark:text-red-400"
+                                            : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-400/30 text-yellow-700 dark:text-yellow-400"
+                                      }`}
                                     >
-                                      {isLoadingFarmerData &&
-                                      selectedUserForFarmerData ===
-                                        session.userId.toString() ? (
-                                        <>
-                                          <FaSpinner className="animate-spin" />
-                                          Loading...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <FaInfoCircle />
-                                          Details
-                                        </>
-                                      )}
-                                    </button> */}
+                                      {session.finalStatus?.toUpperCase() ===
+                                        "APPROVED" && "✅"}
+                                      {session.finalStatus?.toUpperCase() ===
+                                        "REJECTED" && "❌"}
+                                      {(!session.finalStatus ||
+                                        session.finalStatus?.toUpperCase() ===
+                                          "PENDING" ||
+                                        session.finalStatus?.toUpperCase() ===
+                                          "UNDER_REVIEW") &&
+                                        "⏳"}
+                                      {session.finalStatus || "PENDING"}
+                                    </span>
                                     <button
                                       onClick={() => openMap(session)}
                                       className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
@@ -1448,7 +1486,10 @@ export default function TravelSessions() {
               No Travel Sessions Found
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {isDateFilterActive || selectedUser || appliedSearch
+              {isDateFilterActive ||
+              selectedUser ||
+              appliedSearch ||
+              selectedApprovalStatus !== "ALL"
                 ? "Try adjusting your filters to see more results."
                 : "No travel sessions recorded yet."}
             </p>
@@ -1548,6 +1589,32 @@ export default function TravelSessions() {
                           }`}
                         >
                           {isActive ? "Active" : "Completed"}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                          Approval
+                        </p>
+                        <span
+                          className={`px-3 py-1 backdrop-blur-sm rounded-full text-sm font-semibold ${
+                            session.finalStatus?.toUpperCase() === "APPROVED"
+                              ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400"
+                              : session.finalStatus?.toUpperCase() ===
+                                  "REJECTED"
+                                ? "bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-400/30 text-red-700 dark:text-red-400"
+                                : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-yellow-700 dark:text-yellow-400"
+                          }`}
+                        >
+                          {session.finalStatus?.toUpperCase() === "APPROVED" &&
+                            "✅"}
+                          {session.finalStatus?.toUpperCase() === "REJECTED" &&
+                            "❌"}
+                          {(!session.finalStatus ||
+                            session.finalStatus?.toUpperCase() === "PENDING" ||
+                            session.finalStatus?.toUpperCase() ===
+                              "UNDER_REVIEW") &&
+                            "⏳"}
+                          {session.finalStatus || "PENDING"}
                         </span>
                       </div>
                     </div>

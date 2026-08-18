@@ -7,50 +7,88 @@ import {
   UserListItem,
 } from "../types/travelSession";
 
-export const isSessionApproved = (session: TravelSession): boolean => {
-  if (!session || !session.finalStatus) return false;
-  return session.finalStatus.toUpperCase() === "APPROVED";
+/** Reimbursement rate in ₹ per kilometre. Single source of truth. */
+export const RATE_PER_KM = 3.5;
+
+export type SessionApprovalStatus = "APPROVED" | "REJECTED" | "PENDING";
+
+/**
+ * Defensively pull the approval status off a session object.
+ *
+ * This mirrors `extractFinalStatus` in exportTravelSessionsToExcel.ts. Some
+ * endpoints (or older versions of the same endpoint) send the status under a
+ * different key, or send only the `isFinalApproved` boolean. Reading
+ * `session.finalStatus` directly makes all of those look PENDING, which
+ * silently drops them from the reimbursement total even though the Excel
+ * export counts them. Keep this in sync with the export.
+ */
+export const getSessionFinalStatus = (session: any): SessionApprovalStatus => {
+  if (!session) return "PENDING";
+
+  const candidates = [
+    session.finalStatus,
+    session.final_status,
+    session.approvalStatus,
+    session.approval_status,
+    session?.approval?.finalStatus,
+    session?.approval?.status,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const status = String(candidate).toUpperCase().trim();
+    if (status === "APPROVED") return "APPROVED";
+    if (status === "REJECTED") return "REJECTED";
+    if (status === "PENDING" || status === "UNDER_REVIEW") return "PENDING";
+  }
+
+  if (session.isFinalApproved === true) return "APPROVED";
+  if (session.isFinalApproved === false) return "REJECTED";
+
+  return "PENDING";
 };
 
 /**
- * Check if a session is pending approval
+ * Only APPROVED sessions are reimbursable.
  */
-export const isSessionPending = (session: TravelSession): boolean => {
-  if (!session || !session.finalStatus) return true;
-  const status = session.finalStatus.toUpperCase();
-  return status === "PENDING" || status === "UNDER_REVIEW";
-};
+export const isSessionApproved = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "APPROVED";
+
+/**
+ * Check if a session is pending approval (UNDER_REVIEW counts as pending)
+ */
+export const isSessionPending = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "PENDING";
 
 /**
  * Check if a session is rejected
  */
-export const isSessionRejected = (session: TravelSession): boolean => {
-  if (!session || !session.finalStatus) return false;
-  return session.finalStatus.toUpperCase() === "REJECTED";
-};
+export const isSessionRejected = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "REJECTED";
 
 /**
- * Get the reimbursable distance for a session
- * Returns 0 if session is not approved
+ * Get the reimbursable distance (metres) for a session.
+ * Returns 0 unless the session's final status is APPROVED.
  */
-export const getReimbursableDistance = (session: TravelSession): number => {
-  if (!session) return 0;
-  if (isSessionApproved(session)) {
-    return session.totalDistance || 0;
-  }
-  return 0;
-};
+export const getReimbursableDistance = (session: TravelSession): number =>
+  isSessionApproved(session) ? session.totalDistance || 0 : 0;
 
 /**
- * Calculate reimbursement amount for a session
- * Rate: ₹3.5 per km
+ * Calculate reimbursement amount from a distance in metres.
+ * Rate: ₹3.5 per km. Feed this only reimbursable (approved) distance.
  */
 export const calculateReimbursementAmount = (
   distanceInMeters: number,
-): number => {
-  const distanceInKm = distanceInMeters / 1000;
-  return distanceInKm * 3.5;
-};
+): number => (distanceInMeters / 1000) * RATE_PER_KM;
+
+/**
+ * Sum the approved-only distance (metres) across a list of sessions.
+ */
+export const sumReimbursableDistance = (sessions: TravelSession[]): number =>
+  (sessions || []).reduce(
+    (sum, session) => sum + getReimbursableDistance(session),
+    0,
+  );
 
 /**
  * Get approval status badge color and text
@@ -122,8 +160,8 @@ export const getApprovalWorkflowSteps = (session: TravelSession) => {
     },
     final: {
       label: "Final Status",
-      status: session.finalStatus || "PENDING",
-      isApproved: session.isFinalApproved || false,
+      status: getSessionFinalStatus(session),
+      isApproved: isSessionApproved(session),
     },
   };
 };
@@ -637,6 +675,9 @@ export const groupSessionsByUserAndDate = (
         isLoading: false,
         hasMoreSessions: false,
         allSessionsLoaded: true,
+        // These four are recomputed from `sessions` below - see the final
+        // map() in this function. They are seeded here only so the object
+        // satisfies GroupedSession.
         approvedSessions: isSessionApproved(session) ? 1 : 0,
         pendingSessions: isSessionPending(session) ? 1 : 0,
         rejectedSessions: isSessionRejected(session) ? 1 : 0,
@@ -664,17 +705,9 @@ export const groupSessionsByUserAndDate = (
         existingGroup.totalSessions += 1;
         existingGroup.activeSessions += session.endTime ? 0 : 1;
 
-        // Update approval counts
-        if (isSessionApproved(session)) {
-          existingGroup.approvedSessions += 1;
-        } else if (isSessionPending(session)) {
-          existingGroup.pendingSessions += 1;
-        } else if (isSessionRejected(session)) {
-          existingGroup.rejectedSessions += 1;
-        }
-
-        // Add reimbursable distance if approved
-        existingGroup.reimbursableDistance += getReimbursableDistance(session);
+        // Approval counts and reimbursable distance are deliberately NOT
+        // accumulated here. They are derived from the final `sessions` array
+        // in the map() below so they can never drift out of sync with it.
 
         if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
           existingGroup.startTime = session.startTime;
@@ -697,11 +730,25 @@ export const groupSessionsByUserAndDate = (
       totalPoints += filterAndMapLogsToSession(logs, session).length;
     });
 
+    // Single source of truth for approval numbers: derive them from the
+    // final session list rather than accumulating as sessions stream in.
+    const approvedSessions = group.sessions.filter(isSessionApproved).length;
+    const rejectedSessions = group.sessions.filter(isSessionRejected).length;
+    const pendingSessions =
+      group.sessions.length - approvedSessions - rejectedSessions;
+
+    // Only APPROVED sessions contribute money.
+    const reimbursableDistance = sumReimbursableDistance(group.sessions);
+
     return {
       ...group,
       totalDistance: distanceData.totalDistance,
       firstSessionDistance: distanceData.firstSessionDistance,
       originalTotalDistance: distanceData.originalTotalDistance,
+      approvedSessions,
+      pendingSessions,
+      rejectedSessions,
+      reimbursableDistance,
       totalPoints,
     };
   });

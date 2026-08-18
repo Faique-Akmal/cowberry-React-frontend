@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import API from "../api/axios";
+import LoadingAnimation from "../pages/UiElements/loadingAnimation";
 
 // Types
 interface ReporteeInfo {
@@ -222,14 +223,14 @@ const TravelSessionHr: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white/10 text-black p-6">
+    <div className="min-h-screen bg-white/10 backdrop-blur-sm p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="glass-container p-6 mb-8 rounded-2xl">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-blue/50 p-6 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-black mb-2">
-                HR Travel Session Management
+                Travel Session Management
               </h1>
               <p className="text-black/80">
                 Review and manage pending travel session approvals
@@ -237,29 +238,11 @@ const TravelSessionHr: React.FC = () => {
             </div>
             <button
               onClick={fetchPendingSessions}
-              className="px-6 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-black hover:bg-white/30 transition-all border border-white/20 disabled:opacity-50"
+              className="px-6 py-2 bg-lantern-blue-600 backdrop-blur-sm rounded-lg text-white transition-all border border-white/20 disabled:opacity-50"
               disabled={loading}
             >
               {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Loading...
-                </span>
+                <span className="flex items-center gap-2 ">Refreshing</span>
               ) : (
                 "Refresh"
               )}
@@ -271,7 +254,7 @@ const TravelSessionHr: React.FC = () => {
         <div className="glass-container p-6 rounded-2xl">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              <LoadingAnimation />
             </div>
           ) : sessions.length === 0 ? (
             <div className="text-center py-12">
@@ -284,7 +267,7 @@ const TravelSessionHr: React.FC = () => {
               {sessions.map((session) => (
                 <div
                   key={session.sessionId}
-                  className="bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all cursor-pointer  border border-white p-4 rounded-lg"
+                  className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden cursor-pointer p-4"
                   onClick={() => openDetailsModal(session)}
                 >
                   <div className="flex justify-between items-start mb-4">
@@ -353,7 +336,7 @@ const TravelSessionHr: React.FC = () => {
                         openActionModal(session, "approve");
                       }}
                       disabled={processing === session.sessionId}
-                      className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-500/30 rounded-lg text-white font-medium transition-all border border-green-500/30 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-green-800 hover:bg-green-700 rounded-lg text-white font-medium transition-all border border-green-500/30 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Approve
                     </button>
@@ -363,7 +346,7 @@ const TravelSessionHr: React.FC = () => {
                         openActionModal(session, "reject");
                       }}
                       disabled={processing === session.sessionId}
-                      className="flex-1 px-4 py-2 bg-red-700 hover:bg-red-500/30 rounded-lg text-white font-medium transition-all border border-red-500/30 hover:border-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-red-800 hover:bg-red-700 rounded-lg text-white font-medium transition-all border border-red-500/30 hover:border-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Reject
                     </button>
@@ -377,11 +360,13 @@ const TravelSessionHr: React.FC = () => {
         {/* Action Modal */}
         {showActionModal && selectedSession && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-container max-w-md w-full p-6 rounded-2xl">
-              <h2 className="text-2xl font-bold text-black mb-4">
-                {actionType === "approve" ? "Approve" : "Reject"} Session #
-                {selectedSession.sessionId}
-              </h2>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {actionType === "approve" ? "Approve" : "Reject"} Session #
+                  {selectedSession.sessionId}
+                </h2>
+              </div>
 
               <div className="mb-4 space-y-2">
                 <p className="text-black/80 text-sm">
@@ -401,7 +386,7 @@ const TravelSessionHr: React.FC = () => {
                 <textarea
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-black border border-white/20 focus:outline-none focus:border-white/40 resize-none"
+                  className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-black border border-black focus:outline-none focus:border-white/40 resize-none"
                   rows={4}
                   placeholder={`Enter ${actionType} comments...`}
                 />
@@ -437,7 +422,7 @@ const TravelSessionHr: React.FC = () => {
         )}
 
         {showDetailsModal && selectedSession && (
-          <div className="fixed inset-0 bg-blue/15 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="glass-container max-w-2xl w-full p-6 rounded-2xl max-h-[90vh] overflow-y-auto border border-white/20">
               {/* Header */}
               <div className="flex justify-between items-start mb-4  border-black/10 pb-2 border-b">

@@ -34,6 +34,7 @@ import {
   FaSpinner,
   FaPauseCircle,
   FaCheckCircle,
+  FaRupeeSign,
 } from "react-icons/fa";
 
 // Import FREE MUI DatePicker components
@@ -68,6 +69,11 @@ import {
   groupSessionsByUserAndDate,
   detectPauses as detectPausesHelper,
   filterAndMapLogsToSession,
+  getSessionFinalStatus,
+  isSessionApproved,
+  RATE_PER_KM,
+  calculateReimbursementAmount,
+  sumReimbursableDistance,
 } from "../../utils/travelSessionHelpers";
 import { exportAllTravelSessionsFromAPI } from "../../utils/exportTravelSessionsToExcel";
 
@@ -277,8 +283,11 @@ export default function TravelSessions() {
     // NEW: Filter by approval status
     if (selectedApprovalStatus !== "ALL") {
       filtered = filtered.filter((session) => {
-        const status = session.finalStatus?.toUpperCase() || "PENDING";
-        return status === selectedApprovalStatus.toUpperCase();
+        const status = getSessionFinalStatus(session);
+        const wanted = selectedApprovalStatus.toUpperCase();
+        // UNDER_REVIEW is normalised to PENDING by getSessionFinalStatus.
+        if (wanted === "UNDER_REVIEW") return status === "PENDING";
+        return status === wanted;
       });
     }
 
@@ -315,6 +324,13 @@ export default function TravelSessions() {
     (sum, s) => sum + s.totalDistance,
     0,
   );
+
+  // Money is only ever calculated from APPROVED sessions. Pending, rejected
+  // and under-review sessions contribute 0, matching the Excel export.
+  const approvedSessionCount =
+    filteredSessions.filter(isSessionApproved).length;
+  const reimbursableDistance = sumReimbursableDistance(filteredSessions);
+  const totalReimbursement = calculateReimbursementAmount(reimbursableDistance);
 
   const detectPauses = useCallback(
     (sessionId: number) =>
@@ -818,7 +834,7 @@ export default function TravelSessions() {
             </div>
 
             {showStats && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-fadeIn">
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
@@ -876,6 +892,35 @@ export default function TravelSessions() {
                     </div>
                     <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
                       <FaRoad className="text-purple-500 text-xl" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Reimbursement
+                      </p>
+                      <p
+                        className={`text-2xl font-bold mt-1 ${
+                          approvedSessionCount > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-gray-400 dark:text-gray-500"
+                        }`}
+                      >
+                        ₹ {totalReimbursement.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {approvedSessionCount > 0
+                          ? `${approvedSessionCount} approved · ${(
+                              reimbursableDistance / 1000
+                            ).toFixed(2)} km · ₹${RATE_PER_KM}/km`
+                          : "No approved sessions"}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
+                      <FaRupeeSign className="text-green-500 text-xl" />
                     </div>
                   </div>
                 </div>
@@ -1203,11 +1248,24 @@ export default function TravelSessions() {
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Reimbursement
                                 </p>
-                                <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                <p
+                                  className={`text-lg font-bold ${
+                                    group.approvedSessions > 0
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-gray-400 dark:text-gray-500"
+                                  }`}
+                                >
                                   ₹{" "}
-                                  {((group.totalDistance / 1000) * 3.5).toFixed(
-                                    1,
-                                  )}
+                                  {calculateReimbursementAmount(
+                                    group.reimbursableDistance,
+                                  ).toFixed(2)}
+                                </p>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  {group.approvedSessions > 0
+                                    ? `${(
+                                        group.reimbursableDistance / 1000
+                                      ).toFixed(2)} km approved`
+                                    : "No approved sessions"}
                                 </p>
                               </div>
                             </div>
@@ -1325,6 +1383,17 @@ export default function TravelSessions() {
                             const filteredLogCount =
                               logs.length - filteredLogs.length;
 
+                            // Normalised status drives both the badge and the
+                            // per-session amount, so they can never disagree.
+                            const sessionStatus =
+                              getSessionFinalStatus(session);
+                            const sessionAmount =
+                              sessionStatus === "APPROVED"
+                                ? calculateReimbursementAmount(
+                                    session.totalDistance || 0,
+                                  )
+                                : 0;
+
                             return (
                               <div
                                 key={session.sessionId}
@@ -1379,33 +1448,80 @@ export default function TravelSessions() {
                                           {Math.floor(sessionDuration.hours)}h{" "}
                                           {sessionDuration.minutes}m
                                         </span>
+                                        <span>•</span>
+                                        <span
+                                          className={
+                                            sessionStatus === "APPROVED"
+                                              ? "text-green-600 dark:text-green-400 font-semibold"
+                                              : "text-gray-400 dark:text-gray-500"
+                                          }
+                                        >
+                                          ₹{sessionAmount.toFixed(2)}
+                                          {sessionStatus !== "APPROVED" &&
+                                            " (not approved)"}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="flex gap-2">
                                     <span
-                                      className={`px-2 py-1 backdrop-blur-sm border text-xs font-semibold rounded-full flex items-center gap-1 ${
-                                        session.finalStatus?.toUpperCase() ===
-                                        "APPROVED"
-                                          ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/30 text-green-700 dark:text-green-400"
-                                          : session.finalStatus?.toUpperCase() ===
-                                              "REJECTED"
-                                            ? "bg-gradient-to-r from-red-500/20 to-rose-500/20 border-red-400/30 text-red-700 dark:text-red-400"
-                                            : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-400/30 text-yellow-700 dark:text-yellow-400"
+                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm ${
+                                        sessionStatus === "APPROVED"
+                                          ? " text-white bg-green-700  border border-green-950 hover:bg-green-600 transition-colors duration-200"
+                                          : sessionStatus === "REJECTED"
+                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors duration-200"
+                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors duration-200"
                                       }`}
                                     >
-                                      {session.finalStatus?.toUpperCase() ===
-                                        "APPROVED" && "✅"}
-                                      {session.finalStatus?.toUpperCase() ===
-                                        "REJECTED" && "❌"}
-                                      {(!session.finalStatus ||
-                                        session.finalStatus?.toUpperCase() ===
-                                          "PENDING" ||
-                                        session.finalStatus?.toUpperCase() ===
-                                          "UNDER_REVIEW") &&
-                                        "⏳"}
-                                      {session.finalStatus || "PENDING"}
+                                      {sessionStatus === "APPROVED" && (
+                                        <svg
+                                          className="w-3.5 h-3.5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M5 13l4 4L19 7"
+                                          />
+                                        </svg>
+                                      )}
+                                      {sessionStatus === "REJECTED" && (
+                                        <svg
+                                          className="w-3.5 h-3.5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M6 18L18 6M6 6l12 12"
+                                          />
+                                        </svg>
+                                      )}
+                                      {sessionStatus === "PENDING" && (
+                                        <svg
+                                          className="w-3.5 h-3.5 animate-spin-slow"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                          />
+                                        </svg>
+                                      )}
+                                      <span className="ml-0.5">
+                                        {sessionStatus}
+                                      </span>
                                     </span>
                                     <button
                                       onClick={() => openMap(session)}
@@ -1597,24 +1713,19 @@ export default function TravelSessions() {
                         </p>
                         <span
                           className={`px-3 py-1 backdrop-blur-sm rounded-full text-sm font-semibold ${
-                            session.finalStatus?.toUpperCase() === "APPROVED"
+                            getSessionFinalStatus(session) === "APPROVED"
                               ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400"
-                              : session.finalStatus?.toUpperCase() ===
-                                  "REJECTED"
+                              : getSessionFinalStatus(session) === "REJECTED"
                                 ? "bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-400/30 text-red-700 dark:text-red-400"
                                 : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-yellow-700 dark:text-yellow-400"
                           }`}
                         >
-                          {session.finalStatus?.toUpperCase() === "APPROVED" &&
+                          {getSessionFinalStatus(session) === "APPROVED" &&
                             "✅"}
-                          {session.finalStatus?.toUpperCase() === "REJECTED" &&
+                          {getSessionFinalStatus(session) === "REJECTED" &&
                             "❌"}
-                          {(!session.finalStatus ||
-                            session.finalStatus?.toUpperCase() === "PENDING" ||
-                            session.finalStatus?.toUpperCase() ===
-                              "UNDER_REVIEW") &&
-                            "⏳"}
-                          {session.finalStatus || "PENDING"}
+                          {getSessionFinalStatus(session) === "PENDING" && "⏳"}
+                          {getSessionFinalStatus(session)}
                         </span>
                       </div>
                     </div>

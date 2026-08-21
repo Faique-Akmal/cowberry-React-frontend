@@ -58,6 +58,11 @@ interface TravelSessionState {
   isLoadingSessions: boolean;
   loadingLogs: Record<number, boolean>;
 
+  // ---- new flags for better state management ----
+  isInitialized: boolean;
+  initializationError: string | null;
+  isDataStale: boolean;
+
   // ---- in-flight dedupe ----
   _inFlightSessionsPromise: Promise<void> | null;
 
@@ -75,6 +80,12 @@ interface TravelSessionState {
     groupedData: GroupedSession[],
   ) => Promise<Record<string, any>>;
   clearCache: () => void;
+
+  // ---- new actions for better control ----
+  initializeStore: () => Promise<void>;
+  ensureDataLoaded: () => Promise<void>;
+  markDataStale: () => void;
+  resetStore: () => void;
 }
 
 export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
@@ -94,9 +105,84 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
   isLoadingSessions: false,
   loadingLogs: {},
 
+  isInitialized: false,
+  initializationError: null,
+  isDataStale: false,
+
   _inFlightSessionsPromise: null,
 
   setCurrentUserInfo: (info) => set({ currentUserInfo: info }),
+
+  /**
+   * Initialize the store - ensures data is loaded once
+   */
+  initializeStore: async () => {
+    const state = get();
+
+    // If already initialized and has data, return
+    if (state.isInitialized && state.travelSessions.length > 0) {
+      return;
+    }
+
+    // If there's an initialization error, try again
+    if (state.initializationError) {
+      set({ initializationError: null });
+    }
+
+    await get().loadAllSessions();
+    set({ isInitialized: true });
+  },
+
+  /**
+   * Ensure data is loaded, useful for components that need data
+   */
+  ensureDataLoaded: async () => {
+    const state = get();
+
+    // If data is stale, refresh it
+    if (state.isDataStale) {
+      await get().refreshSessions();
+      set({ isDataStale: false });
+      return;
+    }
+
+    // If not initialized or no data, load it
+    if (!state.isInitialized || state.travelSessions.length === 0) {
+      await get().initializeStore();
+    }
+  },
+
+  /**
+   * Mark data as stale (useful when user changes or filters change)
+   */
+  markDataStale: () => {
+    set({ isDataStale: true });
+  },
+
+  /**
+   * Reset the store completely
+   */
+  resetStore: () => {
+    set({
+      travelSessions: [],
+      sessionsMap: {},
+      users: [],
+      allSessions: [],
+      allFarmerData: {},
+      farmerDataCache: {},
+      sessionLogs: {},
+      logsPagination: {},
+      totalSessionsCount: 0,
+      lastUpdateTime: null,
+      lastFetchedAt: null,
+      isLoadingSessions: false,
+      loadingLogs: {},
+      isInitialized: false,
+      initializationError: null,
+      isDataStale: false,
+      _inFlightSessionsPromise: null,
+    });
+  },
 
   /**
    * Loads the full, paginated session list from the API, applies role-based
@@ -109,21 +195,32 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
   loadAllSessions: async (force = false) => {
     const state = get();
 
+    // If force is false and there's an in-flight promise, return it
     if (!force && state._inFlightSessionsPromise) {
       return state._inFlightSessionsPromise;
     }
 
+    // Check TTL cache
     if (
       !force &&
       state.lastFetchedAt &&
       Date.now() - state.lastFetchedAt < SESSIONS_TTL_MS &&
       state.travelSessions.length > 0
     ) {
+      // Data is fresh enough, but ensure initialized flag is set
+      if (!state.isInitialized) {
+        set({ isInitialized: true });
+      }
       return; // fresh enough, skip network call entirely
     }
 
     const run = async () => {
-      set({ isLoadingSessions: true });
+      set({
+        isLoadingSessions: true,
+        initializationError: null,
+        isDataStale: false,
+      });
+
       try {
         const currentUserInfo = get().currentUserInfo;
         const roleParams = buildRoleScopedParams(currentUserInfo);
@@ -194,11 +291,25 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
           totalSessionsCount: filteredSessions.length,
           lastUpdateTime: new Date(),
           lastFetchedAt: Date.now(),
+          isInitialized: true,
+          isLoadingSessions: false,
+          isDataStale: false,
+          initializationError: null,
         });
       } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load travel sessions";
         console.error("Failed to load travel sessions", err);
+        set({
+          isLoadingSessions: false,
+          initializationError: errorMessage,
+          isInitialized: false,
+        });
       } finally {
-        set({ isLoadingSessions: false, _inFlightSessionsPromise: null });
+        set({
+          isLoadingSessions: false,
+          _inFlightSessionsPromise: null,
+        });
       }
     };
 
@@ -257,6 +368,7 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
           travelSessions: updatedSessions,
           sessionsMap: newSessionsMap,
           lastUpdateTime: new Date(),
+          isDataStale: false,
         };
       });
     } catch (err) {
@@ -480,5 +592,8 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
       totalSessionsCount: 0,
       lastUpdateTime: null,
       lastFetchedAt: null,
+      isInitialized: false,
+      initializationError: null,
+      isDataStale: false,
     }),
 }));

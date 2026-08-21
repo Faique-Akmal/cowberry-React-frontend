@@ -990,9 +990,6 @@ const EmployeeCheckin = () => {
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Loading attendance logs...
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                This runs once — after that, filtering and export are instant.
-              </p>
             </div>
           ) : filteredLogs.length === 0 ? (
             <div className="p-6 text-center">

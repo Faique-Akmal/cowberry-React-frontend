@@ -4,6 +4,7 @@ import EmployeeChart from "../../components/hr/EmployeeChart";
 import BirthdaysToday from "../../components/hr/BirthdayCard";
 import Metrics from "../../components/hr/Metrics";
 import { useMemo } from "react";
+import PerformanceOverview from "../../components/hr/ProgressBar";
 // import MonthlySalesChart from "../../components/admin/AttendanceChart";
 // import DemographicCard from "../../components/ecommerce/DemographicCard";
 // import MapComponent from "../../components/Maps/MapComponent";
@@ -51,6 +52,10 @@ export default function Home() {
             <h1 className="text-lantern-blue-600">Users Role Distribution</h1>
           </div>
           <Metrics />
+        </div>
+
+        <div className="col-span-1 md:col-span-2 xl:col-span-12">
+          <PerformanceOverview />
         </div>
 
         {/* Chart */}

@@ -384,14 +384,16 @@ export async function exportTravelSessionsToExcel(
   await buildAndDownloadWorkbook(rows, filters);
 }
 
-// Fetch all travel sessions from API
+// Fetch all travel sessions from API - MODIFIED to accept userId
 async function fetchAllTravelSessionsForExport(
   startDate?: string,
   endDate?: string,
+  userId?: string, // Added userId parameter
 ): Promise<ApiUserBlock[]> {
   const params: Record<string, string> = {};
   if (startDate) params.startDate = startDate;
   if (endDate) params.endDate = endDate;
+  if (userId) params.userId = userId; // Pass userId to API
 
   const response = await API.get<ApiResponse>(
     "/tracking/locationlog/get_all_travel_sessions",
@@ -513,7 +515,6 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
           rejectedCount: isRejected ? 1 : 0,
           pendingCount: isPending ? 1 : 0,
           reimbursableDistance: isApproved ? sessionDistance : 0,
-          // NEW: counts distance from every session, regardless of status
           totalDistanceAllSessions: sessionDistance,
         });
       } else {
@@ -527,7 +528,6 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
         if (isApproved) {
           g.reimbursableDistance += sessionDistance;
         }
-        // NEW: accumulate regardless of status
         g.totalDistanceAllSessions += sessionDistance;
 
         if (new Date(session.startTime) < new Date(g.startTime)) {
@@ -544,19 +544,14 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
   return Array.from(groupedMap.values());
 }
 
-// Build rows from API data
+// Build rows from API data - MODIFIED to remove client-side user filtering
 function buildRowsFromApiData(
   userBlocks: ApiUserBlock[],
-  filters: Pick<ExportFilters, "selectedUser" | "appliedSearch"> = {},
+  filters: Pick<ExportFilters, "appliedSearch"> = {}, // Removed selectedUser from here
 ): ExportRow[] {
   let filteredBlocks = userBlocks;
 
-  if (filters.selectedUser) {
-    filteredBlocks = filteredBlocks.filter(
-      (b) => b.user.id.toString() === filters.selectedUser,
-    );
-  }
-
+  // Only apply search filter client-side (if needed)
   if (filters.appliedSearch) {
     const query = filters.appliedSearch.toLowerCase();
     filteredBlocks = filteredBlocks.filter(
@@ -611,7 +606,6 @@ function buildRowsFromApiData(
       REIMBURSEMENT_RATE_PER_KM
     ).toFixed(2);
 
-    // NEW: total distance & reimbursement across ALL sessions, regardless of status
     const totalReimbursementAllSessions = (
       (group.totalDistanceAllSessions / 1000) *
       REIMBURSEMENT_RATE_PER_KM
@@ -689,7 +683,7 @@ function buildRowsFromApiData(
   });
 }
 
-// Main export function
+// Main export function - MODIFIED to pass selectedUser to API
 export async function exportAllTravelSessionsFromAPI(
   startDate: string,
   endDate: string,
@@ -701,14 +695,19 @@ export async function exportAllTravelSessionsFromAPI(
     );
   }
 
-  const userBlocks = await fetchAllTravelSessionsForExport(startDate, endDate);
+  // Pass the selectedUser to the API fetch function
+  const userBlocks = await fetchAllTravelSessionsForExport(
+    startDate,
+    endDate,
+    filters.selectedUser, // This will filter by user at API level
+  );
 
   if (userBlocks.length === 0) {
     throw new Error("No travel sessions found for the selected date range.");
   }
 
+  // Build rows with only search filter (user filter already applied at API level)
   const rows = buildRowsFromApiData(userBlocks, {
-    selectedUser: filters.selectedUser,
     appliedSearch: filters.appliedSearch,
   });
 

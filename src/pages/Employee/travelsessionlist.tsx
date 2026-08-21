@@ -156,6 +156,9 @@ export default function TravelSessions() {
   const [isSearching, setIsSearching] = useState(false);
   const [showStats, setShowStats] = useState(true);
 
+  // State for user role
+  const [userRole, setUserRole] = useState<string>("");
+
   const customIcons = useMemo(
     () => ({
       startIcon: new L.Icon({
@@ -203,10 +206,35 @@ export default function TravelSessions() {
   );
 
   // ---------------------------------------------------------------------
-  // Current user info
+  // Current user info and role
   // ---------------------------------------------------------------------
   useEffect(() => {
     try {
+      // Get user role from localStorage
+      const roleFromStorage = localStorage.getItem("userRole");
+      if (roleFromStorage) {
+        setUserRole(roleFromStorage.toUpperCase().trim());
+      } else {
+        // Fallback: try to get from user object
+        const userDataStr = localStorage.getItem("user");
+        let userData: any = null;
+        if (userDataStr) {
+          try {
+            userData = JSON.parse(userDataStr);
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+
+        let userRoleFromData = "";
+        if (userData?.userRole) userRoleFromData = userData.userRole;
+        else if (userData?.role) userRoleFromData = userData.role;
+        else if (userData?.user_role) userRoleFromData = userData.user_role;
+
+        setUserRole(userRoleFromData.toUpperCase().trim());
+      }
+
+      // Get other user info
       const userDataStr = localStorage.getItem("user");
       let userData: any = null;
       if (userDataStr) {
@@ -217,16 +245,16 @@ export default function TravelSessions() {
         }
       }
 
-      let userRole = "";
+      let userRoleFromData = "";
       if (localStorage.getItem("userRole"))
-        userRole = localStorage.getItem("userRole") || "";
+        userRoleFromData = localStorage.getItem("userRole") || "";
       else if (localStorage.getItem("role"))
-        userRole = localStorage.getItem("role") || "";
+        userRoleFromData = localStorage.getItem("role") || "";
       else if (localStorage.getItem("user_role"))
-        userRole = localStorage.getItem("user_role") || "";
-      else if (userData?.userRole) userRole = userData.userRole;
-      else if (userData?.role) userRole = userData.role;
-      else if (userData?.user_role) userRole = userData.user_role;
+        userRoleFromData = localStorage.getItem("user_role") || "";
+      else if (userData?.userRole) userRoleFromData = userData.userRole;
+      else if (userData?.role) userRoleFromData = userData.role;
+      else if (userData?.user_role) userRoleFromData = userData.user_role;
 
       let department = localStorage.getItem("department") || "";
       if (!department && userData?.department) department = userData.department;
@@ -240,7 +268,7 @@ export default function TravelSessions() {
         allocatedArea = userData.allocated_area;
 
       setCurrentUserInfo({
-        userRole: userRole.toLowerCase().trim(),
+        userRole: userRoleFromData.toLowerCase().trim(),
         department: department.toLowerCase().trim(),
         allocatedArea: allocatedArea.toLowerCase().trim(),
       });
@@ -735,28 +763,31 @@ export default function TravelSessions() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={exportToCSV}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                    isExporting
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : " bg-lantern-blue-600 hover:bg-blue-700"
-                  } text-white transition-all whitespace-nowrap`}
-                  title="Export grouped sessions with detailed farmer data"
-                  disabled={isExporting}
-                >
-                  {isExporting ? (
-                    <>
-                      <FaSync className="animate-spin flex-shrink-0" />
-                      <span>Exporting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaFileCsv className="flex-shrink-0" />
-                      <span>Export To CSV</span>
-                    </>
-                  )}
-                </button>
+                {/* Export button - Only show for HR role */}
+                {userRole === "HR" && (
+                  <button
+                    onClick={exportToCSV}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                      isExporting
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-lantern-blue-600 hover:bg-green-900"
+                    } text-white transition-all whitespace-nowrap`}
+                    title="Export grouped sessions with detailed farmer data"
+                    disabled={isExporting}
+                  >
+                    {isExporting ? (
+                      <>
+                        <FaSync className="animate-spin flex-shrink-0" />
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaFileCsv className="flex-shrink-0" />
+                        <span>Export To CSV</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <button
                   onClick={manualRefresh}
@@ -810,7 +841,7 @@ export default function TravelSessions() {
                 onClick={() => setShowStats(!showStats)}
                 className={`flex items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 ${
                   showStats
-                    ? " bg-lantern-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                    ? "bg-lantern-blue-600 hover:bg-green-900 text-white shadow-lg"
                     : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
                 }`}
                 title={showStats ? "Hide statistics" : "Show statistics"}
@@ -858,7 +889,7 @@ export default function TravelSessions() {
                         </p>
                       )}
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaListAlt className="text-blue-500 text-xl" />
                     </div>
                   </div>
@@ -874,7 +905,7 @@ export default function TravelSessions() {
                         {activeSessions}
                       </p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaPlayCircle className="text-green-500 text-xl" />
                     </div>
                   </div>
@@ -890,8 +921,8 @@ export default function TravelSessions() {
                         {(totalDistance / 1000).toFixed(1)} km
                       </p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
-                      <FaRoad className="text-purple-500 text-xl" />
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
+                      <FaRoad className="text-gray-700 text-xl" />
                     </div>
                   </div>
                 </div>
@@ -913,13 +944,18 @@ export default function TravelSessions() {
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {approvedSessionCount > 0
-                          ? `${approvedSessionCount} approved · ${(
-                              reimbursableDistance / 1000
-                            ).toFixed(2)} km · ₹${RATE_PER_KM}/km`
+                          ? `${approvedSessionCount} approved `
                           : "No approved sessions"}
+                        <br />
+
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {approvedSessionCount > 0
+                            ? ` ${(reimbursableDistance / 1000).toFixed(2)} km · ₹${RATE_PER_KM}/km`
+                            : "No approved sessions"}
+                        </span>
                       </p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaRupeeSign className="text-green-500 text-xl" />
                     </div>
                   </div>
@@ -975,7 +1011,7 @@ export default function TravelSessions() {
                     )}
                     <button
                       onClick={handleSearchSubmit}
-                      className="px-3 py-1.5  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
+                      className="px-3 py-1.5 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
                     >
                       <FaSearch className="text-xs" />
                     </button>
@@ -1153,7 +1189,7 @@ export default function TravelSessions() {
               {isDateFilterActive && (
                 <button
                   onClick={clearDateFilter}
-                  className="mt-4 px-4 py-2  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                  className="mt-4 px-4 py-2 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-xl"
                 >
                   Clear Date Filter
                 </button>
@@ -1205,7 +1241,7 @@ export default function TravelSessions() {
                                   className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
                                     group.activeSessions > 0
                                       ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400"
-                                      : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400"
+                                      : "bg-lantern-blue-600 border border-blue-400/30 text-white dark:text-blue-400"
                                   }`}
                                 >
                                   {group.activeSessions > 0
@@ -1332,7 +1368,7 @@ export default function TravelSessions() {
                               selectedUserForFarmerData ===
                                 group.userId.toString()
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                                : "bg-lantern-blue-600 hover:bg-green-900"
                             } text-white`}
                             disabled={
                               isLoadingFarmerData &&
@@ -1541,7 +1577,7 @@ export default function TravelSessions() {
                       <div className="flex flex-col sm:flex-row gap-5">
                         <button
                           onClick={() => openMultiSessionMap(group)}
-                          className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-lantern-blue-600 hover:bg-blue-600 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                          className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-lantern-blue-600 hover:bg-green-900 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
                         >
                           <FaLayerGroup className="text-xl" />
                           View All Sessions on Map
@@ -1565,7 +1601,7 @@ export default function TravelSessions() {
                               selectedUserForFarmerData ===
                                 group.userId.toString()
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                                : "bg-lantern-blue-600 hover:bg-green-900"
                             } text-white`}
                             disabled={
                               isLoadingFarmerData &&
@@ -1612,7 +1648,7 @@ export default function TravelSessions() {
             {isDateFilterActive && (
               <button
                 onClick={clearDateFilter}
-                className="mt-4 px-4 py-2  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                className="mt-4 px-4 py-2 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-xl"
               >
                 Clear Date Filter
               </button>
@@ -1744,7 +1780,7 @@ export default function TravelSessions() {
                           selectedUserForFarmerData ===
                             session.userId.toString()
                             ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-lantern-blue-600 hover:bg-blue-700"
+                            : "bg-lantern-blue-600 hover:bg-green-900"
                         } text-white`}
                         disabled={
                           isLoadingFarmerData &&
@@ -1768,7 +1804,7 @@ export default function TravelSessions() {
                       </button>
                       <button
                         onClick={() => openMap(session)}
-                        className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
+                        className="px-3 py-2 bg-lantern-blue-600 hover:bg-green-900 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
                       >
                         <FaEye />
                         View Map

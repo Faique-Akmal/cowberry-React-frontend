@@ -408,10 +408,10 @@ const PerformanceOverview: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-2xl font-bold text-lantern-blue-600">
             Performance Overview
           </h2>
-          <p className="text-gray-500 text-sm">
+          <p className="text-black text-sm">
             Distance travelled by employees
             {lastUpdateTime && (
               <span className="ml-2 text-xs text-gray-400">
@@ -420,15 +420,15 @@ const PerformanceOverview: React.FC = () => {
             )}
           </p>
           {/* Role-based info */}
-          {currentUserInfo && (
-            <p className="text-xs text-gray-400 mt-1">
+          {/* {currentUserInfo && (
+            <p className="text-xs text-gray-400  border  mt-1">
               {getUserCountInfo()} • Role: {getRoleDisplayName()}
               {currentUserInfo.department &&
                 ` • Dept: ${currentUserInfo.department}`}
               {currentUserInfo.allocatedArea &&
                 ` • Zone: ${currentUserInfo.allocatedArea}`}
             </p>
-          )}
+          )} */}
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">

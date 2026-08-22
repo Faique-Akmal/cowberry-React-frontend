@@ -356,7 +356,7 @@ export default function UserMetaCard() {
               backdrop-blur-sm
             "
                 >
-                  {meUserData.username?.charAt(0).toUpperCase() || "?"}
+                  {meUserData.fullName?.charAt(0).toUpperCase() || "?"}
                 </div>
               )}
             </div>
@@ -371,7 +371,7 @@ export default function UserMetaCard() {
             bg-clip-text 
           "
               >
-                {meUserData.username}
+                {meUserData.fullName}
               </h4>
 
               <div

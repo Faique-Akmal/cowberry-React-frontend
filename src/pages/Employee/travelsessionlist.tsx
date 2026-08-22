@@ -920,6 +920,10 @@ export default function TravelSessions() {
                       <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
                         {(totalDistance / 1000).toFixed(1)} km
                       </p>
+                      <p className="text-sm font-bold mt-1 text-black dark:text-white">
+                        <FaRupeeSign className="text-green-500 text-lg inline-block mr-1" />
+                        {((totalDistance / 1000) * 3.5).toFixed(1)}
+                      </p>
                     </div>
                     <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaRoad className="text-gray-700 text-xl" />
@@ -951,7 +955,7 @@ export default function TravelSessions() {
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {approvedSessionCount > 0
                             ? ` ${(reimbursableDistance / 1000).toFixed(2)} km · ₹${RATE_PER_KM}/km`
-                            : "No approved sessions"}
+                            : ""}
                         </span>
                       </p>
                     </div>
@@ -1092,9 +1096,9 @@ export default function TravelSessions() {
                   onChange={(e) => setSelectedApprovalStatus(e.target.value)}
                 >
                   <option value="ALL">All Status</option>
-                  <option value="APPROVED">✅ Approved</option>
-                  <option value="REJECTED">❌ Rejected</option>
-                  <option value="PENDING">⏳ Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                  <option value="PENDING">Pending</option>
                 </select>
               </div>
             </div>
@@ -1253,7 +1257,7 @@ export default function TravelSessions() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-8">
                           <div className="text-right">
                             <div className="flex items-center gap-3">
                               <div className="text-center">
@@ -1276,8 +1280,16 @@ export default function TravelSessions() {
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Distance
                                 </p>
+
                                 <p className="text-lg font-bold text-gray-800 dark:text-white">
                                   {(group.totalDistance / 1000).toFixed(1)} km
+                                </p>
+
+                                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                  ₹
+                                  {((group.totalDistance / 1000) * 3.5).toFixed(
+                                    1,
+                                  )}
                                 </p>
                               </div>
                               <div className="text-center">

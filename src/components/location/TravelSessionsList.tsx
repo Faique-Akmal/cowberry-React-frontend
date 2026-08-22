@@ -187,11 +187,6 @@ export default function TravelSessionsList({
             const hasMoreSessions =
               group.sessions.length > 0 && !group.allSessionsLoaded;
 
-            // Field employees: their first session of the day is excluded
-            // from the visible list and from all counts. Every other role
-            // sees every session starting from the first one.
-            // NOTE: group.sessions is sorted ascending by startTime, so
-            // index 0 is always the earliest session of the day.
             const displaySessions = group.isFieldEmployee
               ? group.sessions.slice(1)
               : group.sessions;
@@ -251,7 +246,7 @@ export default function TravelSessionsList({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-8">
                       <div className="text-right">
                         <div className="flex items-center gap-3">
                           <div className="text-center">

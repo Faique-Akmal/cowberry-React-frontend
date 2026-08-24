@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom"; // Add this import
 import { toast, Toaster } from "react-hot-toast";
 import API from "../api/axios";
 import {
@@ -10,6 +11,12 @@ import {
   Calendar,
   Briefcase,
   Eye,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Users,
 } from "lucide-react";
 
 // Types
@@ -63,8 +70,21 @@ interface ApiResponse {
   data: TravelSession[];
 }
 
+interface FilterState {
+  searchTerm: string;
+  dateFrom: string;
+  dateTo: string;
+  status: string;
+}
+
+// Portal component for modals - Using createPortal from react-dom
+const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return createPortal(children, document.body);
+};
+
 const ReporteeTravelSessionManager: React.FC = () => {
   const [sessions, setSessions] = useState<TravelSession[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<TravelSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [processing, setProcessing] = useState<number | null>(null);
   const [selectedSession, setSelectedSession] = useState<TravelSession | null>(
@@ -74,6 +94,16 @@ const ReporteeTravelSessionManager: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState<boolean>(false);
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
   const [actionType, setActionType] = useState<"approve" | "reject">("approve");
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [suggestions, setSuggestions] = useState<TravelSession[]>([]);
+
+  const [filters, setFilters] = useState<FilterState>({
+    searchTerm: "",
+    dateFrom: "",
+    dateTo: "",
+    status: "ALL",
+  });
 
   const fetchPendingSessions = async () => {
     try {
@@ -84,6 +114,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
       if (response.data.success) {
         setSessions(response.data.data);
+        setFilteredSessions(response.data.data);
         if (response.data.data.length === 0) {
           toast.success("No pending sessions found");
         }
@@ -101,6 +132,75 @@ const ReporteeTravelSessionManager: React.FC = () => {
   useEffect(() => {
     fetchPendingSessions();
   }, []);
+
+  // Filter and search functionality
+  useEffect(() => {
+    let result = [...sessions];
+
+    // Search filter
+    if (filters.searchTerm.trim()) {
+      const searchLower = filters.searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (session) =>
+          session.fullName.toLowerCase().includes(searchLower) ||
+          session.username.toLowerCase().includes(searchLower) ||
+          session.employeeCode.toLowerCase().includes(searchLower) ||
+          session.userId.toString().includes(searchLower),
+      );
+    }
+
+    // Date range filter
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      result = result.filter(
+        (session) => new Date(session.startTime) >= fromDate,
+      );
+    }
+
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      result = result.filter(
+        (session) => new Date(session.startTime) <= toDate,
+      );
+    }
+
+    // Status filter
+    if (filters.status !== "ALL") {
+      if (filters.status === "PENDING_REPORTEE") {
+        result = result.filter((session) => canApproveByReportee(session));
+      } else if (filters.status === "APPROVED_REPORTEE") {
+        result = result.filter((session) => session.isApprovedByReportee);
+      } else if (filters.status === "REJECTED_REPORTEE") {
+        result = result.filter((session) => session.isRejectedByReportee);
+      } else {
+        result = result.filter(
+          (session) => session.finalStatus === filters.status,
+        );
+      }
+    }
+
+    setFilteredSessions(result);
+
+    // Update suggestions
+    if (filters.searchTerm.trim()) {
+      const searchLower = filters.searchTerm.toLowerCase().trim();
+      const matched = sessions
+        .filter(
+          (session) =>
+            session.fullName.toLowerCase().includes(searchLower) ||
+            session.username.toLowerCase().includes(searchLower) ||
+            session.employeeCode.toLowerCase().includes(searchLower),
+        )
+        .slice(0, 10);
+      setSuggestions(matched);
+      setShowSuggestions(matched.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [filters, sessions]);
 
   const handleAction = async (
     sessionId: number,
@@ -141,22 +241,30 @@ const ReporteeTravelSessionManager: React.FC = () => {
     setActionType(action);
     setComments("");
     setShowActionModal(true);
+    // Prevent body scroll
+    document.body.style.overflow = "hidden";
   };
 
   const openDetailsModal = (session: TravelSession) => {
     setSelectedSession(session);
     setShowDetailsModal(true);
+    // Prevent body scroll
+    document.body.style.overflow = "hidden";
   };
 
   const closeActionModal = () => {
     setShowActionModal(false);
     setSelectedSession(null);
     setComments("");
+    // Restore body scroll
+    document.body.style.overflow = "unset";
   };
 
   const closeDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedSession(null);
+    // Restore body scroll
+    document.body.style.overflow = "unset";
   };
 
   const formatDate = (dateString: string | null) => {
@@ -195,6 +303,24 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
   const canApproveByReportee = (session: TravelSession) => {
     return !session.isApprovedByReportee && !session.isRejectedByReportee;
+  };
+
+  const handleSuggestionClick = (session: TravelSession) => {
+    setFilters({
+      ...filters,
+      searchTerm: session.fullName,
+    });
+    setShowSuggestions(false);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      searchTerm: "",
+      dateFrom: "",
+      dateTo: "",
+      status: "ALL",
+    });
+    setShowSuggestions(false);
   };
 
   const DetailRow = ({
@@ -243,7 +369,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             <button
               onClick={fetchPendingSessions}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -254,25 +380,191 @@ const ReporteeTravelSessionManager: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
             <p className="text-sm text-gray-500">Total Sessions</p>
             <p className="text-2xl font-bold text-gray-900">
-              {sessions.length}
+              {filteredSessions.length}
             </p>
           </div>
           <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
             <p className="text-sm text-gray-500">Pending Actions</p>
             <p className="text-2xl font-bold text-yellow-600">
-              {sessions.filter((s) => canApproveByReportee(s)).length}
+              {filteredSessions.filter((s) => canApproveByReportee(s)).length}
             </p>
           </div>
           <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
             <p className="text-sm text-gray-500">Completed</p>
             <p className="text-2xl font-bold text-green-600">
-              {sessions.filter((s) => !canApproveByReportee(s)).length}
+              {filteredSessions.filter((s) => !canApproveByReportee(s)).length}
             </p>
           </div>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar with Suggestions */}
+            <div className="flex-1 relative z-50">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, username, employee code..."
+                  value={filters.searchTerm}
+                  onChange={(e) => {
+                    setFilters({ ...filters, searchTerm: e.target.value });
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => {
+                    if (filters.searchTerm.trim()) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                {filters.searchTerm && (
+                  <button
+                    onClick={() => {
+                      setFilters({ ...filters, searchTerm: "" });
+                      setShowSuggestions(false);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-72 overflow-y-auto z-[9999]">
+                  {suggestions.map((session) => (
+                    <button
+                      key={session.sessionId}
+                      onClick={() => handleSuggestionClick(session)}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 text-left"
+                    >
+                      <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+                        <User className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {session.fullName}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          @{session.username} • {session.employeeCode}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0">
+                        #{session.sessionId}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Toggle Filters Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap"
+            >
+              <Filter className="w-5 h-5" />
+              <span>Filters</span>
+              {showFilters ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+              {(filters.dateFrom ||
+                filters.dateTo ||
+                filters.status !== "ALL") && (
+                <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+              )}
+            </button>
+          </div>
+
+          {/* Filter Section */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Date From */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date From
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) =>
+                      setFilters({ ...filters, dateFrom: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Date To */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date To
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) =>
+                      setFilters({ ...filters, dateTo: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) =>
+                      setFilters({ ...filters, status: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="ALL">All Status</option>
+                    <option value="PENDING_REPORTEE">Pending - Reportee</option>
+                    <option value="APPROVED_REPORTEE">
+                      Approved by Reportee
+                    </option>
+                    <option value="REJECTED_REPORTEE">
+                      Rejected by Reportee
+                    </option>
+                    <option value="PENDING">Pending - Final</option>
+                    <option value="APPROVED">Approved - Final</option>
+                    <option value="REJECTED">Rejected - Final</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+                >
+                  Clear All Filters
+                </button>
+                <span className="text-sm text-gray-500 ml-auto">
+                  Showing {filteredSessions.length} of {sessions.length}{" "}
+                  sessions
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sessions List */}
@@ -282,21 +574,21 @@ const ReporteeTravelSessionManager: React.FC = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
               <p className="text-gray-600 mt-4">Loading sessions...</p>
             </div>
-          ) : sessions.length === 0 ? (
+          ) : filteredSessions.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Clock className="w-10 h-10 text-gray-400" />
               </div>
               <p className="text-gray-600 text-lg font-medium">
-                No pending travel sessions
+                No sessions found
               </p>
               <p className="text-gray-500 text-sm mt-1">
-                All sessions have been processed
+                Try adjusting your search or filters
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {sessions.map((session) => (
+              {filteredSessions.map((session) => (
                 <div
                   key={session.sessionId}
                   className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden cursor-pointer"
@@ -343,7 +635,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500">Distance</span>
                         <span className="text-gray-900 font-medium">
-                          {session.totalDistance} km
+                          {(session.totalDistance / 1000).toFixed(2)} km
                         </span>
                       </div>
                     </div>
@@ -358,7 +650,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                           <button
                             onClick={() => openActionModal(session, "approve")}
                             disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-green-800 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-4 h-4 inline mr-1.5" />
                             Approve
@@ -399,10 +691,12 @@ const ReporteeTravelSessionManager: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Action Modal */}
-        {showActionModal && selectedSession && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {/* Modals rendered at root level using Portal */}
+      {showActionModal && selectedSession && (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -482,11 +776,12 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        </ModalPortal>
+      )}
 
-        {/* Details Modal */}
-        {showDetailsModal && selectedSession && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {showDetailsModal && selectedSession && (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
               <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 flex justify-between items-start z-10">
                 <div>
@@ -573,7 +868,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   />
                   <DetailRow
                     label="Total Distance"
-                    value={`${selectedSession.totalDistance} km`}
+                    value={`${(selectedSession.totalDistance / 1000).toFixed(2)} km`}
                   />
                 </div>
 
@@ -654,8 +949,8 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </ModalPortal>
+      )}
 
       <style>{`
         @keyframes fadeIn {

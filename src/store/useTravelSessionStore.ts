@@ -1,20 +1,3 @@
-// src/store/useTravelSessionStore.ts
-// Zustand store for the Travel Sessions admin page.
-//
-// Why this exists:
-// The original component re-fetched the full session list, farmer/travel
-// data, and per-session logs on almost every interaction (opening a map,
-// re-exporting, auto-refresh, etc). This store centralizes that data so it
-// is fetched once and reused:
-//   - `loadAllSessions()` is TTL-cached (SESSIONS_TTL_MS) and dedupes
-//     concurrent calls with an in-flight promise.
-//   - `fetchSessionLogs()` only hits the network if that page isn't already
-//     cached in `sessionLogs`.
-//   - `loadFarmerDataForGroups()` reuses `farmerDataCache`, keyed by
-//     `${userId}:${start}:${end}`, exactly like the previous farmerDataCacheRef.
-//   - `refreshSessions()` / `clearCache()` are the only ways to force a
-//     network round-trip, so manual refresh / auto-refresh stay explicit.
-
 import { create } from "zustand";
 import API from "../api/axios";
 import {

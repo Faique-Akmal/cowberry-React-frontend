@@ -936,7 +936,7 @@ export default function SignInForm() {
 
             {/* soft blob backgrounds */}
             <div className="absolute -top-16 -left-16 w-82 h-72 bg-blue-400 rounded-full opacity-40 blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-full h-30 bg-yellow-300  rounded-t-[80%]" />
+            {/* <div className="absolute bottom-0 left-0 w-full h-30 bg-yellow-300  rounded-t-[80%]" /> */}
 
             <div className="relative z-10 flex flex-col items-center pt-4 ">
               <img

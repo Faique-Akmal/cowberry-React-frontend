@@ -379,7 +379,7 @@ const PerformanceOverview: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
           <p className="font-semibold text-gray-800">{label}</p>
           <p className="text-blue-600 font-medium">
-            Distance: {data.distance.toFixed(2)} km
+            Distance: {(data.distance / 1000).toFixed(2)} km
           </p>
           {data.sessionCount > 0 && (
             <p className="text-gray-600 text-sm">
@@ -446,7 +446,7 @@ const PerformanceOverview: React.FC = () => {
               backgroundSize: "16px",
             }}
           >
-            {(["all", "approved", "pending", "rejected"] as const).map(
+            {(["all sessions", "approved", "pending", "rejected"] as const).map(
               (status) => (
                 <option key={status} value={status} className="capitalize">
                   {status}

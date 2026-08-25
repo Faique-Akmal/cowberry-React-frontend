@@ -395,9 +395,10 @@ export default function TravelSessions() {
   };
 
   const handleSearchSubmit = () => {
-    setAppliedSearch(searchQuery);
-    setIsSearching(true);
-    setTimeout(() => setIsSearching(false), 500);
+    const query = searchQuery.trim();
+
+    setAppliedSearch(query);
+    setIsSearching(false);
   };
 
   const handleClearSearch = () => {
@@ -1000,7 +1001,10 @@ export default function TravelSessions() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSearchSubmit();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSearchSubmit();
+                      }
                     }}
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">

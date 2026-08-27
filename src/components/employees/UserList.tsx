@@ -255,6 +255,8 @@ const UserList: React.FC = () => {
             role: user.role?.name || user.role || "",
             roleId: user.roleId || user.role?.id || 0,
             is_checkin: user.is_checkin || user.isCheckin || false,
+            isActiveEmployee:
+              user.isActiveEmployee || user.is_active_employee || false,
             department: user.department?.name || user.department || "",
             departmentId: user.departmentId || user.department?.id || 0,
             profile_image: user.profileImageUrl || user.profile_image || "",
@@ -482,6 +484,8 @@ const UserList: React.FC = () => {
           role: userData.role?.name || userData.role || "",
           roleId: userData.roleId || userData.role?.id || 0,
           is_checkin: userData.is_checkin || userData.isCheckin || false,
+          // isActiveEmployee:userData.isActiveEmployee || userData.isActiveEmployee || false,
+
           department: userData.department?.name || userData.department || "",
           departmentId: userData.departmentId || userData.department?.id || 0,
           profile_image:

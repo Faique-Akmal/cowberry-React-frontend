@@ -918,7 +918,7 @@ export default function TravelSessions() {
                       <p className="text-sm text-gray-600 dark:text-gray-300">
                         Total Distance
                       </p>
-                      <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
+                      <p className="text-xl font-bold mt-1 text-gray-800 dark:text-white">
                         {(totalDistance / 1000).toFixed(1)} km
                       </p>
                       <p className="text-sm font-bold mt-1 text-black dark:text-white">

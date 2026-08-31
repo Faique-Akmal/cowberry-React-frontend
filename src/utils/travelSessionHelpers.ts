@@ -238,6 +238,13 @@ export const isAdminOrHR = (role?: string): boolean => {
 
 export const isManager = (role?: string): boolean => {
   const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  // Guard against substring false-positives: "zonalmanager" and any HOD
+  // variant both contain "manager"/overlap loosely, which used to make
+  // isManager() true for them too and silently route zonal managers into
+  // the department-filter branch instead of the zone-filter branch. Check
+  // the more specific roles out first.
+  if (isZonalManager(normalized) || isHOD(normalized)) return false;
   return normalized === "manager" || normalized.includes("manager");
 };
 
@@ -270,6 +277,37 @@ export const isFieldEmployee = (role?: string): boolean => {
   );
 };
 
+/**
+ * Resolve a zonal manager's zone identifier from their userInfo.
+ *
+ * IMPORTANT: the manager's zoneId (from localStorage/login, e.g. `3`) is the
+ * zone's numeric internal id - it matches `session.zone.id` on session/user
+ * records, NOT `session.zone.zoneId` (the string code, e.g. "AHM001") and
+ * NOT `allocatedArea` (a broad category like "General"/"naturalfarming"
+ * shared across many zones). Coerce to string before comparing since ids
+ * are numbers.
+ */
+const getManagerZoneId = (userInfo: UserInfo | null): string => {
+  if (!userInfo) return "";
+  const raw =
+    (userInfo as any).zoneId ??
+    (userInfo as any).zone?.id ??
+    (userInfo as any).zone?.zoneId ??
+    "";
+  return raw === "" || raw === null || raw === undefined
+    ? ""
+    : String(raw).toLowerCase().trim();
+};
+
+/** Resolve a session/user record's zone identifier the same way. */
+const getRecordZoneId = (record: any): string => {
+  if (!record) return "";
+  const raw = record.zone?.id ?? record.zoneId ?? record.zone?.zoneId ?? "";
+  return raw === "" || raw === null || raw === undefined
+    ? ""
+    : String(raw).toLowerCase().trim();
+};
+
 /** Role-based query params to send to the API so filtering happens server-side too. */
 export const buildRoleScopedParams = (
   userInfo: UserInfo | null,
@@ -279,12 +317,11 @@ export const buildRoleScopedParams = (
 
   const role = userInfo.userRole.toLowerCase().trim();
 
-  if (isManager(role) || isHOD(role)) {
-    if (userInfo.department) params.department = userInfo.department;
-  }
-
   if (isZonalManager(role)) {
-    if (userInfo.allocatedArea) params.allocatedArea = userInfo.allocatedArea;
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (managerZoneId) params.zoneId = managerZoneId;
+  } else if (isManager(role) || isHOD(role)) {
+    if (userInfo.department) params.department = userInfo.department;
   }
 
   return params;
@@ -299,19 +336,17 @@ export const filterSessionsByRole = (
 
   if (isAdminOrHR(userRole)) return sessions;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return [];
+    return sessions.filter((s) => getRecordZoneId(s) === managerZoneId);
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return [];
     return sessions.filter(
       (s) => (s.department || "").toLowerCase().trim() === managerDepartment,
-    );
-  }
-
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return [];
-    return sessions.filter(
-      (s) => (s.allocatedArea || "").toLowerCase().trim() === zonalArea,
     );
   }
 
@@ -327,19 +362,17 @@ export const filterUsersByRole = (
 
   if (isAdminOrHR(userRole)) return usersList;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return [];
+    return usersList.filter((u) => getRecordZoneId(u) === managerZoneId);
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return [];
     return usersList.filter(
       (u) => (u.department || "").toLowerCase().trim() === managerDepartment,
-    );
-  }
-
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return [];
-    return usersList.filter(
-      (u) => (u.allocatedArea || "").toLowerCase().trim() === zonalArea,
     );
   }
 
@@ -355,18 +388,18 @@ export const hasPermissionToViewSession = (
 
   if (isAdminOrHR(userRole)) return true;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return false;
+    return getRecordZoneId(session) === managerZoneId;
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return false;
     return (
       (session.department || "").toLowerCase().trim() === managerDepartment
     );
-  }
-
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return false;
-    return (session.allocatedArea || "").toLowerCase().trim() === zonalArea;
   }
 
   return true;

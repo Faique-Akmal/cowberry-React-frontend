@@ -430,6 +430,7 @@ export default function SignInForm() {
     localStorage.setItem("userId", admin?.id || "");
     localStorage.setItem("username", admin?.username || "");
     localStorage.setItem("email", admin?.email || "");
+
     localStorage.setItem("token", token || "");
     localStorage.setItem("isAdmin", "true");
 
@@ -498,6 +499,8 @@ export default function SignInForm() {
     localStorage.setItem("username", user?.username || "");
     localStorage.setItem("employee_code", user?.employee_code || "");
     localStorage.setItem("email", user?.email || "");
+    localStorage.setItem("zone", user?.zone.name || "");
+    localStorage.setItem("zoneId", user?.zone.id || "");
     localStorage.setItem("mobileNo", user?.mobileNo || "");
     localStorage.setItem("token", tokens?.access || user?.accesstoken || "");
     localStorage.setItem("refreshToken", tokens?.refresh || "");

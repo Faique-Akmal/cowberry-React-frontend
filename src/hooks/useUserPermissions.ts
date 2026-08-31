@@ -7,12 +7,15 @@ export const useUserPermissions = (currentUser: CurrentUser | null) => {
     (user: User): boolean => {
       if (!currentUser) return false;
 
-      const userRole = currentUser.role;
+      const userRole = normalizeRole(currentUser.role);
 
       switch (userRole) {
         case "hr":
+        case "admin":
           return true;
-        case "manager": {
+        case "manager":
+        case "headofdepartment":
+        case "head of department": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
 
@@ -25,7 +28,7 @@ export const useUserPermissions = (currentUser: CurrentUser | null) => {
         }
         case "zonalmanager":
         case "zonal manager":
-          return false;
+          return false; // Zonal managers cannot edit anyone
         default:
           return false;
       }
@@ -37,36 +40,18 @@ export const useUserPermissions = (currentUser: CurrentUser | null) => {
     (user: User): boolean => {
       if (!currentUser) return false;
 
-      const userRole = currentUser.role;
-      const normalizedUserRole = normalizeRole(user.role);
+      const userRole = normalizeRole(currentUser.role);
 
-      // Only HR and Manager can delete users
-      if (userRole !== "hr" && userRole !== "manager") return false;
+      // Only HR/Admin can delete users
+      if (userRole !== "hr" && userRole !== "admin") return false;
 
       // Prevent users from deleting themselves
       if (currentUser.id === user.id || currentUser.id === user.userId) {
         return false;
       }
 
-      switch (userRole) {
-        case "hr":
-          // HR can delete all users except themselves
-          return true;
-        case "manager": {
-          if (!currentUser.departmentName && !currentUser.department)
-            return false;
-
-          const managerDept = normalizeString(
-            currentUser.departmentName || currentUser.department,
-          );
-          const userDept = normalizeString(user.department);
-
-          // Manager can only delete users from their own department
-          return managerDept === userDept;
-        }
-        default:
-          return false;
-      }
+      // HR/Admin can delete all users except themselves
+      return true;
     },
     [currentUser],
   );
@@ -74,12 +59,15 @@ export const useUserPermissions = (currentUser: CurrentUser | null) => {
   const canViewUser = useCallback(
     (user: User): boolean => {
       if (!currentUser) return false;
-      const userRole = currentUser.role;
+      const userRole = normalizeRole(currentUser.role);
 
       switch (userRole) {
         case "hr":
+        case "admin":
           return true;
-        case "manager": {
+        case "manager":
+        case "headofdepartment":
+        case "head of department": {
           if (!currentUser.departmentName && !currentUser.department)
             return false;
           const managerDept = normalizeString(
@@ -90,10 +78,25 @@ export const useUserPermissions = (currentUser: CurrentUser | null) => {
         }
         case "zonalmanager":
         case "zonal manager": {
-          if (!currentUser.zoneId) return false;
-          const managerZoneId = normalizeString(currentUser.zoneId);
-          const userZoneId = normalizeString(user.zoneId || "");
-          return managerZoneId === userZoneId;
+          // IMPORTANT: currentUser.zoneId (from localStorage/login) is the
+          // zone's numeric internal id (e.g. 3), which matches user.zone.id
+          // on the list items - NOT user.zone.zoneId (the string code, e.g.
+          // "AHM001"). Match against zone.id first, fall back to zoneId /
+          // zone.zoneId in case the manager's zone is ever stored that way.
+          const managerZoneId =
+            currentUser.zoneId ||
+            currentUser.zone?.id ||
+            currentUser.zone?.zoneId ||
+            "";
+          if (!managerZoneId) return false;
+
+          const normalizedManagerZoneId = normalizeString(
+            String(managerZoneId),
+          );
+          const userZoneId = normalizeString(
+            String(user.zone?.id ?? user.zoneId ?? user.zone?.zoneId ?? ""),
+          );
+          return normalizedManagerZoneId === userZoneId;
         }
         default:
           return true;

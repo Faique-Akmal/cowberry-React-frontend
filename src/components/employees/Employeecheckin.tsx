@@ -28,6 +28,18 @@ import PageMeta from "../common/PageMeta";
 import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
 import { useAttendanceStore } from "../../store/attendanceStore";
 
+interface Zone {
+  id: number;
+  zoneId: string;
+  name: string;
+  area: string;
+  city: string;
+  state: string;
+  description?: string;
+  isActive?: boolean;
+  pincode?: string;
+}
+
 // Types remain the same as before
 interface CheckLog {
   userId: number;
@@ -39,7 +51,7 @@ interface CheckLog {
   longitude?: number;
   location?: string | null;
   department?: string | null;
-  zone?: string | null;
+  zone?: Zone | string | null;
 }
 
 interface GroupedLog {
@@ -98,37 +110,21 @@ const isSentinelCheckout = (timestamp: string | null | undefined): boolean => {
   return hours === 23 && minutes === 59 && seconds >= 59;
 };
 
-// Helper functions remain the same
-const filterLogsByRole = (rawLogs: CheckLog[]): CheckLog[] => {
-  const role = (localStorage.getItem("userRole") || "").trim().toLowerCase();
-
-  if (role === "hr" || role === "admin") {
-    return rawLogs;
-  }
-
-  if (role === "manager") {
-    const myDepartment = localStorage.getItem("department");
-    if (!myDepartment) return [];
-    return rawLogs.filter(
-      (log) =>
-        (log.department || "").toLowerCase() === myDepartment.toLowerCase(),
-    );
-  }
-
-  if (
-    role === "zonal manager" ||
-    role === "zonal_manager" ||
-    role === "zonalmanager"
-  ) {
-    const myZone = localStorage.getItem("zone");
-    if (!myZone) return [];
-    return rawLogs.filter(
-      (log) => (log.zone || "").toLowerCase() === myZone.toLowerCase(),
-    );
-  }
-
-  return [];
-};
+// ============================================================
+// ROLE-BASED SCOPING LIVES IN THE STORE
+// ============================================================
+// Role/department/zone scoping (manager -> own department, zonal manager ->
+// own zoneId, admin/hr -> everything, anything else -> deny) is applied
+// exclusively by useAttendanceStore().getFilteredLogs(). Previously this
+// component kept its own copy of that logic for the "no active filter"
+// path, which drifted from the store's copy: the store defaulted unknown
+// roles to "see everything" while this component's copy defaulted to "see
+// nothing" for the same case. Since which copy ran depended on whether a
+// search/date filter was active, a user could see zero logs until they
+// typed a search term, at which point the store's unfiltered branch could
+// leak every department's/zone's logs. Always calling getFilteredLogs()
+// below (whether or not filters are active) means there's one place this
+// logic can go wrong, and it's already fixed there.
 
 const groupLogsByUserAndDate = (logs: CheckLog[]): GroupedLog[] => {
   const grouped = new Map<string, GroupedLog>();
@@ -423,11 +419,10 @@ const EmployeeCheckin = () => {
       filters.endDate = endDate;
     }
 
-    const roleFilteredLogs = filterLogsByRole(logs);
-    const filtered =
-      Object.keys(filters).length > 0
-        ? getFilteredLogs(filters)
-        : roleFilteredLogs;
+    // getFilteredLogs applies role-based scoping (manager/zonal manager/
+    // admin/hr) first, then the optional search & date filters on top —
+    // this is the single source of truth for who sees what.
+    const filtered = getFilteredLogs(filters);
 
     setFilteredLogs(groupLogsByUserAndDate(filtered));
   }, [logs, searchQuery, searchType, startDate, endDate, getFilteredLogs]);

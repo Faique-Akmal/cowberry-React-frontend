@@ -267,10 +267,20 @@ export default function TravelSessions() {
       else if (!allocatedArea && userData?.allocated_area)
         allocatedArea = userData.allocated_area;
 
+      // Zone id for zonal managers. NOTE: localStorage's "zoneId" is the
+      // zone's numeric internal id (e.g. 3), matching session.zone.id -
+      // NOT session.zone.zoneId (the string code like "AHM001"), and NOT
+      // the same thing as allocatedArea (a broad category). Same field
+      // mapping used for the users list fix - keep these in sync.
+      let zoneId = localStorage.getItem("zoneId") || "";
+      if (!zoneId && userData?.zoneId) zoneId = String(userData.zoneId);
+      else if (!zoneId && userData?.zone?.id) zoneId = String(userData.zone.id);
+
       setCurrentUserInfo({
         userRole: userRoleFromData.toLowerCase().trim(),
         department: department.toLowerCase().trim(),
         allocatedArea: allocatedArea.toLowerCase().trim(),
+        zoneId: zoneId.toLowerCase().trim(),
       });
     } catch (error) {
       console.error("Error getting user info from localStorage:", error);

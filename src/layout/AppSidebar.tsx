@@ -114,7 +114,7 @@ const AppSidebar: React.FC = () => {
       icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
       name: t("PendingSessions"),
       path: "/pending-reportee-sessions",
-      role: ["admin", "manager", "zonalmanager", "headofdepartment"],
+      role: ["admin", "manager", "headofdepartment"],
     },
     {
       icon: <UnorderedListIcon className="text-lantern-blue-600" />,

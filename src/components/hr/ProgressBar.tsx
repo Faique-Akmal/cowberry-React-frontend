@@ -29,7 +29,6 @@ import {
 } from "date-fns";
 import type { TravelSession, UserListItem } from "../../types/travelSession";
 import LoadingAnimation from "../../pages/UiElements/loadingAnimation";
-import { filterUsersByRole } from "../../utils/travelSessionHelpers";
 
 type TimeFilter = "day" | "week" | "month" | "year";
 type ChartType = "line" | "bar";
@@ -45,6 +44,26 @@ interface ChartDataPoint {
 // Helper function to convert meters to kilometers
 const metersToKm = (meters: number): number => {
   return Math.round((meters / 1000) * 100) / 100;
+};
+
+// Helper to safely extract zone name from zone object or string
+const extractZoneName = (zone: any): string => {
+  if (!zone) return "";
+  if (typeof zone === "string") return zone;
+  if (typeof zone === "object") {
+    return zone.name || zone.zoneId || zone.area || "";
+  }
+  return "";
+};
+
+// Helper to safely extract zone ID from zone object or string
+const extractZoneId = (zone: any): string => {
+  if (!zone) return "";
+  if (typeof zone === "string") return zone;
+  if (typeof zone === "object") {
+    return zone.id?.toString() || zone.zoneId || "";
+  }
+  return "";
 };
 
 const PerformanceOverview: React.FC = () => {
@@ -69,24 +88,23 @@ const PerformanceOverview: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  // Set current user info. Reads the flat localStorage keys ("userRole",
-  // "department", "allocatedArea") first, since that's where this app
-  // actually persists them (see Home.tsx's use of "full_name" the same way).
-  // Falls back to the Zustand authStore if those keys aren't present yet
-  // (e.g. store hasn't rehydrated from persisted storage).
+  // Set current user info. Reads the flat localStorage keys
   useEffect(() => {
     const storedRole = localStorage.getItem("userRole");
     const storedDepartment = localStorage.getItem("department");
-    // Support both casings in case the zone/area key was set as either.
     const storedArea =
       localStorage.getItem("allocatedArea") ||
       localStorage.getItem("allocatedarea");
+    const storedZone = localStorage.getItem("zone");
+    const storedZoneId = localStorage.getItem("zoneId");
 
     if (storedRole) {
       setCurrentUserInfo({
         userRole: storedRole,
         department: storedDepartment || undefined,
         allocatedArea: storedArea || undefined,
+        zone: storedZone || undefined,
+        zoneId: storedZoneId || undefined,
       });
       return;
     }
@@ -97,12 +115,12 @@ const PerformanceOverview: React.FC = () => {
         userRole: user.userRole,
         department: user.department,
         allocatedArea: user.allocatedarea,
+        zone: (user as any).zone,
+        zoneId: (user as any).zoneId,
       });
       return;
     }
 
-    // Last resort: a single JSON blob at localStorage["user"], if this app
-    // ever stores one that way.
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -111,6 +129,8 @@ const PerformanceOverview: React.FC = () => {
           userRole: parsedUser.userRole,
           department: parsedUser.department,
           allocatedArea: parsedUser.allocatedarea || parsedUser.allocatedArea,
+          zone: parsedUser.zone,
+          zoneId: parsedUser.zoneId,
         });
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
@@ -126,14 +146,21 @@ const PerformanceOverview: React.FC = () => {
     }
   }, [currentUserInfo, loadAllSessions]);
 
-  // Get users based on role and department
+  // ✅ FIXED: Custom role-based user filtering with proper zone object handling
   const getFilteredUsers = useCallback((): UserListItem[] => {
     // Get unique users from travelSessions
-    // The API already filters by department for managers
     const uniqueUsersMap = new Map<number, UserListItem>();
 
     travelSessions.forEach((session) => {
       if (!uniqueUsersMap.has(session.userId)) {
+        // Extract zone information properly - zone can be an object or string
+        const sessionAny = session as any;
+        const zoneObj = sessionAny.zone;
+
+        // Extract zone name and ID from the zone object
+        const zoneName = extractZoneName(zoneObj);
+        const zoneId = extractZoneId(zoneObj);
+
         uniqueUsersMap.set(session.userId, {
           userId: session.userId,
           fullName: session.fullName,
@@ -141,6 +168,10 @@ const PerformanceOverview: React.FC = () => {
           employeeCode: session.employeeCode,
           department: session.department || "Unknown",
           allocatedArea: session.allocatedArea || "Unknown",
+          zone: zoneName || sessionAny.allocatedArea || "Unknown",
+          zoneId: zoneId || sessionAny.zoneId?.toString() || undefined,
+          // Store the full zone object for debugging
+          zoneObject: zoneObj,
         });
       }
     });
@@ -149,27 +180,173 @@ const PerformanceOverview: React.FC = () => {
 
     // If no users from sessions, try using the store's users
     if (uniqueUsers.length === 0 && users.length > 0) {
-      uniqueUsers = users;
+      uniqueUsers = users.map((u) => {
+        const uAny = u as any;
+        const zoneObj = uAny.zone;
+        return {
+          ...u,
+          zone: extractZoneName(zoneObj) || uAny.allocatedArea || "Unknown",
+          zoneId: extractZoneId(zoneObj) || uAny.zoneId?.toString(),
+          zoneObject: zoneObj,
+        };
+      });
     }
 
     // Log for debugging
     console.log("Current User Info:", currentUserInfo);
     console.log("Total Sessions:", travelSessions.length);
     console.log("Unique Users before filtering:", uniqueUsers.length);
+    if (uniqueUsers.length > 0) {
+      console.log("Sample user (first):", {
+        ...uniqueUsers[0],
+        zoneObject: undefined, // Don't log the full object to keep console clean
+      });
+      console.log(
+        "Sample user zone object:",
+        (uniqueUsers[0] as any).zoneObject,
+      );
+    }
 
     // If no currentUserInfo, return all users
     if (!currentUserInfo) {
       return uniqueUsers;
     }
 
-    // Shared with the rest of the app (matches server-side scoping in
-    // buildRoleScopedParams): HR/admin see everyone, manager/HOD are scoped
-    // to their department, zonal manager/head are scoped to their area.
-    const filtered = filterUsersByRole(uniqueUsers, currentUserInfo);
-    console.log(
-      `Role "${currentUserInfo.userRole}" - showing ${filtered.length}/${uniqueUsers.length} users`,
-    );
-    return filtered;
+    const role = currentUserInfo.userRole?.toLowerCase().trim() || "";
+
+    // Helper for safe string comparison
+    const safeLowerCase = (value: any): string => {
+      if (value === null || value === undefined) return "";
+      return String(value).toLowerCase().trim();
+    };
+
+    // HR/Admin: Show all users
+    if (role === "hr" || role === "admin" || role === "superadmin") {
+      console.log("HR/Admin: Showing all users");
+      return uniqueUsers;
+    }
+
+    // Manager: Show only users from their department
+    if (role === "manager") {
+      const managerDept = safeLowerCase(currentUserInfo.department);
+      const filtered = uniqueUsers.filter(
+        (user) => safeLowerCase(user.department) === managerDept,
+      );
+      console.log(
+        `Manager: Showing ${filtered.length} users from department: ${currentUserInfo.department}`,
+      );
+      return filtered;
+    }
+
+    // Zonal Manager: Show only users from their zone
+    if (
+      role === "zonalmanager" ||
+      role === "zonal_manager" ||
+      role === "zonal head"
+    ) {
+      // Get all possible zone identifiers from the current user
+      const managerZone = safeLowerCase(
+        currentUserInfo.zone || currentUserInfo.allocatedArea,
+      );
+      const managerZoneId = safeLowerCase(currentUserInfo.zoneId);
+      const managerDept = safeLowerCase(currentUserInfo.department);
+
+      console.log(
+        `Zonal Manager - Zone: "${managerZone}", ZoneId: "${managerZoneId}", Dept: "${managerDept}"`,
+      );
+
+      // Try multiple filtering strategies
+      let filtered: UserListItem[] = [];
+
+      // Strategy 1: Filter by zone name (extracted from zone object)
+      if (managerZone) {
+        filtered = uniqueUsers.filter((user) => {
+          const userZone = safeLowerCase(user.zone);
+          return userZone === managerZone;
+        });
+        console.log(`Strategy 1 (zone name): Found ${filtered.length} users`);
+
+        // If no exact match, try partial match
+        if (filtered.length === 0) {
+          filtered = uniqueUsers.filter((user) => {
+            const userZone = safeLowerCase(user.zone);
+            return (
+              userZone.includes(managerZone) || managerZone.includes(userZone)
+            );
+          });
+          console.log(
+            `Strategy 1b (zone name partial): Found ${filtered.length} users`,
+          );
+        }
+      }
+
+      // Strategy 2: If no users found, try by zoneId
+      if (filtered.length === 0 && managerZoneId) {
+        filtered = uniqueUsers.filter((user) => {
+          const userZoneId = safeLowerCase(user.zoneId);
+          return (
+            userZoneId === managerZoneId || userZoneId.includes(managerZoneId)
+          );
+        });
+        console.log(`Strategy 2 (zoneId): Found ${filtered.length} users`);
+      }
+
+      // Strategy 3: If still no users, try by department
+      if (filtered.length === 0 && managerDept) {
+        filtered = uniqueUsers.filter((user) => {
+          const userDept = safeLowerCase(user.department);
+          const userZone = safeLowerCase(user.zone);
+          return userDept === managerDept || userZone === managerDept;
+        });
+        console.log(`Strategy 3 (department): Found ${filtered.length} users`);
+      }
+
+      // Strategy 4: If still no users, try by allocatedArea
+      if (filtered.length === 0 && managerZone) {
+        filtered = uniqueUsers.filter((user) => {
+          const userArea = safeLowerCase(user.allocatedArea);
+          return userArea === managerZone || userArea.includes(managerZone);
+        });
+        console.log(
+          `Strategy 4 (allocatedArea): Found ${filtered.length} users`,
+        );
+      }
+
+      // Strategy 5: Last resort - if no users found, show all (but log warning)
+      if (filtered.length === 0) {
+        console.warn(
+          "⚠️ No users found with any strategy. Check if zone data is correctly populated.",
+        );
+        console.warn("Current user zone info:", {
+          zone: currentUserInfo.zone,
+          zoneId: currentUserInfo.zoneId,
+        });
+        // Show all users as fallback
+        filtered = uniqueUsers;
+      }
+
+      console.log(`Zonal Manager: Final - Showing ${filtered.length} users`);
+      return filtered;
+    }
+
+    // HOD: Show users from their department
+    if (
+      role === "headofdepartment" ||
+      role === "head_of_department" ||
+      role === "hod"
+    ) {
+      const hodDept = safeLowerCase(currentUserInfo.department);
+      const filtered = uniqueUsers.filter(
+        (user) => safeLowerCase(user.department) === hodDept,
+      );
+      console.log(
+        `HOD: Showing ${filtered.length} users from department: ${currentUserInfo.department}`,
+      );
+      return filtered;
+    }
+
+    // Default: return all users
+    return uniqueUsers;
   }, [travelSessions, users, currentUserInfo]);
 
   // Filter users based on search query
@@ -430,12 +607,14 @@ const PerformanceOverview: React.FC = () => {
           </p>
           {/* Role-based info */}
           {/* {currentUserInfo && (
-            <p className="text-xs text-gray-400  border  mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               {getUserCountInfo()} • Role: {getRoleDisplayName()}
               {currentUserInfo.department &&
                 ` • Dept: ${currentUserInfo.department}`}
+              {currentUserInfo.zone && ` • Zone: ${currentUserInfo.zone}`}
               {currentUserInfo.allocatedArea &&
-                ` • Zone: ${currentUserInfo.allocatedArea}`}
+                !currentUserInfo.zone &&
+                ` • Area: ${currentUserInfo.allocatedArea}`}
             </p>
           )} */}
         </div>
@@ -514,7 +693,10 @@ const PerformanceOverview: React.FC = () => {
                           </p>
                           <p className="text-xs text-gray-500 truncate">
                             {user.employeeCode} • {user.department || "Unknown"}
-                            {user.allocatedArea && ` • ${user.allocatedArea}`}
+                            {user.zone && ` • Zone: ${user.zone}`}
+                            {!user.zone &&
+                              user.allocatedArea &&
+                              ` • ${user.allocatedArea}`}
                           </p>
                         </div>
                       </div>
@@ -698,8 +880,8 @@ const PerformanceOverview: React.FC = () => {
               {selectedUser.department || "N/A"}
             </span>
             <span>
-              <span className="font-medium">Area:</span>{" "}
-              {selectedUser.allocatedArea || "N/A"}
+              <span className="font-medium">Zone:</span>{" "}
+              {selectedUser.zone || selectedUser.allocatedArea || "N/A"}
             </span>
             <span className="text-xs text-gray-400">
               {

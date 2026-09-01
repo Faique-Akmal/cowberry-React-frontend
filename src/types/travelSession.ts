@@ -1,7 +1,3 @@
-// src/types/travelSession.ts
-// Central type definitions shared by the Zustand store, helpers, export util,
-// and the TravelSessions page component.
-
 export interface TravelSession {
   sessionId: number;
   fullName: string;
@@ -21,6 +17,29 @@ export interface TravelSession {
   department?: string;
   allocatedArea?: string;
   totalSessions?: number;
+  // New approval fields
+  finalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "UNDER_REVIEW";
+  isApprovedByReportee?: boolean;
+  isApprovedByHR?: boolean;
+  isFinalApproved?: boolean;
+  isRejectedByReportee?: boolean;
+  isRejectedByHR?: boolean;
+  reporteeInfo?: {
+    id: number;
+    username: string;
+    fullName: string;
+    employeeCode: string;
+  };
+  reporteeComments?: string;
+  reporteeApprovedAt?: string;
+  hrManagerInfo?: {
+    id: number;
+    username: string;
+    fullName: string;
+    employeeCode: string;
+  };
+  hrComments?: string;
+  hrApprovedAt?: string;
 }
 
 export interface LocationLog {
@@ -65,6 +84,12 @@ export interface FarmerTravelData {
   durationMinutes: number;
   startOdometerImage: string;
   endOdometerImage: string;
+  finalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "UNDER_REVIEW";
+  isApprovedByReportee?: boolean;
+  isApprovedByHR?: boolean;
+  isFinalApproved?: boolean;
+  isRejectedByReportee?: boolean;
+  isRejectedByHR?: boolean;
   locationLogs?: {
     count: number;
     data: LocationLog[];
@@ -93,6 +118,11 @@ export interface GroupedSession {
   isLoading?: boolean;
   hasMoreSessions?: boolean;
   allSessionsLoaded?: boolean;
+  // Approval summary
+  approvedSessions: number;
+  pendingSessions: number;
+  rejectedSessions: number;
+  reimbursableDistance: number;
 }
 
 export interface MultiSessionMapView {
@@ -197,6 +227,12 @@ export interface AllTravelSessionItem {
   totalDistance: number;
   date: string;
   durationMinutes: number;
+  finalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "UNDER_REVIEW";
+  isApprovedByReportee?: boolean;
+  isApprovedByHR?: boolean;
+  isFinalApproved?: boolean;
+  isRejectedByReportee?: boolean;
+  isRejectedByHR?: boolean;
   farmerData: {
     count: number;
     data: FarmerData[];

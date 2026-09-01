@@ -17,9 +17,124 @@ export default function Metrics() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ✅ Calculation: Compute stats on-the-fly using useMemo
+  // ✅ Get current user role from localStorage
+  const currentUserRole = useMemo(() => {
+    return localStorage.getItem("userRole") || "";
+  }, []);
+
+  const currentUserDepartment = useMemo(() => {
+    return localStorage.getItem("department") || "";
+  }, []);
+
+  const currentUserZone = useMemo(() => {
+    return localStorage.getItem("zone") || "";
+  }, []);
+
+  const currentUserZoneId = useMemo(() => {
+    return localStorage.getItem("zoneId") || "";
+  }, []);
+
+  // ✅ Filter users based on role with safe string conversion
+  const filteredUsers = useMemo(() => {
+    // Helper for safe lowercase comparison
+    const checkRole = (role: string | undefined, target: string) =>
+      role?.toLowerCase() === target.toLowerCase();
+
+    // Helper to safely convert any value to string and lowercase
+    const safeLowerCase = (value: any): string => {
+      if (value === null || value === undefined) return "";
+      return String(value).toLowerCase();
+    };
+
+    // Log for debugging
+    console.log("Current User Role:", currentUserRole);
+    console.log("Current User Zone:", currentUserZone);
+    console.log("Current User Zone ID:", currentUserZoneId);
+    console.log("Total Users:", users.length);
+
+    // Log first few users to check their zone structure
+    if (users.length > 0) {
+      console.log(
+        "Sample user zone values:",
+        users.slice(0, 3).map((u) => ({
+          name: u.full_name || u.name,
+          zone: u.zone,
+          zoneId: u.zoneId,
+          department: u.department,
+        })),
+      );
+    }
+
+    // If user is HR or Admin, show all users
+    if (
+      checkRole(currentUserRole, "hr") ||
+      checkRole(currentUserRole, "admin")
+    ) {
+      console.log("HR/Admin: Showing all users");
+      return users;
+    }
+
+    // If user is Manager, show only employees from their department
+    if (checkRole(currentUserRole, "manager")) {
+      const filtered = users.filter((user) => {
+        const userDept = safeLowerCase(user.department);
+        const currentDept = safeLowerCase(currentUserDepartment);
+        return userDept === currentDept;
+      });
+      console.log(
+        `Manager: Found ${filtered.length} users in department ${currentUserDepartment}`,
+      );
+      return filtered;
+    }
+
+    // If user is Zonal Manager, show only employees from their zone
+    if (checkRole(currentUserRole, "zonalmanager")) {
+      // Try filtering by zone name first
+      let filtered = users.filter((user) => {
+        const userZone = safeLowerCase(user.zone);
+        const currentZone = safeLowerCase(currentUserZone);
+        return userZone === currentZone;
+      });
+
+      // If no users found by zone name, try filtering by zoneId
+      if (filtered.length === 0 && currentUserZoneId) {
+        console.log("No users found by zone name, trying zoneId...");
+        filtered = users.filter((user) => {
+          const userZoneId = safeLowerCase(user.zoneId);
+          const currentZoneId = safeLowerCase(currentUserZoneId);
+          return userZoneId === currentZoneId;
+        });
+      }
+
+      // If still no users found, try filtering by department (as fallback)
+      if (filtered.length === 0) {
+        console.log("No users found by zone, trying department as fallback...");
+        filtered = users.filter((user) => {
+          const userDept = safeLowerCase(user.department);
+          const currentDept = safeLowerCase(currentUserDepartment);
+          return userDept === currentDept;
+        });
+      }
+
+      console.log(
+        `Zonal Manager: Found ${filtered.length} users in zone ${currentUserZone}`,
+      );
+      return filtered;
+    }
+
+    // Default: return all users (fallback)
+    return users;
+  }, [
+    users,
+    currentUserRole,
+    currentUserDepartment,
+    currentUserZone,
+    currentUserZoneId,
+  ]);
+
+  // ✅ Calculation: Compute stats using filtered users
   const stats = useMemo(() => {
-    const total = users.length;
+    const total = filteredUsers.length;
 
     // Helper for safe lowercase comparison
     const checkRole = (role: string | undefined, target: string) =>
@@ -27,25 +142,27 @@ export default function Metrics() {
 
     return {
       totalUsers: total,
-      employee: users.filter(
+      employee: filteredUsers.filter(
         (user) =>
           checkRole(user.role, "fieldemployee") ||
           checkRole(user.role, "employee"),
       ).length,
-      department_head: users.filter((user) =>
+      department_head: filteredUsers.filter((user) =>
         checkRole(user.role, "department_head"),
       ).length,
-      manager: users.filter((user) => checkRole(user.role, "manager")).length,
-      hr: users.filter((user) => checkRole(user.role, "hr")).length,
-      zonalManager: users.filter((user) => checkRole(user.role, "zonalmanager"))
+      manager: filteredUsers.filter((user) => checkRole(user.role, "manager"))
         .length,
-      headOfDepartment: users.filter(
+      hr: filteredUsers.filter((user) => checkRole(user.role, "hr")).length,
+      zonalManager: filteredUsers.filter((user) =>
+        checkRole(user.role, "zonalmanager"),
+      ).length,
+      headOfDepartment: filteredUsers.filter(
         (user) =>
           checkRole(user.role, "headofdepartment") ||
           checkRole(user.role, "head_of_department"),
       ).length,
     };
-  }, [users]);
+  }, [filteredUsers]);
 
   // Glassmorphism styles based on theme
   const glassStyles = {

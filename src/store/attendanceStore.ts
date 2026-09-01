@@ -2,6 +2,18 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import API from "../api/axios";
 
+export interface Zone {
+  id: number;
+  zoneId: string;
+  name: string;
+  area: string;
+  city: string;
+  state: string;
+  description?: string;
+  isActive?: boolean;
+  pincode?: string;
+}
+
 export interface CheckLog {
   userId: number;
   fullName: string;
@@ -12,7 +24,7 @@ export interface CheckLog {
   longitude?: number;
   location?: string | null;
   department?: string | null;
-  zone?: string | null;
+  zone?: Zone | string | null;
 }
 
 interface AttendanceState {
@@ -123,28 +135,88 @@ export const useAttendanceStore = create<AttendanceState>()(
         const role = (localStorage.getItem("userRole") || "")
           .trim()
           .toLowerCase();
-        let filtered = logs;
+        let filtered: CheckLog[];
 
-        if (role === "manager") {
-          const myDepartment = localStorage.getItem("department");
-          if (myDepartment) {
-            filtered = filtered.filter(
-              (log) =>
-                (log.department || "").toLowerCase() ===
-                myDepartment.toLowerCase(),
-            );
-          }
+        if (role === "hr" || role === "admin") {
+          // Admin/HR see everything.
+          filtered = logs;
+        } else if (role === "manager") {
+          const myDepartment = (localStorage.getItem("department") || "")
+            .trim()
+            .toLowerCase();
+          // No department on record for this manager -> deny, don't leak all logs.
+          filtered = myDepartment
+            ? logs.filter(
+                (log) =>
+                  (log.department || "").trim().toLowerCase() === myDepartment,
+              )
+            : [];
         } else if (
           role === "zonal manager" ||
           role === "zonal_manager" ||
           role === "zonalmanager"
         ) {
-          const myZone = localStorage.getItem("zone");
-          if (myZone) {
-            filtered = filtered.filter(
-              (log) => (log.zone || "").toLowerCase() === myZone.toLowerCase(),
-            );
-          }
+          // log.zone is an object ({ id, zoneId, name, area, city, state, ... }),
+          // never a plain string — calling .toLowerCase() on it directly (as the
+          // old code did) throws a TypeError. Also read zoneId/zoneName, since
+          // storing the zone object under the "zone" key coerces it to the
+          // literal string "[object Object]".
+          const myZoneId = (localStorage.getItem("zoneId") || "")
+            .trim()
+            .toLowerCase();
+          const legacyZone = (localStorage.getItem("zone") || "")
+            .trim()
+            .toLowerCase();
+          const myZoneName =
+            (localStorage.getItem("zoneName") || "").trim().toLowerCase() ||
+            (legacyZone !== "[object object]" ? legacyZone : "");
+
+          // No zone on record for this zonal manager -> deny, don't leak all logs.
+          filtered =
+            myZoneId || myZoneName
+              ? logs.filter((log) => {
+                  const zone = log.zone;
+                  if (!zone) return false;
+
+                  if (typeof zone === "object") {
+                    const logZoneCode = (zone.zoneId || "")
+                      .trim()
+                      .toLowerCase();
+                    // localStorage's "zoneId" key isn't guaranteed to hold
+                    // the zoneId *code* (e.g. "AHM001") — depending on how
+                    // the session was populated it may instead hold the
+                    // zone's numeric primary key (zone.id, e.g. "3"). Accept
+                    // either so a mismatch in one doesn't hide a match in
+                    // the other.
+                    const logZoneNumericId =
+                      zone.id != null
+                        ? String(zone.id).trim().toLowerCase()
+                        : "";
+                    const logZoneName = (zone.name || "").trim().toLowerCase();
+
+                    const idMatches =
+                      !!myZoneId &&
+                      (logZoneCode === myZoneId ||
+                        logZoneNumericId === myZoneId);
+                    const nameMatches =
+                      !!myZoneName && logZoneName === myZoneName;
+
+                    // OR, not first-match-wins: a mismatch on id must not
+                    // block a match on name (or vice versa).
+                    return idMatches || nameMatches;
+                  }
+
+                  const zoneStr = String(zone).trim().toLowerCase();
+                  return (
+                    (!!myZoneId && zoneStr === myZoneId) ||
+                    (!!myZoneName && zoneStr === myZoneName)
+                  );
+                })
+              : [];
+        } else {
+          // Unrecognized/missing role -> deny by default instead of
+          // silently falling through to "see everything".
+          filtered = [];
         }
 
         // Apply additional filters if provided

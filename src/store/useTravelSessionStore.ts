@@ -1,20 +1,3 @@
-// src/store/useTravelSessionStore.ts
-// Zustand store for the Travel Sessions admin page.
-//
-// Why this exists:
-// The original component re-fetched the full session list, farmer/travel
-// data, and per-session logs on almost every interaction (opening a map,
-// re-exporting, auto-refresh, etc). This store centralizes that data so it
-// is fetched once and reused:
-//   - `loadAllSessions()` is TTL-cached (SESSIONS_TTL_MS) and dedupes
-//     concurrent calls with an in-flight promise.
-//   - `fetchSessionLogs()` only hits the network if that page isn't already
-//     cached in `sessionLogs`.
-//   - `loadFarmerDataForGroups()` reuses `farmerDataCache`, keyed by
-//     `${userId}:${start}:${end}`, exactly like the previous farmerDataCacheRef.
-//   - `refreshSessions()` / `clearCache()` are the only ways to force a
-//     network round-trip, so manual refresh / auto-refresh stay explicit.
-
 import { create } from "zustand";
 import API from "../api/axios";
 import {
@@ -39,6 +22,24 @@ const FARMER_DATA_BATCH_SIZE = 5;
 const FARMER_DATA_BATCH_PAUSE_MS = 300;
 const FARMER_DATA_MAX_PAGES = 50;
 
+/**
+ * Stable key identifying "whose" role-scoped data is cached. The TTL cache
+ * in loadAllSessions must never be reused across a change of user/role -
+ * otherwise a fetch that ran before currentUserInfo was set (or for a
+ * different user) can get served to a different zonal manager/HOD/manager
+ * for up to SESSIONS_TTL_MS, bypassing role filtering entirely.
+ */
+const getUserScopeKey = (info: UserInfo | null): string => {
+  if (!info?.userRole) return "anonymous";
+  return [
+    info.userRole || "",
+    info.department || "",
+    (info as any).zoneId || "",
+  ]
+    .join("|")
+    .toLowerCase();
+};
+
 interface TravelSessionState {
   // ---- data ----
   travelSessions: TravelSession[];
@@ -53,10 +54,16 @@ interface TravelSessionState {
   totalSessionsCount: number;
   lastUpdateTime: Date | null;
   lastFetchedAt: number | null;
+  _lastFetchedUserKey: string | null;
 
   // ---- loading flags ----
   isLoadingSessions: boolean;
   loadingLogs: Record<number, boolean>;
+
+  // ---- new flags for better state management ----
+  isInitialized: boolean;
+  initializationError: string | null;
+  isDataStale: boolean;
 
   // ---- in-flight dedupe ----
   _inFlightSessionsPromise: Promise<void> | null;
@@ -75,6 +82,12 @@ interface TravelSessionState {
     groupedData: GroupedSession[],
   ) => Promise<Record<string, any>>;
   clearCache: () => void;
+
+  // ---- new actions for better control ----
+  initializeStore: () => Promise<void>;
+  ensureDataLoaded: () => Promise<void>;
+  markDataStale: () => void;
+  resetStore: () => void;
 }
 
 export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
@@ -90,13 +103,109 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
   totalSessionsCount: 0,
   lastUpdateTime: null,
   lastFetchedAt: null,
+  _lastFetchedUserKey: null,
 
   isLoadingSessions: false,
   loadingLogs: {},
 
+  isInitialized: false,
+  initializationError: null,
+  isDataStale: false,
+
   _inFlightSessionsPromise: null,
 
-  setCurrentUserInfo: (info) => set({ currentUserInfo: info }),
+  setCurrentUserInfo: (info) => {
+    const prevKey = getUserScopeKey(get().currentUserInfo);
+    const nextKey = getUserScopeKey(info);
+    set({ currentUserInfo: info });
+    // The role/department/zone this user is scoped to just changed (e.g.
+    // first resolved from localStorage after starting as null/anonymous,
+    // or a different user's info). Whatever is cached, if anything, was
+    // fetched for the OLD scope - mark it stale so the next loadAllSessions
+    // call re-fetches and re-filters instead of silently reusing it.
+    if (prevKey !== nextKey) {
+      set({ isDataStale: true });
+    }
+  },
+
+  /**
+   * Initialize the store - ensures data is loaded once
+   */
+  initializeStore: async () => {
+    const state = get();
+
+    // If already initialized, has data, AND that data belongs to the
+    // current user's role scope, return. isDataStale gets set by
+    // setCurrentUserInfo whenever the effective role/department/zone
+    // changes, so this must not short-circuit past it.
+    if (
+      state.isInitialized &&
+      state.travelSessions.length > 0 &&
+      !state.isDataStale
+    ) {
+      return;
+    }
+
+    // If there's an initialization error, try again
+    if (state.initializationError) {
+      set({ initializationError: null });
+    }
+
+    await get().loadAllSessions();
+    set({ isInitialized: true });
+  },
+
+  /**
+   * Ensure data is loaded, useful for components that need data
+   */
+  ensureDataLoaded: async () => {
+    const state = get();
+
+    // If data is stale, refresh it
+    if (state.isDataStale) {
+      await get().refreshSessions();
+      set({ isDataStale: false });
+      return;
+    }
+
+    // If not initialized or no data, load it
+    if (!state.isInitialized || state.travelSessions.length === 0) {
+      await get().initializeStore();
+    }
+  },
+
+  /**
+   * Mark data as stale (useful when user changes or filters change)
+   */
+  markDataStale: () => {
+    set({ isDataStale: true });
+  },
+
+  /**
+   * Reset the store completely
+   */
+  resetStore: () => {
+    set({
+      travelSessions: [],
+      sessionsMap: {},
+      users: [],
+      allSessions: [],
+      allFarmerData: {},
+      farmerDataCache: {},
+      sessionLogs: {},
+      logsPagination: {},
+      totalSessionsCount: 0,
+      lastUpdateTime: null,
+      lastFetchedAt: null,
+      _lastFetchedUserKey: null,
+      isLoadingSessions: false,
+      loadingLogs: {},
+      isInitialized: false,
+      initializationError: null,
+      isDataStale: false,
+      _inFlightSessionsPromise: null,
+    });
+  },
 
   /**
    * Loads the full, paginated session list from the API, applies role-based
@@ -108,22 +217,43 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
    */
   loadAllSessions: async (force = false) => {
     const state = get();
+    const currentScopeKey = getUserScopeKey(state.currentUserInfo);
+    const cacheMatchesCurrentUser =
+      state._lastFetchedUserKey === currentScopeKey;
 
-    if (!force && state._inFlightSessionsPromise) {
+    // If force is false and there's an in-flight promise for the SAME user
+    // scope, return it. A stale in-flight promise from a previous user's
+    // scope must not be handed back here.
+    if (!force && state._inFlightSessionsPromise && cacheMatchesCurrentUser) {
       return state._inFlightSessionsPromise;
     }
 
+    // Check TTL cache - only reusable if it was fetched for this exact
+    // user/role/department/zone. Otherwise (role hasn't resolved yet when
+    // an earlier fetch ran, or a different user's data is cached), always
+    // refetch and re-filter rather than silently showing another user's
+    // scoped results.
     if (
       !force &&
+      cacheMatchesCurrentUser &&
       state.lastFetchedAt &&
       Date.now() - state.lastFetchedAt < SESSIONS_TTL_MS &&
       state.travelSessions.length > 0
     ) {
+      // Data is fresh enough, but ensure initialized flag is set
+      if (!state.isInitialized) {
+        set({ isInitialized: true });
+      }
       return; // fresh enough, skip network call entirely
     }
 
     const run = async () => {
-      set({ isLoadingSessions: true });
+      set({
+        isLoadingSessions: true,
+        initializationError: null,
+        isDataStale: false,
+      });
+
       try {
         const currentUserInfo = get().currentUserInfo;
         const roleParams = buildRoleScopedParams(currentUserInfo);
@@ -181,6 +311,12 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
                 employeeCode: session.employeeCode,
                 department: session.department || "Unknown",
                 allocatedArea: session.allocatedArea || "Unknown",
+                // Needed for zonal-manager scoping in filterUsersByRole -
+                // without this, uniqueUsers has no zone info to match
+                // against and zonal managers get an empty users list even
+                // though their sessions filter correctly.
+                zone: (session as any).zone,
+                zoneId: (session as any).zone?.id,
               } as UserListItem,
             ]),
           ).values(),
@@ -194,11 +330,26 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
           totalSessionsCount: filteredSessions.length,
           lastUpdateTime: new Date(),
           lastFetchedAt: Date.now(),
+          _lastFetchedUserKey: getUserScopeKey(currentUserInfo),
+          isInitialized: true,
+          isLoadingSessions: false,
+          isDataStale: false,
+          initializationError: null,
         });
       } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load travel sessions";
         console.error("Failed to load travel sessions", err);
+        set({
+          isLoadingSessions: false,
+          initializationError: errorMessage,
+          isInitialized: false,
+        });
       } finally {
-        set({ isLoadingSessions: false, _inFlightSessionsPromise: null });
+        set({
+          isLoadingSessions: false,
+          _inFlightSessionsPromise: null,
+        });
       }
     };
 
@@ -257,6 +408,7 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
           travelSessions: updatedSessions,
           sessionsMap: newSessionsMap,
           lastUpdateTime: new Date(),
+          isDataStale: false,
         };
       });
     } catch (err) {
@@ -480,5 +632,9 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
       totalSessionsCount: 0,
       lastUpdateTime: null,
       lastFetchedAt: null,
+      _lastFetchedUserKey: null,
+      isInitialized: false,
+      initializationError: null,
+      isDataStale: false,
     }),
 }));

@@ -49,6 +49,9 @@ import { useSocketStore } from "./store/useSocketStore";
 import { IncomingCall } from "./components/chat/CallModal";
 import LeaveManagementReportee from "./HRMS/LeavePageReportee";
 import AttendanceCalendar from "./HRMS/AttandanceCalendar";
+import TravelSessionManager from "./Reportee-hr/hrSessionsList";
+import TravelSessionHr from "./Reportee-hr/hrSessionsList";
+import ReporteeTravelSessionManager from "./Reportee-hr/reporteeSessionsList";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -113,6 +116,25 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/pending-hr-sessions"
+            element={
+              <ProtectedRoute>
+                <TravelSessionHr />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/pending-reportee-sessions"
+            element={
+              <ProtectedRoute>
+                <ReporteeTravelSessionManager />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/apply-leaves" element={<LeaveApplicationPage />} />
           <Route path="/employeeleave-balance" element={<LeaveBalancePage />} />
           <Route

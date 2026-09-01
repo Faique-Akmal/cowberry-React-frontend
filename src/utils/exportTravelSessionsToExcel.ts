@@ -25,28 +25,67 @@ interface SessionDetail {
   sessionDistance: string;
   farmersCount: number;
   farmerDescriptions: string;
+  finalStatus: string;
 }
 
 interface ExportRow {
   "Employee Code": string;
   fullName: string;
-
   Department: string;
   Role: string;
   "Allocated Area": string;
   Date: string;
-  // "Formatted Date": string;
-  "Payable Distance(km)": number;
-  "Payable Amount (₹)": number;
+  "Payable Distance(km)": number | string;
+  "Payable Amount (₹)": number | string;
+  "Total Distance (km)": number | string;
+  "Total Reimbursement (₹)": number | string;
   "Start Time": string;
   "End Time": string;
-
   "Total Sessions": number;
-
+  "Approved Sessions": number;
+  "Rejected Sessions": number;
+  "Pending Sessions": number;
   "No. of Events": number;
   "Duration (minutes)": number;
   sessionDetails: SessionDetail[];
 }
+
+const REIMBURSEMENT_RATE_PER_KM = 3.5;
+
+// Helper function to normalize status
+function normalizeStatus(status: string | undefined | null): string {
+  if (!status) return "PENDING";
+  const upperStatus = String(status).toUpperCase().trim();
+  if (upperStatus === "APPROVED") return "APPROVED";
+  if (upperStatus === "REJECTED") return "REJECTED";
+  if (upperStatus === "PENDING") return "PENDING";
+  if (upperStatus === "UNDER_REVIEW") return "PENDING";
+  return "PENDING";
+}
+
+function extractFinalStatus(raw: any): string {
+  if (!raw) return "PENDING";
+
+  const candidates = [
+    raw.finalStatus,
+    raw.final_status,
+    raw.approvalStatus,
+    raw.approval_status,
+    raw?.approval?.finalStatus,
+    raw?.approval?.status,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) return normalizeStatus(candidate);
+  }
+
+  if (raw.isFinalApproved === true) return "APPROVED";
+  if (raw.isFinalApproved === false) return "REJECTED";
+
+  return "PENDING";
+}
+
+const DEBUG_LOG_RAW_SESSION = false;
 
 // API Response Interfaces
 interface ApiFarmerDetail {
@@ -81,6 +120,8 @@ interface ApiTravelSession {
     count: number;
     data: ApiFarmerDetail[];
   };
+  finalStatus?: string;
+  isFinalApproved?: boolean | null;
 }
 
 interface ApiUserBlock {
@@ -138,19 +179,20 @@ async function buildAndDownloadWorkbook(
   const baseHeaders = [
     "Employee Code",
     "Name",
-
     "Department",
     "Role",
     "Allocated Area",
     "Date",
-    // "Formatted Date",
     "Payable Distance(km)",
     "Payable Amount (₹)",
+    "Total Distance (km)",
+    "Total Reimbursement (₹)",
     "Start Time",
     "End Time",
-
     "Total Sessions",
-
+    "Approved Sessions",
+    "Rejected Sessions",
+    "Pending Sessions",
     "No. of Events",
     "Duration (minutes)",
   ];
@@ -164,8 +206,8 @@ async function buildAndDownloadWorkbook(
       `Session ${i} End Time`,
       `Session ${i} End Description`,
       `Session ${i} Distance (km)`,
-
-      `Session ${i}  Event Description`,
+      `Session ${i} Status`,
+      `Session ${i} Event Description`,
     );
   }
 
@@ -203,8 +245,8 @@ async function buildAndDownloadWorkbook(
         rowData[`${prefix} End Time`] = session.sessionEndTime;
         rowData[`${prefix} End Description`] = session.endDescription || "";
         rowData[`${prefix} Distance (km)`] = session.sessionDistance;
-
-        rowData[`${prefix}  Event Description`] = session.farmerDescriptions;
+        rowData[`${prefix} Status`] = session.finalStatus || "PENDING";
+        rowData[`${prefix} Event Description`] = session.farmerDescriptions;
       });
     }
 
@@ -236,11 +278,10 @@ async function buildAndDownloadWorkbook(
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
-// Legacy export function
+// Legacy export function - Uses GroupedSession which already has status counts
 export async function exportTravelSessionsToExcel(
   groupedData: GroupedSession[],
   farmerDataByKey: Record<string, any>,
-
   filters: ExportFilters = {},
 ): Promise<void> {
   if (groupedData.length === 0) {
@@ -256,11 +297,29 @@ export async function exportTravelSessionsToExcel(
     const totalDuration = Math.round(
       (lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000,
     );
-    const totalDistanceExcludingFirst = group.totalDistance;
+
+    // Use the pre-calculated reimbursable distance from the group
+    // This already only includes approved sessions
+    const totalDistanceExcludingFirst = group.reimbursableDistance;
     const reimbursementAmount = (
       (totalDistanceExcludingFirst / 1000) *
-      3.5
+      REIMBURSEMENT_RATE_PER_KM
     ).toFixed(2);
+
+    // NEW: total distance & reimbursement across ALL sessions, regardless of status
+    const totalDistanceAllSessions = group.sessions.reduce(
+      (sum, session) => sum + (session.totalDistance || 0),
+      0,
+    );
+    const totalReimbursementAllSessions = (
+      (totalDistanceAllSessions / 1000) *
+      REIMBURSEMENT_RATE_PER_KM
+    ).toFixed(2);
+
+    // Use the pre-calculated counts from the GroupedSession
+    const approvedCount = group.approvedSessions || 0;
+    const rejectedCount = group.rejectedSessions || 0;
+    const pendingCount = group.pendingSessions || 0;
 
     let totalFarmersMet = 0;
     const sessionDetails: SessionDetail[] = group.sessions.map(
@@ -275,10 +334,12 @@ export async function exportTravelSessionsToExcel(
 
         const farmerDescriptions = farmers
           .map(
-            (farmer: any, farmerIndex: number) =>
+            (farmer: any) =>
               ` ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
           )
           .join("; ");
+
+        const status = session.finalStatus || "PENDING";
 
         return {
           sessionNumber: sessionIndex + 1,
@@ -292,30 +353,28 @@ export async function exportTravelSessionsToExcel(
           sessionDistance: (session.totalDistance / 1000).toFixed(2),
           farmersCount: farmerCount,
           farmerDescriptions: farmerDescriptions || "None",
+          finalStatus: normalizeStatus(status),
         };
       },
     );
 
     return {
       "Employee Code": group.employeeCode,
-      fullName: group.fullName,
-
+      fullName: group.fullName || "",
       Department: group.sessions[0]?.department || "N/A",
       Role: group.sessions[0]?.role || "N/A",
       "Allocated Area": group.sessions[0]?.allocatedArea || "N/A",
       Date: group.date,
-      // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-      //   weekday: "short",
-      //   year: "numeric",
-      //   month: "short",
-      //   day: "numeric",
-      // }),
       "Start Time": formatDateTime(group.startTime),
       "End Time": formatDateTime(group.endTime),
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
       "Payable Amount (₹)": reimbursementAmount,
+      "Total Distance (km)": (totalDistanceAllSessions / 1000).toFixed(2),
+      "Total Reimbursement (₹)": totalReimbursementAllSessions,
       "Total Sessions": group.totalSessions,
-
+      "Approved Sessions": approvedCount,
+      "Rejected Sessions": rejectedCount,
+      "Pending Sessions": pendingCount,
       "No. of Events": totalFarmersMet,
       "Duration (minutes)": totalDuration,
       sessionDetails,
@@ -325,14 +384,16 @@ export async function exportTravelSessionsToExcel(
   await buildAndDownloadWorkbook(rows, filters);
 }
 
-// Fetch all travel sessions from API
+// Fetch all travel sessions from API - MODIFIED to accept userId
 async function fetchAllTravelSessionsForExport(
   startDate?: string,
   endDate?: string,
+  userId?: string, // Added userId parameter
 ): Promise<ApiUserBlock[]> {
   const params: Record<string, string> = {};
   if (startDate) params.startDate = startDate;
   if (endDate) params.endDate = endDate;
+  if (userId) params.userId = userId; // Pass userId to API
 
   const response = await API.get<ApiResponse>(
     "/tracking/locationlog/get_all_travel_sessions",
@@ -365,20 +426,34 @@ async function fetchAllTravelSessionsForExport(
       if (user.id) {
         userBlocks.push({
           user,
-          sessions: sessions.map((session) => ({
-            sessionId: session.sessionId || 0,
-            user: session.user || user,
-            startTime: session.startTime || "",
-            startDescription: session.startDescription || "",
-            endDescription: session.endDescription || "",
-            endTime: session.endTime || null,
-            status: session.status || "unknown",
-            isActive: session.isActive || false,
-            totalDistance: session.totalDistance || 0,
-            date: session.date || "",
-            durationMinutes: session.durationMinutes || 0,
-            farmerData: session.farmerData || { count: 0, data: [] },
-          })),
+          sessions: sessions.map((session, sIndex) => {
+            if (DEBUG_LOG_RAW_SESSION && sIndex === 0) {
+              // eslint-disable-next-line no-console
+              console.log(
+                "[exportTravelSessionsToExcel] raw session keys:",
+                Object.keys(session as any),
+                session,
+              );
+            }
+
+            const finalStatus = extractFinalStatus(session);
+
+            return {
+              sessionId: session.sessionId || 0,
+              user: session.user || user,
+              startTime: session.startTime || "",
+              startDescription: session.startDescription || "",
+              endDescription: session.endDescription || "",
+              endTime: session.endTime || null,
+              status: session.status || "unknown",
+              isActive: session.isActive || false,
+              totalDistance: session.totalDistance || 0,
+              date: session.date || "",
+              durationMinutes: session.durationMinutes || 0,
+              farmerData: session.farmerData || { count: 0, data: [] },
+              finalStatus: finalStatus,
+            };
+          }),
         });
       }
     });
@@ -402,15 +477,25 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
       startTime: string;
       endTime: string;
       sessions: ApiTravelSession[];
+      approvedCount: number;
+      rejectedCount: number;
+      pendingCount: number;
+      reimbursableDistance: number;
+      totalDistanceAllSessions: number;
     }
   >();
-
   userBlocks.forEach((block) => {
     (block.sessions || []).forEach((session) => {
       if (!session.startTime) return;
 
       const dateKey = formatDateOnly(session.startTime);
       const groupKey = `${block.user.id}-${dateKey}`;
+
+      const status = normalizeStatus(session.finalStatus);
+      const isApproved = status === "APPROVED";
+      const isRejected = status === "REJECTED";
+      const isPending = status === "PENDING";
+      const sessionDistance = session.totalDistance || 0;
 
       if (!groupedMap.has(groupKey)) {
         groupedMap.set(groupKey, {
@@ -426,10 +511,24 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
           startTime: session.startTime,
           endTime: session.endTime || session.startTime,
           sessions: [session],
+          approvedCount: isApproved ? 1 : 0,
+          rejectedCount: isRejected ? 1 : 0,
+          pendingCount: isPending ? 1 : 0,
+          reimbursableDistance: isApproved ? sessionDistance : 0,
+          totalDistanceAllSessions: sessionDistance,
         });
       } else {
         const g = groupedMap.get(groupKey)!;
         g.sessions.push(session);
+
+        // Update counts
+        if (isApproved) g.approvedCount += 1;
+        if (isRejected) g.rejectedCount += 1;
+        if (isPending) g.pendingCount += 1;
+        if (isApproved) {
+          g.reimbursableDistance += sessionDistance;
+        }
+        g.totalDistanceAllSessions += sessionDistance;
 
         if (new Date(session.startTime) < new Date(g.startTime)) {
           g.startTime = session.startTime;
@@ -445,19 +544,14 @@ function groupApiSessionsByUserAndDate(userBlocks: ApiUserBlock[]) {
   return Array.from(groupedMap.values());
 }
 
-// Build rows from API data
+// Build rows from API data - MODIFIED to remove client-side user filtering
 function buildRowsFromApiData(
   userBlocks: ApiUserBlock[],
-  filters: Pick<ExportFilters, "selectedUser" | "appliedSearch"> = {},
+  filters: Pick<ExportFilters, "appliedSearch"> = {}, // Removed selectedUser from here
 ): ExportRow[] {
   let filteredBlocks = userBlocks;
 
-  if (filters.selectedUser) {
-    filteredBlocks = filteredBlocks.filter(
-      (b) => b.user.id.toString() === filters.selectedUser,
-    );
-  }
-
+  // Only apply search filter client-side (if needed)
   if (filters.appliedSearch) {
     const query = filters.appliedSearch.toLowerCase();
     filteredBlocks = filteredBlocks.filter(
@@ -484,40 +578,37 @@ function buildRowsFromApiData(
     if (sortedSessions.length === 0) {
       return {
         "Employee Code": group.employeeCode,
-
         Name: group.fullName,
         Department: group.departmentName,
         Role: group.role,
         "Allocated Area": group.allocatedArea,
         Date: group.date,
-        // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-        //   weekday: "short",
-        //   year: "numeric",
-        //   month: "short",
-        //   day: "numeric",
-        // }),
         "Payable Distance(km)": "0.00",
         "Payable Amount (₹)": "0.00",
+        "Total Distance (km)": "0.00",
+        "Total Reimbursement (₹)": "0.00",
         "Start Time": "N/A",
         "End Time": "N/A",
-
         "Total Sessions": 0,
-
+        "Approved Sessions": 0,
+        "Rejected Sessions": 0,
+        "Pending Sessions": 0,
         "No. of Events": 0,
         "Duration (minutes)": 0,
         sessionDetails: [],
       };
     }
 
-    const originalTotalDistance = sortedSessions.reduce(
-      (sum, s) => sum + (s.totalDistance || 0),
-      0,
-    );
-    const firstSessionDistance = sortedSessions[0]?.totalDistance || 0;
-    const totalDistanceExcludingFirst = originalTotalDistance;
+    // Use pre-calculated values from the group
+    const totalDistanceExcludingFirst = group.reimbursableDistance;
     const reimbursementAmount = (
       (totalDistanceExcludingFirst / 1000) *
-      3.5
+      REIMBURSEMENT_RATE_PER_KM
+    ).toFixed(2);
+
+    const totalReimbursementAllSessions = (
+      (group.totalDistanceAllSessions / 1000) *
+      REIMBURSEMENT_RATE_PER_KM
     ).toFixed(2);
 
     const firstSessionStart = new Date(group.startTime);
@@ -525,6 +616,11 @@ function buildRowsFromApiData(
     const totalDuration = Math.round(
       (lastSessionEnd.getTime() - firstSessionStart.getTime()) / 60000,
     );
+
+    // Use pre-calculated counts
+    const approvedCount = group.approvedCount;
+    const rejectedCount = group.rejectedCount;
+    const pendingCount = group.pendingCount;
 
     let totalFarmersMet = 0;
     const sessionDetails: SessionDetail[] = sortedSessions.map(
@@ -535,10 +631,12 @@ function buildRowsFromApiData(
 
         const farmerDescriptions = farmers
           .map(
-            (farmer, farmerIndex) =>
+            (farmer) =>
               ` ${farmer.farmerName || "Unknown"} - ${farmer.farmerDescription || "No description"}`,
           )
           .join("; ");
+
+        const status = normalizeStatus(session.finalStatus);
 
         return {
           sessionNumber: sessionIndex + 1,
@@ -556,6 +654,7 @@ function buildRowsFromApiData(
             : "0.00",
           farmersCount: farmerCount,
           farmerDescriptions: farmerDescriptions || "None",
+          finalStatus: status,
         };
       },
     );
@@ -563,24 +662,20 @@ function buildRowsFromApiData(
     return {
       "Employee Code": group.employeeCode,
       Name: group.fullName,
-
       Department: group.departmentName,
       Role: group.role,
       "Allocated Area": group.allocatedArea,
       Date: group.date,
-      // "Formatted Date": new Date(group.date).toLocaleDateString("en-US", {
-      //   weekday: "short",
-      //   year: "numeric",
-      //   month: "short",
-      //   day: "numeric",
-      // }),
       "Payable Distance(km)": (totalDistanceExcludingFirst / 1000).toFixed(2),
       "Payable Amount (₹)": reimbursementAmount,
+      "Total Distance (km)": (group.totalDistanceAllSessions / 1000).toFixed(2),
+      "Total Reimbursement (₹)": totalReimbursementAllSessions,
       "Start Time": formatDateTime(group.startTime),
       "End Time": formatDateTime(group.endTime),
-
       "Total Sessions": sortedSessions.length,
-
+      "Approved Sessions": approvedCount,
+      "Rejected Sessions": rejectedCount,
+      "Pending Sessions": pendingCount,
       "No. of Events": totalFarmersMet,
       "Duration (minutes)": totalDuration,
       sessionDetails,
@@ -588,7 +683,7 @@ function buildRowsFromApiData(
   });
 }
 
-// Main export function
+// Main export function - MODIFIED to pass selectedUser to API
 export async function exportAllTravelSessionsFromAPI(
   startDate: string,
   endDate: string,
@@ -600,14 +695,19 @@ export async function exportAllTravelSessionsFromAPI(
     );
   }
 
-  const userBlocks = await fetchAllTravelSessionsForExport(startDate, endDate);
+  // Pass the selectedUser to the API fetch function
+  const userBlocks = await fetchAllTravelSessionsForExport(
+    startDate,
+    endDate,
+    filters.selectedUser, // This will filter by user at API level
+  );
 
   if (userBlocks.length === 0) {
     throw new Error("No travel sessions found for the selected date range.");
   }
 
+  // Build rows with only search filter (user filter already applied at API level)
   const rows = buildRowsFromApiData(userBlocks, {
-    selectedUser: filters.selectedUser,
     appliedSearch: filters.appliedSearch,
   });
 

@@ -284,11 +284,11 @@ const CreateAnnouncement = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen p-4 md:p-6 bg-gray-50 mb-10">
+    <div className="min-h-screen p-4 md:p-6 bg-white/10 mb-10">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+          <div className="bg-white/90 rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
             <div className="flex items-center gap-4 mb-2">
               <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
                 <span className="text-3xl">📢</span>
@@ -361,7 +361,7 @@ const CreateAnnouncement = () => {
         )}
 
         {/* Main Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white/90 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-6 md:p-8">
             {/* Basic Information */}
             <div className="mb-8">
@@ -588,7 +588,7 @@ const CreateAnnouncement = () => {
                 <button
                   type="submit"
                   disabled={loading || !authToken}
-                  className={`bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all duration-300 ${
+                  className={`bg-lantern-blue-600 hover:bg-green-900 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all duration-300 ${
                     loading || !authToken ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >

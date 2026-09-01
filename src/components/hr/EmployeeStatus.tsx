@@ -54,10 +54,40 @@ const HomeOfficePill = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// Helper function to normalize strings for comparison
-const normalizeString = (str: string | null | undefined): string => {
-  if (!str) return "";
-  return str.trim().toLowerCase();
+// ✅ FIXED: Helper function to safely normalize any value to string
+const normalizeString = (value: any): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value.trim().toLowerCase();
+  if (typeof value === "number") return String(value).trim().toLowerCase();
+  if (typeof value === "object") {
+    // If it's an object, try to convert to string
+    try {
+      return JSON.stringify(value).trim().toLowerCase();
+    } catch {
+      return "";
+    }
+  }
+  return String(value).trim().toLowerCase();
+};
+
+// Helper to safely extract zone name from zone object or string
+const extractZoneName = (zone: any): string => {
+  if (!zone) return "";
+  if (typeof zone === "string") return zone;
+  if (typeof zone === "object") {
+    return zone.name || zone.zoneId || zone.area || "";
+  }
+  return "";
+};
+
+// Helper to safely extract zone ID from zone object
+const extractZoneId = (zone: any): string => {
+  if (!zone) return "";
+  if (typeof zone === "string") return zone;
+  if (typeof zone === "object") {
+    return zone.id?.toString() || zone.zoneId || "";
+  }
+  return "";
 };
 
 // --- Main Component ---
@@ -70,19 +100,38 @@ const EmployeeStatus = () => {
   const [visibleCount, setVisibleCount] = useState(15);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Get user role, department and allocated area from localStorage
+  // Get user role, department and zone from localStorage
   const userRole = localStorage.getItem("userRole");
   const userDepartment = localStorage.getItem("department");
   const userAllocatedArea = localStorage.getItem("allocatedarea");
+  const userZone = localStorage.getItem("zone");
+  const userZoneId = localStorage.getItem("zoneId");
 
-  // Debug logging (remove in production)
-  useEffect(() => {}, [userRole, userDepartment, userAllocatedArea, users]);
+  // Debug logging
+  useEffect(() => {
+    console.log("EmployeeStatus - User Role:", userRole);
+    console.log("EmployeeStatus - User Zone:", userZone);
+    console.log("EmployeeStatus - User ZoneId:", userZoneId);
+    console.log("EmployeeStatus - User Department:", userDepartment);
+    console.log("EmployeeStatus - User AllocatedArea:", userAllocatedArea);
+    console.log("EmployeeStatus - Total Users:", users.length);
+    if (users.length > 0) {
+      console.log("Sample user:", users[0]);
+    }
+  }, [
+    userRole,
+    userZone,
+    userZoneId,
+    userDepartment,
+    userAllocatedArea,
+    users,
+  ]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Filter users based on role with strict comparison
+  // Filter users based on role with proper zone handling
   const filteredUsers = useMemo(() => {
     if (!userRole) {
       return users;
@@ -91,40 +140,178 @@ const EmployeeStatus = () => {
     const normalizedUserRole = normalizeString(userRole);
     const normalizedUserDepartment = normalizeString(userDepartment);
     const normalizedUserAllocatedArea = normalizeString(userAllocatedArea);
+    const normalizedUserZone = normalizeString(userZone || userAllocatedArea);
+    const normalizedUserZoneId = normalizeString(userZoneId);
 
     let filtered = users;
 
+    // HR/Admin: Show all users
+    if (
+      normalizedUserRole === "admin" ||
+      normalizedUserRole === "superadmin" ||
+      normalizedUserRole === "hr"
+    ) {
+      console.log("HR/Admin: Showing all users");
+      return filtered;
+    }
+
+    // Manager: Show only users from their department
     if (normalizedUserRole === "manager") {
       if (!normalizedUserDepartment) {
+        console.warn("Manager has no department, returning empty");
         return [];
       }
 
       filtered = users.filter((user) => {
         const userDept = normalizeString(user.department);
         const isMatch = userDept === normalizedUserDepartment;
-
         return isMatch;
       });
-    } else if (normalizedUserRole === "zonalmanager") {
-      if (!normalizedUserAllocatedArea) {
+
+      console.log(
+        `Manager: Showing ${filtered.length} users from department: ${userDepartment}`,
+      );
+      return filtered;
+    }
+
+    // Zonal Manager: Show only users from their zone
+    if (
+      normalizedUserRole === "zonalmanager" ||
+      normalizedUserRole === "zonal_manager" ||
+      normalizedUserRole === "zonal head"
+    ) {
+      console.log(
+        `Zonal Manager - Zone: "${userZone}", ZoneId: "${userZoneId}"`,
+      );
+
+      // If no zone info, try using allocatedArea as fallback
+      if (
+        !normalizedUserZone &&
+        !normalizedUserZoneId &&
+        !normalizedUserAllocatedArea
+      ) {
+        console.warn("Zonal Manager has no zone info, returning empty");
         return [];
       }
 
-      filtered = users.filter((user) => {
-        const userArea = normalizeString(user.allocatedArea);
-        const isMatch = userArea === normalizedUserAllocatedArea;
+      // Try multiple strategies to match users
+      let result: typeof users = [];
 
-        return isMatch;
-      });
-    } else if (
-      normalizedUserRole === "admin" ||
-      normalizedUserRole === "superadmin"
-    ) {
-      filtered = users;
+      // Strategy 1: Try matching by zone name
+      if (normalizedUserZone) {
+        result = users.filter((user) => {
+          // Check if user has zone object or string
+          const userAny = user as any;
+          const userZoneName = normalizeString(extractZoneName(userAny.zone));
+          const userZoneStr = normalizeString(userAny.zone);
+          const userArea = normalizeString(userAny.allocatedArea);
+
+          // Match against zone name
+          return (
+            userZoneName === normalizedUserZone ||
+            userZoneStr === normalizedUserZone ||
+            userArea === normalizedUserZone
+          );
+        });
+
+        if (result.length > 0) {
+          console.log(
+            `Zonal Manager (zone name match): Found ${result.length} users`,
+          );
+          return result;
+        }
+
+        // Try partial match
+        result = users.filter((user) => {
+          const userAny = user as any;
+          const userZoneName = normalizeString(extractZoneName(userAny.zone));
+          const userZoneStr = normalizeString(userAny.zone);
+          const userArea = normalizeString(userAny.allocatedArea);
+
+          return (
+            userZoneName.includes(normalizedUserZone) ||
+            userZoneStr.includes(normalizedUserZone) ||
+            userArea.includes(normalizedUserZone) ||
+            normalizedUserZone.includes(userZoneName) ||
+            normalizedUserZone.includes(userZoneStr) ||
+            normalizedUserZone.includes(userArea)
+          );
+        });
+
+        if (result.length > 0) {
+          console.log(
+            `Zonal Manager (zone name partial match): Found ${result.length} users`,
+          );
+          return result;
+        }
+      }
+
+      // Strategy 2: Try matching by zoneId
+      if (normalizedUserZoneId) {
+        result = users.filter((user) => {
+          const userAny = user as any;
+          const userZoneId = normalizeString(extractZoneId(userAny.zone));
+          const userZoneIdStr = normalizeString(userAny.zoneId);
+
+          return (
+            userZoneId === normalizedUserZoneId ||
+            userZoneIdStr === normalizedUserZoneId
+          );
+        });
+
+        if (result.length > 0) {
+          console.log(
+            `Zonal Manager (zoneId match): Found ${result.length} users`,
+          );
+          return result;
+        }
+      }
+
+      // Strategy 3: Try matching by department (fallback)
+      if (normalizedUserDepartment) {
+        result = users.filter((user) => {
+          const userDept = normalizeString(user.department);
+          return userDept === normalizedUserDepartment;
+        });
+
+        if (result.length > 0) {
+          console.log(
+            `Zonal Manager (department fallback): Found ${result.length} users`,
+          );
+          return result;
+        }
+      }
+
+      // Strategy 4: Try matching by allocatedArea
+      if (normalizedUserAllocatedArea) {
+        result = users.filter((user) => {
+          const userArea = normalizeString(user.allocatedArea);
+          return userArea === normalizedUserAllocatedArea;
+        });
+
+        if (result.length > 0) {
+          console.log(
+            `Zonal Manager (allocatedArea fallback): Found ${result.length} users`,
+          );
+          return result;
+        }
+      }
+
+      // If no users found with any strategy, return empty array
+      console.warn(`Zonal Manager: No users found for zone "${userZone}"`);
+      return [];
     }
 
+    // Default: return all users
     return filtered;
-  }, [users, userRole, userDepartment, userAllocatedArea]);
+  }, [
+    users,
+    userRole,
+    userDepartment,
+    userAllocatedArea,
+    userZone,
+    userZoneId,
+  ]);
 
   const { onlineUsers, totalUsersCount, activeUsersCount } = useMemo(() => {
     const online = filteredUsers.filter((user) => user.is_checkin === true);
@@ -147,7 +334,6 @@ const EmployeeStatus = () => {
     if (!container) return;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
-    // If scrolled to bottom (with 10px buffer) and there are more items
     if (scrollTop + clientHeight >= scrollHeight - 10 && hasMore) {
       setVisibleCount((prev) => prev + 10);
     }
@@ -392,7 +578,7 @@ const EmployeeStatus = () => {
                 }}
               >
                 {filteredUsers.length === 0
-                  ? `No employees found for your ${userRole?.toLowerCase() === "manager" ? "department" : "allocated area"}.`
+                  ? `No employees found for your ${userRole?.toLowerCase() === "manager" ? "department" : "zone"}.`
                   : "No employees are currently online. Check back later for updates."}
               </p>
             </div>

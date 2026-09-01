@@ -28,7 +28,7 @@ interface User {
   email: string;
   mobileNo: string;
   role: string | { id: number; name: string };
-  is_checkin: boolean;
+  isActiveEmployee: boolean;
   date: string;
   joiningDate: string;
   department: string | { id: number; name: string };
@@ -95,9 +95,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     });
   };
 
-  // Helper function to get status color
-  const getStatusColor = (isCheckin: boolean) => {
-    return isCheckin
+  // FIXED: Helper function to get status color based on isActiveEmployee
+  const getStatusColor = (isActive: boolean) => {
+    return isActive
       ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
       : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
   };
@@ -183,11 +183,12 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 <p className="text-gray-600 dark:text-gray-400 text-sm rounded-full bg-gray-100 dark:bg-gray-800/50 px-2 py-1">
                   Designation: {user.designation || "N/A"}
                 </p>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(user.is_checkin)}`}
+                {/* FIXED: Status display with correct color and text */}
+                {/* <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(user.isActiveEmployee)}`}
                 >
-                  {user.is_checkin ? "● Online" : "● Offline"}
-                </span>
+                  {user.isActiveEmployee ? "● Active" : "● Disabled"}
+                </span> */}
               </div>
             </div>
           </div>
@@ -256,18 +257,6 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <InfoCard label="Role" value={resolvedRole} />
               <InfoCard label="Designation" value={user.designation || "N/A"} />
               <InfoCard label="Employee Code" value={getEmployeeCode()} />
-              {/* <InfoCard
-                label="Status"
-                value={
-                  <div className="flex items-center">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStatusColor(user.is_checkin)}`}
-                    >
-                      {user.is_checkin ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                }
-              /> */}
             </div>
           </div>
 

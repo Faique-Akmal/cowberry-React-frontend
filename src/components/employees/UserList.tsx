@@ -155,8 +155,15 @@ const UserList: React.FC = () => {
     () => getUniqueZones(filteredUsers),
     [filteredUsers],
   );
-
+  // Add this helper function in UserList.tsx
+  const getUserZoneId = useCallback((user: User): string => {
+    // Check multiple sources for zone ID
+    if (user.zoneId) return user.zoneId;
+    if (user.zone?.zoneId) return user.zone.zoneId;
+    return "";
+  }, []);
   // Fetch current user info
+
   const fetchCurrentUser = useCallback(async () => {
     try {
       setLoadingCurrentUser(true);
@@ -255,6 +262,8 @@ const UserList: React.FC = () => {
             role: user.role?.name || user.role || "",
             roleId: user.roleId || user.role?.id || 0,
             is_checkin: user.is_checkin || user.isCheckin || false,
+            isActiveEmployee:
+              user.isActiveEmployee || user.is_active_employee || false,
             department: user.department?.name || user.department || "",
             departmentId: user.departmentId || user.department?.id || 0,
             profile_image: user.profileImageUrl || user.profile_image || "",
@@ -265,7 +274,7 @@ const UserList: React.FC = () => {
             address: user.address || "",
             birthDate: user.birthDate || "",
             profileImageUrl: user.profileImageUrl || user.profile_image || "",
-            zoneId: zoneData.zoneId || user.zoneId || "",
+            zoneId: zoneData.zoneId || user.zoneId || "", // ✅ THIS IS KEY
             zoneName: zoneData.name || user.zoneName || "",
             hrManagerId: user.hrManagerId || null,
             reporteeId: user.reporteeId || null,
@@ -285,7 +294,6 @@ const UserList: React.FC = () => {
               : null,
           };
         });
-
         if (append) {
           setAllUsers((prev) => [...prev, ...usersData]);
         } else {
@@ -456,6 +464,7 @@ const UserList: React.FC = () => {
   }, [filteredUsers, filterState.sortOrder]);
 
   // Handle row click
+
   const handleRowClick = async (user: User) => {
     if (!canViewUser(user)) {
       alert("You don't have permission to view this user.");
@@ -468,6 +477,8 @@ const UserList: React.FC = () => {
 
       if (response.data?.success && response.data?.data) {
         const userData = response.data.data;
+        const zoneData = userData.zone || {};
+
         const detailedUser: User = {
           id: userData.id?.toString() || userData.userId?.toString() || "",
           userId: userData.userId?.toString() || userData.id?.toString() || "",
@@ -488,14 +499,14 @@ const UserList: React.FC = () => {
             userData.profileImageUrl || userData.profile_image || "",
           date: userData.createdAt || userData.date || "",
           is_online: userData.is_online || userData.isOnline || false,
-          allocatedArea: userData.allocatedArea || "",
+          allocatedArea: userData.allocatedArea || zoneData.area || "",
           mobileNo: userData.mobileNo || userData.mobile || "",
           address: userData.address || "",
           birthDate: userData.birthDate || "",
           profileImageUrl:
             userData.profileImageUrl || userData.profile_image || "",
-          zoneId: userData.zone?.zoneId || userData.zoneId || "",
-          zoneName: userData.zone?.name || userData.zoneName || "",
+          zoneId: zoneData.zoneId || userData.zoneId || "", // ✅ FIXED
+          zoneName: zoneData.name || userData.zoneName || "",
           hrManagerId: user.hrManagerId,
           reporteeId: user.reporteeId,
           hrManager: user.hrManager || null,

@@ -21,6 +21,7 @@ import UsersGroupIcon from "../AnimatedIcons/users-group-icon";
 import BrandTelegramIcon from "../AnimatedIcons/brand-telegram-icon";
 import UserIcon from "../AnimatedIcons/user-icon";
 import ClockIcon from "../AnimatedIcons/clock-icon";
+import { MdOutlinePendingActions } from "react-icons/md";
 
 type SubItem = {
   name: string;
@@ -102,12 +103,26 @@ const AppSidebar: React.FC = () => {
       path: "/employeecheckin",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
+
+    {
+      icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+      name: t("PendingSessions"),
+      path: "/pending-hr-sessions",
+      role: ["admin", "hr"],
+    },
+    {
+      icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+      name: t("PendingSessions"),
+      path: "/pending-reportee-sessions",
+      role: ["admin", "manager", "headofdepartment"],
+    },
     {
       icon: <UnorderedListIcon className="text-lantern-blue-600" />,
       name: t("menu.TravelSessions"),
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },
+
     {
       icon: (
         <MdOutlineAdd className="text-lantern-blue-600 transition-transform duration-500 hover:rotate-180" />

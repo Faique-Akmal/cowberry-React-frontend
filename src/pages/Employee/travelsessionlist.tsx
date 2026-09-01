@@ -33,6 +33,8 @@ import {
   FaChartLine,
   FaSpinner,
   FaPauseCircle,
+  FaCheckCircle,
+  FaRupeeSign,
 } from "react-icons/fa";
 
 // Import FREE MUI DatePicker components
@@ -67,6 +69,11 @@ import {
   groupSessionsByUserAndDate,
   detectPauses as detectPausesHelper,
   filterAndMapLogsToSession,
+  getSessionFinalStatus,
+  isSessionApproved,
+  RATE_PER_KM,
+  calculateReimbursementAmount,
+  sumReimbursableDistance,
 } from "../../utils/travelSessionHelpers";
 import { exportAllTravelSessionsFromAPI } from "../../utils/exportTravelSessionsToExcel";
 
@@ -77,8 +84,6 @@ L.Icon.Default.mergeOptions({
   iconUrl,
   shadowUrl,
 });
-
-const AUTO_REFRESH_INTERVAL_MS = 30_000;
 
 export default function TravelSessions() {
   // ---------------------------------------------------------------------
@@ -110,6 +115,8 @@ export default function TravelSessions() {
   // Local, UI-only state
   // ---------------------------------------------------------------------
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedApprovalStatus, setSelectedApprovalStatus] =
+    useState<string>("ALL");
 
   // Date state using Dayjs for MUI DatePicker
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
@@ -148,6 +155,9 @@ export default function TravelSessions() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [showStats, setShowStats] = useState(true);
+
+  // State for user role
+  const [userRole, setUserRole] = useState<string>("");
 
   const customIcons = useMemo(
     () => ({
@@ -196,10 +206,35 @@ export default function TravelSessions() {
   );
 
   // ---------------------------------------------------------------------
-  // Current user info
+  // Current user info and role
   // ---------------------------------------------------------------------
   useEffect(() => {
     try {
+      // Get user role from localStorage
+      const roleFromStorage = localStorage.getItem("userRole");
+      if (roleFromStorage) {
+        setUserRole(roleFromStorage.toUpperCase().trim());
+      } else {
+        // Fallback: try to get from user object
+        const userDataStr = localStorage.getItem("user");
+        let userData: any = null;
+        if (userDataStr) {
+          try {
+            userData = JSON.parse(userDataStr);
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+
+        let userRoleFromData = "";
+        if (userData?.userRole) userRoleFromData = userData.userRole;
+        else if (userData?.role) userRoleFromData = userData.role;
+        else if (userData?.user_role) userRoleFromData = userData.user_role;
+
+        setUserRole(userRoleFromData.toUpperCase().trim());
+      }
+
+      // Get other user info
       const userDataStr = localStorage.getItem("user");
       let userData: any = null;
       if (userDataStr) {
@@ -210,16 +245,16 @@ export default function TravelSessions() {
         }
       }
 
-      let userRole = "";
+      let userRoleFromData = "";
       if (localStorage.getItem("userRole"))
-        userRole = localStorage.getItem("userRole") || "";
+        userRoleFromData = localStorage.getItem("userRole") || "";
       else if (localStorage.getItem("role"))
-        userRole = localStorage.getItem("role") || "";
+        userRoleFromData = localStorage.getItem("role") || "";
       else if (localStorage.getItem("user_role"))
-        userRole = localStorage.getItem("user_role") || "";
-      else if (userData?.userRole) userRole = userData.userRole;
-      else if (userData?.role) userRole = userData.role;
-      else if (userData?.user_role) userRole = userData.user_role;
+        userRoleFromData = localStorage.getItem("user_role") || "";
+      else if (userData?.userRole) userRoleFromData = userData.userRole;
+      else if (userData?.role) userRoleFromData = userData.role;
+      else if (userData?.user_role) userRoleFromData = userData.user_role;
 
       let department = localStorage.getItem("department") || "";
       if (!department && userData?.department) department = userData.department;
@@ -232,10 +267,20 @@ export default function TravelSessions() {
       else if (!allocatedArea && userData?.allocated_area)
         allocatedArea = userData.allocated_area;
 
+      // Zone id for zonal managers. NOTE: localStorage's "zoneId" is the
+      // zone's numeric internal id (e.g. 3), matching session.zone.id -
+      // NOT session.zone.zoneId (the string code like "AHM001"), and NOT
+      // the same thing as allocatedArea (a broad category). Same field
+      // mapping used for the users list fix - keep these in sync.
+      let zoneId = localStorage.getItem("zoneId") || "";
+      if (!zoneId && userData?.zoneId) zoneId = String(userData.zoneId);
+      else if (!zoneId && userData?.zone?.id) zoneId = String(userData.zone.id);
+
       setCurrentUserInfo({
-        userRole: userRole.toLowerCase().trim(),
+        userRole: userRoleFromData.toLowerCase().trim(),
         department: department.toLowerCase().trim(),
         allocatedArea: allocatedArea.toLowerCase().trim(),
+        zoneId: zoneId.toLowerCase().trim(),
       });
     } catch (error) {
       console.error("Error getting user info from localStorage:", error);
@@ -273,6 +318,17 @@ export default function TravelSessions() {
       );
     }
 
+    // NEW: Filter by approval status
+    if (selectedApprovalStatus !== "ALL") {
+      filtered = filtered.filter((session) => {
+        const status = getSessionFinalStatus(session);
+        const wanted = selectedApprovalStatus.toUpperCase();
+        // UNDER_REVIEW is normalised to PENDING by getSessionFinalStatus.
+        if (wanted === "UNDER_REVIEW") return status === "PENDING";
+        return status === wanted;
+      });
+    }
+
     if (appliedSearch) {
       const query = appliedSearch.toLowerCase();
       filtered = filtered.filter(
@@ -286,7 +342,14 @@ export default function TravelSessions() {
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     );
-  }, [startDateStr, endDateStr, selectedUser, appliedSearch, travelSessions]);
+  }, [
+    startDateStr,
+    endDateStr,
+    selectedUser,
+    selectedApprovalStatus,
+    appliedSearch,
+    travelSessions,
+  ]);
 
   const groupedView: GroupedSession[] = useMemo(
     () => groupSessionsByUserAndDate(filteredSessions, sessionLogs),
@@ -299,6 +362,13 @@ export default function TravelSessions() {
     (sum, s) => sum + s.totalDistance,
     0,
   );
+
+  // Money is only ever calculated from APPROVED sessions. Pending, rejected
+  // and under-review sessions contribute 0, matching the Excel export.
+  const approvedSessionCount =
+    filteredSessions.filter(isSessionApproved).length;
+  const reimbursableDistance = sumReimbursableDistance(filteredSessions);
+  const totalReimbursement = calculateReimbursementAmount(reimbursableDistance);
 
   const detectPauses = useCallback(
     (sessionId: number) =>
@@ -330,10 +400,15 @@ export default function TravelSessions() {
     setEndDate(null);
   };
 
+  const clearApprovalStatusFilter = () => {
+    setSelectedApprovalStatus("ALL");
+  };
+
   const handleSearchSubmit = () => {
-    setAppliedSearch(searchQuery);
-    setIsSearching(true);
-    setTimeout(() => setIsSearching(false), 500);
+    const query = searchQuery.trim();
+
+    setAppliedSearch(query);
+    setIsSearching(false);
   };
 
   const handleClearSearch = () => {
@@ -699,28 +774,31 @@ export default function TravelSessions() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={exportToCSV}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                    isExporting
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : " bg-lantern-blue-600 hover:bg-blue-700"
-                  } text-white transition-all whitespace-nowrap`}
-                  title="Export grouped sessions with detailed farmer data"
-                  disabled={isExporting}
-                >
-                  {isExporting ? (
-                    <>
-                      <FaSync className="animate-spin flex-shrink-0" />
-                      <span>Exporting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaFileCsv className="flex-shrink-0" />
-                      <span>Export To CSV</span>
-                    </>
-                  )}
-                </button>
+                {/* Export button - Only show for HR role */}
+                {userRole === "HR" && (
+                  <button
+                    onClick={exportToCSV}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                      isExporting
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-lantern-blue-600 hover:bg-green-900"
+                    } text-white transition-all whitespace-nowrap`}
+                    title="Export grouped sessions with detailed farmer data"
+                    disabled={isExporting}
+                  >
+                    {isExporting ? (
+                      <>
+                        <FaSync className="animate-spin flex-shrink-0" />
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaFileCsv className="flex-shrink-0" />
+                        <span>Export To CSV</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <button
                   onClick={manualRefresh}
@@ -774,7 +852,7 @@ export default function TravelSessions() {
                 onClick={() => setShowStats(!showStats)}
                 className={`flex items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 ${
                   showStats
-                    ? " bg-lantern-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                    ? "bg-lantern-blue-600 hover:bg-green-900 text-white shadow-lg"
                     : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
                 }`}
                 title={showStats ? "Hide statistics" : "Show statistics"}
@@ -798,7 +876,7 @@ export default function TravelSessions() {
             </div>
 
             {showStats && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-fadeIn">
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
@@ -806,19 +884,23 @@ export default function TravelSessions() {
                         Total Sessions
                       </p>
                       <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
-                        {isDateFilterActive || selectedUser || appliedSearch
+                        {isDateFilterActive ||
+                        selectedUser ||
+                        appliedSearch ||
+                        selectedApprovalStatus !== "ALL"
                           ? totalSessions
                           : totalSessionsCount}
                       </p>
                       {(isDateFilterActive ||
                         selectedUser ||
-                        appliedSearch) && (
+                        appliedSearch ||
+                        selectedApprovalStatus !== "ALL") && (
                         <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                           Filtered results (of {totalSessionsCount} total)
                         </p>
                       )}
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl">
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaListAlt className="text-blue-500 text-xl" />
                     </div>
                   </div>
@@ -834,7 +916,7 @@ export default function TravelSessions() {
                         {activeSessions}
                       </p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-xl">
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
                       <FaPlayCircle className="text-green-500 text-xl" />
                     </div>
                   </div>
@@ -846,12 +928,50 @@ export default function TravelSessions() {
                       <p className="text-sm text-gray-600 dark:text-gray-300">
                         Total Distance
                       </p>
-                      <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">
+                      <p className="text-xl font-bold mt-1 text-gray-800 dark:text-white">
                         {(totalDistance / 1000).toFixed(1)} km
                       </p>
+                      <p className="text-sm font-bold mt-1 text-black dark:text-white">
+                        <FaRupeeSign className="text-green-500 text-lg inline-block mr-1" />
+                        {((totalDistance / 1000) * 3.5).toFixed(1)}
+                      </p>
                     </div>
-                    <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-600/20 backdrop-blur-sm rounded-xl">
-                      <FaRoad className="text-purple-500 text-xl" />
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
+                      <FaRoad className="text-gray-700 text-xl" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Reimbursement
+                      </p>
+                      <p
+                        className={`text-2xl font-bold mt-1 ${
+                          approvedSessionCount > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-gray-400 dark:text-gray-500"
+                        }`}
+                      >
+                        ₹ {totalReimbursement.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {approvedSessionCount > 0
+                          ? `${approvedSessionCount} approved `
+                          : "No approved sessions"}
+                        <br />
+
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {approvedSessionCount > 0
+                            ? ` ${(reimbursableDistance / 1000).toFixed(2)} km · ₹${RATE_PER_KM}/km`
+                            : ""}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="p-3 bg-black/10  backdrop-blur-sm rounded-xl">
+                      <FaRupeeSign className="text-green-500 text-xl" />
                     </div>
                   </div>
                 </div>
@@ -891,7 +1011,10 @@ export default function TravelSessions() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSearchSubmit();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSearchSubmit();
+                      }
                     }}
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -906,7 +1029,7 @@ export default function TravelSessions() {
                     )}
                     <button
                       onClick={handleSearchSubmit}
-                      className="px-3 py-1.5  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
+                      className="px-3 py-1.5 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-lg transition-all flex items-center gap-1 text-sm"
                     >
                       <FaSearch className="text-xs" />
                     </button>
@@ -975,27 +1098,31 @@ export default function TravelSessions() {
                 />
               </div>
 
-              {/* View Mode */}
+              {/* NEW: Approval Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <FaChartLine className="inline mr-2" />
-                  View Mode
+                  <FaCheckCircle className="inline mr-2" />
+                  Approval Status
                 </label>
                 <select
                   className="w-full px-4 py-2 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-500/30"
-                  onChange={(e) =>
-                    setViewMode(e.target.value as "grouped" | "individual")
-                  }
-                  value={viewMode}
+                  value={selectedApprovalStatus}
+                  onChange={(e) => setSelectedApprovalStatus(e.target.value)}
                 >
-                  <option value="grouped">Group Session</option>
-                  <option value="individual">Individual Sessions</option>
+                  <option value="ALL">All Status</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                  <option value="PENDING">Pending</option>
                 </select>
               </div>
             </div>
 
             {/* Quick Actions and Clear Filter */}
-            {(startDate || endDate || selectedUser || appliedSearch) && (
+            {(startDate ||
+              endDate ||
+              selectedUser ||
+              appliedSearch ||
+              selectedApprovalStatus !== "ALL") && (
               <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
                 {(startDate || endDate) && (
                   <button
@@ -1013,6 +1140,15 @@ export default function TravelSessions() {
                   >
                     <FaTimes className="text-xs" />
                     Clear User Filter
+                  </button>
+                )}
+                {selectedApprovalStatus !== "ALL" && (
+                  <button
+                    onClick={clearApprovalStatusFilter}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1"
+                  >
+                    <FaTimes className="text-xs" />
+                    Clear Status Filter
                   </button>
                 )}
                 {appliedSearch && (
@@ -1034,6 +1170,8 @@ export default function TravelSessions() {
                         : ""}
                   {selectedUser &&
                     ` • User: ${getUserName(parseInt(selectedUser))}`}
+                  {selectedApprovalStatus !== "ALL" &&
+                    ` • Status: ${selectedApprovalStatus}`}
                   {appliedSearch && ` • Search: "${appliedSearch}"`}
                 </span>
               </div>
@@ -1059,14 +1197,17 @@ export default function TravelSessions() {
                 No Travel Sessions Found
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {isDateFilterActive || selectedUser || appliedSearch
+                {isDateFilterActive ||
+                selectedUser ||
+                appliedSearch ||
+                selectedApprovalStatus !== "ALL"
                   ? "Try adjusting your filters to see more results."
                   : "No travel sessions recorded yet."}
               </p>
               {isDateFilterActive && (
                 <button
                   onClick={clearDateFilter}
-                  className="mt-4 px-4 py-2  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                  className="mt-4 px-4 py-2 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-xl"
                 >
                   Clear Date Filter
                 </button>
@@ -1118,7 +1259,7 @@ export default function TravelSessions() {
                                   className={`px-2 py-1 backdrop-blur-sm rounded-full text-xs font-semibold ${
                                     group.activeSessions > 0
                                       ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400"
-                                      : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-400/30 text-blue-700 dark:text-blue-400"
+                                      : "bg-lantern-blue-600 border border-blue-400/30 text-white dark:text-blue-400"
                                   }`}
                                 >
                                   {group.activeSessions > 0
@@ -1130,9 +1271,17 @@ export default function TravelSessions() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-8">
                           <div className="text-right">
                             <div className="flex items-center gap-3">
+                              <div className="text-center">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                  Approved Sessions
+                                </p>
+                                <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                  {group.approvedSessions}
+                                </p>
+                              </div>
                               <div className="text-center">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Sessions
@@ -1145,19 +1294,40 @@ export default function TravelSessions() {
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Distance
                                 </p>
+
                                 <p className="text-lg font-bold text-gray-800 dark:text-white">
                                   {(group.totalDistance / 1000).toFixed(1)} km
+                                </p>
+
+                                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                  ₹
+                                  {((group.totalDistance / 1000) * 3.5).toFixed(
+                                    1,
+                                  )}
                                 </p>
                               </div>
                               <div className="text-center">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                   Reimbursement
                                 </p>
-                                <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                <p
+                                  className={`text-lg font-bold ${
+                                    group.approvedSessions > 0
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-gray-400 dark:text-gray-500"
+                                  }`}
+                                >
                                   ₹{" "}
-                                  {((group.totalDistance / 1000) * 3.5).toFixed(
-                                    1,
-                                  )}
+                                  {calculateReimbursementAmount(
+                                    group.reimbursableDistance,
+                                  ).toFixed(2)}
+                                </p>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  {group.approvedSessions > 0
+                                    ? `${(
+                                        group.reimbursableDistance / 1000
+                                      ).toFixed(2)} km approved`
+                                    : "No approved sessions"}
                                 </p>
                               </div>
                             </div>
@@ -1224,7 +1394,7 @@ export default function TravelSessions() {
                               selectedUserForFarmerData ===
                                 group.userId.toString()
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                                : "bg-lantern-blue-600 hover:bg-green-900"
                             } text-white`}
                             disabled={
                               isLoadingFarmerData &&
@@ -1274,6 +1444,17 @@ export default function TravelSessions() {
                             );
                             const filteredLogCount =
                               logs.length - filteredLogs.length;
+
+                            // Normalised status drives both the badge and the
+                            // per-session amount, so they can never disagree.
+                            const sessionStatus =
+                              getSessionFinalStatus(session);
+                            const sessionAmount =
+                              sessionStatus === "APPROVED"
+                                ? calculateReimbursementAmount(
+                                    session.totalDistance || 0,
+                                  )
+                                : 0;
 
                             return (
                               <div
@@ -1329,46 +1510,81 @@ export default function TravelSessions() {
                                           {Math.floor(sessionDuration.hours)}h{" "}
                                           {sessionDuration.minutes}m
                                         </span>
+                                        <span>•</span>
+                                        <span
+                                          className={
+                                            sessionStatus === "APPROVED"
+                                              ? "text-green-600 dark:text-green-400 font-semibold"
+                                              : "text-gray-400 dark:text-gray-500"
+                                          }
+                                        >
+                                          ₹{sessionAmount.toFixed(2)}
+                                          {sessionStatus !== "APPROVED" &&
+                                            " (not approved)"}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="flex gap-2">
-                                    {/* <button
-                                      onClick={() =>
-                                        handleFetchTravelData(
-                                          session.userId.toString(),
-                                          session.sessionId.toString(),
-                                          group.date,
-                                        )
-                                      }
-                                      className={`px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${
-                                        isLoadingFarmerData &&
-                                        selectedUserForFarmerData ===
-                                          session.userId.toString()
-                                          ? "bg-gray-400 cursor-not-allowed"
-                                          : " bg-lantern-blue-600 hover:bg-blue-700"
-                                      } text-white`}
-                                      disabled={
-                                        isLoadingFarmerData &&
-                                        selectedUserForFarmerData ===
-                                          session.userId.toString()
-                                      }
+                                    <span
+                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm ${
+                                        sessionStatus === "APPROVED"
+                                          ? " text-white bg-green-700  border border-green-950 hover:bg-green-600 transition-colors duration-200"
+                                          : sessionStatus === "REJECTED"
+                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors duration-200"
+                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors duration-200"
+                                      }`}
                                     >
-                                      {isLoadingFarmerData &&
-                                      selectedUserForFarmerData ===
-                                        session.userId.toString() ? (
-                                        <>
-                                          <FaSpinner className="animate-spin" />
-                                          Loading...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <FaInfoCircle />
-                                          Details
-                                        </>
+                                      {sessionStatus === "APPROVED" && (
+                                        <svg
+                                          className="w-3.5 h-3.5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M5 13l4 4L19 7"
+                                          />
+                                        </svg>
                                       )}
-                                    </button> */}
+                                      {sessionStatus === "REJECTED" && (
+                                        <svg
+                                          className="w-3.5 h-3.5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M6 18L18 6M6 6l12 12"
+                                          />
+                                        </svg>
+                                      )}
+                                      {sessionStatus === "PENDING" && (
+                                        <svg
+                                          className="w-3.5 h-3.5 animate-spin-slow"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                          />
+                                        </svg>
+                                      )}
+                                      <span className="ml-0.5">
+                                        {sessionStatus}
+                                      </span>
+                                    </span>
                                     <button
                                       onClick={() => openMap(session)}
                                       className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-500 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
@@ -1387,7 +1603,7 @@ export default function TravelSessions() {
                       <div className="flex flex-col sm:flex-row gap-5">
                         <button
                           onClick={() => openMultiSessionMap(group)}
-                          className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-lantern-blue-600 hover:bg-blue-600 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                          className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-lantern-blue-600 hover:bg-green-900 rounded-xl text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
                         >
                           <FaLayerGroup className="text-xl" />
                           View All Sessions on Map
@@ -1411,7 +1627,7 @@ export default function TravelSessions() {
                               selectedUserForFarmerData ===
                                 group.userId.toString()
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-lantern-blue-600 hover:bg-blue-700"
+                                : "bg-lantern-blue-600 hover:bg-green-900"
                             } text-white`}
                             disabled={
                               isLoadingFarmerData &&
@@ -1448,14 +1664,17 @@ export default function TravelSessions() {
               No Travel Sessions Found
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {isDateFilterActive || selectedUser || appliedSearch
+              {isDateFilterActive ||
+              selectedUser ||
+              appliedSearch ||
+              selectedApprovalStatus !== "ALL"
                 ? "Try adjusting your filters to see more results."
                 : "No travel sessions recorded yet."}
             </p>
             {isDateFilterActive && (
               <button
                 onClick={clearDateFilter}
-                className="mt-4 px-4 py-2  bg-lantern-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                className="mt-4 px-4 py-2 bg-lantern-blue-600 hover:bg-green-900 text-white rounded-xl"
               >
                 Clear Date Filter
               </button>
@@ -1550,6 +1769,27 @@ export default function TravelSessions() {
                           {isActive ? "Active" : "Completed"}
                         </span>
                       </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                          Approval
+                        </p>
+                        <span
+                          className={`px-3 py-1 backdrop-blur-sm rounded-full text-sm font-semibold ${
+                            getSessionFinalStatus(session) === "APPROVED"
+                              ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400"
+                              : getSessionFinalStatus(session) === "REJECTED"
+                                ? "bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-400/30 text-red-700 dark:text-red-400"
+                                : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-yellow-700 dark:text-yellow-400"
+                          }`}
+                        >
+                          {getSessionFinalStatus(session) === "APPROVED" &&
+                            "✅"}
+                          {getSessionFinalStatus(session) === "REJECTED" &&
+                            "❌"}
+                          {getSessionFinalStatus(session) === "PENDING" && "⏳"}
+                          {getSessionFinalStatus(session)}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -1566,7 +1806,7 @@ export default function TravelSessions() {
                           selectedUserForFarmerData ===
                             session.userId.toString()
                             ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-lantern-blue-600 hover:bg-blue-700"
+                            : "bg-lantern-blue-600 hover:bg-green-900"
                         } text-white`}
                         disabled={
                           isLoadingFarmerData &&
@@ -1590,7 +1830,7 @@ export default function TravelSessions() {
                       </button>
                       <button
                         onClick={() => openMap(session)}
-                        className="px-3 py-2 bg-lantern-blue-600 hover:bg-blue-700 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
+                        className="px-3 py-2 bg-lantern-blue-600 hover:bg-green-900 rounded-xl text-sm font-medium flex items-center gap-2 text-white"
                       >
                         <FaEye />
                         View Map

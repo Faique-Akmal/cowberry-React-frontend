@@ -1,8 +1,3 @@
-// src/utils/travelSessionHelpers.ts
-// Pure, side-effect-free helpers extracted from TravelSessions.tsx.
-// None of these touch React state or the network, so they are trivially
-// testable and reusable from both the Zustand store and the component.
-
 import {
   TravelSession,
   LocationLog,
@@ -12,9 +7,169 @@ import {
   UserListItem,
 } from "../types/travelSession";
 
+/** Reimbursement rate in ₹ per kilometre. Single source of truth. */
+export const RATE_PER_KM = 3.5;
+
+export type SessionApprovalStatus = "APPROVED" | "REJECTED" | "PENDING";
+
+/**
+ * Defensively pull the approval status off a session object.
+ *
+ * This mirrors `extractFinalStatus` in exportTravelSessionsToExcel.ts. Some
+ * endpoints (or older versions of the same endpoint) send the status under a
+ * different key, or send only the `isFinalApproved` boolean. Reading
+ * `session.finalStatus` directly makes all of those look PENDING, which
+ * silently drops them from the reimbursement total even though the Excel
+ * export counts them. Keep this in sync with the export.
+ */
+export const getSessionFinalStatus = (session: any): SessionApprovalStatus => {
+  if (!session) return "PENDING";
+
+  const candidates = [
+    session.finalStatus,
+    session.final_status,
+    session.approvalStatus,
+    session.approval_status,
+    session?.approval?.finalStatus,
+    session?.approval?.status,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const status = String(candidate).toUpperCase().trim();
+    if (status === "APPROVED") return "APPROVED";
+    if (status === "REJECTED") return "REJECTED";
+    if (status === "PENDING" || status === "UNDER_REVIEW") return "PENDING";
+  }
+
+  if (session.isFinalApproved === true) return "APPROVED";
+  if (session.isFinalApproved === false) return "REJECTED";
+
+  return "PENDING";
+};
+
+/**
+ * Only APPROVED sessions are reimbursable.
+ */
+export const isSessionApproved = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "APPROVED";
+
+/**
+ * Check if a session is pending approval (UNDER_REVIEW counts as pending)
+ */
+export const isSessionPending = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "PENDING";
+
+/**
+ * Check if a session is rejected
+ */
+export const isSessionRejected = (session: TravelSession): boolean =>
+  getSessionFinalStatus(session) === "REJECTED";
+
+/**
+ * Get the reimbursable distance (metres) for a session.
+ * Returns 0 unless the session's final status is APPROVED.
+ */
+export const getReimbursableDistance = (session: TravelSession): number =>
+  isSessionApproved(session) ? session.totalDistance || 0 : 0;
+
+/**
+ * Calculate reimbursement amount from a distance in metres.
+ * Rate: ₹3.5 per km. Feed this only reimbursable (approved) distance.
+ */
+export const calculateReimbursementAmount = (
+  distanceInMeters: number,
+): number => (distanceInMeters / 1000) * RATE_PER_KM;
+
+/**
+ * Sum the approved-only distance (metres) across a list of sessions.
+ */
+export const sumReimbursableDistance = (sessions: TravelSession[]): number =>
+  (sessions || []).reduce(
+    (sum, session) => sum + getReimbursableDistance(session),
+    0,
+  );
+
+/**
+ * Get approval status badge color and text
+ */
+export const getApprovalStatusInfo = (finalStatus?: string) => {
+  if (!finalStatus) {
+    return {
+      color:
+        "bg-gradient-to-r from-gray-500/20 to-gray-600/20 border border-gray-400/30 text-gray-700 dark:text-gray-400",
+      label: "⏳ Pending",
+      status: "PENDING",
+    };
+  }
+
+  const status = finalStatus.toUpperCase();
+
+  switch (status) {
+    case "APPROVED":
+      return {
+        color:
+          "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-700 dark:text-green-400",
+        label: "✅ Approved",
+        status: "APPROVED",
+      };
+    case "REJECTED":
+      return {
+        color:
+          "bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-400/30 text-red-700 dark:text-red-400",
+        label: "❌ Rejected",
+        status: "REJECTED",
+      };
+    case "UNDER_REVIEW":
+      return {
+        color:
+          "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-yellow-700 dark:text-yellow-400",
+        label: "🔄 Under Review",
+        status: "UNDER_REVIEW",
+      };
+    default:
+      return {
+        color:
+          "bg-gradient-to-r from-gray-500/20 to-gray-600/20 border border-gray-400/30 text-gray-700 dark:text-gray-400",
+        label: "⏳ Pending",
+        status: "PENDING",
+      };
+  }
+};
+
+/**
+ * Get approval workflow steps for display
+ */
+export const getApprovalWorkflowSteps = (session: TravelSession) => {
+  return {
+    reportee: {
+      label: "Reportee Approval",
+      isApproved: session.isApprovedByReportee || false,
+      isRejected: session.isRejectedByReportee || false,
+      approvedAt: session.reporteeApprovedAt,
+      comments: session.reporteeComments,
+      by: session.reporteeInfo,
+    },
+    hr: {
+      label: "HR Approval",
+      isApproved: session.isApprovedByHR || false,
+      isRejected: session.isRejectedByHR || false,
+      approvedAt: session.hrApprovedAt,
+      comments: session.hrComments,
+      by: session.hrManagerInfo,
+    },
+    final: {
+      label: "Final Status",
+      status: getSessionFinalStatus(session),
+      isApproved: isSessionApproved(session),
+    },
+  };
+};
+
 // ---------------------------------------------------------------------------
 // Log <-> session time-window filtering
 // ---------------------------------------------------------------------------
+
 export const filterLogsBySessionTime = (
   logs: LocationLog[],
   sessionStartTime: string,
@@ -63,6 +218,7 @@ export const filterAndMapLogsToSession = (
 // ---------------------------------------------------------------------------
 // Role helpers
 // ---------------------------------------------------------------------------
+
 export const normalizeRole = (role?: string): string => {
   if (!role) return "";
   return role.toLowerCase().trim();
@@ -82,6 +238,13 @@ export const isAdminOrHR = (role?: string): boolean => {
 
 export const isManager = (role?: string): boolean => {
   const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  // Guard against substring false-positives: "zonalmanager" and any HOD
+  // variant both contain "manager"/overlap loosely, which used to make
+  // isManager() true for them too and silently route zonal managers into
+  // the department-filter branch instead of the zone-filter branch. Check
+  // the more specific roles out first.
+  if (isZonalManager(normalized) || isHOD(normalized)) return false;
   return normalized === "manager" || normalized.includes("manager");
 };
 
@@ -98,8 +261,51 @@ export const isZonalManager = (role?: string): boolean => {
 export const isHOD = (role?: string): boolean => {
   const normalized = normalizeRole(role);
   return (
-    normalized === "headofdepartment" || normalized.includes("headofdepartment")
+    normalized === "headofdepartment" ||
+    normalized === "head of department" ||
+    normalized.includes("headofdepartment")
   );
+};
+
+export const isFieldEmployee = (role?: string): boolean => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "field employee" ||
+    normalized === "fieldemployee" ||
+    normalized === "field" ||
+    normalized.includes("field")
+  );
+};
+
+/**
+ * Resolve a zonal manager's zone identifier from their userInfo.
+ *
+ * IMPORTANT: the manager's zoneId (from localStorage/login, e.g. `3`) is the
+ * zone's numeric internal id - it matches `session.zone.id` on session/user
+ * records, NOT `session.zone.zoneId` (the string code, e.g. "AHM001") and
+ * NOT `allocatedArea` (a broad category like "General"/"naturalfarming"
+ * shared across many zones). Coerce to string before comparing since ids
+ * are numbers.
+ */
+const getManagerZoneId = (userInfo: UserInfo | null): string => {
+  if (!userInfo) return "";
+  const raw =
+    (userInfo as any).zoneId ??
+    (userInfo as any).zone?.id ??
+    (userInfo as any).zone?.zoneId ??
+    "";
+  return raw === "" || raw === null || raw === undefined
+    ? ""
+    : String(raw).toLowerCase().trim();
+};
+
+/** Resolve a session/user record's zone identifier the same way. */
+const getRecordZoneId = (record: any): string => {
+  if (!record) return "";
+  const raw = record.zone?.id ?? record.zoneId ?? record.zone?.zoneId ?? "";
+  return raw === "" || raw === null || raw === undefined
+    ? ""
+    : String(raw).toLowerCase().trim();
 };
 
 /** Role-based query params to send to the API so filtering happens server-side too. */
@@ -111,12 +317,11 @@ export const buildRoleScopedParams = (
 
   const role = userInfo.userRole.toLowerCase().trim();
 
-  if (isManager(role) || isHOD(role)) {
-    if (userInfo.department) params.department = userInfo.department;
-  }
-
   if (isZonalManager(role)) {
-    if (userInfo.allocatedArea) params.allocatedArea = userInfo.allocatedArea;
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (managerZoneId) params.zoneId = managerZoneId;
+  } else if (isManager(role) || isHOD(role)) {
+    if (userInfo.department) params.department = userInfo.department;
   }
 
   return params;
@@ -131,19 +336,17 @@ export const filterSessionsByRole = (
 
   if (isAdminOrHR(userRole)) return sessions;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return [];
+    return sessions.filter((s) => getRecordZoneId(s) === managerZoneId);
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return [];
     return sessions.filter(
       (s) => (s.department || "").toLowerCase().trim() === managerDepartment,
-    );
-  }
-
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return [];
-    return sessions.filter(
-      (s) => (s.allocatedArea || "").toLowerCase().trim() === zonalArea,
     );
   }
 
@@ -159,19 +362,17 @@ export const filterUsersByRole = (
 
   if (isAdminOrHR(userRole)) return usersList;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return [];
+    return usersList.filter((u) => getRecordZoneId(u) === managerZoneId);
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return [];
     return usersList.filter(
       (u) => (u.department || "").toLowerCase().trim() === managerDepartment,
-    );
-  }
-
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return [];
-    return usersList.filter(
-      (u) => (u.allocatedArea || "").toLowerCase().trim() === zonalArea,
     );
   }
 
@@ -187,6 +388,12 @@ export const hasPermissionToViewSession = (
 
   if (isAdminOrHR(userRole)) return true;
 
+  if (isZonalManager(userRole)) {
+    const managerZoneId = getManagerZoneId(userInfo);
+    if (!managerZoneId) return false;
+    return getRecordZoneId(session) === managerZoneId;
+  }
+
   if (isManager(userRole) || isHOD(userRole)) {
     const managerDepartment = userInfo.department?.toLowerCase().trim();
     if (!managerDepartment) return false;
@@ -195,78 +402,107 @@ export const hasPermissionToViewSession = (
     );
   }
 
-  if (isZonalManager(userRole)) {
-    const zonalArea = userInfo.allocatedArea?.toLowerCase().trim();
-    if (!zonalArea) return false;
-    return (session.allocatedArea || "").toLowerCase().trim() === zonalArea;
-  }
-
   return true;
 };
 
 // ---------------------------------------------------------------------------
 // Formatting
 // ---------------------------------------------------------------------------
+
 export const formatDateOnly = (dateTimeStr: string): string => {
   if (!dateTimeStr) return "";
-  return new Date(dateTimeStr).toISOString().split("T")[0];
+  try {
+    return new Date(dateTimeStr).toISOString().split("T")[0];
+  } catch {
+    return "";
+  }
 };
 
 export const formatDateTime = (dateTimeStr: string): string => {
   if (!dateTimeStr) return "-";
-  return new Date(dateTimeStr).toLocaleString();
+  try {
+    return new Date(dateTimeStr).toLocaleString();
+  } catch {
+    return "-";
+  }
 };
 
 export const formatTimeOnly = (dateTimeStr: string): string => {
   if (!dateTimeStr) return "-";
-  return new Date(dateTimeStr).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  try {
+    return new Date(dateTimeStr).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "-";
+  }
 };
 
-export const calculateDuration = (startTime: string, endTime: string) => {
-  if (!startTime) return { hours: 0, minutes: 0 };
-  const start = new Date(startTime);
-  const end = endTime ? new Date(endTime) : new Date();
-  const durationMs = end.getTime() - start.getTime();
-  const hours = Math.floor(durationMs / (1000 * 60 * 60));
-  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-  return { hours, minutes };
+export const calculateDuration = (startTime: string, endTime?: string) => {
+  if (!startTime) return { hours: 0, minutes: 0, totalMinutes: 0 };
+  try {
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : new Date();
+    const durationMs = end.getTime() - start.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const totalMinutes = Math.floor(durationMs / (1000 * 60));
+    return { hours, minutes, totalMinutes };
+  } catch {
+    return { hours: 0, minutes: 0, totalMinutes: 0 };
+  }
+};
+
+export const formatDuration = (startTime: string, endTime?: string): string => {
+  const { hours, minutes } = calculateDuration(startTime, endTime);
+  if (hours === 0 && minutes === 0) return "0m";
+  if (hours === 0) return `${minutes}m`;
+  return `${hours}h ${minutes}m`;
 };
 
 // ---------------------------------------------------------------------------
 // Coordinates
 // ---------------------------------------------------------------------------
+
 export const parseCoordinate = (coord: string | number): number => {
   if (coord === null || coord === undefined) return 0;
-  if (typeof coord === "number") return Math.abs(coord) > 180 ? 0 : coord;
+  if (typeof coord === "number") {
+    return Math.abs(coord) > 180 ? 0 : coord;
+  }
 
   const str = String(coord).trim();
   if (!str) return 0;
 
+  // Handle various formats: "21.184936", "21.184936,", "-21.184936", etc.
   const cleaned = str.replace(/[^\d.-]/g, "");
   if (!cleaned) return 0;
 
   const parsed = parseFloat(cleaned);
-  if (Math.abs(parsed) > 90) return 0;
+  if (isNaN(parsed)) return 0;
 
-  return isNaN(parsed) ? 0 : parsed;
+  // For latitude, clamp to [-90, 90]; for longitude, clamp to [-180, 180]
+  // We'll handle this in isValidCoordinate
+  return parsed;
 };
 
 export const isValidCoordinate = (
   lat: string | number,
   lng: string | number,
 ): boolean => {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) {
+    return false;
+  }
+
   const latNum = parseCoordinate(lat);
   const lngNum = parseCoordinate(lng);
+
   return (
-    latNum !== 0 &&
-    lngNum !== 0 &&
+    !isNaN(latNum) &&
+    !isNaN(lngNum) &&
     Math.abs(latNum) <= 90 &&
     Math.abs(lngNum) <= 180 &&
-    !isNaN(latNum) &&
-    !isNaN(lngNum)
+    (latNum !== 0 || lngNum !== 0)
   );
 };
 
@@ -291,6 +527,8 @@ export const buildPolylinePath = (
   session: TravelSession,
   sessionLogs: Record<number, LocationLog[]>,
 ): [number, number][] => {
+  if (!session) return [];
+
   const logs = sessionLogs[session.sessionId] || [];
   const filteredLogs = filterAndMapLogsToSession(logs, session);
   if (filteredLogs.length === 0) return [];
@@ -319,6 +557,7 @@ export const getMapCenter = (
   const DEFAULT: [number, number] = [21.1702, 72.8311];
   if (!session) return DEFAULT;
 
+  // Try to use start location
   if (isValidCoordinate(session.startLatitude, session.startLongitude)) {
     return [
       parseCoordinate(session.startLatitude),
@@ -326,6 +565,15 @@ export const getMapCenter = (
     ];
   }
 
+  // Try to use end location
+  if (isValidCoordinate(session.endLatitude, session.endLongitude)) {
+    return [
+      parseCoordinate(session.endLatitude),
+      parseCoordinate(session.endLongitude),
+    ];
+  }
+
+  // Use average of log points
   const logs = sessionLogs[session.sessionId] || [];
   const filteredLogs = filterAndMapLogsToSession(logs, session);
   const validLogs = filteredLogs.filter((l) =>
@@ -397,6 +645,7 @@ export const getMapZoom = (
 // ---------------------------------------------------------------------------
 // Grouping / distance / pauses
 // ---------------------------------------------------------------------------
+
 export const calculateAdjustedGroupDistance = (sessions: TravelSession[]) => {
   if (sessions.length === 0) {
     return {
@@ -459,6 +708,13 @@ export const groupSessionsByUserAndDate = (
         isLoading: false,
         hasMoreSessions: false,
         allSessionsLoaded: true,
+        // These four are recomputed from `sessions` below - see the final
+        // map() in this function. They are seeded here only so the object
+        // satisfies GroupedSession.
+        approvedSessions: isSessionApproved(session) ? 1 : 0,
+        pendingSessions: isSessionPending(session) ? 1 : 0,
+        rejectedSessions: isSessionRejected(session) ? 1 : 0,
+        reimbursableDistance: getReimbursableDistance(session),
       });
     } else {
       const existingGroup = groupedMap.get(groupKey)!;
@@ -473,11 +729,18 @@ export const groupSessionsByUserAndDate = (
             new Date(session.startTime).getTime(),
         );
 
-        if (insertIndex === -1) existingGroup.sessions.push(session);
-        else existingGroup.sessions.splice(insertIndex, 0, session);
+        if (insertIndex === -1) {
+          existingGroup.sessions.push(session);
+        } else {
+          existingGroup.sessions.splice(insertIndex, 0, session);
+        }
 
         existingGroup.totalSessions += 1;
         existingGroup.activeSessions += session.endTime ? 0 : 1;
+
+        // Approval counts and reimbursable distance are deliberately NOT
+        // accumulated here. They are derived from the final `sessions` array
+        // in the map() below so they can never drift out of sync with it.
 
         if (new Date(session.startTime) < new Date(existingGroup.startTime)) {
           existingGroup.startTime = session.startTime;
@@ -500,11 +763,25 @@ export const groupSessionsByUserAndDate = (
       totalPoints += filterAndMapLogsToSession(logs, session).length;
     });
 
+    // Single source of truth for approval numbers: derive them from the
+    // final session list rather than accumulating as sessions stream in.
+    const approvedSessions = group.sessions.filter(isSessionApproved).length;
+    const rejectedSessions = group.sessions.filter(isSessionRejected).length;
+    const pendingSessions =
+      group.sessions.length - approvedSessions - rejectedSessions;
+
+    // Only APPROVED sessions contribute money.
+    const reimbursableDistance = sumReimbursableDistance(group.sessions);
+
     return {
       ...group,
       totalDistance: distanceData.totalDistance,
       firstSessionDistance: distanceData.firstSessionDistance,
       originalTotalDistance: distanceData.originalTotalDistance,
+      approvedSessions,
+      pendingSessions,
+      rejectedSessions,
+      reimbursableDistance,
       totalPoints,
     };
   });
@@ -560,7 +837,9 @@ export const detectPauses = (
       const endTime = new Date(currentPause.end.timestamp);
       currentPause.durationMinutes =
         (endTime.getTime() - startTime.getTime()) / 60000;
-      if (currentPause.durationMinutes >= 1) pauses.push(currentPause);
+      if (currentPause.durationMinutes >= 1) {
+        pauses.push(currentPause);
+      }
       currentPause = null;
     }
   }
@@ -570,7 +849,9 @@ export const detectPauses = (
     const endTime = new Date(currentPause.end.timestamp);
     currentPause.durationMinutes =
       (endTime.getTime() - startTime.getTime()) / 60000;
-    if (currentPause.durationMinutes >= 1) pauses.push(currentPause);
+    if (currentPause.durationMinutes >= 1) {
+      pauses.push(currentPause);
+    }
   }
 
   return pauses;
@@ -579,35 +860,37 @@ export const detectPauses = (
 // ---------------------------------------------------------------------------
 // Colors
 // ---------------------------------------------------------------------------
+
 export const SESSION_COLORS = [
-  "#FF0000",
-  "#0000FF",
-  "#00FF00",
-  "#FFA500",
-  "#800080",
-  "#FF69B4",
-  "#00FFFF",
-  "#FFD700",
-  "#008000",
-  "#FF4500",
-  "#4B0082",
-  "#FF1493",
-  "#00FF7F",
-  "#8B4513",
-  "#000080",
-  "#808000",
-  "#DC143C",
-  "#FF8C00",
-  "#9932CC",
-  "#20B2CD",
+  "#FF0000", // Red
+  "#0000FF", // Blue
+  "#00FF00", // Green
+  "#FFA500", // Orange
+  "#800080", // Purple
+  "#FF69B4", // Pink
+  "#00FFFF", // Cyan
+  "#FFD700", // Gold
+  "#008000", // Dark Green
+  "#FF4500", // Orange Red
+  "#4B0082", // Indigo
+  "#FF1493", // Deep Pink
+  "#00FF7F", // Spring Green
+  "#8B4513", // Saddle Brown
+  "#000080", // Navy
+  "#808000", // Olive
+  "#DC143C", // Crimson
+  "#FF8C00", // Dark Orange
+  "#9932CC", // Dark Orchid
+  "#20B2CD", // Light Sea Green
 ];
 
 export const getSessionColor = (index: number): string =>
   SESSION_COLORS[index % SESSION_COLORS.length];
 
 // ---------------------------------------------------------------------------
-// Glassmorphism classes (moved here purely so the component file is smaller)
+// Glassmorphism classes
 // ---------------------------------------------------------------------------
+
 export const glassmorphismClasses = {
   card: "backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/50 shadow-xl",
   cardHover:
@@ -626,4 +909,60 @@ export const glassmorphismClasses = {
     "backdrop-blur-lg bg-gradient-to-br from-white/15 to-white/5 dark:from-gray-800/30 dark:to-gray-900/20 border border-white/20 dark:border-gray-700/50 shadow-lg",
   modal:
     "backdrop-blur-xl bg-white/20 dark:bg-gray-900/30 border border-white/30 dark:border-gray-700/50 shadow-2xl",
+};
+
+// ---------------------------------------------------------------------------
+// Status badge colors for sessions
+// ---------------------------------------------------------------------------
+
+export const getSessionStatusColor = (session: TravelSession): string => {
+  if (isSessionApproved(session)) {
+    return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+  }
+  if (isSessionPending(session)) {
+    return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+  }
+  if (isSessionRejected(session)) {
+    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+  }
+  return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400";
+};
+
+export const getSessionStatusText = (session: TravelSession): string => {
+  if (isSessionApproved(session)) return "Approved";
+  if (isSessionPending(session)) return "Pending";
+  if (isSessionRejected(session)) return "Rejected";
+  return "Unknown";
+};
+
+// ---------------------------------------------------------------------------
+// Export helpers
+// ---------------------------------------------------------------------------
+
+export const getReimbursementSummary = (sessions: TravelSession[]) => {
+  const totalSessions = sessions.length;
+  const approvedSessions = sessions.filter((s) => isSessionApproved(s));
+  const pendingSessions = sessions.filter((s) => isSessionPending(s));
+  const rejectedSessions = sessions.filter((s) => isSessionRejected(s));
+
+  const totalDistance = sessions.reduce(
+    (sum, s) => sum + (s.totalDistance || 0),
+    0,
+  );
+  const reimbursableDistance = approvedSessions.reduce(
+    (sum, s) => sum + (s.totalDistance || 0),
+    0,
+  );
+
+  const totalReimbursement = calculateReimbursementAmount(reimbursableDistance);
+
+  return {
+    totalSessions,
+    approvedSessions: approvedSessions.length,
+    pendingSessions: pendingSessions.length,
+    rejectedSessions: rejectedSessions.length,
+    totalDistance: totalDistance / 1000, // in km
+    reimbursableDistance: reimbursableDistance / 1000, // in km
+    totalReimbursement,
+  };
 };

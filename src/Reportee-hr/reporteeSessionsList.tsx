@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // Add this import
+import { createPortal } from "react-dom";
 import { toast, Toaster } from "react-hot-toast";
 import API from "../api/axios";
 import {
@@ -17,6 +17,7 @@ import {
   ChevronUp,
   User,
   Users,
+  Hash,
 } from "lucide-react";
 
 // Types
@@ -72,12 +73,13 @@ interface ApiResponse {
 
 interface FilterState {
   searchTerm: string;
+  sessionId: string;
   dateFrom: string;
   dateTo: string;
   status: string;
 }
 
-// Portal component for modals - Using createPortal from react-dom
+// Portal component for modals
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return createPortal(children, document.body);
 };
@@ -100,6 +102,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: "",
+    sessionId: "",
     dateFrom: "",
     dateTo: "",
     status: "ALL",
@@ -137,7 +140,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
   useEffect(() => {
     let result = [...sessions];
 
-    // Search filter
+    // Search filter (name, username, employee code)
     if (filters.searchTerm.trim()) {
       const searchLower = filters.searchTerm.toLowerCase().trim();
       result = result.filter(
@@ -147,6 +150,14 @@ const ReporteeTravelSessionManager: React.FC = () => {
           session.employeeCode.toLowerCase().includes(searchLower) ||
           session.userId.toString().includes(searchLower),
       );
+    }
+
+    // Session ID filter
+    if (filters.sessionId.trim()) {
+      const sessionIdNum = parseInt(filters.sessionId.trim());
+      if (!isNaN(sessionIdNum)) {
+        result = result.filter((session) => session.sessionId === sessionIdNum);
+      }
     }
 
     // Date range filter
@@ -241,14 +252,12 @@ const ReporteeTravelSessionManager: React.FC = () => {
     setActionType(action);
     setComments("");
     setShowActionModal(true);
-    // Prevent body scroll
     document.body.style.overflow = "hidden";
   };
 
   const openDetailsModal = (session: TravelSession) => {
     setSelectedSession(session);
     setShowDetailsModal(true);
-    // Prevent body scroll
     document.body.style.overflow = "hidden";
   };
 
@@ -256,14 +265,12 @@ const ReporteeTravelSessionManager: React.FC = () => {
     setShowActionModal(false);
     setSelectedSession(null);
     setComments("");
-    // Restore body scroll
     document.body.style.overflow = "unset";
   };
 
   const closeDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedSession(null);
-    // Restore body scroll
     document.body.style.overflow = "unset";
   };
 
@@ -316,6 +323,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
   const clearFilters = () => {
     setFilters({
       searchTerm: "",
+      sessionId: "",
       dateFrom: "",
       dateTo: "",
       status: "ALL",
@@ -346,15 +354,15 @@ const ReporteeTravelSessionManager: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-white/10 backdrop-blur-sm p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-xl">
-                  <Briefcase className="w-6 h-6 text-blue-600" />
+                <div className="p-2 bg-lantern-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
+                  <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -369,7 +377,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             <button
               onClick={fetchPendingSessions}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -379,25 +387,68 @@ const ReporteeTravelSessionManager: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
-            <p className="text-sm text-gray-500">Total Sessions</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {filteredSessions.length}
-            </p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Sessions</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {filteredSessions.length}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <Briefcase className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
-            <p className="text-sm text-gray-500">Pending Actions</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {filteredSessions.filter((s) => canApproveByReportee(s)).length}
-            </p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Pending Actions</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {
+                    filteredSessions.filter((s) => canApproveByReportee(s))
+                      .length
+                  }
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-xl">
+                <Clock className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
-            <p className="text-sm text-gray-500">Completed</p>
-            <p className="text-2xl font-bold text-green-600">
-              {filteredSessions.filter((s) => !canApproveByReportee(s)).length}
-            </p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Approved</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {
+                    filteredSessions.filter((s) => s.isApprovedByReportee)
+                      .length
+                  }
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-xl">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Rejected</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {
+                    filteredSessions.filter((s) => s.isRejectedByReportee)
+                      .length
+                  }
+                </p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-xl">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -480,7 +531,8 @@ const ReporteeTravelSessionManager: React.FC = () => {
               ) : (
                 <ChevronDown className="w-4 h-4" />
               )}
-              {(filters.dateFrom ||
+              {(filters.sessionId ||
+                filters.dateFrom ||
                 filters.dateTo ||
                 filters.status !== "ALL") && (
                 <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full"></span>
@@ -491,11 +543,33 @@ const ReporteeTravelSessionManager: React.FC = () => {
           {/* Filter Section */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Session ID Filter - New */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Hash className="w-4 h-4" />
+                      Session ID
+                    </div>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Enter session ID"
+                    value={filters.sessionId}
+                    onChange={(e) =>
+                      setFilters({ ...filters, sessionId: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
                 {/* Date From */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date From
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Date From
+                    </div>
                   </label>
                   <input
                     type="date"
@@ -510,7 +584,10 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 {/* Date To */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date To
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Date To
+                    </div>
                   </label>
                   <input
                     type="date"
@@ -525,7 +602,10 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 {/* Status Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
+                    <div className="flex items-center gap-1">
+                      <Filter className="w-4 h-4" />
+                      Status
+                    </div>
                   </label>
                   <select
                     value={filters.status}
@@ -551,7 +631,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </div>
 
               {/* Filter Actions */}
-              <div className="flex gap-3 mt-4">
+              <div className="flex flex-wrap gap-3 mt-4">
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
@@ -650,7 +730,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                           <button
                             onClick={() => openActionModal(session, "approve")}
                             disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-green-800 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-green-700 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <CheckCircle className="w-4 h-4 inline mr-1.5" />
                             Approve
@@ -658,7 +738,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                           <button
                             onClick={() => openActionModal(session, "reject")}
                             disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-red-800 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <XCircle className="w-4 h-4 inline mr-1.5" />
                             Reject

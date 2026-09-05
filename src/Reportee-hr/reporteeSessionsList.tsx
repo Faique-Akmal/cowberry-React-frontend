@@ -18,6 +18,7 @@ import {
   User,
   Users,
   Hash,
+  MapPin,
 } from "lucide-react";
 
 // Types
@@ -82,6 +83,42 @@ interface FilterState {
 // Portal component for modals
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return createPortal(children, document.body);
+};
+
+// Avatar color palette + helpers for the reportee list rows
+const AVATAR_PALETTE = [
+  { bg: "bg-purple-100", text: "text-purple-600" },
+  { bg: "bg-emerald-100", text: "text-emerald-600" },
+  { bg: "bg-blue-100", text: "text-blue-600" },
+  { bg: "bg-amber-100", text: "text-amber-600" },
+  { bg: "bg-pink-100", text: "text-pink-600" },
+  { bg: "bg-cyan-100", text: "text-cyan-600" },
+];
+
+const getInitials = (name: string) => {
+  if (!name) return "NA";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] || "";
+  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  return (first + second).toUpperCase();
+};
+
+const getAvatarColor = (seed: number) => {
+  return AVATAR_PALETTE[Math.abs(seed) % AVATAR_PALETTE.length];
+};
+
+const formatShort = (dateString: string | null) => {
+  if (!dateString) return "N/A";
+  const d = new Date(dateString);
+  const datePart = d.toLocaleDateString("en-GB").replace(/\//g, "/");
+  const timePart = d
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
+  return `${datePart}, ${timePart}`;
 };
 
 const ReporteeTravelSessionManager: React.FC = () => {
@@ -667,107 +704,148 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredSessions.map((session) => (
-                <div
-                  key={session.sessionId}
-                  className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden cursor-pointer"
-                  onClick={() => openDetailsModal(session)}
-                >
-                  <div className="p-5">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
-                            {session.fullName}
-                          </h3>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                            {session.employeeCode}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <p className="text-sm text-gray-500">
-                            {formatDate(session.startTime)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-medium whitespace-nowrap">
-                        #{session.sessionId}
-                      </span>
-                    </div>
+            <div className="flex flex-col gap-4">
+              {filteredSessions.map((session) => {
+                const avatarColor = getAvatarColor(session.userId);
+                const initials = getInitials(session.fullName);
+                return (
+                  <div
+                    key={session.sessionId}
+                    className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5"
+                  >
+                    {/* Session ID badge */}
+                    <span className="absolute top-1 right-5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                      #{session.sessionId}
+                    </span>
 
-                    {/* Details */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Reportee</span>
-                        <span className="text-gray-900 font-medium">
-                          {session.reporteeInfo?.fullName || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">HR Manager</span>
-                        <span className="text-gray-900 font-medium">
-                          {session.hrManagerInfo?.fullName || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Distance</span>
-                        <span className="text-gray-900 font-medium">
-                          {(session.totalDistance / 1000).toFixed(2)} km
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status and Actions */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      {canApproveByReportee(session) ? (
+                    <div className="flex flex-col xl:flex-row xl:items-center gap-5">
+                      {/* Identity block */}
+                      <div className="flex items-center gap-4 xl:w-[260px] xl:flex-shrink-0">
                         <div
-                          className="flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
+                          className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${avatarColor.bg} ${avatarColor.text}`}
                         >
-                          <button
-                            onClick={() => openActionModal(session, "approve")}
-                            disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-green-700 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <CheckCircle className="w-4 h-4 inline mr-1.5" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openActionModal(session, "reject")}
-                            disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-red-800 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <XCircle className="w-4 h-4 inline mr-1.5" />
-                            Reject
-                          </button>
+                          {initials}
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5">
-                          <span className="text-gray-700 font-medium">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {session.fullName}
+                            </h3>
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-md font-medium flex-shrink-0">
+                              {session.employeeCode}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{formatShort(session.startTime)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                            <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>Reportee</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                            <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>HR Manager</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Start / End timeline */}
+                      <div className="flex flex-col gap-2 xl:w-[190px] xl:flex-shrink-0 xl:border-l xl:border-gray-100 xl:pl-5">
+                        <div className="flex items-start gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
+                          <div>
+                            <p className="text-xs text-gray-400">Start</p>
+                            <p className="text-sm font-medium text-gray-800">
+                              {formatShort(session.startTime)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-green-500 mt-1 flex-shrink-0"></span>
+                          <div>
+                            <p className="text-xs text-gray-400">End</p>
+                            <p className="text-sm font-medium text-gray-800">
+                              {formatShort(session.endTime)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Distance */}
+                      <div className="xl:w-[150px] xl:flex-shrink-0 xl:border-l xl:border-gray-100 xl:pl-5">
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                          <MapPin className="w-3.5 h-3.5" /> Distance
+                        </p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {(session.totalDistance / 1000).toFixed(2)} km
+                        </p>
+                        <button
+                          onClick={() => openDetailsModal(session)}
+                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View Details
+                        </button>
+                      </div>
+
+                      {/* Reported by */}
+                      <div className="xl:flex-1 xl:min-w-[180px] xl:border-l xl:border-gray-100 xl:pl-5">
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                          <User className="w-3.5 h-3.5" /> Reported by
+                        </p>
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {session.reporteeInfo?.fullName || "N/A"}
+                        </p>
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {session.hrManagerInfo?.fullName || "N/A"}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-row xl:flex-col gap-2 xl:w-[150px] xl:flex-shrink-0">
+                        {canApproveByReportee(session) ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                openActionModal(session, "approve")
+                              }
+                              disabled={processing === session.sessionId}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => openActionModal(session, "reject")}
+                              disabled={processing === session.sessionId}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium">
                             {session.isApprovedByReportee ? (
-                              <span className="text-green-600">
-                                ✓ Approved by Reportee
+                              <span className="text-green-600 flex items-center gap-1.5">
+                                <CheckCircle className="w-4 h-4" /> Approved
                               </span>
                             ) : session.isRejectedByReportee ? (
-                              <span className="text-red-600">
-                                ✗ Rejected by Reportee
+                              <span className="text-red-600 flex items-center gap-1.5">
+                                <XCircle className="w-4 h-4" /> Rejected
                               </span>
                             ) : (
                               <span className="text-gray-500">
-                                Action not available
+                                Not available
                               </span>
                             )}
-                          </span>
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

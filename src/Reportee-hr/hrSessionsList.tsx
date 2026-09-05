@@ -16,6 +16,9 @@ import {
   ChevronDown,
   ChevronUp,
   User,
+  Users,
+  Hash,
+  MapPin,
 } from "lucide-react";
 
 // Types
@@ -71,6 +74,7 @@ interface ApiResponse {
 
 interface FilterState {
   searchTerm: string;
+  sessionId: string;
   dateFrom: string;
   dateTo: string;
   status: string;
@@ -79,6 +83,42 @@ interface FilterState {
 // Portal component for modals
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return createPortal(children, document.body);
+};
+
+// Avatar color palette + helpers for the session list rows
+const AVATAR_PALETTE = [
+  { bg: "bg-purple-100", text: "text-purple-600" },
+  { bg: "bg-emerald-100", text: "text-emerald-600" },
+  { bg: "bg-blue-100", text: "text-blue-600" },
+  { bg: "bg-amber-100", text: "text-amber-600" },
+  { bg: "bg-pink-100", text: "text-pink-600" },
+  { bg: "bg-cyan-100", text: "text-cyan-600" },
+];
+
+const getInitials = (name: string) => {
+  if (!name) return "NA";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] || "";
+  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  return (first + second).toUpperCase();
+};
+
+const getAvatarColor = (seed: number) => {
+  return AVATAR_PALETTE[Math.abs(seed) % AVATAR_PALETTE.length];
+};
+
+const formatShort = (dateString: string | null) => {
+  if (!dateString) return "N/A";
+  const d = new Date(dateString);
+  const datePart = d.toLocaleDateString("en-GB").replace(/\//g, "/");
+  const timePart = d
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
+  return `${datePart}, ${timePart}`;
 };
 
 const TravelSessionHr: React.FC = () => {
@@ -99,6 +139,7 @@ const TravelSessionHr: React.FC = () => {
 
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: "",
+    sessionId: "",
     dateFrom: "",
     dateTo: "",
     status: "ALL",
@@ -146,6 +187,14 @@ const TravelSessionHr: React.FC = () => {
           session.employeeCode.toLowerCase().includes(searchLower) ||
           session.userId.toString().includes(searchLower),
       );
+    }
+
+    // Session ID filter
+    if (filters.sessionId.trim()) {
+      const sessionIdNum = parseInt(filters.sessionId.trim());
+      if (!isNaN(sessionIdNum)) {
+        result = result.filter((session) => session.sessionId === sessionIdNum);
+      }
     }
 
     // Date range filter
@@ -326,6 +375,7 @@ const TravelSessionHr: React.FC = () => {
   const clearFilters = () => {
     setFilters({
       searchTerm: "",
+      sessionId: "",
       dateFrom: "",
       dateTo: "",
       status: "ALL",
@@ -340,9 +390,11 @@ const TravelSessionHr: React.FC = () => {
     label: string;
     value: React.ReactNode;
   }) => (
-    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0">
-      <span className="text-gray-600 text-sm font-medium">{label}</span>
-      <span className="text-gray-900 text-sm text-right font-medium">
+    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0 gap-4">
+      <span className="text-gray-600 text-sm font-medium flex-shrink-0">
+        {label}
+      </span>
+      <span className="text-gray-900 text-sm text-right font-medium break-words min-w-0">
         {value}
       </span>
     </div>
@@ -356,18 +408,18 @@ const TravelSessionHr: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-white/10 backdrop-blur-sm p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white/10 backdrop-blur-sm p-4 md:p-6 box-border">
+      <div className="max-w-7xl mx-auto min-w-0">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-xl">
+                <div className="p-2 bg-blue-100 rounded-xl flex-shrink-0">
                   <Briefcase className="w-6 h-6 text-blue-600" />
                 </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
                     HR Travel Session Management
                   </h1>
                   <p className="text-gray-600 mt-1">
@@ -379,7 +431,7 @@ const TravelSessionHr: React.FC = () => {
             <button
               onClick={fetchPendingSessions}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -391,19 +443,19 @@ const TravelSessionHr: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 min-w-0">
             <p className="text-sm text-gray-500">Total Sessions</p>
             <p className="text-2xl font-bold text-gray-900">
               {filteredSessions.length}
             </p>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 min-w-0">
             <p className="text-sm text-gray-500">Pending HR Actions</p>
             <p className="text-2xl font-bold text-yellow-600">
               {filteredSessions.filter((s) => canApproveByHR(s)).length}
             </p>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 min-w-0">
             <p className="text-sm text-gray-500">Completed</p>
             <p className="text-2xl font-bold text-green-600">
               {filteredSessions.filter((s) => !canApproveByHR(s)).length}
@@ -415,7 +467,7 @@ const TravelSessionHr: React.FC = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search Bar with Suggestions */}
-            <div className="flex-1 relative z-50">
+            <div className="flex-1 min-w-0 relative z-50">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -481,7 +533,7 @@ const TravelSessionHr: React.FC = () => {
             {/* Toggle Filters Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap"
+              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
             >
               <Filter className="w-5 h-5" />
               <span>Filters</span>
@@ -490,7 +542,8 @@ const TravelSessionHr: React.FC = () => {
               ) : (
                 <ChevronDown className="w-4 h-4" />
               )}
-              {(filters.dateFrom ||
+              {(filters.sessionId ||
+                filters.dateFrom ||
                 filters.dateTo ||
                 filters.status !== "ALL") && (
                 <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full"></span>
@@ -501,11 +554,33 @@ const TravelSessionHr: React.FC = () => {
           {/* Filter Section */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Date From */}
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Session ID Filter */}
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date From
+                    <div className="flex items-center gap-1">
+                      <Hash className="w-4 h-4" />
+                      Session ID
+                    </div>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Enter session ID"
+                    value={filters.sessionId}
+                    onChange={(e) =>
+                      setFilters({ ...filters, sessionId: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Date From */}
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Date From
+                    </div>
                   </label>
                   <input
                     type="date"
@@ -518,9 +593,12 @@ const TravelSessionHr: React.FC = () => {
                 </div>
 
                 {/* Date To */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date To
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Date To
+                    </div>
                   </label>
                   <input
                     type="date"
@@ -533,9 +611,12 @@ const TravelSessionHr: React.FC = () => {
                 </div>
 
                 {/* Status Filter */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
+                    <div className="flex items-center gap-1">
+                      <Filter className="w-4 h-4" />
+                      Status
+                    </div>
                   </label>
                   <select
                     value={filters.status}
@@ -564,7 +645,7 @@ const TravelSessionHr: React.FC = () => {
               </div>
 
               {/* Filter Actions */}
-              <div className="flex gap-3 mt-4">
+              <div className="flex flex-wrap gap-3 mt-4">
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
@@ -600,117 +681,214 @@ const TravelSessionHr: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredSessions.map((session) => (
-                <div
-                  key={session.sessionId}
-                  className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden cursor-pointer"
-                  onClick={() => openDetailsModal(session)}
-                >
-                  <div className="p-5">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
-                            {session.fullName}
-                          </h3>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                            {session.employeeCode}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <p className="text-sm text-gray-500">
-                            {formatDate(session.startTime)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-medium whitespace-nowrap">
-                        #{session.sessionId}
-                      </span>
-                    </div>
+            <div className="flex flex-col gap-4">
+              {filteredSessions.map((session) => {
+                const avatarColor = getAvatarColor(session.userId);
+                const initials = getInitials(session.fullName);
+                return (
+                  <div
+                    key={session.sessionId}
+                    className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 min-w-0"
+                  >
+                    {/* Session ID badge */}
+                    <span className="absolute top-2 right-5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                      Id:#{session.sessionId}
+                    </span>
 
-                    {/* Details */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Reportee</span>
-                        <span className="text-gray-900 font-medium">
-                          {session.reporteeInfo?.fullName || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">HR Manager</span>
-                        <span className="text-gray-900 font-medium">
-                          {session.hrManagerInfo?.fullName || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Distance</span>
-                        <span className="text-gray-900 font-medium">
-                          {session.totalDistance} km
-                        </span>
-                      </div>
-                      {session.reporteeComments && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                          <p className="text-gray-500 text-xs">
-                            Reportee Comments:
-                          </p>
-                          <p className="text-gray-700 text-sm">
-                            {session.reporteeComments}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status and Actions */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      {canApproveByHR(session) ? (
+                    {/*
+                      Layout notes:
+                      - flex-wrap instead of a hard xl:flex-row lets columns drop to
+                        the next line based on the REAL rendered width of this card
+                        (which shrinks when the sidebar opens), instead of the
+                        browser viewport width that xl:/lg: media queries check.
+                      - min-w-0 is required on every flex child that contains
+                        truncate/break-words text, otherwise flex items default to
+                        min-width:auto and refuse to shrink below their content,
+                        which is what pushes things off-screen.
+                    */}
+                    <div className="flex flex-wrap lg:flex-nowrap items-start lg:items-center gap-5 min-w-0">
+                      {/* Identity block */}
+                      <div className="flex items-center gap-4 min-w-0 basis-full lg:basis-[240px] lg:flex-shrink-0">
                         <div
-                          className="flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
+                          className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${avatarColor.bg} ${avatarColor.text}`}
                         >
-                          <button
-                            onClick={() => openActionModal(session, "approve")}
-                            disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-green-800 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <CheckCircle className="w-4 h-4 inline mr-1.5" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openActionModal(session, "reject")}
-                            disabled={processing === session.sessionId}
-                            className="flex-1 px-4 py-2.5 bg-red-800 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <XCircle className="w-4 h-4 inline mr-1.5" />
-                            Reject
-                          </button>
+                          {initials}
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5">
-                          <span className="text-gray-700 font-medium">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate min-w-0">
+                              {session.fullName}
+                            </h3>
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-md font-medium flex-shrink-0">
+                              {session.employeeCode}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                              {formatShort(session.startTime)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Start / End timeline */}
+                      <div className="flex flex-col gap-2 min-w-0 basis-[calc(50%-10px)] sm:basis-[170px] lg:flex-shrink-0 lg:border-l lg:border-gray-100 lg:pl-5">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-400">Start</p>
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {formatShort(session.startTime)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-green-500 mt-1 flex-shrink-0"></span>
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-400">End</p>
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {formatShort(session.endTime)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Distance */}
+                      <div className="min-w-0 basis-[calc(50%-10px)] sm:basis-[140px] lg:flex-shrink-0 lg:border-l lg:border-gray-100 lg:pl-5">
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                          <MapPin className="w-3.5 h-3.5" /> Distance
+                        </p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {(session.totalDistance / 1000).toFixed(2)} km
+                        </p>
+                        <button
+                          onClick={() => openDetailsModal(session)}
+                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View Details
+                        </button>
+                      </div>
+
+                      {/* Reported by */}
+                      <div className="min-w-0 basis-full sm:basis-[45%] lg:basis-0 lg:flex-1 lg:border-l lg:border-gray-100 lg:pl-5">
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                          <User className="w-3.5 h-3.5" /> Reported by
+                        </p>
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {session.reporteeInfo?.fullName || "N/A"}
+                        </p>
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {session.hrManagerInfo?.fullName || "N/A"}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-row lg:flex-col gap-2 min-w-0 basis-full lg:basis-[140px] lg:flex-shrink-0">
+                        {canApproveByHR(session) ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                openActionModal(session, "approve")
+                              }
+                              disabled={processing === session.sessionId}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => openActionModal(session, "reject")}
+                              disabled={processing === session.sessionId}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium">
                             {session.isApprovedByHR ? (
-                              <span className="text-green-600">
-                                ✓ Approved by HR
+                              <span className="text-green-600 flex items-center gap-1.5">
+                                <CheckCircle className="w-4 h-4" /> Approved
                               </span>
                             ) : session.isRejectedByHR ? (
-                              <span className="text-red-600">
-                                ✗ Rejected by HR
+                              <span className="text-red-600 flex items-center gap-1.5">
+                                <XCircle className="w-4 h-4" /> Rejected
                               </span>
                             ) : (
                               <span className="text-gray-500">
-                                Action not available
+                                Not available
                               </span>
                             )}
-                          </span>
-                          <Eye className="w-4 h-4 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {session.reporteeComments && (
+                      <div className="mt-4 pt-4 border-t border-gray-100 min-w-0">
+                        <div className="flex items-center justify-between mb-1 gap-2">
+                          <p className="text-xs text-gray-400 flex-shrink-0">
+                            Reportee Comments
+                          </p>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {session.isApprovedByReportee && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                <CheckCircle className="w-3 h-3" />
+                                Approved
+                              </span>
+                            )}
+                            {session.isRejectedByReportee && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
+                                <XCircle className="w-3 h-3" />
+                                Rejected
+                              </span>
+                            )}
+                            {!session.isApprovedByReportee &&
+                              !session.isRejectedByReportee && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">
+                                  <Clock className="w-3 h-3" />
+                                  Pending
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 break-words">
+                          {session.reporteeComments}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Show status even when there are no comments */}
+                    {!session.reporteeComments &&
+                      (session.isApprovedByReportee ||
+                        session.isRejectedByReportee) && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs text-gray-400 flex-shrink-0">
+                              Reportee Status
+                            </p>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {session.isApprovedByReportee && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Approved
+                                </span>
+                              )}
+                              {session.isRejectedByReportee && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
+                                  <XCircle className="w-3 h-3" />
+                                  Rejected
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -721,8 +899,8 @@ const TravelSessionHr: React.FC = () => {
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-              <div className="flex justify-between items-start mb-4">
-                <div>
+              <div className="flex justify-between items-start mb-4 gap-3">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900">
                     {actionType === "approve" ? "Approve" : "Reject"} Session
                   </h2>
@@ -732,28 +910,34 @@ const TravelSessionHr: React.FC = () => {
                 </div>
                 <button
                   onClick={closeActionModal}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
               <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-xl">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">User</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    User
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right break-words min-w-0">
                     {selectedSession.username} ({selectedSession.employeeCode})
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Reportee</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    Reportee
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right break-words min-w-0">
                     {selectedSession.reporteeInfo?.fullName || "N/A"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">HR Manager</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    HR Manager
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right break-words min-w-0">
                     {selectedSession.hrManagerInfo?.fullName || "N/A"}
                   </span>
                 </div>
@@ -806,35 +990,25 @@ const TravelSessionHr: React.FC = () => {
       {showDetailsModal && selectedSession && (
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
-              <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 flex justify-between items-start z-10">
-                <div>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in duration-200">
+              <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 flex justify-between items-start z-10 gap-3">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900">
                     Session Details
                   </h2>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-sm truncate">
                     #{selectedSession.sessionId} • {selectedSession.fullName}
                   </p>
                 </div>
                 <button
                   onClick={closeDetailsModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
-              <div className="p-6">
-                {/* Status Badge */}
-                <div className="mb-6">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border ${getStatusBadge(selectedSession.finalStatus)}`}
-                  >
-                    {getStatusIcon(selectedSession.finalStatus)}
-                    {selectedSession.finalStatus}
-                  </span>
-                </div>
-
+              <div className="p-6 min-w-0">
                 {/* User Information */}
                 <SectionHeader title="User Information" />
                 <div className="bg-gray-50 rounded-xl p-4">
@@ -963,52 +1137,58 @@ const TravelSessionHr: React.FC = () => {
 
                 {/* Team Information */}
                 <SectionHeader title="Team Information" />
-                <div className="bg-gray-50 rounded-xl p-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      Reportee
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                      Reportee Information
                     </h4>
-                    <DetailRow
-                      label="ID"
-                      value={selectedSession.reporteeInfo?.id || "N/A"}
-                    />
-                    <DetailRow
-                      label="Username"
-                      value={selectedSession.reporteeInfo?.username || "N/A"}
-                    />
-                    <DetailRow
-                      label="Full Name"
-                      value={selectedSession.reporteeInfo?.fullName || "N/A"}
-                    />
-                    <DetailRow
-                      label="Employee Code"
-                      value={
-                        selectedSession.reporteeInfo?.employeeCode || "N/A"
-                      }
-                    />
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <DetailRow
+                        label="ID"
+                        value={selectedSession.reporteeInfo?.id || "N/A"}
+                      />
+                      <DetailRow
+                        label="Username"
+                        value={selectedSession.reporteeInfo?.username || "N/A"}
+                      />
+                      <DetailRow
+                        label="Full Name"
+                        value={selectedSession.reporteeInfo?.fullName || "N/A"}
+                      />
+                      <DetailRow
+                        label="Employee Code"
+                        value={
+                          selectedSession.reporteeInfo?.employeeCode || "N/A"
+                        }
+                      />
+                    </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      HR Manager
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
+                      HR Manager Information
                     </h4>
-                    <DetailRow
-                      label="ID"
-                      value={selectedSession.hrManagerInfo?.id || "N/A"}
-                    />
-                    <DetailRow
-                      label="Username"
-                      value={selectedSession.hrManagerInfo?.username || "N/A"}
-                    />
-                    <DetailRow
-                      label="Full Name"
-                      value={selectedSession.hrManagerInfo?.fullName || "N/A"}
-                    />
-                    <DetailRow
-                      label="Employee Code"
-                      value={
-                        selectedSession.hrManagerInfo?.employeeCode || "N/A"
-                      }
-                    />
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <DetailRow
+                        label="ID"
+                        value={selectedSession.hrManagerInfo?.id || "N/A"}
+                      />
+                      <DetailRow
+                        label="Username"
+                        value={selectedSession.hrManagerInfo?.username || "N/A"}
+                      />
+                      <DetailRow
+                        label="Full Name"
+                        value={selectedSession.hrManagerInfo?.fullName || "N/A"}
+                      />
+                      <DetailRow
+                        label="Employee Code"
+                        value={
+                          selectedSession.hrManagerInfo?.employeeCode || "N/A"
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
 

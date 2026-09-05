@@ -688,7 +688,7 @@ const TravelSessionHr: React.FC = () => {
                 return (
                   <div
                     key={session.sessionId}
-                    className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 min-w-0"
+                    className="relative w-full max-w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 overflow-hidden"
                   >
                     {/* Session ID badge */}
                     <span className="absolute top-2 right-5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
@@ -696,19 +696,23 @@ const TravelSessionHr: React.FC = () => {
                     </span>
 
                     {/*
-                      Layout notes:
-                      - flex-wrap instead of a hard xl:flex-row lets columns drop to
-                        the next line based on the REAL rendered width of this card
-                        (which shrinks when the sidebar opens), instead of the
-                        browser viewport width that xl:/lg: media queries check.
-                      - min-w-0 is required on every flex child that contains
-                        truncate/break-words text, otherwise flex items default to
-                        min-width:auto and refuse to shrink below their content,
-                        which is what pushes things off-screen.
+                      KEY FIX: this used to be a flex row using `lg:flex-nowrap` +
+                      `lg:flex-shrink-0` on every column. Tailwind's lg: breakpoint
+                      responds to the VIEWPORT width, not the width of this card.
+                      So once the viewport was wide, the row was locked to one line
+                      AND every column was forbidden from shrinking - meaning when
+                      the sidebar opened and this card's actual available width
+                      dropped, the row had no way to adapt and spilled outside
+                      the screen.
+
+                      Fix: use CSS Grid with minmax(0, Npx) tracks. Grid tracks
+                      declared this way are allowed to compress below their target
+                      size whenever the CONTAINER shrinks, regardless of viewport
+                      size - which is exactly the behavior we want here.
                     */}
-                    <div className="flex flex-wrap lg:flex-nowrap items-start lg:items-center gap-5 min-w-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,240px)_minmax(0,170px)_minmax(0,140px)_minmax(0,1fr)_minmax(0,150px)] gap-5 w-full items-start lg:items-center">
                       {/* Identity block */}
-                      <div className="flex items-center gap-4 min-w-0 basis-full lg:basis-[240px] lg:flex-shrink-0">
+                      <div className="flex items-center gap-4 min-w-0">
                         <div
                           className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${avatarColor.bg} ${avatarColor.text}`}
                         >
@@ -723,7 +727,7 @@ const TravelSessionHr: React.FC = () => {
                               {session.employeeCode}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5 min-w-0">
                             <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                             <span className="truncate">
                               {formatShort(session.startTime)}
@@ -733,7 +737,7 @@ const TravelSessionHr: React.FC = () => {
                       </div>
 
                       {/* Start / End timeline */}
-                      <div className="flex flex-col gap-2 min-w-0 basis-[calc(50%-10px)] sm:basis-[170px] lg:flex-shrink-0 lg:border-l lg:border-gray-100 lg:pl-5">
+                      <div className="flex flex-col gap-2 min-w-0 lg:border-l lg:border-gray-100 lg:pl-5">
                         <div className="flex items-start gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
                           <div className="min-w-0">
@@ -755,25 +759,27 @@ const TravelSessionHr: React.FC = () => {
                       </div>
 
                       {/* Distance */}
-                      <div className="min-w-0 basis-[calc(50%-10px)] sm:basis-[140px] lg:flex-shrink-0 lg:border-l lg:border-gray-100 lg:pl-5">
+                      <div className="min-w-0 lg:border-l lg:border-gray-100 lg:pl-5">
                         <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                          <MapPin className="w-3.5 h-3.5" /> Distance
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />{" "}
+                          Distance
                         </p>
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-lg font-bold text-gray-900 truncate">
                           {(session.totalDistance / 1000).toFixed(2)} km
                         </p>
                         <button
                           onClick={() => openDetailsModal(session)}
-                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors"
+                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap"
                         >
                           <Eye className="w-3.5 h-3.5" /> View Details
                         </button>
                       </div>
 
                       {/* Reported by */}
-                      <div className="min-w-0 basis-full sm:basis-[45%] lg:basis-0 lg:flex-1 lg:border-l lg:border-gray-100 lg:pl-5">
+                      <div className="min-w-0 lg:border-l lg:border-gray-100 lg:pl-5">
                         <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                          <User className="w-3.5 h-3.5" /> Reported by
+                          <User className="w-3.5 h-3.5 flex-shrink-0" />{" "}
+                          Reported by
                         </p>
                         <p className="text-sm font-medium text-gray-800 truncate">
                           {session.reporteeInfo?.fullName || "N/A"}
@@ -784,7 +790,7 @@ const TravelSessionHr: React.FC = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-row lg:flex-col gap-2 min-w-0 basis-full lg:basis-[140px] lg:flex-shrink-0">
+                      <div className="flex flex-row lg:flex-col gap-2 min-w-0">
                         {canApproveByHR(session) ? (
                           <>
                             <button
@@ -792,32 +798,34 @@ const TravelSessionHr: React.FC = () => {
                                 openActionModal(session, "approve")
                               }
                               disabled={processing === session.sessionId}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
-                              <CheckCircle className="w-4 h-4" />
-                              Approve
+                              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">Approve</span>
                             </button>
                             <button
                               onClick={() => openActionModal(session, "reject")}
                               disabled={processing === session.sessionId}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
-                              <XCircle className="w-4 h-4" />
-                              Reject
+                              <XCircle className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">Reject</span>
                             </button>
                           </>
                         ) : (
-                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium">
+                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium min-w-0">
                             {session.isApprovedByHR ? (
-                              <span className="text-green-600 flex items-center gap-1.5">
-                                <CheckCircle className="w-4 h-4" /> Approved
+                              <span className="text-green-600 flex items-center gap-1.5 truncate">
+                                <CheckCircle className="w-4 h-4 flex-shrink-0" />{" "}
+                                Approved
                               </span>
                             ) : session.isRejectedByHR ? (
-                              <span className="text-red-600 flex items-center gap-1.5">
-                                <XCircle className="w-4 h-4" /> Rejected
+                              <span className="text-red-600 flex items-center gap-1.5 truncate">
+                                <XCircle className="w-4 h-4 flex-shrink-0" />{" "}
+                                Rejected
                               </span>
                             ) : (
-                              <span className="text-gray-500">
+                              <span className="text-gray-500 truncate">
                                 Not available
                               </span>
                             )}

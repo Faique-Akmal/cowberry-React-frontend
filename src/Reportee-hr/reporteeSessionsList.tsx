@@ -375,9 +375,11 @@ const ReporteeTravelSessionManager: React.FC = () => {
     label: string;
     value: React.ReactNode;
   }) => (
-    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0">
-      <span className="text-gray-600 text-sm font-medium">{label}</span>
-      <span className="text-gray-900 text-sm text-right font-medium">
+    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0 gap-3">
+      <span className="text-gray-600 text-sm font-medium flex-shrink-0">
+        {label}
+      </span>
+      <span className="text-gray-900 text-sm text-right font-medium min-w-0 break-words">
         {value}
       </span>
     </div>
@@ -391,21 +393,21 @@ const ReporteeTravelSessionManager: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 box-border">
+      <div className="w-full max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-lantern-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
+                <div className="p-2 bg-lantern-blue-600 rounded-xl shadow-lg shadow-blue-500/20 flex-shrink-0">
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
                     Reportee Travel Sessions
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600 mt-1 truncate">
                     Review and manage pending travel session approvals
                   </p>
                 </div>
@@ -414,7 +416,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             <button
               onClick={fetchPendingSessions}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -426,23 +428,25 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Sessions</p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500 truncate">Total Sessions</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {filteredSessions.length}
                 </p>
               </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
+              <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
                 <Briefcase className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Pending Actions</p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500 truncate">
+                  Pending Actions
+                </p>
                 <p className="text-2xl font-bold text-yellow-600">
                   {
                     filteredSessions.filter((s) => canApproveByReportee(s))
@@ -450,15 +454,15 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   }
                 </p>
               </div>
-              <div className="p-3 bg-yellow-50 rounded-xl">
+              <div className="p-3 bg-yellow-50 rounded-xl flex-shrink-0">
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Approved</p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500 truncate">Approved</p>
                 <p className="text-2xl font-bold text-green-600">
                   {
                     filteredSessions.filter((s) => s.isApprovedByReportee)
@@ -466,15 +470,15 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   }
                 </p>
               </div>
-              <div className="p-3 bg-green-50 rounded-xl">
+              <div className="p-3 bg-green-50 rounded-xl flex-shrink-0">
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Rejected</p>
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 hover:shadow-xl transition-shadow min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500 truncate">Rejected</p>
                 <p className="text-2xl font-bold text-red-600">
                   {
                     filteredSessions.filter((s) => s.isRejectedByReportee)
@@ -482,7 +486,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   }
                 </p>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl">
+              <div className="p-3 bg-red-50 rounded-xl flex-shrink-0">
                 <XCircle className="w-5 h-5 text-red-600" />
               </div>
             </div>
@@ -490,10 +494,10 @@ const ReporteeTravelSessionManager: React.FC = () => {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6 w-full">
+          <div className="flex flex-col md:flex-row gap-4 w-full">
             {/* Search Bar with Suggestions */}
-            <div className="flex-1 relative z-50">
+            <div className="flex-1 min-w-0 relative z-50">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -559,7 +563,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             {/* Toggle Filters Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap"
+              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
             >
               <Filter className="w-5 h-5" />
               <span>Filters</span>
@@ -579,10 +583,10 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
           {/* Filter Section */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Session ID Filter - New */}
-                <div>
+                {/* Session ID Filter */}
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
                       <Hash className="w-4 h-4" />
@@ -601,7 +605,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </div>
 
                 {/* Date From */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
@@ -619,7 +623,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </div>
 
                 {/* Date To */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
@@ -637,7 +641,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </div>
 
                 {/* Status Filter */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
                       <Filter className="w-4 h-4" />
@@ -685,7 +689,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
         </div>
 
         {/* Sessions List */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 w-full">
           {loading ? (
             <div className="flex flex-col justify-center items-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -704,68 +708,77 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full">
               {filteredSessions.map((session) => {
                 const avatarColor = getAvatarColor(session.userId);
                 const initials = getInitials(session.fullName);
                 return (
                   <div
                     key={session.sessionId}
-                    className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5"
+                    className="relative w-full max-w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 overflow-hidden"
                   >
                     {/* Session ID badge */}
                     <span className="absolute top-1 right-5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
                       #{session.sessionId}
                     </span>
 
-                    <div className="flex flex-col xl:flex-row xl:items-center gap-5">
+                    {/*
+                      KEY FIX: grid with minmax(0, Npx) tracks instead of a flex row
+                      with fixed-width, flex-shrink-0 columns. Grid tracks defined this
+                      way are allowed to compress below their target width when the
+                      container gets narrower (e.g. when a sidebar opens), so the row
+                      shrinks instead of overflowing the screen.
+                    */}
+                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,240px)_minmax(0,170px)_minmax(0,140px)_minmax(0,1fr)_minmax(0,150px)] gap-5 w-full items-center">
                       {/* Identity block */}
-                      <div className="flex items-center gap-4 xl:w-[260px] xl:flex-shrink-0">
+                      <div className="flex items-center gap-4 min-w-0">
                         <div
                           className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${avatarColor.bg} ${avatarColor.text}`}
                         >
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-900 truncate">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate min-w-0">
                               {session.fullName}
                             </h3>
                             <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-md font-medium flex-shrink-0">
                               {session.employeeCode}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5 min-w-0">
                             <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>{formatShort(session.startTime)}</span>
+                            <span className="truncate">
+                              {formatShort(session.startTime)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 min-w-0">
                             <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>Reportee</span>
+                            <span className="truncate">Reportee</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 min-w-0">
                             <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>HR Manager</span>
+                            <span className="truncate">HR Manager</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Start / End timeline */}
-                      <div className="flex flex-col gap-2 xl:w-[190px] xl:flex-shrink-0 xl:border-l xl:border-gray-100 xl:pl-5">
-                        <div className="flex items-start gap-2">
+                      <div className="flex flex-col gap-2 min-w-0 xl:border-l xl:border-gray-100 xl:pl-5">
+                        <div className="flex items-start gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-gray-400">Start</p>
-                            <p className="text-sm font-medium text-gray-800">
+                            <p className="text-sm font-medium text-gray-800 truncate">
                               {formatShort(session.startTime)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-full border-2 border-green-500 mt-1 flex-shrink-0"></span>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-gray-400">End</p>
-                            <p className="text-sm font-medium text-gray-800">
+                            <p className="text-sm font-medium text-gray-800 truncate">
                               {formatShort(session.endTime)}
                             </p>
                           </div>
@@ -773,25 +786,27 @@ const ReporteeTravelSessionManager: React.FC = () => {
                       </div>
 
                       {/* Distance */}
-                      <div className="xl:w-[150px] xl:flex-shrink-0 xl:border-l xl:border-gray-100 xl:pl-5">
+                      <div className="min-w-0 xl:border-l xl:border-gray-100 xl:pl-5">
                         <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                          <MapPin className="w-3.5 h-3.5" /> Distance
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />{" "}
+                          Distance
                         </p>
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-lg font-bold text-gray-900 truncate">
                           {(session.totalDistance / 1000).toFixed(2)} km
                         </p>
                         <button
                           onClick={() => openDetailsModal(session)}
-                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors"
+                          className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap"
                         >
                           <Eye className="w-3.5 h-3.5" /> View Details
                         </button>
                       </div>
 
                       {/* Reported by */}
-                      <div className="xl:flex-1 xl:min-w-[180px] xl:border-l xl:border-gray-100 xl:pl-5">
+                      <div className="min-w-0 xl:border-l xl:border-gray-100 xl:pl-5">
                         <p className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                          <User className="w-3.5 h-3.5" /> Reported by
+                          <User className="w-3.5 h-3.5 flex-shrink-0" />{" "}
+                          Reported by
                         </p>
                         <p className="text-sm font-medium text-gray-800 truncate">
                           {session.reporteeInfo?.fullName || "N/A"}
@@ -802,7 +817,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-row xl:flex-col gap-2 xl:w-[150px] xl:flex-shrink-0">
+                      <div className="flex flex-row xl:flex-col gap-2 min-w-0">
                         {canApproveByReportee(session) ? (
                           <>
                             <button
@@ -810,32 +825,34 @@ const ReporteeTravelSessionManager: React.FC = () => {
                                 openActionModal(session, "approve")
                               }
                               disabled={processing === session.sessionId}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
-                              <CheckCircle className="w-4 h-4" />
-                              Approve
+                              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">Approve</span>
                             </button>
                             <button
                               onClick={() => openActionModal(session, "reject")}
                               disabled={processing === session.sessionId}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
-                              <XCircle className="w-4 h-4" />
-                              Reject
+                              <XCircle className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">Reject</span>
                             </button>
                           </>
                         ) : (
-                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium">
+                          <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium min-w-0">
                             {session.isApprovedByReportee ? (
-                              <span className="text-green-600 flex items-center gap-1.5">
-                                <CheckCircle className="w-4 h-4" /> Approved
+                              <span className="text-green-600 flex items-center gap-1.5 truncate">
+                                <CheckCircle className="w-4 h-4 flex-shrink-0" />{" "}
+                                Approved
                               </span>
                             ) : session.isRejectedByReportee ? (
-                              <span className="text-red-600 flex items-center gap-1.5">
-                                <XCircle className="w-4 h-4" /> Rejected
+                              <span className="text-red-600 flex items-center gap-1.5 truncate">
+                                <XCircle className="w-4 h-4 flex-shrink-0" />{" "}
+                                Rejected
                               </span>
                             ) : (
-                              <span className="text-gray-500">
+                              <span className="text-gray-500 truncate">
                                 Not available
                               </span>
                             )}
@@ -856,8 +873,8 @@ const ReporteeTravelSessionManager: React.FC = () => {
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-              <div className="flex justify-between items-start mb-4">
-                <div>
+              <div className="flex justify-between items-start mb-4 gap-3">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900">
                     {actionType === "approve" ? "Approve" : "Reject"} Session
                   </h2>
@@ -867,28 +884,34 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </div>
                 <button
                   onClick={closeActionModal}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
               <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-xl">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">User</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    User
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right truncate">
                     {selectedSession.username} ({selectedSession.employeeCode})
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Reportee</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    Reportee
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right truncate">
                     {selectedSession.reporteeInfo?.fullName || "N/A"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">HR Manager</span>
-                  <span className="text-gray-900 text-sm font-medium">
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-500 text-sm flex-shrink-0">
+                    HR Manager
+                  </span>
+                  <span className="text-gray-900 text-sm font-medium text-right truncate">
                     {selectedSession.hrManagerInfo?.fullName || "N/A"}
                   </span>
                 </div>
@@ -941,18 +964,18 @@ const ReporteeTravelSessionManager: React.FC = () => {
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
-              <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 flex justify-between items-start z-10">
-                <div>
+              <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-6 flex justify-between items-start z-10 gap-3">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900">
                     Session Details
                   </h2>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-sm truncate">
                     #{selectedSession.sessionId} • {selectedSession.fullName}
                   </p>
                 </div>
                 <button
                   onClick={closeDetailsModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -960,14 +983,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
 
               <div className="p-6">
                 {/* Status Badge */}
-                <div className="mb-6">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border ${getStatusBadge(selectedSession.finalStatus)}`}
-                  >
-                    {getStatusIcon(selectedSession.finalStatus)}
-                    {selectedSession.finalStatus}
-                  </span>
-                </div>
 
                 {/* User Information */}
                 <SectionHeader title="User Information" />

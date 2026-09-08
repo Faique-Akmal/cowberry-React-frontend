@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toast, Toaster } from "react-hot-toast";
 import API from "../api/axios";
@@ -66,10 +66,19 @@ interface TravelSession {
   hrManagerInfo: HRManagerInfo;
 }
 
+// Updated API Response type to match your backend
 interface ApiResponse {
   success: boolean;
-  total?: number;
   data: TravelSession[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  error?: string;
 }
 
 interface FilterState {
@@ -85,7 +94,7 @@ const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return createPortal(children, document.body);
 };
 
-// Avatar color palette + helpers for the reportee list rows
+// Avatar helpers
 const AVATAR_PALETTE = [
   { bg: "bg-purple-100", text: "text-purple-600" },
   { bg: "bg-emerald-100", text: "text-emerald-600" },
@@ -121,11 +130,18 @@ const formatShort = (dateString: string | null) => {
   return `${datePart}, ${timePart}`;
 };
 
+// Pagination config
+const PAGE_SIZE = 20;
+
 const ReporteeTravelSessionManager: React.FC = () => {
+  // State for sessions
   const [sessions, setSessions] = useState<TravelSession[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<TravelSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [processing, setProcessing] = useState<number | null>(null);
+
+  // Modal states
   const [selectedSession, setSelectedSession] = useState<TravelSession | null>(
     null,
   );
@@ -133,10 +149,18 @@ const ReporteeTravelSessionManager: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState<boolean>(false);
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
   const [actionType, setActionType] = useState<"approve" | "reject">("approve");
+
+  // UI states
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<TravelSession[]>([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  // Filters state
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: "",
     sessionId: "",
@@ -145,39 +169,142 @@ const ReporteeTravelSessionManager: React.FC = () => {
     status: "ALL",
   });
 
-  const fetchPendingSessions = async () => {
+  // Refs for infinite scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastRowRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // ============================================================
+  // FETCH FUNCTION WITH PAGINATION - UPDATED FOR BACKEND RESPONSE
+  // ============================================================
+  const fetchPendingSessions = async (
+    page: number = 1,
+    append: boolean = false,
+  ) => {
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
       const response = await API.get<ApiResponse>(
         "/tracking/travel-sessions/pending/reportee",
+        {
+          params: {
+            page: page,
+            limit: PAGE_SIZE,
+          },
+        },
       );
 
       if (response.data.success) {
-        setSessions(response.data.data);
-        setFilteredSessions(response.data.data);
-        if (response.data.data.length === 0) {
+        const data = response.data.data || [];
+        const pagination = response.data.pagination;
+
+        // Get total from pagination object
+        const total = pagination?.total ?? data.length;
+        const hasNextPage = pagination?.hasNextPage ?? false;
+        const totalPages =
+          pagination?.totalPages ?? Math.ceil(total / PAGE_SIZE);
+
+        if (append) {
+          // Append to existing sessions
+          setSessions((prev) => {
+            const newSessions = [...prev, ...data];
+
+            return newSessions;
+          });
+          setFilteredSessions((prev) => {
+            const newFiltered = [...prev, ...data];
+            return newFiltered;
+          });
+        } else {
+          // Replace all sessions
+          setSessions(data);
+          setFilteredSessions(data);
+        }
+
+        setTotalCount(total);
+        setHasMore(hasNextPage);
+
+        if (data.length === 0 && page === 1) {
           toast.success("No pending sessions found");
         }
       } else {
-        toast.error("Failed to fetch sessions");
+        toast.error(response.data.error || "Failed to fetch sessions");
       }
     } catch (error) {
-      console.error("Error fetching sessions:", error);
       toast.error("Error fetching sessions");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
+  // ============================================================
+  // LOAD MORE ITEMS
+  // ============================================================
+  const loadMoreItems = useCallback(() => {
+    if (loadingMore || !hasMore || loading) {
+      return;
+    }
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchPendingSessions(nextPage, true);
+  }, [currentPage, hasMore, loadingMore, loading]);
+
+  // ============================================================
+  // INTERSECTION OBSERVER SETUP
+  // ============================================================
   useEffect(() => {
-    fetchPendingSessions();
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMoreItems();
+        }
+      },
+      {
+        root: containerRef.current,
+        rootMargin: "0px 0px 100px 0px",
+        threshold: 0.1,
+      },
+    );
+
+    if (lastRowRef.current) {
+      observerRef.current.observe(lastRowRef.current);
+      // console.log("👁️ Observer attached to last row");
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        // console.log("👁️ Observer disconnected");
+      }
+    };
+  }, [filteredSessions, hasMore, loadingMore, loading, loadMoreItems]);
+
+  // ============================================================
+  // INITIAL LOAD
+  // ============================================================
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchPendingSessions(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter and search functionality
+  // ============================================================
+  // FILTER FUNCTIONALITY
+  // ============================================================
   useEffect(() => {
     let result = [...sessions];
 
-    // Search filter (name, username, employee code)
+    // Search filter
     if (filters.searchTerm.trim()) {
       const searchLower = filters.searchTerm.toLowerCase().trim();
       result = result.filter(
@@ -250,6 +377,13 @@ const ReporteeTravelSessionManager: React.FC = () => {
     }
   }, [filters, sessions]);
 
+  // ============================================================
+  // HANDLER FUNCTIONS
+  // ============================================================
+  const canApproveByReportee = (session: TravelSession) => {
+    return !session.isApprovedByReportee && !session.isRejectedByReportee;
+  };
+
   const handleAction = async (
     sessionId: number,
     action: "approve" | "reject",
@@ -269,12 +403,17 @@ const ReporteeTravelSessionManager: React.FC = () => {
         toast.success(`Session ${action}ed successfully`);
         setShowActionModal(false);
         setComments("");
-        fetchPendingSessions();
+        // Reset and reload from page 1
+        setCurrentPage(1);
+        setHasMore(true);
+        setSessions([]);
+        setFilteredSessions([]);
+        fetchPendingSessions(1, false);
       } else {
         toast.error(`Failed to ${action} session`);
       }
     } catch (error) {
-      console.error(`Error ${action}ing session:`, error);
+      // console.error(`Error ${action}ing session:`, error);
       toast.error(`Error ${action}ing session`);
     } finally {
       setProcessing(null);
@@ -321,34 +460,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
     return `${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}`;
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
-      APPROVED: "bg-green-100 text-green-800 border-green-300",
-      REJECTED: "bg-red-100 text-red-800 border-red-300",
-      COMPLETED: "bg-blue-100 text-blue-800 border-blue-300",
-    };
-
-    return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <Clock className="w-4 h-4" />;
-      case "APPROVED":
-        return <CheckCircle className="w-4 h-4" />;
-      case "REJECTED":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const canApproveByReportee = (session: TravelSession) => {
-    return !session.isApprovedByReportee && !session.isRejectedByReportee;
-  };
-
   const handleSuggestionClick = (session: TravelSession) => {
     setFilters({
       ...filters,
@@ -368,6 +479,17 @@ const ReporteeTravelSessionManager: React.FC = () => {
     setShowSuggestions(false);
   };
 
+  const handleRefresh = () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    setSessions([]);
+    setFilteredSessions([]);
+    fetchPendingSessions(1, false);
+  };
+
+  // ============================================================
+  // HELPER COMPONENTS
+  // ============================================================
   const DetailRow = ({
     label,
     value,
@@ -392,6 +514,9 @@ const ReporteeTravelSessionManager: React.FC = () => {
     </div>
   );
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 box-border">
       <div className="w-full max-w-7xl mx-auto">
@@ -414,7 +539,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={fetchPendingSessions}
+              onClick={handleRefresh}
               disabled={loading}
               className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
@@ -432,9 +557,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm text-gray-500 truncate">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {filteredSessions.length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
               </div>
               <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
                 <Briefcase className="w-5 h-5 text-blue-600" />
@@ -448,10 +571,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   Pending Actions
                 </p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {
-                    filteredSessions.filter((s) => canApproveByReportee(s))
-                      .length
-                  }
+                  {sessions.filter((s) => canApproveByReportee(s)).length}
                 </p>
               </div>
               <div className="p-3 bg-yellow-50 rounded-xl flex-shrink-0">
@@ -464,10 +584,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
               <div className="min-w-0">
                 <p className="text-sm text-gray-500 truncate">Approved</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {
-                    filteredSessions.filter((s) => s.isApprovedByReportee)
-                      .length
-                  }
+                  {sessions.filter((s) => s.isApprovedByReportee).length}
                 </p>
               </div>
               <div className="p-3 bg-green-50 rounded-xl flex-shrink-0">
@@ -480,10 +597,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
               <div className="min-w-0">
                 <p className="text-sm text-gray-500 truncate">Rejected</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {
-                    filteredSessions.filter((s) => s.isRejectedByReportee)
-                      .length
-                  }
+                  {sessions.filter((s) => s.isRejectedByReportee).length}
                 </p>
               </div>
               <div className="p-3 bg-red-50 rounded-xl flex-shrink-0">
@@ -496,7 +610,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
         {/* Search and Filter Section */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6 w-full">
           <div className="flex flex-col md:flex-row gap-4 w-full">
-            {/* Search Bar with Suggestions */}
+            {/* Search Bar */}
             <div className="flex-1 min-w-0 relative z-50">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -681,15 +795,18 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </button>
                 <span className="text-sm text-gray-500 ml-auto">
                   Showing {filteredSessions.length} of {sessions.length}{" "}
-                  sessions
+                  sessions loaded
                 </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sessions List */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 w-full">
+        {/* Sessions List with Infinite Scroll */}
+        <div
+          ref={containerRef}
+          className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 w-full"
+        >
           {loading ? (
             <div className="flex flex-col justify-center items-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -709,12 +826,15 @@ const ReporteeTravelSessionManager: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 w-full">
-              {filteredSessions.map((session) => {
+              {filteredSessions.map((session, index) => {
                 const avatarColor = getAvatarColor(session.userId);
                 const initials = getInitials(session.fullName);
+                const isLastItem = index === filteredSessions.length - 1;
+
                 return (
                   <div
-                    key={session.sessionId}
+                    key={`${session.sessionId}-${index}`}
+                    ref={isLastItem ? lastRowRef : null}
                     className="relative w-full max-w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 overflow-hidden"
                   >
                     {/* Session ID badge */}
@@ -722,13 +842,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
                       #{session.sessionId}
                     </span>
 
-                    {/*
-                      KEY FIX: grid with minmax(0, Npx) tracks instead of a flex row
-                      with fixed-width, flex-shrink-0 columns. Grid tracks defined this
-                      way are allowed to compress below their target width when the
-                      container gets narrower (e.g. when a sidebar opens), so the row
-                      shrinks instead of overflowing the screen.
-                    */}
                     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,240px)_minmax(0,170px)_minmax(0,140px)_minmax(0,1fr)_minmax(0,150px)] gap-5 w-full items-center">
                       {/* Identity block */}
                       <div className="flex items-center gap-4 min-w-0">
@@ -865,10 +978,33 @@ const ReporteeTravelSessionManager: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Loading More Indicator */}
+          {loadingMore && (
+            <div className="flex justify-center items-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+              <p className="text-gray-600 ml-3">Loading more sessions...</p>
+            </div>
+          )}
+
+          {/* No More Items Indicator */}
+          {!loadingMore &&
+            !loading &&
+            !hasMore &&
+            filteredSessions.length > 0 && (
+              <div className="text-center py-6">
+                <p className="text-sm text-gray-400">
+                  — No more sessions to load —
+                </p>
+                <p className="text-xs text-gray-300 mt-1">
+                  {totalCount} total sessions loaded
+                </p>
+              </div>
+            )}
         </div>
       </div>
 
-      {/* Modals rendered at root level using Portal */}
+      {/* Action Modal */}
       {showActionModal && selectedSession && (
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
@@ -960,6 +1096,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
         </ModalPortal>
       )}
 
+      {/* Details Modal */}
       {showDetailsModal && selectedSession && (
         <ModalPortal>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
@@ -982,8 +1119,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
               </div>
 
               <div className="p-6">
-                {/* Status Badge */}
-
                 {/* User Information */}
                 <SectionHeader title="User Information" />
                 <div className="bg-gray-50 rounded-xl p-4">
@@ -1110,7 +1245,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   />
                 </div>
 
-                {/* Close Button */}
                 <div className="mt-6">
                   <button
                     onClick={closeDetailsModal}

@@ -10,6 +10,8 @@ export interface User {
   mobileNo: string;
   role: string;
   is_checkin: boolean;
+  isActiveEmployee: boolean;
+
   date: string; // ISO date string
   department: string;
   address: string;

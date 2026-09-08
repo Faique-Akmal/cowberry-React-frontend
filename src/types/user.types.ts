@@ -13,6 +13,7 @@ export interface User {
   email: string;
   role: string;
   roleId: number;
+  isActiveEmployee: boolean;
 
   is_checkin: boolean;
   department: string;

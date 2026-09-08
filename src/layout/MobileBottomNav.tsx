@@ -5,6 +5,7 @@ import {
   MdOutlinePeople,
   MdOutlineAdd,
   MdAnnouncement,
+  MdOutlinePendingActions,
 } from "react-icons/md";
 import { FaCalendarAlt } from "react-icons/fa";
 import { MdListAlt } from "react-icons/md";
@@ -118,6 +119,18 @@ const buildArcItems = (): ArcItem[] => [
     label: "Announcement",
     path: "/announcementList",
     role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
+  },
+  {
+    icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+    label: "PendingSessions",
+    path: "/pending-hr-sessions",
+    role: ["admin", "hr"],
+  },
+  {
+    icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+    label: "PendingSessions",
+    path: "/pending-reportee-sessions",
+    role: ["admin", "manager", "headofdepartment"],
   },
   // {
   //   icon: <PiUsersThreeBold className="text-lantern-blue-600" />,

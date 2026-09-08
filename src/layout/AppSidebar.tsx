@@ -118,7 +118,7 @@ const AppSidebar: React.FC = () => {
     },
     {
       icon: <UnorderedListIcon className="text-lantern-blue-600" />,
-      name: t("menu.TravelSessions"),
+      name: "AllTravelSessions",
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
     },

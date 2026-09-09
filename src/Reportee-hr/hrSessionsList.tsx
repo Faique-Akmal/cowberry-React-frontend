@@ -541,11 +541,8 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-xl flex-shrink-0">
-                  <Briefcase className="w-6 h-6 text-blue-600" />
-                </div>
                 <div className="min-w-0">
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
+                  <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
                     HR Travel Session Management
                   </h1>
                   <p className="text-gray-600 mt-1">

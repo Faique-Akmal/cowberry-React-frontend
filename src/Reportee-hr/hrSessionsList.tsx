@@ -68,11 +68,6 @@ interface TravelSession {
 interface TravelSessionHrProps {
   initialSessionId?: string | number;
   userId?: string | number;
-  // Unique per navigation entry (e.g. React Router's location.key). Lets us
-  // tell "the same session was clicked again" apart from "this component
-  // just re-rendered for an unrelated reason", so the modal reliably
-  // re-opens every time a pending session is clicked - even the same one
-  // twice in a row.
   navKey?: string;
 }
 
@@ -122,8 +117,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   userId,
   navKey,
 }) => {
-  // Use Zustand store (HR-specific - separate persisted key from the
-  // reportee store, so the two role views never clobber each other's cache)
   const {
     sessions,
     filteredSessions,
@@ -143,7 +136,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     canApproveByHR,
   } = useTravelSessionStore();
 
-  // Local state for modals and UI
   const [selectedSession, setSelectedSession] = useState<TravelSession | null>(
     null,
   );
@@ -154,42 +146,19 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<TravelSession[]>([]);
-
-  // Track if we're currently opening a session
   const [isOpeningSession, setIsOpeningSession] = useState<boolean>(false);
-
-  // Set when a deep-linked/clicked sessionId couldn't be opened because the
-  // reportee hasn't approved/rejected it yet (so it isn't in HR's queue).
-  // Kept as persistent state (not just a toast) so the reason stays visible
-  // on screen instead of disappearing after a few seconds.
   const [notYetUpdatedSessionId, setNotYetUpdatedSessionId] = useState<
     number | null
   >(null);
 
-  // Refs for infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastRowRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  // Tracks the last (sessionId, navKey) pair we already auto-opened, so we
-  // don't reopen on every unrelated re-render, but DO reopen whenever a
-  // genuinely new "open this session" request comes in - including a click
-  // on the same sessionId as before, as long as it's a fresh navKey.
   const openedRef = useRef<{ sessionId: number | null; navKey?: string }>({
     sessionId: null,
     navKey: undefined,
   });
-
-  // Row refs keyed by sessionId, used to scroll the opened session into view.
   const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
-
-  // Guards against two failure modes when opening a session by id:
-  // 1) The fetch is still in flight when you navigate away (component
-  //    unmounts) - without this, the response arriving later calls
-  //    setState on an unmounted component, which React flags as an error.
-  // 2) You click session A, then quickly click session B before A's fetch
-  //    resolves - without this, A's late response can still open A's modal
-  //    even though you're now looking at B.
   const isMountedRef = useRef(true);
   const openRequestIdRef = useRef(0);
 
@@ -215,12 +184,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   }, []);
 
   // ============================================================
-  // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
-  // ============================================================
-  // In hrSessionsList.tsx - replace the auto-open useEffect with this:
-
-  // ============================================================
-  // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
+  // AUTO-OPEN SESSION FROM PROPS
   // ============================================================
   useEffect(() => {
     const sessionId = initialSessionId ? Number(initialSessionId) : null;
@@ -229,7 +193,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
       return;
     }
 
-    // Already handled this exact request (same session, same nav entry)
     if (
       openedRef.current.sessionId === sessionId &&
       openedRef.current.navKey === navKey
@@ -258,17 +221,13 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
       try {
         const expectedUserId = userId !== undefined ? Number(userId) : null;
 
-        // Wait for initial loading to complete if it's in progress
         if (loading) {
-          // Wait a bit for loading to finish
           await new Promise((resolve) => setTimeout(resolve, 500));
           if (!stillCurrent()) return;
         }
 
-        // 1) First, try to find in the current sessions list (including filtered)
         let cached = findSessionInCache(sessionId);
 
-        // 2) If not found, try searching through all sessions including filtered
         if (!cached) {
           const allSessions = useTravelSessionStore.getState().sessions;
           cached = allSessions.find((s) => s.sessionId === sessionId) || null;
@@ -289,8 +248,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           return;
         }
 
-        // 3) Not loaded yet - fetch it directly by id
-        // This works whether the session is pending, approved, or rejected
         const fetched = await fetchSessionById(sessionId);
 
         if (!stillCurrent()) return;
@@ -306,22 +263,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           document.body.style.overflow = "hidden";
           scrollRowIntoView(sessionId);
         } else {
-          // fetchSessionById returns null when session is not found or not yet updated by reportee
           setNotYetUpdatedSessionId(sessionId);
-          // Also try to find if the session exists at all by checking if it's in the full list
-          // but just not in HR's queue yet (reportee hasn't approved/rejected)
-          try {
-            const checkResponse = await API.get(
-              `/tracking/travel-session/${sessionId}`,
-            );
-            if (checkResponse.data.success) {
-              // Session exists but reportee hasn't acted on it yet
-              setNotYetUpdatedSessionId(sessionId);
-            }
-          } catch (checkError) {
-            // Session truly doesn't exist or is not accessible
-            setNotYetUpdatedSessionId(sessionId);
-          }
         }
       } catch (error) {
         if (stillCurrent()) {
@@ -337,7 +279,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
 
     openSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSessionId, navKey, loading]); // Add loading as dependency
+  }, [initialSessionId, navKey, loading]);
 
   // ============================================================
   // SEARCH SUGGESTIONS
@@ -432,13 +374,28 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     sessionId: number,
     action: "approve" | "reject",
   ) => {
-    const success = await handleAction(sessionId, action, comments);
-    if (success) {
-      setShowActionModal(false);
-      setShowDetailsModal(false);
-      setComments("");
-      setSelectedSession(null);
-      document.body.style.overflow = "unset";
+    try {
+      const success = await handleAction(sessionId, action, comments);
+      if (success) {
+        // Close modals
+        setShowActionModal(false);
+        setShowDetailsModal(false);
+        setComments("");
+        setSelectedSession(null);
+        document.body.style.overflow = "unset";
+
+        // Refresh the list to show updated status
+        await refreshSessions();
+
+        toast.success(
+          action === "approve"
+            ? `Session #${sessionId} approved successfully!`
+            : `Session #${sessionId} rejected successfully!`,
+        );
+      }
+    } catch (error) {
+      console.error("Error in handleApproveReject:", error);
+      toast.error("Failed to process action. Please try again.");
     }
   };
 

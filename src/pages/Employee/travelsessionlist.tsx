@@ -76,6 +76,8 @@ import {
   sumReimbursableDistance,
 } from "../../utils/travelSessionHelpers";
 import { exportAllTravelSessionsFromAPI } from "../../utils/exportTravelSessionsToExcel";
+import { useNavigate } from "react-router-dom";
+import { usePendingSessionsStore } from "../../store/usePendingSessionsStore";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -86,9 +88,7 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function TravelSessions() {
-  // ---------------------------------------------------------------------
-  // Zustand store: shared, cached data + fetch actions.
-  // ---------------------------------------------------------------------
+  const navigate = useNavigate();
   const travelSessions = useTravelSessionStore((s) => s.travelSessions);
   const sessionsMap = useTravelSessionStore((s) => s.sessionsMap);
   const users = useTravelSessionStore((s) => s.users);
@@ -665,6 +665,19 @@ export default function TravelSessions() {
     setFarmerDataError(null);
   };
 
+  const handlePendingStatusClick = (session: TravelSession) => {
+    // Only navigate if status is PENDING
+    if (getSessionFinalStatus(session) === "PENDING") {
+      // Navigate to pending sessions page with session ID as state
+      navigate("/pending-reportee-sessions", {
+        state: {
+          sessionId: session.sessionId,
+          userId: session.userId,
+          from: "travel-sessions",
+        },
+      });
+    }
+  };
   // ---------------------------------------------------------------------
   // Export to Excel
   // ---------------------------------------------------------------------
@@ -1528,14 +1541,23 @@ export default function TravelSessions() {
 
                                   <div className="flex gap-2">
                                     <span
-                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm ${
+                                      onClick={() =>
+                                        handlePendingStatusClick(session)
+                                      }
+                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer transition-all duration-200 ${
                                         sessionStatus === "APPROVED"
-                                          ? " text-white bg-green-700  border border-green-950 hover:bg-green-600 transition-colors duration-200"
+                                          ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
                                           : sessionStatus === "REJECTED"
-                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors duration-200"
-                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors duration-200"
+                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:scale-105"
                                       }`}
+                                      title={
+                                        sessionStatus === "PENDING"
+                                          ? "Click to review this session"
+                                          : ""
+                                      }
                                     >
+                                      {/* Status icon and text as before */}
                                       {sessionStatus === "APPROVED" && (
                                         <svg
                                           className="w-3.5 h-3.5"

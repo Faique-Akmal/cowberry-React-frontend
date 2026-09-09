@@ -52,6 +52,7 @@ import AttendanceCalendar from "./HRMS/AttandanceCalendar";
 import TravelSessionManager from "./Reportee-hr/hrSessionsList";
 import TravelSessionHr from "./Reportee-hr/hrSessionsList";
 import ReporteeTravelSessionManager from "./Reportee-hr/reporteeSessionsList";
+import PendingReporteeSessionsWrapper from "./admin/components/PendingReporteeSessionsWrapper";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -130,7 +131,7 @@ export default function App() {
             path="/pending-reportee-sessions"
             element={
               <ProtectedRoute>
-                <ReporteeTravelSessionManager />
+                <PendingReporteeSessionsWrapper />
               </ProtectedRoute>
             }
           />

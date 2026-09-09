@@ -666,10 +666,23 @@ export default function TravelSessions() {
   };
 
   const handlePendingStatusClick = (session: TravelSession) => {
-    // Only navigate if status is PENDING
+    // Only navigate if status is PENDING AND user role is HR or MANAGER
     if (getSessionFinalStatus(session) === "PENDING") {
+      // Check if user role is HR or MANAGER
+      const isAuthorized = userRole === "HR" || userRole === "MANAGER";
+
+      if (!isAuthorized) {
+        // Optionally show a message or just do nothing
+        return;
+      }
+
+      const pendingSessionsPath =
+        userRole === "HR"
+          ? "/pending-hr-sessions"
+          : "/pending-reportee-sessions";
+
       // Navigate to pending sessions page with session ID as state
-      navigate("/pending-reportee-sessions", {
+      navigate(pendingSessionsPath, {
         state: {
           sessionId: session.sessionId,
           userId: session.userId,
@@ -1541,20 +1554,39 @@ export default function TravelSessions() {
 
                                   <div className="flex gap-2">
                                     <span
-                                      onClick={() =>
-                                        handlePendingStatusClick(session)
-                                      }
-                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer transition-all duration-200 ${
+                                      onClick={() => {
+                                        const isAuthorized =
+                                          userRole === "HR" ||
+                                          userRole === "MANAGER";
+                                        const isPending =
+                                          getSessionFinalStatus(session) ===
+                                          "PENDING";
+                                        if (isPending && isAuthorized) {
+                                          handlePendingStatusClick(session);
+                                        }
+                                      }}
+                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200 ${
                                         sessionStatus === "APPROVED"
                                           ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
                                           : sessionStatus === "REJECTED"
                                             ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
                                             : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:scale-105"
+                                      } ${
+                                        // Only add cursor-pointer if clickable
+                                        sessionStatus === "PENDING" &&
+                                        (userRole === "HR" ||
+                                          userRole === "MANAGER")
+                                          ? "cursor-pointer"
+                                          : "cursor-default"
                                       }`}
                                       title={
-                                        sessionStatus === "PENDING"
+                                        sessionStatus === "PENDING" &&
+                                        (userRole === "HR" ||
+                                          userRole === "MANAGER")
                                           ? "Click to review this session"
-                                          : ""
+                                          : sessionStatus === "PENDING"
+                                            ? "Only HR and Managers can review pending sessions"
+                                            : ""
                                       }
                                     >
                                       {/* Status icon and text as before */}

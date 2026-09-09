@@ -308,15 +308,40 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
       // yet - it hasn't landed in HR's queue - rather than a real permission
       // or data problem, so we surface that specific reason to the caller
       // instead of a generic "not found" message.
+      // In hrsessionStore.ts - update fetchSessionById:
+
       fetchSessionById: async (sessionId: number) => {
         try {
           set({ sessionLoading: true });
+
+          // First, check if the session exists in the current sessions list
+          const existingSession = get().sessions.find(
+            (s) => s.sessionId === sessionId,
+          );
+          if (existingSession) {
+            // Already in cache, return it
+            set({ sessionLoading: false });
+            return existingSession;
+          }
+
           const response = await API.get(
             `/tracking/travel-session/${sessionId}`,
           );
 
           if (response.data.success) {
             const session = response.data.data;
+
+            // Check if this session has been acted on by reportee
+            // If not, it shouldn't be in HR's queue yet
+            if (
+              !session.isApprovedByReportee &&
+              !session.isRejectedByReportee
+            ) {
+              toast.error("Not yet updated by reportee");
+              set({ sessionLoading: false });
+              return null;
+            }
+
             // Add session to cache if not already there
             set((state) => {
               const exists = state.sessions.some(
@@ -331,17 +356,23 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
             });
             get().applyFilters();
             toast.success(`Loaded session #${sessionId} for review`);
+            set({ sessionLoading: false });
             return session;
           } else {
-            toast.error("Not yet updated by reportee");
+            toast.error("Session not found or not yet updated by reportee");
+            set({ sessionLoading: false });
             return null;
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching session:", error);
-          toast.error("Not yet updated by reportee");
-          return null;
-        } finally {
+          // Check if it's a 404 or similar - session doesn't exist in HR's queue
+          if (error?.response?.status === 404) {
+            toast.error("Session not found or not yet updated by reportee");
+          } else {
+            toast.error("Failed to load session");
+          }
           set({ sessionLoading: false });
+          return null;
         }
       },
 

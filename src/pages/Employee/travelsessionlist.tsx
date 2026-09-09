@@ -1622,7 +1622,7 @@ export default function TravelSessions() {
                                       )}
                                       {sessionStatus === "PENDING" && (
                                         <svg
-                                          className="w-3.5 h-3.5 animate-spin-slow"
+                                          className="w-3.5 h-3.5 hover:animate-spin"
                                           fill="none"
                                           stroke="currentColor"
                                           viewBox="0 0 24 24"

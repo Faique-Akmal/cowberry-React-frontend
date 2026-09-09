@@ -217,15 +217,19 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   // ============================================================
   // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
   // ============================================================
+  // In hrSessionsList.tsx - replace the auto-open useEffect with this:
+
+  // ============================================================
+  // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
+  // ============================================================
   useEffect(() => {
     const sessionId = initialSessionId ? Number(initialSessionId) : null;
 
-    if (!sessionId || Number.isNaN(sessionId) || loading || isOpeningSession) {
+    if (!sessionId || Number.isNaN(sessionId) || isOpeningSession) {
       return;
     }
 
-    // Already handled this exact request (same session, same nav entry) -
-    // don't reopen on an unrelated re-render.
+    // Already handled this exact request (same session, same nav entry)
     if (
       openedRef.current.sessionId === sessionId &&
       openedRef.current.navKey === navKey
@@ -234,7 +238,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     }
 
     const scrollRowIntoView = (id: number) => {
-      // Give the list a tick to render/highlight the row before scrolling.
       requestAnimationFrame(() => {
         rowRefs.current[id]?.scrollIntoView({
           behavior: "smooth",
@@ -255,8 +258,22 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
       try {
         const expectedUserId = userId !== undefined ? Number(userId) : null;
 
-        // 1) Already loaded (e.g. visible via normal infinite scroll)?
-        const cached = findSessionInCache(sessionId);
+        // Wait for initial loading to complete if it's in progress
+        if (loading) {
+          // Wait a bit for loading to finish
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          if (!stillCurrent()) return;
+        }
+
+        // 1) First, try to find in the current sessions list (including filtered)
+        let cached = findSessionInCache(sessionId);
+
+        // 2) If not found, try searching through all sessions including filtered
+        if (!cached) {
+          const allSessions = useTravelSessionStore.getState().sessions;
+          cached = allSessions.find((s) => s.sessionId === sessionId) || null;
+        }
+
         if (cached) {
           if (!stillCurrent()) return;
           if (expectedUserId !== null && cached.userId !== expectedUserId) {
@@ -272,15 +289,10 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           return;
         }
 
-        // 2) Not loaded yet - fetch it directly by id. This works whether
-        // the session is still pending or already approved/rejected
-        // ("old"), and it only prepends the single session to the cache -
-        // it never touches currentPage/hasMore, so the normal infinite
-        // scroll pagination is left completely intact.
+        // 3) Not loaded yet - fetch it directly by id
+        // This works whether the session is pending, approved, or rejected
         const fetched = await fetchSessionById(sessionId);
 
-        // A newer "open session" request superseded this one, or the
-        // component has since unmounted - discard this stale result.
         if (!stillCurrent()) return;
 
         if (fetched) {
@@ -294,11 +306,22 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           document.body.style.overflow = "hidden";
           scrollRowIntoView(sessionId);
         } else {
-          // fetchSessionById already toasted "Not yet updated by
-          // reportee" - also keep it visible on screen since the toast
-          // fades and there's otherwise no other feedback that anything
-          // happened.
+          // fetchSessionById returns null when session is not found or not yet updated by reportee
           setNotYetUpdatedSessionId(sessionId);
+          // Also try to find if the session exists at all by checking if it's in the full list
+          // but just not in HR's queue yet (reportee hasn't approved/rejected)
+          try {
+            const checkResponse = await API.get(
+              `/tracking/travel-session/${sessionId}`,
+            );
+            if (checkResponse.data.success) {
+              // Session exists but reportee hasn't acted on it yet
+              setNotYetUpdatedSessionId(sessionId);
+            }
+          } catch (checkError) {
+            // Session truly doesn't exist or is not accessible
+            setNotYetUpdatedSessionId(sessionId);
+          }
         }
       } catch (error) {
         if (stillCurrent()) {
@@ -314,7 +337,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
 
     openSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSessionId, navKey, loading]);
+  }, [initialSessionId, navKey, loading]); // Add loading as dependency
 
   // ============================================================
   // SEARCH SUGGESTIONS

@@ -53,6 +53,7 @@ import TravelSessionManager from "./Reportee-hr/hrSessionsList";
 import TravelSessionHr from "./Reportee-hr/hrSessionsList";
 import ReporteeTravelSessionManager from "./Reportee-hr/reporteeSessionsList";
 import PendingReporteeSessionsWrapper from "./admin/components/PendingReporteeSessionsWrapper";
+import NotAccessible from "./pages/AuthPages/NotAccessible";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -95,24 +96,45 @@ export default function App() {
           <Route
             path="/add-zones"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["hr", "admin"]}>
                 <CreateZonePage />
               </ProtectedRoute>
             }
           />
           <Route path="/theme-customizer" element={<ThemeCustomizer />} />
-          <Route path="/add-role" element={<AddRoleForm />} />
-          <Route path="/add-department" element={<DepartmentManagement />} />
+          <Route path="/not-accessible" element={<NotAccessible />} />
+          <Route
+            path="/add-role"
+            element={
+              <ProtectedRoute allowedRoles={["hr", "admin"]}>
+                <AddRoleForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-department"
+            element={
+              <ProtectedRoute allowedRoles={["hr", "admin"]}>
+                <DepartmentManagement />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/leave-management-reportee"
-            element={<LeaveManagementReportee />}
+            element={
+              <ProtectedRoute
+                allowedRoles={["manager", "headofdepartment", "zonalmanager"]}
+              >
+                <LeaveManagementReportee />
+              </ProtectedRoute>
+            }
           />
 
           <Route path="/user-register" element={<RegistrationPage />} />
           <Route
             path="/get-leaves"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["hr", "admin"]}>
                 <LeavesPage />
               </ProtectedRoute>
             }
@@ -121,7 +143,7 @@ export default function App() {
           <Route
             path="/pending-hr-sessions"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["hr", "admin"]}>
                 <TravelSessionHr />
               </ProtectedRoute>
             }
@@ -130,7 +152,9 @@ export default function App() {
           <Route
             path="/pending-reportee-sessions"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute
+                allowedRoles={["manager", "admin", "headofdepartment"]}
+              >
                 <PendingReporteeSessionsWrapper />
               </ProtectedRoute>
             }
@@ -177,7 +201,22 @@ export default function App() {
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/assign-task-page" element={<TaskPage />} />
 
-          <Route path="/tracking-admin" element={<AttendanceList />} />
+          <Route
+            path="/tracking-admin"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  "hr",
+                  "admin",
+                  "manager",
+                  "headofdepartment",
+                  "zonalmanager",
+                ]}
+              >
+                <AttendanceList />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/announcement" element={<AnnouncementModal />} />
           <Route path="/announcementList" element={<CreateAnnouncement />} />
           {/* <Route path="/live-tracking" element={ <LocationFetcher />} /> */}

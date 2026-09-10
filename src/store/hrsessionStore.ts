@@ -339,6 +339,13 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
               `/tracking/travel-session/${sessionId}`,
             );
 
+            // eslint-disable-next-line no-console
+            console.log("[hrsessionStore] direct fetch response", {
+              sessionId,
+              status: response.status,
+              data: response.data,
+            });
+
             if (response.data.success && response.data.data) {
               const session = response.data.data;
 
@@ -363,6 +370,12 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
               `Direct fetch of session #${sessionId} failed, falling back to scanning the HR pending list.`,
               directFetchError,
             );
+            // eslint-disable-next-line no-console
+            console.log("[hrsessionStore] direct fetch threw", {
+              sessionId,
+              status: (directFetchError as any)?.response?.status,
+              data: (directFetchError as any)?.response?.data,
+            });
           }
 
           // 2) Fallback - scan HR's own pending list. This never touches
@@ -375,10 +388,20 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
               { params: { page, limit: PAGE_SIZE } },
             );
 
-            if (!listResponse.data.success) break;
-
             const pageData: TravelSession[] = listResponse.data.data || [];
             const match = pageData.find((s) => s.sessionId === sessionId);
+
+            // eslint-disable-next-line no-console
+            console.log("[hrsessionStore] scanning pending/hr", {
+              sessionId,
+              page,
+              success: listResponse.data.success,
+              pageIds: pageData.map((s) => s.sessionId),
+              found: !!match,
+              pagination: listResponse.data.pagination,
+            });
+
+            if (!listResponse.data.success) break;
 
             if (match) {
               set((state) => {

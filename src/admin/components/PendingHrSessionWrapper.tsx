@@ -45,6 +45,14 @@ const PendingHrSessionWrapper = () => {
     };
   }
 
+  // TEMP DEBUG - remove once the open-session flow is confirmed working.
+  // eslint-disable-next-line no-console
+  console.log("[PendingHrSessionWrapper] render", {
+    incomingState: state,
+    locationKey: location.key,
+    captured: capturedRef.current,
+  });
+
   // Clear the navigation state once it's been captured so refreshing the
   // page or navigating back/forward doesn't replay the same "open session"
   // instruction indefinitely.

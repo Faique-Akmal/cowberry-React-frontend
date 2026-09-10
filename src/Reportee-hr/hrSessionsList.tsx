@@ -122,6 +122,14 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   userId,
   navKey,
 }) => {
+  // TEMP DEBUG - remove once the open-session flow is confirmed working.
+  // eslint-disable-next-line no-console
+  console.log("[TravelSessionHr] props received", {
+    initialSessionId,
+    userId,
+    navKey,
+  });
+
   // Use Zustand store (HR-specific - separate persisted key from the
   // reportee store, so the two role views never clobber each other's cache)
   const {
@@ -220,7 +228,28 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   useEffect(() => {
     const sessionId = initialSessionId ? Number(initialSessionId) : null;
 
+    // TEMP DEBUG - remove once the open-session flow is confirmed working.
+    // eslint-disable-next-line no-console
+    console.log("[TravelSessionHr] auto-open effect ran", {
+      initialSessionId,
+      parsedSessionId: sessionId,
+      navKey,
+      loading,
+      isOpeningSession,
+      openedRef: openedRef.current,
+    });
+
     if (!sessionId || Number.isNaN(sessionId) || loading || isOpeningSession) {
+      // eslint-disable-next-line no-console
+      console.log("[TravelSessionHr] auto-open BAILED on guard", {
+        reason: !sessionId
+          ? "no sessionId"
+          : Number.isNaN(sessionId)
+            ? "NaN sessionId"
+            : loading
+              ? "list still loading"
+              : "already opening a session",
+      });
       return;
     }
 
@@ -257,6 +286,8 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
 
         // 1) Already loaded (e.g. visible via normal infinite scroll)?
         const cached = findSessionInCache(sessionId);
+        // eslint-disable-next-line no-console
+        console.log("[TravelSessionHr] cache check", { sessionId, cached });
         if (cached) {
           if (!stillCurrent()) return;
           if (expectedUserId !== null && cached.userId !== expectedUserId) {
@@ -278,6 +309,13 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
         // it never touches currentPage/hasMore, so the normal infinite
         // scroll pagination is left completely intact.
         const fetched = await fetchSessionById(sessionId);
+
+        // eslint-disable-next-line no-console
+        console.log("[TravelSessionHr] fetchSessionById resolved", {
+          sessionId,
+          fetched,
+          stillCurrent: stillCurrent(),
+        });
 
         // A newer "open session" request superseded this one, or the
         // component has since unmounted - discard this stale result.

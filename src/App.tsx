@@ -54,6 +54,7 @@ import TravelSessionHr from "./Reportee-hr/hrSessionsList";
 import ReporteeTravelSessionManager from "./Reportee-hr/reporteeSessionsList";
 import PendingReporteeSessionsWrapper from "./admin/components/PendingReporteeSessionsWrapper";
 import NotAccessible from "./pages/AuthPages/NotAccessible";
+import PendingHrSessionWrapper from "./admin/components/PendingHrSessionWrapper";
 
 export default function App() {
   const { incomingCall, setIncomingCall, socket } = useSocketStore();
@@ -144,7 +145,7 @@ export default function App() {
             path="/pending-hr-sessions"
             element={
               <ProtectedRoute allowedRoles={["hr", "admin"]}>
-                <TravelSessionHr />
+                <PendingHrSessionWrapper />
               </ProtectedRoute>
             }
           />

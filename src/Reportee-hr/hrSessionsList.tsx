@@ -68,6 +68,11 @@ interface TravelSession {
 interface TravelSessionHrProps {
   initialSessionId?: string | number;
   userId?: string | number;
+  // Unique per navigation entry (e.g. React Router's location.key). Lets us
+  // tell "the same session was clicked again" apart from "this component
+  // just re-rendered for an unrelated reason", so the modal reliably
+  // re-opens every time a pending session is clicked - even the same one
+  // twice in a row.
   navKey?: string;
 }
 
@@ -117,6 +122,8 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   userId,
   navKey,
 }) => {
+  // Use Zustand store (HR-specific - separate persisted key from the
+  // reportee store, so the two role views never clobber each other's cache)
   const {
     sessions,
     filteredSessions,
@@ -136,6 +143,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     canApproveByHR,
   } = useTravelSessionStore();
 
+  // Local state for modals and UI
   const [selectedSession, setSelectedSession] = useState<TravelSession | null>(
     null,
   );
@@ -146,19 +154,42 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<TravelSession[]>([]);
+
+  // Track if we're currently opening a session
   const [isOpeningSession, setIsOpeningSession] = useState<boolean>(false);
+
+  // Set when a deep-linked/clicked sessionId couldn't be opened because the
+  // reportee hasn't approved/rejected it yet (so it isn't in HR's queue).
+  // Kept as persistent state (not just a toast) so the reason stays visible
+  // on screen instead of disappearing after a few seconds.
   const [notYetUpdatedSessionId, setNotYetUpdatedSessionId] = useState<
     number | null
   >(null);
 
+  // Refs for infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastRowRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Tracks the last (sessionId, navKey) pair we already auto-opened, so we
+  // don't reopen on every unrelated re-render, but DO reopen whenever a
+  // genuinely new "open this session" request comes in - including a click
+  // on the same sessionId as before, as long as it's a fresh navKey.
   const openedRef = useRef<{ sessionId: number | null; navKey?: string }>({
     sessionId: null,
     navKey: undefined,
   });
+
+  // Row refs keyed by sessionId, used to scroll the opened session into view.
   const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // Guards against two failure modes when opening a session by id:
+  // 1) The fetch is still in flight when you navigate away (component
+  //    unmounts) - without this, the response arriving later calls
+  //    setState on an unmounted component, which React flags as an error.
+  // 2) You click session A, then quickly click session B before A's fetch
+  //    resolves - without this, A's late response can still open A's modal
+  //    even though you're now looking at B.
   const isMountedRef = useRef(true);
   const openRequestIdRef = useRef(0);
 
@@ -184,15 +215,17 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   }, []);
 
   // ============================================================
-  // AUTO-OPEN SESSION FROM PROPS
+  // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
   // ============================================================
   useEffect(() => {
     const sessionId = initialSessionId ? Number(initialSessionId) : null;
 
-    if (!sessionId || Number.isNaN(sessionId) || isOpeningSession) {
+    if (!sessionId || Number.isNaN(sessionId) || loading || isOpeningSession) {
       return;
     }
 
+    // Already handled this exact request (same session, same nav entry) -
+    // don't reopen on an unrelated re-render.
     if (
       openedRef.current.sessionId === sessionId &&
       openedRef.current.navKey === navKey
@@ -201,6 +234,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     }
 
     const scrollRowIntoView = (id: number) => {
+      // Give the list a tick to render/highlight the row before scrolling.
       requestAnimationFrame(() => {
         rowRefs.current[id]?.scrollIntoView({
           behavior: "smooth",
@@ -221,18 +255,8 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
       try {
         const expectedUserId = userId !== undefined ? Number(userId) : null;
 
-        if (loading) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          if (!stillCurrent()) return;
-        }
-
-        let cached = findSessionInCache(sessionId);
-
-        if (!cached) {
-          const allSessions = useTravelSessionStore.getState().sessions;
-          cached = allSessions.find((s) => s.sessionId === sessionId) || null;
-        }
-
+        // 1) Already loaded (e.g. visible via normal infinite scroll)?
+        const cached = findSessionInCache(sessionId);
         if (cached) {
           if (!stillCurrent()) return;
           if (expectedUserId !== null && cached.userId !== expectedUserId) {
@@ -248,8 +272,15 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           return;
         }
 
+        // 2) Not loaded yet - fetch it directly by id. This works whether
+        // the session is still pending or already approved/rejected
+        // ("old"), and it only prepends the single session to the cache -
+        // it never touches currentPage/hasMore, so the normal infinite
+        // scroll pagination is left completely intact.
         const fetched = await fetchSessionById(sessionId);
 
+        // A newer "open session" request superseded this one, or the
+        // component has since unmounted - discard this stale result.
         if (!stillCurrent()) return;
 
         if (fetched) {
@@ -263,6 +294,10 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           document.body.style.overflow = "hidden";
           scrollRowIntoView(sessionId);
         } else {
+          // fetchSessionById already toasted "Not yet updated by
+          // reportee" - also keep it visible on screen since the toast
+          // fades and there's otherwise no other feedback that anything
+          // happened.
           setNotYetUpdatedSessionId(sessionId);
         }
       } catch (error) {
@@ -374,28 +409,13 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
     sessionId: number,
     action: "approve" | "reject",
   ) => {
-    try {
-      const success = await handleAction(sessionId, action, comments);
-      if (success) {
-        // Close modals
-        setShowActionModal(false);
-        setShowDetailsModal(false);
-        setComments("");
-        setSelectedSession(null);
-        document.body.style.overflow = "unset";
-
-        // Refresh the list to show updated status
-        await refreshSessions();
-
-        toast.success(
-          action === "approve"
-            ? `Session #${sessionId} approved successfully!`
-            : `Session #${sessionId} rejected successfully!`,
-        );
-      }
-    } catch (error) {
-      console.error("Error in handleApproveReject:", error);
-      toast.error("Failed to process action. Please try again.");
+    const success = await handleAction(sessionId, action, comments);
+    if (success) {
+      setShowActionModal(false);
+      setShowDetailsModal(false);
+      setComments("");
+      setSelectedSession(null);
+      document.body.style.overflow = "unset";
     }
   };
 
@@ -498,8 +518,11 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-xl flex-shrink-0">
+                  <Briefcase className="w-6 h-6 text-blue-600" />
+                </div>
                 <div className="min-w-0">
-                  <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
                     HR Travel Session Management
                   </h1>
                   <p className="text-gray-600 mt-1">

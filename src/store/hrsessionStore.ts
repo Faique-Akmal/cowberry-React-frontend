@@ -303,76 +303,112 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
         }
       },
 
-      // Fetch single session by ID. A session that comes back "not found"
-      // here almost always means the reportee hasn't approved/rejected it
-      // yet - it hasn't landed in HR's queue - rather than a real permission
-      // or data problem, so we surface that specific reason to the caller
-      // instead of a generic "not found" message.
-      // In hrsessionStore.ts - update fetchSessionById:
-
+      // Fetch single session by ID.
+      //
+      // NOTE: GET /tracking/travel-session/:id is called by BOTH the HR and
+      // reportee stores with the exact same URL. If that endpoint's
+      // permission check only verifies "does the caller own this session"
+      // (userId === req.user.id), it will succeed for a reportee opening
+      // their own session but silently fail for an HR manager opening a
+      // reportee's session, since the HR manager isn't the owner - even
+      // though they're legitimately allowed to review it. That would
+      // explain "works for reportee, not for HR" with identical frontend
+      // code on both sides.
+      //
+      // To stay resilient to that regardless of the backend's exact
+      // behavior, if the direct fetch comes back empty we fall back to
+      // scanning /tracking/travel-sessions/pending/hr page by page - the
+      // same endpoint that already powers this list and is *known* to be
+      // correctly scoped for HR managers - before concluding the session
+      // simply isn't updated by the reportee yet.
       fetchSessionById: async (sessionId: number) => {
         try {
           set({ sessionLoading: true });
 
-          // First, check if the session exists in the current sessions list
+          // Already in cache? Skip the network call entirely.
           const existingSession = get().sessions.find(
             (s) => s.sessionId === sessionId,
           );
           if (existingSession) {
-            // Already in cache, return it
-            set({ sessionLoading: false });
             return existingSession;
           }
 
-          const response = await API.get(
-            `/tracking/travel-session/${sessionId}`,
-          );
+          // 1) Try the direct single-session endpoint.
+          try {
+            const response = await API.get(
+              `/tracking/travel-session/${sessionId}`,
+            );
 
-          if (response.data.success) {
-            const session = response.data.data;
+            if (response.data.success && response.data.data) {
+              const session = response.data.data;
 
-            // Check if this session has been acted on by reportee
-            // If not, it shouldn't be in HR's queue yet
-            if (
-              !session.isApprovedByReportee &&
-              !session.isRejectedByReportee
-            ) {
-              toast.error("Not yet updated by reportee");
-              set({ sessionLoading: false });
-              return null;
+              set((state) => {
+                const exists = state.sessions.some(
+                  (s) => s.sessionId === session.sessionId,
+                );
+                if (!exists) {
+                  return { sessions: [session, ...state.sessions] };
+                }
+                return {};
+              });
+              get().applyFilters();
+              toast.success(`Loaded session #${sessionId} for review`);
+              return session;
+            }
+          } catch (directFetchError) {
+            // Swallow and fall through to the page-scan fallback below -
+            // this endpoint may simply not be authorized for HR on this
+            // session, which isn't the same as the session not existing.
+            console.warn(
+              `Direct fetch of session #${sessionId} failed, falling back to scanning the HR pending list.`,
+              directFetchError,
+            );
+          }
+
+          // 2) Fallback - scan HR's own pending list. This never touches
+          // currentPage/hasMore (uses local variables only), so the visible
+          // list's normal infinite-scroll pagination is left untouched.
+          const MAX_SCAN_PAGES = 25;
+          for (let page = 1; page <= MAX_SCAN_PAGES; page++) {
+            const listResponse = await API.get(
+              "/tracking/travel-sessions/pending/hr",
+              { params: { page, limit: PAGE_SIZE } },
+            );
+
+            if (!listResponse.data.success) break;
+
+            const pageData: TravelSession[] = listResponse.data.data || [];
+            const match = pageData.find((s) => s.sessionId === sessionId);
+
+            if (match) {
+              set((state) => {
+                const exists = state.sessions.some(
+                  (s) => s.sessionId === match.sessionId,
+                );
+                if (!exists) {
+                  return { sessions: [match, ...state.sessions] };
+                }
+                return {};
+              });
+              get().applyFilters();
+              toast.success(`Loaded session #${sessionId} for review`);
+              return match;
             }
 
-            // Add session to cache if not already there
-            set((state) => {
-              const exists = state.sessions.some(
-                (s) => s.sessionId === session.sessionId,
-              );
-              if (!exists) {
-                return {
-                  sessions: [session, ...state.sessions],
-                };
-              }
-              return {};
-            });
-            get().applyFilters();
-            toast.success(`Loaded session #${sessionId} for review`);
-            set({ sessionLoading: false });
-            return session;
-          } else {
-            toast.error("Session not found or not yet updated by reportee");
-            set({ sessionLoading: false });
-            return null;
+            const hasNextPage = listResponse.data.pagination?.hasNextPage;
+            if (!hasNextPage) break;
           }
-        } catch (error: any) {
-          console.error("Error fetching session:", error);
-          // Check if it's a 404 or similar - session doesn't exist in HR's queue
-          if (error?.response?.status === 404) {
-            toast.error("Session not found or not yet updated by reportee");
-          } else {
-            toast.error("Failed to load session");
-          }
-          set({ sessionLoading: false });
+
+          // Genuinely not found anywhere HR is authorized to see it - most
+          // likely still pending reportee action.
+          toast.error("Session is not updated by reportee");
           return null;
+        } catch (error) {
+          console.error("Error fetching session:", error);
+          toast.error("Session is not updated by reportee");
+          return null;
+        } finally {
+          set({ sessionLoading: false });
         }
       },
 

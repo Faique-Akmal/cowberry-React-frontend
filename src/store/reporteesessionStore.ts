@@ -105,6 +105,32 @@ interface TravelSessionStore {
 
 const PAGE_SIZE = 20;
 
+// The currently logged-in user's id, read fresh on every call (not cached
+// in a module-level constant) so switching accounts in the same browser
+// tab is picked up immediately instead of sticking to whoever was logged
+// in when the module first loaded.
+const getCurrentUserId = (): number | null => {
+  const raw = localStorage.getItem("userId");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+// Defensive client-side scoping: only sessions where the LOGGED-IN user is
+// the one listed in `reporteeInfo` belong in this reportee's queue. This
+// guards against two things the backend response alone doesn't protect
+// against: (1) `/pending/reportee` ever returning sessions outside the
+// caller's own scope, and (2) zustand's `persist` middleware replaying a
+// PREVIOUS reportee's cached sessions from localStorage after a different
+// user logs in on the same browser (top-level `userId`/`username` on a
+// session belong to the traveler, not the reportee, so they can't be used
+// for this check - `reporteeInfo.id` is the actual approver).
+const scopeToCurrentReportee = (data: TravelSession[]): TravelSession[] => {
+  const currentUserId = getCurrentUserId();
+  if (currentUserId === null) return data;
+  return data.filter((session) => session.reporteeInfo?.id === currentUserId);
+};
+
 export const useTravelSessionStore = create<TravelSessionStore>()(
   persist(
     (set, get) => ({
@@ -167,7 +193,16 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
       // Helper function to find session in cache
       findSessionInCache: (sessionId: number) => {
         const { sessions } = get();
-        return sessions.find((s) => s.sessionId === sessionId) || null;
+        const match = sessions.find((s) => s.sessionId === sessionId);
+        if (!match) return null;
+        const currentUserId = getCurrentUserId();
+        if (
+          currentUserId !== null &&
+          match.reporteeInfo?.id !== currentUserId
+        ) {
+          return null;
+        }
+        return match;
       },
 
       // Helper function to check if reportee can approve
@@ -178,7 +213,10 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
       // Apply filters
       applyFilters: () => {
         const { sessions, filters } = get();
-        let result = [...sessions];
+        // Scope first: never let another reportee's session (e.g. replayed
+        // from persisted localStorage after an account switch) leak through
+        // regardless of which status/search filters are active.
+        let result = scopeToCurrentReportee(sessions);
 
         if (filters.searchTerm.trim()) {
           const searchLower = filters.searchTerm.toLowerCase().trim();
@@ -257,9 +295,17 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
           );
 
           if (response.data.success) {
-            const data = response.data.data || [];
+            const rawData = response.data.data || [];
+            // The endpoint is meant to already be scoped to the caller, but
+            // scope again on the frontend so a backend regression can't
+            // surface someone else's pending approvals in this reportee's list.
+            const data = scopeToCurrentReportee(rawData);
             const pagination = response.data.pagination;
 
+            // total/hasNextPage describe the backend's (unscoped) result set,
+            // which is fine for driving "load more" - we still want to keep
+            // paging through the backend list even if this particular page
+            // happened to scope down to fewer/zero rows for this reportee.
             const total = pagination?.total ?? data.length;
             const hasNextPage = pagination?.hasNextPage ?? false;
 
@@ -280,7 +326,7 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
             // Apply filters after updating sessions
             get().applyFilters();
 
-            if (data.length === 0 && page === 1) {
+            if (rawData.length === 0 && page === 1) {
               toast.success("No pending sessions found");
             }
           } else {
@@ -293,37 +339,112 @@ export const useTravelSessionStore = create<TravelSessionStore>()(
         }
       },
 
-      // Fetch single session by ID
+      // Fetch single session by ID. Used both for the cache-miss path in
+      // the normal list AND for "open this exact session" deep links
+      // (clicking a row elsewhere and landing on the pending list).
+      //
+      // Mirrors the HR store's approach: a direct hit on
+      // GET /tracking/travel-session/:id is tried first, but if it comes
+      // back empty/unauthorized we fall back to scanning
+      // /tracking/travel-sessions/pending/reportee page by page - the same
+      // endpoint that already powers this list and is known to be scoped
+      // correctly - before giving up. This is what makes "click a pending
+      // session and land exactly on it" reliable instead of only working
+      // when the session already happens to be in the loaded cache.
       fetchSessionById: async (sessionId: number) => {
         try {
           set({ sessionLoading: true });
-          const response = await API.get(
-            `/tracking/travel-session/${sessionId}`,
-          );
 
-          if (response.data.success) {
-            const session = response.data.data;
-            // Add session to cache if not already there
-            set((state) => {
-              const exists = state.sessions.some(
-                (s) => s.sessionId === session.sessionId,
-              );
-              if (!exists) {
-                return {
-                  sessions: [session, ...state.sessions],
-                };
-              }
-              return {};
-            });
-            get().applyFilters();
-            toast.success(`Loaded session #${sessionId} for review`);
-            return session;
-          } else {
-            toast.error(
-              "Session not found or you don't have permission to view it",
-            );
-            return null;
+          // Already in cache (and scoped to this reportee)? Skip the
+          // network call entirely.
+          const cached = get().findSessionInCache(sessionId);
+          if (cached) {
+            return cached;
           }
+
+          const currentUserId = getCurrentUserId();
+          const belongsToCurrentReportee = (session: TravelSession) =>
+            currentUserId === null ||
+            session.reporteeInfo?.id === currentUserId;
+
+          // 1) Try the direct single-session endpoint.
+          try {
+            const response = await API.get(
+              `/tracking/travel-session/${sessionId}`,
+            );
+
+            if (response.data.success && response.data.data) {
+              const session: TravelSession = response.data.data;
+
+              if (!belongsToCurrentReportee(session)) {
+                console.warn(
+                  `Session #${sessionId} is not in the current user's reportee queue.`,
+                );
+              } else {
+                set((state) => {
+                  const exists = state.sessions.some(
+                    (s) => s.sessionId === session.sessionId,
+                  );
+                  if (!exists) {
+                    return { sessions: [session, ...state.sessions] };
+                  }
+                  return {};
+                });
+                get().applyFilters();
+                toast.success(`Loaded session #${sessionId} for review`);
+                return session;
+              }
+            }
+          } catch (directFetchError) {
+            // Swallow and fall through to the page-scan fallback below -
+            // the direct endpoint may reject this session for reasons
+            // unrelated to it not existing (e.g. permission scoping).
+            console.warn(
+              `Direct fetch of session #${sessionId} failed, falling back to scanning the pending reportee list.`,
+              directFetchError,
+            );
+          }
+
+          // 2) Fallback - scan this reportee's own pending list. Uses local
+          // variables only (never touches currentPage/hasMore), so the
+          // visible list's normal infinite-scroll pagination is untouched.
+          const MAX_SCAN_PAGES = 25;
+          for (let page = 1; page <= MAX_SCAN_PAGES; page++) {
+            const listResponse = await API.get(
+              "/tracking/travel-sessions/pending/reportee",
+              { params: { page, limit: PAGE_SIZE } },
+            );
+
+            if (!listResponse.data.success) break;
+
+            const pageData: TravelSession[] = listResponse.data.data || [];
+            const match = pageData.find(
+              (s) => s.sessionId === sessionId && belongsToCurrentReportee(s),
+            );
+
+            if (match) {
+              set((state) => {
+                const exists = state.sessions.some(
+                  (s) => s.sessionId === match.sessionId,
+                );
+                if (!exists) {
+                  return { sessions: [match, ...state.sessions] };
+                }
+                return {};
+              });
+              get().applyFilters();
+              toast.success(`Loaded session #${sessionId} for review`);
+              return match;
+            }
+
+            const hasNextPage = listResponse.data.pagination?.hasNextPage;
+            if (!hasNextPage) break;
+          }
+
+          toast.error(
+            "Session not found or you don't have permission to view it",
+          );
+          return null;
         } catch (error) {
           console.error("Error fetching session:", error);
           toast.error("Failed to load session.");

@@ -1553,11 +1553,16 @@ export default function TravelSessions() {
                                   </div>
 
                                   <div className="flex gap-2">
+                                    <span className="px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200">
+                                      status: {session.finalStatus}
+                                    </span>
+
                                     <span
                                       onClick={() => {
                                         const isAuthorized =
                                           userRole === "HR" ||
-                                          userRole === "MANAGER";
+                                          userRole === "MANAGER" ||
+                                          userRole === "headofdepartment";
                                         const isPending =
                                           getSessionFinalStatus(session) ===
                                           "PENDING";
@@ -1575,7 +1580,8 @@ export default function TravelSessions() {
                                         // Only add cursor-pointer if clickable
                                         sessionStatus === "PENDING" &&
                                         (userRole === "HR" ||
-                                          userRole === "MANAGER")
+                                          userRole === "MANAGER" ||
+                                          userRole === "headofdepartment")
                                           ? "cursor-pointer"
                                           : "cursor-default"
                                       }`}

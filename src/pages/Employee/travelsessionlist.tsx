@@ -76,6 +76,8 @@ import {
   sumReimbursableDistance,
 } from "../../utils/travelSessionHelpers";
 import { exportAllTravelSessionsFromAPI } from "../../utils/exportTravelSessionsToExcel";
+import { useNavigate } from "react-router-dom";
+import { usePendingSessionsStore } from "../../store/usePendingSessionsStore";
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -86,9 +88,7 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function TravelSessions() {
-  // ---------------------------------------------------------------------
-  // Zustand store: shared, cached data + fetch actions.
-  // ---------------------------------------------------------------------
+  const navigate = useNavigate();
   const travelSessions = useTravelSessionStore((s) => s.travelSessions);
   const sessionsMap = useTravelSessionStore((s) => s.sessionsMap);
   const users = useTravelSessionStore((s) => s.users);
@@ -665,6 +665,32 @@ export default function TravelSessions() {
     setFarmerDataError(null);
   };
 
+  const handlePendingStatusClick = (session: TravelSession) => {
+    // Only navigate if status is PENDING AND user role is HR or MANAGER
+    if (getSessionFinalStatus(session) === "PENDING") {
+      // Check if user role is HR or MANAGER
+      const isAuthorized = userRole === "HR" || userRole === "MANAGER";
+
+      if (!isAuthorized) {
+        // Optionally show a message or just do nothing
+        return;
+      }
+
+      const pendingSessionsPath =
+        userRole === "HR"
+          ? "/pending-hr-sessions"
+          : "/pending-reportee-sessions";
+
+      // Navigate to pending sessions page with session ID as state
+      navigate(pendingSessionsPath, {
+        state: {
+          sessionId: session.sessionId,
+          userId: session.userId,
+          from: "travel-sessions",
+        },
+      });
+    }
+  };
   // ---------------------------------------------------------------------
   // Export to Excel
   // ---------------------------------------------------------------------
@@ -1527,15 +1553,49 @@ export default function TravelSessions() {
                                   </div>
 
                                   <div className="flex gap-2">
+                                    <span className="px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200">
+                                      status: {session.finalStatus}
+                                    </span>
+
                                     <span
-                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm ${
+                                      onClick={() => {
+                                        const isAuthorized =
+                                          userRole === "HR" ||
+                                          userRole === "MANAGER" ||
+                                          userRole === "headofdepartment";
+                                        const isPending =
+                                          getSessionFinalStatus(session) ===
+                                          "PENDING";
+                                        if (isPending && isAuthorized) {
+                                          handlePendingStatusClick(session);
+                                        }
+                                      }}
+                                      className={`px-3 py-1 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200 ${
                                         sessionStatus === "APPROVED"
-                                          ? " text-white bg-green-700  border border-green-950 hover:bg-green-600 transition-colors duration-200"
+                                          ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
                                           : sessionStatus === "REJECTED"
-                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors duration-200"
-                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors duration-200"
+                                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                                            : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:scale-105"
+                                      } ${
+                                        // Only add cursor-pointer if clickable
+                                        sessionStatus === "PENDING" &&
+                                        (userRole === "HR" ||
+                                          userRole === "MANAGER" ||
+                                          userRole === "headofdepartment")
+                                          ? "cursor-pointer"
+                                          : "cursor-default"
                                       }`}
+                                      title={
+                                        sessionStatus === "PENDING" &&
+                                        (userRole === "HR" ||
+                                          userRole === "MANAGER")
+                                          ? "Click to review this session"
+                                          : sessionStatus === "PENDING"
+                                            ? "Only HR and Managers can review pending sessions"
+                                            : ""
+                                      }
                                     >
+                                      {/* Status icon and text as before */}
                                       {sessionStatus === "APPROVED" && (
                                         <svg
                                           className="w-3.5 h-3.5"
@@ -1568,7 +1628,7 @@ export default function TravelSessions() {
                                       )}
                                       {sessionStatus === "PENDING" && (
                                         <svg
-                                          className="w-3.5 h-3.5 animate-spin-slow"
+                                          className="w-3.5 h-3.5 hover:animate-spin"
                                           fill="none"
                                           stroke="currentColor"
                                           viewBox="0 0 24 24"

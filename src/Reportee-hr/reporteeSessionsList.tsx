@@ -1,7 +1,7 @@
+// reporteeSessionsList.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toast, Toaster } from "react-hot-toast";
-import API from "../api/axios";
 import {
   RefreshCw,
   X,
@@ -20,22 +20,9 @@ import {
   Hash,
   MapPin,
 } from "lucide-react";
+import { useTravelSessionStore } from "../store/reporteesessionStore";
 
 // Types
-interface ReporteeInfo {
-  id: number;
-  username: string;
-  fullName: string;
-  employeeCode: string;
-}
-
-interface HRManagerInfo {
-  id: number;
-  username: string;
-  fullName: string;
-  employeeCode: string;
-}
-
 interface TravelSession {
   sessionId: number;
   userId: number;
@@ -66,27 +53,29 @@ interface TravelSession {
   hrManagerInfo: HRManagerInfo;
 }
 
-// Updated API Response type to match your backend
-interface ApiResponse {
-  success: boolean;
-  data: TravelSession[];
-  pagination?: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-  error?: string;
+interface ReporteeInfo {
+  id: number;
+  username: string;
+  fullName: string;
+  employeeCode: string;
 }
 
-interface FilterState {
-  searchTerm: string;
-  sessionId: string;
-  dateFrom: string;
-  dateTo: string;
-  status: string;
+interface HRManagerInfo {
+  id: number;
+  username: string;
+  fullName: string;
+  employeeCode: string;
+}
+
+interface ReporteeTravelSessionManagerProps {
+  initialSessionId?: string | number;
+  userId?: string | number;
+  // Unique per navigation entry (e.g. React Router's location.key). Lets us
+  // tell "the same session was clicked again" apart from "this component
+  // just re-rendered for an unrelated reason", so the modal reliably
+  // re-opens every time a pending session is clicked - even the same one
+  // twice in a row.
+  navKey?: string;
 }
 
 // Portal component for modals
@@ -130,18 +119,29 @@ const formatShort = (dateString: string | null) => {
   return `${datePart}, ${timePart}`;
 };
 
-// Pagination config
-const PAGE_SIZE = 20;
+const ReporteeTravelSessionManager: React.FC<
+  ReporteeTravelSessionManagerProps
+> = ({ initialSessionId, userId, navKey }) => {
+  // Use Zustand store
+  const {
+    sessions,
+    filteredSessions,
+    loading,
+    loadingMore,
+    processing,
+    totalCount,
+    hasMore,
+    filters,
+    setFilters,
+    fetchPendingSessions,
+    fetchSessionById,
+    findSessionInCache,
+    handleAction,
+    refreshSessions,
+    setCurrentPage,
+  } = useTravelSessionStore();
 
-const ReporteeTravelSessionManager: React.FC = () => {
-  // State for sessions
-  const [sessions, setSessions] = useState<TravelSession[]>([]);
-  const [filteredSessions, setFilteredSessions] = useState<TravelSession[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [processing, setProcessing] = useState<number | null>(null);
-
-  // Modal states
+  // Local state for modals and UI
   const [selectedSession, setSelectedSession] = useState<TravelSession | null>(
     null,
   );
@@ -149,216 +149,161 @@ const ReporteeTravelSessionManager: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState<boolean>(false);
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
   const [actionType, setActionType] = useState<"approve" | "reject">("approve");
-
-  // UI states
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<TravelSession[]>([]);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [totalCount, setTotalCount] = useState<number>(0);
-
-  // Filters state
-  const [filters, setFilters] = useState<FilterState>({
-    searchTerm: "",
-    sessionId: "",
-    dateFrom: "",
-    dateTo: "",
-    status: "ALL",
-  });
+  // Track if we're currently opening a session
+  const [isOpeningSession, setIsOpeningSession] = useState<boolean>(false);
 
   // Refs for infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastRowRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // ============================================================
-  // FETCH FUNCTION WITH PAGINATION - UPDATED FOR BACKEND RESPONSE
-  // ============================================================
-  const fetchPendingSessions = async (
-    page: number = 1,
-    append: boolean = false,
-  ) => {
-    try {
-      if (page === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
+  // Tracks the last (sessionId, navKey) pair we already auto-opened, so we
+  // don't reopen on every unrelated re-render, but DO reopen whenever a
+  // genuinely new "open this session" request comes in - including a click
+  // on the same sessionId as before, as long as it's a fresh navKey.
+  const openedRef = useRef<{ sessionId: number | null; navKey?: string }>({
+    sessionId: null,
+    navKey: undefined,
+  });
 
-      const response = await API.get<ApiResponse>(
-        "/tracking/travel-sessions/pending/reportee",
-        {
-          params: {
-            page: page,
-            limit: PAGE_SIZE,
-          },
-        },
-      );
+  // Row refs keyed by sessionId, used to scroll the opened session into view.
+  const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-      if (response.data.success) {
-        const data = response.data.data || [];
-        const pagination = response.data.pagination;
+  // Guards against two failure modes when opening a session by id:
+  // 1) The fetch is still in flight when you navigate away (component
+  //    unmounts) - without this, the response arriving later calls
+  //    setState on an unmounted component, which React flags as an error.
+  // 2) You click session A, then quickly click session B before A's fetch
+  //    resolves - without this, A's late response can still open A's modal
+  //    even though you're now looking at B.
+  const isMountedRef = useRef(true);
+  const openRequestIdRef = useRef(0);
 
-        // Get total from pagination object
-        const total = pagination?.total ?? data.length;
-        const hasNextPage = pagination?.hasNextPage ?? false;
-        const totalPages =
-          pagination?.totalPages ?? Math.ceil(total / PAGE_SIZE);
-
-        if (append) {
-          // Append to existing sessions
-          setSessions((prev) => {
-            const newSessions = [...prev, ...data];
-
-            return newSessions;
-          });
-          setFilteredSessions((prev) => {
-            const newFiltered = [...prev, ...data];
-            return newFiltered;
-          });
-        } else {
-          // Replace all sessions
-          setSessions(data);
-          setFilteredSessions(data);
-        }
-
-        setTotalCount(total);
-        setHasMore(hasNextPage);
-
-        if (data.length === 0 && page === 1) {
-          toast.success("No pending sessions found");
-        }
-      } else {
-        toast.error(response.data.error || "Failed to fetch sessions");
-      }
-    } catch (error) {
-      toast.error("Error fetching sessions");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  // ============================================================
-  // LOAD MORE ITEMS
-  // ============================================================
-  const loadMoreItems = useCallback(() => {
-    if (loadingMore || !hasMore || loading) {
-      return;
-    }
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    fetchPendingSessions(nextPage, true);
-  }, [currentPage, hasMore, loadingMore, loading]);
-
-  // ============================================================
-  // INTERSECTION OBSERVER SETUP
-  // ============================================================
   useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-          loadMoreItems();
-        }
-      },
-      {
-        root: containerRef.current,
-        rootMargin: "0px 0px 100px 0px",
-        threshold: 0.1,
-      },
-    );
-
-    if (lastRowRef.current) {
-      observerRef.current.observe(lastRowRef.current);
-      // console.log("👁️ Observer attached to last row");
-    }
-
+    isMountedRef.current = true;
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        // console.log("👁️ Observer disconnected");
-      }
+      isMountedRef.current = false;
     };
-  }, [filteredSessions, hasMore, loadingMore, loading, loadMoreItems]);
+  }, []);
 
   // ============================================================
   // INITIAL LOAD
   // ============================================================
   useEffect(() => {
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchPendingSessions(1, false);
+    const cachedSessions = useTravelSessionStore.getState().sessions;
+
+    if (cachedSessions.length === 0) {
+      fetchPendingSessions(1, false);
+    } else {
+      useTravelSessionStore.getState().applyFilters();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ============================================================
-  // FILTER FUNCTIONALITY
+  // AUTO-OPEN SESSION FROM PROPS (pending-list click / deep link)
   // ============================================================
   useEffect(() => {
-    let result = [...sessions];
+    const sessionId = initialSessionId ? Number(initialSessionId) : null;
 
-    // Search filter
-    if (filters.searchTerm.trim()) {
-      const searchLower = filters.searchTerm.toLowerCase().trim();
-      result = result.filter(
-        (session) =>
-          session.fullName.toLowerCase().includes(searchLower) ||
-          session.username.toLowerCase().includes(searchLower) ||
-          session.employeeCode.toLowerCase().includes(searchLower) ||
-          session.userId.toString().includes(searchLower),
-      );
+    if (!sessionId || Number.isNaN(sessionId) || loading || isOpeningSession) {
+      return;
     }
 
-    // Session ID filter
-    if (filters.sessionId.trim()) {
-      const sessionIdNum = parseInt(filters.sessionId.trim());
-      if (!isNaN(sessionIdNum)) {
-        result = result.filter((session) => session.sessionId === sessionIdNum);
+    // Already handled this exact request (same session, same nav entry) -
+    // don't reopen on an unrelated re-render.
+    if (
+      openedRef.current.sessionId === sessionId &&
+      openedRef.current.navKey === navKey
+    ) {
+      return;
+    }
+
+    const scrollRowIntoView = (id: number) => {
+      // Give the list a tick to render/highlight the row before scrolling.
+      requestAnimationFrame(() => {
+        rowRefs.current[id]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+    };
+
+    const openSession = async () => {
+      const requestId = ++openRequestIdRef.current;
+      setIsOpeningSession(true);
+      openedRef.current = { sessionId, navKey };
+
+      const stillCurrent = () =>
+        isMountedRef.current && openRequestIdRef.current === requestId;
+
+      try {
+        const expectedUserId = userId !== undefined ? Number(userId) : null;
+
+        // 1) Already loaded (e.g. visible via normal infinite scroll)?
+        const cached = findSessionInCache(sessionId);
+        if (cached) {
+          if (!stillCurrent()) return;
+          if (expectedUserId !== null && cached.userId !== expectedUserId) {
+            console.warn(
+              `Session #${sessionId} belongs to user ${cached.userId}, not the requested user ${expectedUserId}.`,
+            );
+          }
+          setSelectedSession(cached);
+          setShowDetailsModal(true);
+          document.body.style.overflow = "hidden";
+          toast.success(`Loaded session #${sessionId} for review`);
+          scrollRowIntoView(sessionId);
+          return;
+        }
+
+        // 2) Not loaded yet - fetch it directly by id. This works whether
+        // the session is still pending or already approved/rejected
+        // ("old"), and it only prepends the single session to the cache -
+        // it never touches currentPage/hasMore, so the normal infinite
+        // scroll pagination is left completely intact.
+        const fetched = await fetchSessionById(sessionId);
+
+        // A newer "open session" request superseded this one, or the
+        // component has since unmounted - discard this stale result.
+        if (!stillCurrent()) return;
+
+        if (fetched) {
+          if (expectedUserId !== null && fetched.userId !== expectedUserId) {
+            console.warn(
+              `Session #${sessionId} belongs to user ${fetched.userId}, not the requested user ${expectedUserId}.`,
+            );
+          }
+          setSelectedSession(fetched);
+          setShowDetailsModal(true);
+          document.body.style.overflow = "hidden";
+          scrollRowIntoView(sessionId);
+        }
+        // fetchSessionById already toasts on both success and failure.
+      } catch (error) {
+        if (stillCurrent()) {
+          console.error("Error opening session:", error);
+          toast.error("Failed to load session");
+        }
+      } finally {
+        if (stillCurrent()) {
+          setIsOpeningSession(false);
+        }
       }
-    }
+    };
 
-    // Date range filter
-    if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
-      fromDate.setHours(0, 0, 0, 0);
-      result = result.filter(
-        (session) => new Date(session.startTime) >= fromDate,
-      );
-    }
+    openSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSessionId, navKey, loading]);
 
-    if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      result = result.filter(
-        (session) => new Date(session.startTime) <= toDate,
-      );
-    }
-
-    // Status filter
-    if (filters.status !== "ALL") {
-      if (filters.status === "PENDING_REPORTEE") {
-        result = result.filter((session) => canApproveByReportee(session));
-      } else if (filters.status === "APPROVED_REPORTEE") {
-        result = result.filter((session) => session.isApprovedByReportee);
-      } else if (filters.status === "REJECTED_REPORTEE") {
-        result = result.filter((session) => session.isRejectedByReportee);
-      } else {
-        result = result.filter(
-          (session) => session.finalStatus === filters.status,
-        );
-      }
-    }
-
-    setFilteredSessions(result);
-
-    // Update suggestions
+  // ============================================================
+  // SEARCH SUGGESTIONS
+  // ============================================================
+  useEffect(() => {
     if (filters.searchTerm.trim()) {
       const searchLower = filters.searchTerm.toLowerCase().trim();
       const matched = sessions
@@ -375,7 +320,71 @@ const ReporteeTravelSessionManager: React.FC = () => {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [filters, sessions]);
+  }, [filters.searchTerm, sessions]);
+
+  // ============================================================
+  // LOAD MORE ITEMS (Infinite Scroll)
+  // ============================================================
+  const loadMoreItems = useCallback(() => {
+    if (loadingMore || !hasMore || loading || isOpeningSession) {
+      return;
+    }
+    const nextPage = useTravelSessionStore.getState().currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchPendingSessions(nextPage, true);
+  }, [
+    loadingMore,
+    hasMore,
+    loading,
+    fetchPendingSessions,
+    isOpeningSession,
+    setCurrentPage,
+  ]);
+
+  // ============================================================
+  // INTERSECTION OBSERVER SETUP
+  // ============================================================
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !loadingMore &&
+          !loading &&
+          !isOpeningSession
+        ) {
+          loadMoreItems();
+        }
+      },
+      {
+        root: containerRef.current,
+        rootMargin: "0px 0px 100px 0px",
+        threshold: 0.1,
+      },
+    );
+
+    if (lastRowRef.current) {
+      observerRef.current.observe(lastRowRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [
+    filteredSessions,
+    hasMore,
+    loadingMore,
+    loading,
+    loadMoreItems,
+    isOpeningSession,
+  ]);
 
   // ============================================================
   // HANDLER FUNCTIONS
@@ -384,39 +393,17 @@ const ReporteeTravelSessionManager: React.FC = () => {
     return !session.isApprovedByReportee && !session.isRejectedByReportee;
   };
 
-  const handleAction = async (
+  const handleApproveReject = async (
     sessionId: number,
     action: "approve" | "reject",
   ) => {
-    try {
-      setProcessing(sessionId);
-
-      const response = await API.post(
-        `/tracking/travel-session/${sessionId}/reportee-approve`,
-        {
-          action: action,
-          comments: comments.trim() || `${action} by Reportee`,
-        },
-      );
-
-      if (response.data.success) {
-        toast.success(`Session ${action}ed successfully`);
-        setShowActionModal(false);
-        setComments("");
-        // Reset and reload from page 1
-        setCurrentPage(1);
-        setHasMore(true);
-        setSessions([]);
-        setFilteredSessions([]);
-        fetchPendingSessions(1, false);
-      } else {
-        toast.error(`Failed to ${action} session`);
-      }
-    } catch (error) {
-      // console.error(`Error ${action}ing session:`, error);
-      toast.error(`Error ${action}ing session`);
-    } finally {
-      setProcessing(null);
+    const success = await handleAction(sessionId, action, comments);
+    if (success) {
+      setShowActionModal(false);
+      setShowDetailsModal(false);
+      setComments("");
+      setSelectedSession(null);
+      document.body.style.overflow = "unset";
     }
   };
 
@@ -461,10 +448,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
   };
 
   const handleSuggestionClick = (session: TravelSession) => {
-    setFilters({
-      ...filters,
-      searchTerm: session.fullName,
-    });
+    setFilters({ searchTerm: session.fullName });
     setShowSuggestions(false);
   };
 
@@ -480,11 +464,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    setCurrentPage(1);
-    setHasMore(true);
-    setSessions([]);
-    setFilteredSessions([]);
-    fetchPendingSessions(1, false);
+    refreshSessions();
   };
 
   // ============================================================
@@ -518,7 +498,8 @@ const ReporteeTravelSessionManager: React.FC = () => {
   // RENDER
   // ============================================================
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 box-border">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-2 md:p-2 box-border">
+      <Toaster position="top-right" />
       <div className="w-full max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
@@ -533,7 +514,9 @@ const ReporteeTravelSessionManager: React.FC = () => {
                     Reportee Travel Sessions
                   </h1>
                   <p className="text-gray-600 mt-1 truncate">
-                    Review and manage pending travel session approvals
+                    {initialSessionId
+                      ? `Viewing session #${initialSessionId} for review`
+                      : "Review and manage pending travel session approvals"}
                   </p>
                 </div>
               </div>
@@ -541,7 +524,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              className="flex items-center gap-2 px-5 py-2.5 bg-lantern-blue-600   hover:bg-blue-900 text-white rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -610,7 +593,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
         {/* Search and Filter Section */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-6 mb-6 w-full">
           <div className="flex flex-col md:flex-row gap-4 w-full">
-            {/* Search Bar */}
             <div className="flex-1 min-w-0 relative z-50">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -619,7 +601,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   placeholder="Search by name, username, employee code..."
                   value={filters.searchTerm}
                   onChange={(e) => {
-                    setFilters({ ...filters, searchTerm: e.target.value });
+                    setFilters({ searchTerm: e.target.value });
                     setShowSuggestions(true);
                   }}
                   onFocus={() => {
@@ -635,7 +617,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 {filters.searchTerm && (
                   <button
                     onClick={() => {
-                      setFilters({ ...filters, searchTerm: "" });
+                      setFilters({ searchTerm: "" });
                       setShowSuggestions(false);
                     }}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -645,7 +627,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 )}
               </div>
 
-              {/* Suggestions Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-72 overflow-y-auto z-[9999]">
                   {suggestions.map((session) => (
@@ -674,7 +655,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
               )}
             </div>
 
-            {/* Toggle Filters Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
@@ -695,11 +675,9 @@ const ReporteeTravelSessionManager: React.FC = () => {
             </button>
           </div>
 
-          {/* Filter Section */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200 w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Session ID Filter */}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
@@ -711,14 +689,11 @@ const ReporteeTravelSessionManager: React.FC = () => {
                     type="number"
                     placeholder="Enter session ID"
                     value={filters.sessionId}
-                    onChange={(e) =>
-                      setFilters({ ...filters, sessionId: e.target.value })
-                    }
+                    onChange={(e) => setFilters({ sessionId: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
 
-                {/* Date From */}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
@@ -729,14 +704,11 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   <input
                     type="date"
                     value={filters.dateFrom}
-                    onChange={(e) =>
-                      setFilters({ ...filters, dateFrom: e.target.value })
-                    }
+                    onChange={(e) => setFilters({ dateFrom: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
 
-                {/* Date To */}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
@@ -747,14 +719,11 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   <input
                     type="date"
                     value={filters.dateTo}
-                    onChange={(e) =>
-                      setFilters({ ...filters, dateTo: e.target.value })
-                    }
+                    onChange={(e) => setFilters({ dateTo: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
 
-                {/* Status Filter */}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-1">
@@ -764,9 +733,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   </label>
                   <select
                     value={filters.status}
-                    onChange={(e) =>
-                      setFilters({ ...filters, status: e.target.value })
-                    }
+                    onChange={(e) => setFilters({ status: e.target.value })}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     <option value="ALL">All Status</option>
@@ -785,7 +752,6 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </div>
               </div>
 
-              {/* Filter Actions */}
               <div className="flex flex-wrap gap-3 mt-4">
                 <button
                   onClick={clearFilters}
@@ -834,8 +800,18 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 return (
                   <div
                     key={`${session.sessionId}-${index}`}
-                    ref={isLastItem ? lastRowRef : null}
-                    className="relative w-full max-w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 overflow-hidden"
+                    ref={(el) => {
+                      rowRefs.current[session.sessionId] = el;
+                      if (isLastItem) {
+                        lastRowRef.current = el;
+                      }
+                    }}
+                    className={`relative w-full max-w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 overflow-hidden ${
+                      initialSessionId &&
+                      Number(initialSessionId) === session.sessionId
+                        ? "ring-2 ring-blue-500 ring-offset-2"
+                        : ""
+                    }`}
                   >
                     {/* Session ID badge */}
                     <span className="absolute top-1 right-5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
@@ -1075,7 +1051,7 @@ const ReporteeTravelSessionManager: React.FC = () => {
                 </button>
                 <button
                   onClick={() =>
-                    handleAction(selectedSession.sessionId, actionType)
+                    handleApproveReject(selectedSession.sessionId, actionType)
                   }
                   disabled={processing === selectedSession.sessionId}
                   className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -1245,7 +1221,53 @@ const ReporteeTravelSessionManager: React.FC = () => {
                   />
                 </div>
 
-                <div className="mt-6">
+                {/* Action Buttons in Details Modal */}
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  {canApproveByReportee(selectedSession) ? (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() =>
+                          openActionModal(selectedSession, "approve")
+                        }
+                        disabled={processing === selectedSession.sessionId}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Approve Session
+                      </button>
+                      <button
+                        onClick={() =>
+                          openActionModal(selectedSession, "reject")
+                        }
+                        disabled={processing === selectedSession.sessionId}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium border border-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <XCircle className="w-5 h-5" />
+                        Reject Session
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 rounded-xl text-center">
+                      <p className="text-gray-600 font-medium">
+                        {selectedSession.isApprovedByReportee ? (
+                          <span className="text-green-600 flex items-center justify-center gap-2">
+                            <CheckCircle className="w-5 h-5" />
+                            Already approved by you
+                          </span>
+                        ) : selectedSession.isRejectedByReportee ? (
+                          <span className="text-red-600 flex items-center justify-center gap-2">
+                            <XCircle className="w-5 h-5" />
+                            Already rejected by you
+                          </span>
+                        ) : (
+                          "No action available"
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4">
                   <button
                     onClick={closeDetailsModal}
                     className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all"

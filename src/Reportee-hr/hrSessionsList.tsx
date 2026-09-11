@@ -548,7 +548,7 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
   // RENDER
   // ============================================================
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white/10 backdrop-blur-sm p-4 md:p-6 box-border">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white/10 backdrop-blur-sm p-2 md:p-2 box-border">
       <Toaster position="top-right" />
       <div className="max-w-7xl mx-auto min-w-0">
         {/* Header */}
@@ -556,8 +556,8 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-xl flex-shrink-0">
-                  <Briefcase className="w-6 h-6 text-blue-600" />
+                <div className="p-2 bg-lantern-blue-600 rounded-xl flex-shrink-0">
+                  <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">

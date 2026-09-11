@@ -498,7 +498,7 @@ const ReporteeTravelSessionManager: React.FC<
   // RENDER
   // ============================================================
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 box-border">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 p-2 md:p-2 box-border">
       <Toaster position="top-right" />
       <div className="w-full max-w-7xl mx-auto">
         {/* Header */}

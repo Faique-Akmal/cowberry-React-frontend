@@ -907,7 +907,7 @@ export default function TravelSessions() {
             </div>
 
             {showStats && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1023,7 +1023,7 @@ export default function TravelSessions() {
                   </div>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
+                {/* <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -1037,7 +1037,7 @@ export default function TravelSessions() {
                       <FaUser className="text-orange-500 text-xl" />
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
           </div>
@@ -1926,7 +1926,7 @@ export default function TravelSessions() {
 
         {/* Active Sessions Modal */}
         {showActiveSessionsModal && (
-          <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100]  bg-black/70 backdrop-blur-xl flex  justify-center p-4">
             <div
               className={`${glassmorphismClasses.modal} w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col`}
             >

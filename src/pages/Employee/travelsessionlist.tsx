@@ -155,6 +155,7 @@ export default function TravelSessions() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [showActiveSessionsModal, setShowActiveSessionsModal] = useState(false);
 
   // State for user role
   const [userRole, setUserRole] = useState<string>("");
@@ -357,7 +358,11 @@ export default function TravelSessions() {
   );
 
   const totalSessions = filteredSessions.length;
-  const activeSessions = filteredSessions.filter((s) => !s.endTime).length;
+  const activeSessionsList = useMemo(
+    () => filteredSessions.filter((s) => !s.endTime),
+    [filteredSessions],
+  );
+  const activeSessions = activeSessionsList.length;
   const totalDistance = filteredSessions.reduce(
     (sum, s) => sum + s.totalDistance,
     0,
@@ -902,7 +907,7 @@ export default function TravelSessions() {
             </div>
 
             {showStats && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
@@ -932,7 +937,23 @@ export default function TravelSessions() {
                   </div>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
+                <button
+                  type="button"
+                  onClick={() =>
+                    activeSessions > 0 && setShowActiveSessionsModal(true)
+                  }
+                  disabled={activeSessions === 0}
+                  className={`text-left bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 ${
+                    activeSessions > 0
+                      ? "hover:scale-105 hover:shadow-xl cursor-pointer"
+                      : "cursor-default opacity-90"
+                  }`}
+                  title={
+                    activeSessions > 0
+                      ? "Click to view active sessions"
+                      : undefined
+                  }
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -946,7 +967,7 @@ export default function TravelSessions() {
                       <FaPlayCircle className="text-green-500 text-xl" />
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
@@ -1002,7 +1023,7 @@ export default function TravelSessions() {
                   </div>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
+                {/* <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-4 shadow-lg border border-white/20 dark:border-gray-700/50 transition-all duration-300 hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -1016,7 +1037,7 @@ export default function TravelSessions() {
                       <FaUser className="text-orange-500 text-xl" />
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
           </div>
@@ -1900,6 +1921,106 @@ export default function TravelSessions() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Active Sessions Modal */}
+        {showActiveSessionsModal && (
+          <div className="fixed inset-0 z-[100]  bg-black/70 backdrop-blur-xl flex  justify-center p-4">
+            <div
+              className={`${glassmorphismClasses.modal} w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col`}
+            >
+              {/* Modal Header */}
+              <div className="bg-lantern-blue-600 backdrop-blur-sm p-4 text-white flex-shrink-0">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg flex-shrink-0">
+                      <FaPlayCircle className="text-lg" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-bold truncate">
+                        Active Sessions
+                      </h2>
+                      <p className="text-xs opacity-80 mt-1">
+                        {activeSessions} session
+                        {activeSessions === 1 ? "" : "s"} currently in progress
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowActiveSessionsModal(false)}
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-lg transition-all flex-shrink-0"
+                    title="Close"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {activeSessionsList.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FaInfoCircle className="text-gray-400 text-4xl mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      No active sessions right now.
+                    </p>
+                  </div>
+                ) : (
+                  activeSessionsList.map((session) => {
+                    const sessionDuration = calculateDuration(
+                      session.startTime,
+                      session.endTime,
+                    );
+                    return (
+                      <div
+                        key={session.sessionId}
+                        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl p-4 shadow border border-white/20 dark:border-gray-700/50 flex items-center justify-between gap-4"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-gray-800 dark:text-white truncate">
+                              {session.fullName}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              ({session.employeeCode})
+                            </span>
+                            <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+                              <FaPlayCircle className="text-[10px]" /> Live
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1 flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <FaClock className="text-[10px]" />
+                              Started {formatDateTime(session.startTime)}
+                            </span>
+                            <span>
+                              Duration: {sessionDuration.hours}h{" "}
+                              {sessionDuration.minutes}m
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <FaRoad className="text-[10px]" />
+                              {(session.totalDistance / 1000).toFixed(1)} km
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setShowActiveSessionsModal(false);
+                            openMap(session);
+                          }}
+                          className="flex items-center gap-1 text-xs font-medium bg-lantern-blue-600 hover:bg-lantern-blue-700 text-white px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                        >
+                          <FaEye /> View on Map
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
         )}
 

@@ -410,24 +410,6 @@ const LeaveApplicationPage: React.FC = () => {
             }
           : {}),
       }));
-
-      if (formData.leaveType === "Sick Leave") {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const selectedDate = new Date(date);
-        selectedDate.setHours(0, 0, 0, 0);
-        if (selectedDate < today) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            startDate: "Sick leave cannot be backdated",
-          }));
-        } else {
-          setValidationErrors((prev) => ({
-            ...prev,
-            startDate: "",
-          }));
-        }
-      }
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -460,8 +442,6 @@ const LeaveApplicationPage: React.FC = () => {
   // FIXED: Validate form with proper balance checks
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     // Check required fields
     if (!formData.leaveType) errors.leaveType = "Leave type is required";
@@ -479,14 +459,6 @@ const LeaveApplicationPage: React.FC = () => {
 
       if (end < start) {
         errors.endDate = "End date cannot be before start date";
-      }
-
-      if (formData.leaveType === "Sick Leave") {
-        const selectedDate = new Date(formData.startDate);
-        selectedDate.setHours(0, 0, 0, 0);
-        if (selectedDate < today) {
-          errors.startDate = "Sick leave cannot be backdated";
-        }
       }
     }
 
@@ -666,13 +638,6 @@ const LeaveApplicationPage: React.FC = () => {
     setSuccess("");
     setValidationErrors({});
     setIsHalfDay(false);
-  };
-
-  // Get today's date
-  const getTodayDate = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
   };
 
   const balanceDetails = getLeaveBalanceDetails();
@@ -880,11 +845,6 @@ const LeaveApplicationPage: React.FC = () => {
                       ? "border-red-300"
                       : "border-gray-300"
                   }`}
-                  minDate={
-                    formData.leaveType === "Sick Leave"
-                      ? getTodayDate()
-                      : undefined
-                  }
                   placeholderText="Select start date"
                   required
                 />

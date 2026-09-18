@@ -310,7 +310,6 @@ const TravelSessionHr: React.FC<TravelSessionHrProps> = ({
         // scroll pagination is left completely intact.
         const fetched = await fetchSessionById(sessionId);
 
-        // eslint-disable-next-line no-console
         console.log("[TravelSessionHr] fetchSessionById resolved", {
           sessionId,
           fetched,

@@ -12,7 +12,7 @@ import { flushSync } from "react-dom";
  * and floating micro-droplets.
  *
  * Built with the View Transitions API and Web Animations API clip-path interpolation
- * for 60+ FPS performance, zero layout shift, and perfect scroll/viewport adaptability.
+ * for 60+ FPS performance, zero layout shift, and instant start on click.
  */
 
 export interface WaterFlowOptions {
@@ -20,16 +20,18 @@ export interface WaterFlowOptions {
   y?: number;
   toDark: boolean;
   onThemeSwitch: () => void;
-  duration?: number; // In ms (default 1150ms, within 900-1400ms range)
+  duration?: number; // In ms (default 1100ms)
 }
 
-let isTransitionRunning = false;
+// Controller for cleanly handling rapid consecutive clicks
+let activeTransitionCleanup: (() => void) | null = null;
+let activeWebAnimation: Animation | null = null;
 
-// Fluid acceleration-deceleration curve simulating liquid mass and inertia
-function easeFluid(t: number): number {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+// Natural fluid wave acceleration:
+// Starts moving on frame 1 without delay (immediate positive initial velocity),
+// swells organically mid-screen, and gently settles as it washes out of the viewport.
+export function easeFluid(t: number): number {
+  return 0.35 * Math.sin((t * Math.PI) / 2) + 0.65 * (t * t * (3 - 2 * t));
 }
 
 /**
@@ -44,14 +46,6 @@ export function calculateWaveX(
   toDark: boolean
 ): number {
   const eased = easeFluid(progress);
-  // Ensure the wave starts and ends cleanly outside viewport boundaries
-  const margin = Math.max(120, width * 0.1);
-  const totalDistance = width + 2 * margin;
-
-  // Base sweep position
-  const baseX = toDark
-    ? -margin + totalDistance * eased // Left to Right
-    : width + margin - totalDistance * eased; // Right to Left
 
   // Dynamic wave envelope: smoothly grows from 0 at edge, peaks mid-screen, settles to 0 at exit
   const ampEnvelope = Math.sin(progress * Math.PI);
@@ -73,6 +67,13 @@ export function calculateWaveX(
 
   const totalDisplacement = (centerBulge + harmonic1 + harmonic2 + harmonic3) * ampEnvelope;
 
+  // Sweep base position edge-to-edge without dead-space margins:
+  // For toDark (Left to Right): starts right at -2px, sweeps to width + 24px
+  // For toLight (Right to Left): starts right at width + 2px, sweeps to -24px
+  const sweepStart = toDark ? -2 : width + 2;
+  const sweepEnd = toDark ? width + 24 : -24;
+  const baseX = sweepStart + (sweepEnd - sweepStart) * eased;
+
   // For Left-to-Right wave (entering Dark Mode), wave crest bulges forward to the right (+x)
   // For Right-to-Left wave (entering Light Mode), wave crest bulges forward to the left (-x)
   return toDark
@@ -82,16 +83,16 @@ export function calculateWaveX(
 
 /**
  * Generates an SVG/CSS Polygon clip-path string for the View Transition element.
- * Every keyframe contains the exact same number of vertices (44 vertices) for smooth GPU interpolation.
+ * Every keyframe contains the exact same number of vertices for smooth GPU interpolation.
  */
 function generateWavePolygon(
   progress: number,
   width: number,
   height: number,
   toDark: boolean,
-  numSegments: number = 40
+  numSegments: number = 36
 ): string {
-  const margin = Math.max(120, width * 0.1);
+  const offscreenAnchor = 40;
   const vertices: Array<[number, number]> = [];
 
   const yTop = -30;
@@ -100,8 +101,8 @@ function generateWavePolygon(
 
   if (toDark) {
     // Left to Right: reveal area is to the LEFT of the wave
-    // Start at top-left anchor outside viewport
-    vertices.push([-margin, yTop]);
+    // Anchor top-left outside viewport
+    vertices.push([-offscreenAnchor, yTop]);
 
     // Wave points from top to bottom
     for (let i = 0; i <= numSegments; i++) {
@@ -110,14 +111,14 @@ function generateWavePolygon(
       vertices.push([x, y]);
     }
 
-    // Bottom-left anchor outside viewport
-    vertices.push([-margin, yBottom]);
+    // Anchor bottom-left outside viewport
+    vertices.push([-offscreenAnchor, yBottom]);
     // Close polygon back to start
-    vertices.push([-margin, yTop]);
+    vertices.push([-offscreenAnchor, yTop]);
   } else {
     // Right to Left: reveal area is to the RIGHT of the wave
-    // Start at top-right anchor outside viewport
-    vertices.push([width + margin, yTop]);
+    // Anchor top-right outside viewport
+    vertices.push([width + offscreenAnchor, yTop]);
 
     // Wave points from top to bottom
     for (let i = 0; i <= numSegments; i++) {
@@ -126,10 +127,10 @@ function generateWavePolygon(
       vertices.push([x, y]);
     }
 
-    // Bottom-right anchor outside viewport
-    vertices.push([width + margin, yBottom]);
+    // Anchor bottom-right outside viewport
+    vertices.push([width + offscreenAnchor, yBottom]);
     // Close polygon back to start
-    vertices.push([width + margin, yTop]);
+    vertices.push([width + offscreenAnchor, yTop]);
   }
 
   const pointStrings = vertices.map(
@@ -145,7 +146,7 @@ function createAnimationKeyframes(
   width: number,
   height: number,
   toDark: boolean,
-  steps: number = 36
+  steps: number = 32
 ): Array<{ clipPath: string }> {
   const keyframes: Array<{ clipPath: string }> = [];
   for (let i = 0; i <= steps; i++) {
@@ -169,8 +170,13 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
   const {
     toDark,
     onThemeSwitch,
-    duration = 1150, // Optimal fluid transition time (900–1400ms)
+    duration = 1100, // Optimal fluid transition time
   } = options;
+
+  // Clean up any currently running transition if clicked rapidly
+  if (activeTransitionCleanup) {
+    activeTransitionCleanup();
+  }
 
   // Respect user preference for reduced motion
   const prefersReducedMotion =
@@ -182,12 +188,6 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
     return;
   }
 
-  // Prevent overlapping or concurrent transitions on rapid clicks
-  if (isTransitionRunning) {
-    return;
-  }
-  isTransitionRunning = true;
-
   const width = window.innerWidth;
   const height = window.innerHeight;
 
@@ -196,6 +196,11 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
     typeof document !== "undefined" &&
     "startViewTransition" in document &&
     typeof (document as any).startViewTransition === "function";
+
+  // Pre-compute keyframes synchronously so there is zero calculation delay
+  const keyframes = hasViewTransition
+    ? createAnimationKeyframes(width, height, toDark, 32)
+    : [];
 
   // Create full-viewport canvas overlay for liquid wave crest highlights and ripples
   const canvas = document.createElement("canvas");
@@ -227,15 +232,41 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
     bobSpeed: 4 + Math.random() * 5,
   }));
 
-  const startTime = performance.now();
-  let animationFrameId: number;
+  let animationFrameId = 0;
+  let isCleanedUp = false;
 
-  // Canvas Liquid Animation Loop
-  const renderFrame = (now: number) => {
-    if (!ctx) return;
+  function cleanup() {
+    if (isCleanedUp) return;
+    isCleanedUp = true;
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
+    }
+    if (activeWebAnimation) {
+      try {
+        activeWebAnimation.cancel();
+      } catch (e) {}
+      activeWebAnimation = null;
+    }
+    document.documentElement.classList.remove("theme-transitioning");
+    try {
+      if (canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas);
+      }
+    } catch (e) {}
+    if (activeTransitionCleanup === cleanup) {
+      activeTransitionCleanup = null;
+    }
+  }
+
+  activeTransitionCleanup = cleanup;
+
+  // Canvas Liquid Animation Frame Renderer
+  const renderCanvasFrame = (now: number, startTime: number) => {
+    if (!ctx || isCleanedUp) return;
 
     const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
+    const progress = Math.min(Math.max(elapsed / duration, 0), 1);
     const ampEnvelope = Math.sin(progress * Math.PI);
 
     ctx.clearRect(0, 0, width, height);
@@ -248,8 +279,6 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
     ctx.globalAlpha = globalOpacity;
 
     // Palette tailored for fluid water transition
-    // Dark wave: deep midnight fluid body with luminous cyan-electric water crest
-    // Light wave: crisp diamond-white / sky-blue pearlescent water crest
     const crestColor = toDark
       ? "rgba(56, 189, 248, 0.95)" // Luminous cyan crest
       : "rgba(255, 255, 255, 0.98)"; // Sparkling crystalline white
@@ -279,7 +308,7 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
       wavePoints.push({ x, y });
     }
 
-    // 1. Fallback rendering for browsers lacking View Transitions API
+    // 1. Fallback background fill for browsers lacking View Transitions API
     if (!hasViewTransition) {
       ctx.save();
       ctx.beginPath();
@@ -305,12 +334,10 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
 
       ctx.save();
       ctx.beginPath();
-      // Leading edge
       wavePoints.forEach((p, idx) => {
         if (idx === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       });
-      // Trailing edge
       for (let i = wavePoints.length - 1; i >= 0; i--) {
         const p = wavePoints[i];
         ctx.lineTo(p.x + trailSign * ribbonWidth, p.y);
@@ -334,7 +361,6 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
         ctx.beginPath();
         wavePoints.forEach((p, idx) => {
           const ripY = p.y;
-          // Slight harmonic phase lag for trailing ripples
           const lag = Math.sin((ripY / height) * Math.PI * 4 + progress * 7) * 4;
           const ripX = p.x + trailOffset + lag;
           if (idx === 0) ctx.moveTo(ripX, ripY);
@@ -382,21 +408,14 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
         ctx.restore();
       });
     }
-
-    if (progress < 1) {
-      animationFrameId = requestAnimationFrame(renderFrame);
-    }
   };
 
-  animationFrameId = requestAnimationFrame(renderFrame);
-
-  // View Transitions API: Synchronize DOM theme mutation and Web Animations clipPath
+  // View Transitions API execution with instant synchronized start
   if (hasViewTransition) {
     document.documentElement.classList.add("theme-transitioning");
 
     try {
       const transition = (document as any).startViewTransition(() => {
-        // Synchronously execute theme state update inside transition callback
         flushSync(() => {
           onThemeSwitch();
         });
@@ -404,8 +423,10 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
 
       await transition.ready;
 
-      // Generate keyframe array with 36 fluid wave slices
-      const keyframes = createAnimationKeyframes(width, height, toDark, 36);
+      if (isCleanedUp) return;
+
+      // Start the synchronized Web Animation and Canvas Liquid Wave in the EXACT same frame
+      const startTime = performance.now();
 
       const animation = document.documentElement.animate(keyframes, {
         duration,
@@ -413,36 +434,40 @@ export async function runWaterFlowTransition(options: WaterFlowOptions): Promise
         pseudoElement: "::view-transition-new(root)",
         fill: "forwards",
       });
+      activeWebAnimation = animation;
+
+      const runFrame = (now: number) => {
+        if (isCleanedUp) return;
+        renderCanvasFrame(now, startTime);
+        if (now - startTime < duration) {
+          animationFrameId = requestAnimationFrame(runFrame);
+        }
+      };
+      animationFrameId = requestAnimationFrame(runFrame);
 
       await animation.finished;
     } catch (err) {
       console.warn("View transition fallback applied:", err);
       onThemeSwitch();
     } finally {
-      document.documentElement.classList.remove("theme-transitioning");
       cleanup();
     }
   } else {
-    // Graceful fallback for non-supporting browsers:
-    // Canvas sweeps across, theme switches at the mid-point of the wave
-    setTimeout(() => {
-      onThemeSwitch();
-    }, duration * 0.48);
+    // Instant fallback for non-supporting browsers:
+    // Switch theme immediately without any artificial delay
+    onThemeSwitch();
 
-    setTimeout(() => {
-      cleanup();
-    }, duration + 30);
-  }
-
-  function cleanup() {
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
-    }
-    try {
-      if (canvas.parentNode) {
-        canvas.parentNode.removeChild(canvas);
+    const startTime = performance.now();
+    const runFallbackFrame = (now: number) => {
+      if (isCleanedUp) return;
+      renderCanvasFrame(now, startTime);
+      if (now - startTime < duration) {
+        animationFrameId = requestAnimationFrame(runFallbackFrame);
+      } else {
+        cleanup();
       }
-    } catch (e) {}
-    isTransitionRunning = false;
+    };
+    animationFrameId = requestAnimationFrame(runFallbackFrame);
   }
 }
+

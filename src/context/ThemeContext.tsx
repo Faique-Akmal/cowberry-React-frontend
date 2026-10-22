@@ -115,7 +115,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         x,
         y,
         toDark: nextIsDark,
-        duration: 650,
+        duration: 1150,
         onThemeSwitch: () => {
           setIsDarkMode(nextIsDark);
           if (nextIsDark) {

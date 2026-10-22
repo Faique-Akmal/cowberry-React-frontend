@@ -115,7 +115,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         x,
         y,
         toDark: nextIsDark,
-        duration: 1150,
+        duration: 1100,
         onThemeSwitch: () => {
           setIsDarkMode(nextIsDark);
           if (nextIsDark) {
@@ -127,12 +127,14 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             document.body.classList.remove("dark");
             setThemeConfig(customTheme);
           }
-          try {
-            localStorage.setItem("isDarkMode", JSON.stringify(nextIsDark));
-            localStorage.setItem("theme", nextIsDark ? "dark" : "light");
-          } catch (e) {
-            console.warn("Could not save theme state to localStorage", e);
-          }
+          queueMicrotask(() => {
+            try {
+              localStorage.setItem("isDarkMode", JSON.stringify(nextIsDark));
+              localStorage.setItem("theme", nextIsDark ? "dark" : "light");
+            } catch (e) {
+              console.warn("Could not save theme state to localStorage", e);
+            }
+          });
         },
       });
     },

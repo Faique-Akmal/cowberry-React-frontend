@@ -90,7 +90,7 @@ const AppSidebar: React.FC = () => {
   const navItems: NavItem[] = [
     {
       icon: (
-        <GridIcon className="text-lantern-blue-600 transition-transform duration-300 hover:translate-x-2 hover:-translate-y-2" />
+        <GridIcon className="text-lantern-blue-600 dark:text-white transition-transform duration-300 hover:translate-x-2 hover:-translate-y-2" />
       ),
       name: t("menu.dashboard"),
       path: "/home",
@@ -98,26 +98,32 @@ const AppSidebar: React.FC = () => {
     },
 
     {
-      icon: <ClockIcon className="text-lantern-blue-600" />,
+      icon: <ClockIcon className="text-lantern-blue-600 dark:text-white" />,
       name: t("menu.EmployeeCheckin"),
       path: "/employeecheckin",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
     },
 
     {
-      icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+      icon: (
+        <MdOutlinePendingActions className="text-lantern-blue-600 dark:text-white" />
+      ),
       name: t("PendingSessions"),
       path: "/pending-hr-sessions",
       role: ["admin", "hr"],
     },
     {
-      icon: <MdOutlinePendingActions className="text-lantern-blue-600" />,
+      icon: (
+        <MdOutlinePendingActions className="text-lantern-blue-600 dark:text-white" />
+      ),
       name: t("PendingSessions"),
       path: "/pending-reportee-sessions",
       role: ["manager", "headofdepartment"],
     },
     {
-      icon: <UnorderedListIcon className="text-lantern-blue-600" />,
+      icon: (
+        <UnorderedListIcon className="text-lantern-blue-600 dark:text-white" />
+      ),
       name: "AllTravelSessions",
       path: "/tracking-admin",
       role: ["admin", "zonalmanager", "manager", "hr", "headofdepartment"],
@@ -125,7 +131,7 @@ const AppSidebar: React.FC = () => {
 
     {
       icon: (
-        <MdOutlineAdd className="text-lantern-blue-600 transition-transform duration-500 hover:rotate-180" />
+        <MdOutlineAdd className="text-lantern-blue-600  dark:text-white transition-transform duration-500 hover:rotate-180" />
       ),
       name: t("Add / Manage"),
       subItems: [
@@ -139,7 +145,9 @@ const AppSidebar: React.FC = () => {
       ],
     },
     {
-      icon: <BrandTelegramIcon className="text-lantern-blue-600" />,
+      icon: (
+        <BrandTelegramIcon className="text-lantern-blue-600 dark:text-white" />
+      ),
       name: t("menu.announcement"),
       path: "/announcementList",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],
@@ -147,7 +155,7 @@ const AppSidebar: React.FC = () => {
 
     {
       icon: (
-        <FaCalendarAlt className="text-lantern-blue-600 transition-transform duration-300 hover:scale-125" />
+        <FaCalendarAlt className="text-lantern-blue-600 dark:text-white transition-transform duration-300 hover:scale-125" />
       ),
       name: t("Leaves Management"),
       subItems: [
@@ -180,7 +188,9 @@ const AppSidebar: React.FC = () => {
     //   role: ["admin", "hr"],
     // },
     {
-      icon: <UsersGroupIcon className="text-lantern-blue-600" />,
+      icon: (
+        <UsersGroupIcon className="text-lantern-blue-600 dark:text-white" />
+      ),
       name: t("menu.allUsers"),
       path: "/all-users",
       role: ["admin", "manager", "hr", "zonalmanager", "headofdepartment"],

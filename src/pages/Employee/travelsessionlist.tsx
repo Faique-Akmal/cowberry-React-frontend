@@ -159,6 +159,7 @@ export default function TravelSessions() {
 
   // State for user role
   const [userRole, setUserRole] = useState<string>("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const customIcons = useMemo(
     () => ({
@@ -287,6 +288,34 @@ export default function TravelSessions() {
       console.error("Error getting user info from localStorage:", error);
       setCurrentUserInfo(null);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when scrolled more than 300px from top
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    // Check initial position
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  // Add this scroll-to-top handler
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }, []);
 
   // Initial fetch
@@ -1156,9 +1185,34 @@ export default function TravelSessions() {
                     textField: {
                       size: "small",
                       fullWidth: true,
-                      className:
-                        "bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-xl",
-                      placeholder: "Select end date",
+                      sx: {
+                        backgroundColor: {
+                          xs: "rgba(255,255,255,0.5)",
+                          dark: "rgba(17,24,39,0.5)",
+                        },
+                        backdropFilter: "blur(4px)",
+                        borderRadius: "0.75rem",
+                        "& .MuiInputBase-input": {
+                          color: { xs: "black", dark: "white" },
+                        },
+                        "& .MuiInputBase-input::placeholder": {
+                          color: {
+                            xs: "rgba(0,0,0,0.6)",
+                            dark: "rgba(255,255,255,0.6)",
+                          },
+                          opacity: 1,
+                        },
+                        "& .MuiSvgIcon-root": {
+                          color: { xs: "black", dark: "white" },
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: {
+                            xs: "rgba(0,0,0,0.23)",
+                            dark: "rgba(255,255,255,0.23)",
+                          },
+                        },
+                      },
+                      placeholder: "Select start date",
                     },
                     popper: {
                       className: "z-50",
@@ -3205,6 +3259,32 @@ export default function TravelSessions() {
             </div>
           </div>
         )}
+        {/* Scroll to Top Button - Fixed Bottom Right */}
+        <button
+          onClick={scrollToTop}
+          className={`fixed bottom-2 right-6 z-[80] p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center ${
+            showScrollTop
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 translate-y-4 pointer-events-none"
+          } bg-lantern-blue-600 hover:bg-green-900 text-white hover:scale-110 active:scale-95`}
+          aria-label="Scroll to top"
+          title="Back to top"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
       </div>
     </LocalizationProvider>
   );

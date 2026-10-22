@@ -27,10 +27,10 @@ export const themePresets = {
     content: { background: "#fafafa", text: "#000000" },
   },
   dark: {
-    header: { background: "#1e1e1e", text: "#ffffff" },
-    sidebar: { background: "#2c2c2c", text: "#dddddd" },
-    footer:  { background: "#111111", text: "#ffffff" },
-    content: { background: "#121212", text: "#ffffff" },
+    header: { background: "#111111", text: "#ffffff" },
+    sidebar: { background: "#141414", text: "#e5e5e5" },
+    footer:  { background: "#0b0b0b", text: "#ffffff" },
+    content: { background: "#0b0b0b", text: "#ffffff" },
   },
   blue: {
     header: { background: "#1e3a8a", text: "#ffffff" },
@@ -43,5 +43,5 @@ export const themePresets = {
 // Narrow the preset name type to the actual keys
 export type ThemeName = keyof typeof themePresets;
 
-// Use one of the presets as the default
+// Use light preset as the default reference for Light Mode
 export const defaultThemeConfig: ThemeConfig = themePresets.light;

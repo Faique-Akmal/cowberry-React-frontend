@@ -1319,64 +1319,65 @@ export default function TravelSessions() {
                         </div>
 
                         <div className="flex items-center gap-8">
-                          <div className="text-right">
-                            <div className="flex items-center gap-3">
-                              <div className="text-center">
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  Approved Sessions
-                                </p>
-                                <p className="text-lg font-bold text-gray-800 dark:text-white">
-                                  {group.approvedSessions}
-                                </p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  Sessions
-                                </p>
-                                <p className="text-lg font-bold text-gray-800 dark:text-white">
-                                  {group.totalSessions}
-                                </p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  Distance
-                                </p>
+                          <div className="flex items-center gap-3">
+                            {/* Approved Sessions */}
+                            <div className="relative overflow-hidden text-center bg-transparent rounded-xl px-3 py-2 border border-gray-200/60 dark:border-gray-700/50 min-w-[80px]">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">
+                                Approved Sessions
+                              </p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {group.approvedSessions}
+                              </p>
+                            </div>
 
-                                <p className="text-lg font-bold text-gray-800 dark:text-white">
-                                  {(group.totalDistance / 1000).toFixed(1)} km
-                                </p>
+                            {/* Sessions */}
+                            <div className="relative overflow-hidden text-center bg-transparent rounded-xl px-3 py-2 border border-gray-200/60 dark:border-gray-700/50 min-w-[80px]">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">
+                                Sessions
+                              </p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {group.totalSessions}
+                              </p>
+                            </div>
 
-                                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                  ₹
-                                  {((group.totalDistance / 1000) * 3.5).toFixed(
-                                    1,
-                                  )}
-                                </p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  Reimbursement
-                                </p>
-                                <p
-                                  className={`text-lg font-bold ${
-                                    group.approvedSessions > 0
-                                      ? "text-green-600 dark:text-green-400"
-                                      : "text-gray-400 dark:text-gray-500"
-                                  }`}
-                                >
-                                  ₹{" "}
-                                  {calculateReimbursementAmount(
-                                    group.reimbursableDistance,
-                                  ).toFixed(2)}
-                                </p>
-                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                                  {group.approvedSessions > 0
-                                    ? `${(
-                                        group.reimbursableDistance / 1000
-                                      ).toFixed(2)} km approved`
-                                    : "No approved sessions"}
-                                </p>
-                              </div>
+                            {/* Distance */}
+                            <div className="relative overflow-hidden text-center bg-transparent rounded-xl px-3 py-2 border border-gray-200/60 dark:border-gray-700/50 min-w-[80px]">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">
+                                Distance
+                              </p>
+                              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                                {(group.totalDistance / 1000).toFixed(1)} km
+                              </p>
+                              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                ₹
+                                {((group.totalDistance / 1000) * 3.5).toFixed(
+                                  1,
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Reimbursement */}
+                            <div className="relative overflow-hidden text-center bg-transparent rounded-xl px-3 py-2 border border-gray-200/60 dark:border-gray-700/50 min-w-[90px]">
+                              <p className="text-xs text-gray-600 dark:text-gray-300">
+                                Reimbursement
+                              </p>
+                              <p
+                                className={`text-lg font-bold ${
+                                  group.approvedSessions > 0
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-gray-400 dark:text-gray-500"
+                                }`}
+                              >
+                                ₹{" "}
+                                {calculateReimbursementAmount(
+                                  group.reimbursableDistance,
+                                ).toFixed(2)}
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                {group.approvedSessions > 0
+                                  ? `${(group.reimbursableDistance / 1000).toFixed(2)} km approved`
+                                  : "No approved sessions"}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1385,85 +1386,64 @@ export default function TravelSessions() {
 
                     <div className="p-6">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
-                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                            <FaClock className="text-sm" />
-                            <span className="text-xs font-medium">
-                              First Session
-                            </span>
+                        {/* First Session */}
+                        <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-transparent dark:from-blue-900/30 opacity-70" />
+                          <div className="relative flex items-center gap-3">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shrink-0">
+                              <FaClock className="text-sm" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block">
+                                First Session
+                              </span>
+                              <p className="text-sm font-bold text-gray-800 dark:text-white">
+                                {formatTimeOnly(group.sessions[0].startTime)}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {formatTimeOnly(group.sessions[0].startTime)}
-                          </p>
                         </div>
 
-                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
-                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                            <FaClock className="text-sm" />
-                            <span className="text-xs font-medium">
-                              Last Session
-                            </span>
+                        {/* Last Session */}
+                        <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-gradient-to-br from-red-100 to-transparent dark:from-green-900/30 opacity-70" />
+                          <div className="relative flex items-center gap-3">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-red-400 dark:bg-green-900/40 text-red dark:text-green-400 shrink-0">
+                              <FaClock className="text-sm color-red" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block">
+                                Last Session
+                              </span>
+                              <p className="text-sm font-bold text-gray-800 dark:text-white">
+                                {formatTimeOnly(
+                                  group.sessions[group.sessions.length - 1]
+                                    .endTime ||
+                                    group.sessions[group.sessions.length - 1]
+                                      .startTime,
+                                )}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {formatTimeOnly(
-                              group.sessions[group.sessions.length - 1]
-                                .endTime ||
-                                group.sessions[group.sessions.length - 1]
-                                  .startTime,
-                            )}
-                          </p>
                         </div>
 
-                        <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
-                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
-                            <FaRoad className="text-sm" />
-                            <span className="text-xs font-medium">
-                              Total Distance
-                            </span>
+                        {/* Total Distance */}
+                        <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-70" />
+                          <div className="relative flex items-center gap-3">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 shrink-0">
+                              <FaRoad className="text-sm" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block">
+                                Total Distance
+                              </span>
+                              <p className="text-sm font-bold text-gray-800 dark:text-white">
+                                {(group.totalDistance / 1000).toFixed(2)} km
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {(group.totalDistance / 1000).toFixed(2)} km
-                          </p>
                         </div>
-
-                        {/* "Details" button */}
-                        {/* <div className="bg-gray-50/50 dark:bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center">
-                          <button
-                            onClick={() =>
-                              handleFetchTravelData(
-                                group.userId.toString(),
-                                undefined,
-                                group.date,
-                              )
-                            }
-                            className={`w-full px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                              isLoadingFarmerData &&
-                              selectedUserForFarmerData ===
-                                group.userId.toString()
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-lantern-blue-600 hover:bg-green-900"
-                            } text-white`}
-                            disabled={
-                              isLoadingFarmerData &&
-                              selectedUserForFarmerData ===
-                                group.userId.toString()
-                            }
-                          >
-                            {isLoadingFarmerData &&
-                            selectedUserForFarmerData ===
-                              group.userId.toString() ? (
-                              <>
-                                <FaSpinner className="animate-spin" />
-                                Loading...
-                              </>
-                            ) : (
-                              <>
-                                <FaInfoCircle className="text-lg" />
-                                <span className="font-semibold">Details</span>
-                              </>
-                            )}
-                          </button>
-                        </div> */}
                       </div>
 
                       <div className="mb-6">

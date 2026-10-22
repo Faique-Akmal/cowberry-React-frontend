@@ -58,6 +58,7 @@ interface TravelSessionState {
 
   // ---- loading flags ----
   isLoadingSessions: boolean;
+  isBackgroundLoading?: boolean;
   loadingLogs: Record<number, boolean>;
 
   // ---- new flags for better state management ----
@@ -106,6 +107,7 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
   _lastFetchedUserKey: null,
 
   isLoadingSessions: false,
+  isBackgroundLoading: false,
   loadingLogs: {},
 
   isInitialized: false,
@@ -250,6 +252,7 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
     const run = async () => {
       set({
         isLoadingSessions: true,
+        isBackgroundLoading: false,
         initializationError: null,
         isDataStale: false,
       });
@@ -258,90 +261,172 @@ export const useTravelSessionStore = create<TravelSessionState>((set, get) => ({
         const currentUserInfo = get().currentUserInfo;
         const roleParams = buildRoleScopedParams(currentUserInfo);
 
-        let allSessionsData: TravelSession[] = [];
-        let currentPageNum = 1;
-        let totalPagesNum = 1;
-        let hasMorePages = true;
+        // Helper to process, role-filter and extract users
+        const processAndApplySessions = (sessions: TravelSession[]) => {
+          const filteredSessions = currentUserInfo?.userRole
+            ? filterSessionsByRole(sessions, currentUserInfo)
+            : sessions;
 
-        while (hasMorePages) {
-          const params: any = {
-            page: currentPageNum,
-            limit: 100,
-            ...roleParams,
-          };
+          const newSessionsMap: Record<string, TravelSession> = {};
+          filteredSessions.forEach((session) => {
+            newSessionsMap[`${session.userId}-${session.sessionId}`] = session;
+          });
 
-          const res = await API.get<ApiPaginationResponse>(
-            "/admin/travel-sessions",
-            { params },
+          const uniqueUsers = Array.from(
+            new Map(
+              filteredSessions.map((session) => [
+                session.userId,
+                {
+                  userId: session.userId,
+                  fullName: session.fullName,
+                  username: session.username,
+                  employeeCode: session.employeeCode,
+                  department: session.department || "Unknown",
+                  allocatedArea: session.allocatedArea || "Unknown",
+                  zone: (session as any).zone,
+                  zoneId: (session as any).zone?.id,
+                } as UserListItem,
+              ]),
+            ).values(),
           );
 
-          if (!res.data.success) {
-            hasMorePages = false;
-            break;
-          }
+          return {
+            filteredSessions,
+            newSessionsMap,
+            uniqueUsers: filterUsersByRole(uniqueUsers, currentUserInfo),
+          };
+        };
 
-          const sessions = res.data.data || [];
-          allSessionsData = [...allSessionsData, ...sessions];
+        // 1. Fetch Page 1 FIRST and show it immediately!
+        const params: any = {
+          page: 1,
+          limit: 100,
+          ...roleParams,
+        };
 
-          currentPageNum = res.data.currentPage || currentPageNum;
-          totalPagesNum = res.data.totalPages || totalPagesNum;
-          hasMorePages = res.data.hasNextPage || false;
-
-          if (currentPageNum < totalPagesNum) currentPageNum++;
-          else hasMorePages = false;
-        }
-
-        const filteredSessions = currentUserInfo?.userRole
-          ? filterSessionsByRole(allSessionsData, currentUserInfo)
-          : allSessionsData;
-
-        const newSessionsMap: Record<string, TravelSession> = {};
-        filteredSessions.forEach((session) => {
-          newSessionsMap[`${session.userId}-${session.sessionId}`] = session;
-        });
-
-        const uniqueUsers = Array.from(
-          new Map(
-            filteredSessions.map((session) => [
-              session.userId,
-              {
-                userId: session.userId,
-                fullName: session.fullName,
-                username: session.username,
-                employeeCode: session.employeeCode,
-                department: session.department || "Unknown",
-                allocatedArea: session.allocatedArea || "Unknown",
-                // Needed for zonal-manager scoping in filterUsersByRole -
-                // without this, uniqueUsers has no zone info to match
-                // against and zonal managers get an empty users list even
-                // though their sessions filter correctly.
-                zone: (session as any).zone,
-                zoneId: (session as any).zone?.id,
-              } as UserListItem,
-            ]),
-          ).values(),
+        const res = await API.get<ApiPaginationResponse>(
+          "/admin/travel-sessions",
+          { params },
         );
 
+        if (!res.data.success) {
+          set({
+            isLoadingSessions: false,
+            isBackgroundLoading: false,
+            initializationError: "Failed to load travel sessions",
+            isInitialized: false,
+          });
+          return;
+        }
+
+        const page1Sessions = res.data.data || [];
+        let allSessionsData: TravelSession[] = [...page1Sessions];
+
+        let currentPageNum = res.data.currentPage || 1;
+        const totalPagesNum = res.data.totalPages || 1;
+        let hasMorePages =
+          res.data.hasNextPage ?? (currentPageNum < totalPagesNum);
+
+        // Process page 1 immediately
+        const page1Processed = processAndApplySessions(allSessionsData);
+
+        // IMMEDIATELY render Page 1 and clear the blocking loading spinner!
         set({
-          allSessions: filteredSessions,
-          travelSessions: filteredSessions,
-          sessionsMap: { ...get().sessionsMap, ...newSessionsMap },
-          users: filterUsersByRole(uniqueUsers, currentUserInfo),
-          totalSessionsCount: filteredSessions.length,
+          allSessions: page1Processed.filteredSessions,
+          travelSessions: page1Processed.filteredSessions,
+          sessionsMap: {
+            ...get().sessionsMap,
+            ...page1Processed.newSessionsMap,
+          },
+          users: page1Processed.uniqueUsers,
+          totalSessionsCount: page1Processed.filteredSessions.length,
           lastUpdateTime: new Date(),
           lastFetchedAt: Date.now(),
           _lastFetchedUserKey: getUserScopeKey(currentUserInfo),
           isInitialized: true,
           isLoadingSessions: false,
+          isBackgroundLoading: hasMorePages,
           isDataStale: false,
           initializationError: null,
         });
+
+        if (!hasMorePages) return;
+
+        // 2. Fetch remaining pages in background asynchronously
+        (async () => {
+          let nextPage = currentPageNum + 1;
+          const seenKeys = new Set<string>(
+            allSessionsData.map((s) => `${s.userId}-${s.sessionId}`),
+          );
+
+          while (nextPage <= totalPagesNum || hasMorePages) {
+            try {
+              const bgParams: any = {
+                page: nextPage,
+                limit: 100,
+                ...roleParams,
+              };
+
+              const nextRes = await API.get<ApiPaginationResponse>(
+                "/admin/travel-sessions",
+                { params: bgParams },
+              );
+
+              if (!nextRes.data.success || !nextRes.data.data?.length) {
+                break;
+              }
+
+              const newSessions = nextRes.data.data.filter((s) => {
+                const key = `${s.userId}-${s.sessionId}`;
+                if (seenKeys.has(key)) return false;
+                seenKeys.add(key);
+                return true;
+              });
+
+              allSessionsData = [...allSessionsData, ...newSessions];
+
+              const currentTotalPages =
+                nextRes.data.totalPages || totalPagesNum;
+              const currentHasMore =
+                nextRes.data.hasNextPage ?? (nextPage < currentTotalPages);
+
+              const processed = processAndApplySessions(allSessionsData);
+
+              set({
+                allSessions: processed.filteredSessions,
+                travelSessions: processed.filteredSessions,
+                sessionsMap: {
+                  ...get().sessionsMap,
+                  ...processed.newSessionsMap,
+                },
+                users: processed.uniqueUsers,
+                totalSessionsCount: processed.filteredSessions.length,
+                lastUpdateTime: new Date(),
+                lastFetchedAt: Date.now(),
+                isBackgroundLoading: currentHasMore,
+              });
+
+              if (!currentHasMore || nextPage >= currentTotalPages) break;
+              nextPage++;
+            } catch (bgErr) {
+              console.warn(
+                "Background fetch error for travel sessions page",
+                nextPage,
+                bgErr,
+              );
+              break;
+            }
+          }
+
+          set({ isBackgroundLoading: false });
+        })();
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to load travel sessions";
         console.error("Failed to load travel sessions", err);
         set({
           isLoadingSessions: false,
+          isBackgroundLoading: false,
           initializationError: errorMessage,
           isInitialized: false,
         });

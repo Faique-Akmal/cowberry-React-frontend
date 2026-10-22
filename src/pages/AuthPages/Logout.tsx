@@ -16,9 +16,15 @@ const Logout: React.FC = () => {
         await axiosLogout?.();
         await tracker.stop();
 
-        // Clear ALL stored data
+        // Clear stored data while preserving theme settings
+        const isDarkMode = localStorage.getItem("isDarkMode");
+        const theme = localStorage.getItem("theme");
+        const customTheme = localStorage.getItem("customTheme");
         localStorage.clear();
         sessionStorage.clear();
+        if (isDarkMode !== null) localStorage.setItem("isDarkMode", isDarkMode);
+        if (theme !== null) localStorage.setItem("theme", theme);
+        if (customTheme !== null) localStorage.setItem("customTheme", customTheme);
 
         // Optional: Force browser to drop cached pages
         window.history.pushState(null, "", window.location.href);

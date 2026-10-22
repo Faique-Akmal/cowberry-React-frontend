@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+import ThemeToggleButton from "../components/common/ThemeToggleButton";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -90,10 +91,10 @@ const AppHeader: React.FC = () => {
         sticky top-0 z-40 w-full
         h-16
         flex items-center
-        bg-white dark:bg-gray-900
-        border-b border-gray-200/60 dark:border-gray-800/60
-        transition-shadow duration-200
-        ${isScrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]" : ""}
+        bg-white dark:bg-[#111111]
+        border-b border-gray-200/60 dark:border-gray-800/80
+        transition-colors duration-200
+        ${isScrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.4)]" : ""}
       `}
     >
       <div className="flex items-center justify-between w-full px-4 lg:px-6">
@@ -158,35 +159,41 @@ const AppHeader: React.FC = () => {
           />
         </Link>
 
-        {/* Right — Actions (always visible on desktop, hidden on mobile when menu is closed) */}
-        <div className="hidden lg:flex items-center gap-2">
-          <NotificationDropdown />
-          <UserDropdown />
-        </div>
+        {/* Right — Actions (always visible on desktop, theme toggle available on all screens) */}
+        <div className="flex items-center gap-2">
+          {/* Header Theme Toggle Button */}
+          <ThemeToggleButton />
 
-        {/* Mobile menu button - only show on mobile */}
-        <button
-          onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
-          className="
-            lg:hidden flex items-center justify-center
-            w-10 h-10 rounded-lg
-            text-gray-500 dark:text-gray-400
-            hover:bg-gray-100 dark:hover:bg-gray-800
-            active:scale-95 transition-all duration-150
-          "
-          aria-label="Open menu"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="5" cy="12" r="2" />
-            <circle cx="12" cy="12" r="2" />
-            <circle cx="19" cy="12" r="2" />
-          </svg>
-        </button>
+          <div className="hidden lg:flex items-center gap-2">
+            <NotificationDropdown />
+            <UserDropdown />
+          </div>
+
+          {/* Mobile menu button - only show on mobile */}
+          <button
+            onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
+            className="
+              lg:hidden flex items-center justify-center
+              w-10 h-10 rounded-lg
+              border border-gray-200 dark:border-gray-700
+              text-gray-500 dark:text-gray-400
+              hover:bg-gray-100 dark:hover:bg-gray-800
+              active:scale-95 transition-all duration-150
+            "
+            aria-label="Open menu"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="19" cy="12" r="2" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu dropdown - only contains mobile-specific actions */}
       {isApplicationMenuOpen && (
-        <div className="lg:hidden absolute top-16 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-lg z-50">
+        <div className="lg:hidden absolute top-16 left-0 right-0 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 shadow-lg z-50">
           <div className="flex flex-col p-4 gap-3">
             <div className="flex items-center justify-end gap-2 pt-2">
               <NotificationDropdown />

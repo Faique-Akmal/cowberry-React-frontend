@@ -30,6 +30,7 @@ export interface CheckLog {
 interface AttendanceState {
   logs: CheckLog[];
   isLoading: boolean;
+  isBackgroundLoading?: boolean;
   lastFetched: number | null;
   error: string | null;
 
@@ -48,6 +49,7 @@ export const useAttendanceStore = create<AttendanceState>()(
     (set, get) => ({
       logs: [],
       isLoading: false,
+      isBackgroundLoading: false,
       lastFetched: null,
       error: null,
 
@@ -66,7 +68,7 @@ export const useAttendanceStore = create<AttendanceState>()(
           return;
         }
 
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, isBackgroundLoading: false, error: null });
 
         try {
           const token = localStorage.getItem("accessToken");
@@ -77,45 +79,118 @@ export const useAttendanceStore = create<AttendanceState>()(
 
           const BULK_FETCH_PAGE_SIZE = 100;
           const MAX_PAGES_TO_FETCH = 500;
-          let page = 1;
-          let allData: CheckLog[] = [];
 
-          while (true) {
-            const response = await API.get<{
-              success: boolean;
-              data: CheckLog[];
-              totalPages?: number;
-              hasMore?: boolean;
-            }>("/admin/check-logs", {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { page, limit: BULK_FETCH_PAGE_SIZE },
+          // Helper to generate a unique key for deduplication
+          const getLogKey = (log: CheckLog): string =>
+            `${log.userId}-${log.logType}-${log.timestamp}`;
+
+          // Fetch Page 1 FIRST and show it immediately!
+          const page1Response = await API.get<{
+            success: boolean;
+            data: CheckLog[];
+            totalPages?: number;
+            hasMore?: boolean;
+          }>("/admin/check-logs", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { page: 1, limit: BULK_FETCH_PAGE_SIZE },
+          });
+
+          if (!page1Response.data.success) {
+            set({
+              isLoading: false,
+              isBackgroundLoading: false,
+              error: "Failed to fetch attendance logs",
             });
-
-            if (!response.data.success) break;
-
-            allData = allData.concat(response.data.data);
-
-            const totalPages = response.data.totalPages;
-            const responseHasMore =
-              response.data.hasMore ??
-              (totalPages
-                ? page < totalPages
-                : response.data.data.length === BULK_FETCH_PAGE_SIZE);
-
-            if (!responseHasMore || page >= MAX_PAGES_TO_FETCH) break;
-            page += 1;
+            return;
           }
 
+          const page1Data = page1Response.data.data || [];
+          let allData: CheckLog[] = [...page1Data];
+          const seenKeys = new Set<string>(page1Data.map(getLogKey));
+
+          const totalPages = page1Response.data.totalPages;
+          const hasMorePages =
+            page1Response.data.hasMore ??
+            (totalPages
+              ? 1 < totalPages
+              : page1Data.length === BULK_FETCH_PAGE_SIZE);
+
+          // IMMEDIATELY display the first page and turn off the blocking spinner!
           set({
             logs: allData,
             lastFetched: Date.now(),
             isLoading: false,
+            isBackgroundLoading: hasMorePages,
             error: null,
           });
+
+          if (!hasMorePages) return;
+
+          // Load subsequent pages in background asynchronously
+          (async () => {
+            let page = 2;
+            while (page <= MAX_PAGES_TO_FETCH) {
+              try {
+                const nextResponse = await API.get<{
+                  success: boolean;
+                  data: CheckLog[];
+                  totalPages?: number;
+                  hasMore?: boolean;
+                }>("/admin/check-logs", {
+                  headers: { Authorization: `Bearer ${token}` },
+                  params: { page, limit: BULK_FETCH_PAGE_SIZE },
+                });
+
+                if (
+                  !nextResponse.data.success ||
+                  !nextResponse.data.data?.length
+                ) {
+                  break;
+                }
+
+                // Append and deduplicate
+                const newLogs = nextResponse.data.data.filter((item) => {
+                  const key = getLogKey(item);
+                  if (seenKeys.has(key)) return false;
+                  seenKeys.add(key);
+                  return true;
+                });
+
+                allData = allData.concat(newLogs);
+
+                const nextTotalPages = nextResponse.data.totalPages;
+                const nextHasMore =
+                  nextResponse.data.hasMore ??
+                  (nextTotalPages
+                    ? page < nextTotalPages
+                    : nextResponse.data.data.length === BULK_FETCH_PAGE_SIZE);
+
+                // Incrementally update the store
+                set({
+                  logs: [...allData],
+                  lastFetched: Date.now(),
+                  isBackgroundLoading: nextHasMore,
+                });
+
+                if (!nextHasMore) break;
+                page += 1;
+              } catch (bgError) {
+                console.warn(
+                  "Background fetch error for check-logs page",
+                  page,
+                  bgError,
+                );
+                break;
+              }
+            }
+
+            set({ isBackgroundLoading: false });
+          })();
         } catch (error: any) {
           console.error("Error fetching check logs:", error);
           set({
             isLoading: false,
+            isBackgroundLoading: false,
             error: error?.message || "Failed to fetch logs",
           });
         }

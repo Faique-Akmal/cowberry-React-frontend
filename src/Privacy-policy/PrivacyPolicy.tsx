@@ -1,12 +1,23 @@
 import React from "react";
+import ThemeToggleButton from "../components/common/ThemeToggleButton";
+import { Link } from "react-router-dom";
 
 const PrivacyPolicy: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0B0B] py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      <div className="max-w-full mx-auto bg-white dark:bg-[#111111] dark:border dark:border-gray-800 rounded-lg shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="bg-lantern-blue-600 px-6 py-8 sm:px-10 sm:py-12">
-          <div className="text-center">
+        <div className="relative bg-lantern-blue-600 px-6 py-8 sm:px-10 sm:py-12">
+          <div className="absolute top-4 right-4 flex items-center gap-3">
+            <Link
+              to="/signin"
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            >
+              Back to Sign In
+            </Link>
+            <ThemeToggleButton className="bg-white/10 border-white/20 text-white hover:bg-white/20" />
+          </div>
+          <div className="text-center pt-4 sm:pt-0">
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
               Privacy Policy for LANTERN360
             </h1>

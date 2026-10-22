@@ -1093,7 +1093,7 @@ export default function TravelSessions() {
 
               {/* Start Date Picker - FREE */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                   <FaCalendarAlt className="inline mr-2" />
                   Start Date
                 </label>
@@ -1104,8 +1104,33 @@ export default function TravelSessions() {
                     textField: {
                       size: "small",
                       fullWidth: true,
-                      className:
-                        "bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-xl",
+                      sx: {
+                        backgroundColor: {
+                          xs: "rgba(255,255,255,0.5)",
+                          dark: "rgba(17,24,39,0.5)",
+                        },
+                        backdropFilter: "blur(4px)",
+                        borderRadius: "0.75rem",
+                        "& .MuiInputBase-input": {
+                          color: { xs: "black", dark: "white" },
+                        },
+                        "& .MuiInputBase-input::placeholder": {
+                          color: {
+                            xs: "rgba(0,0,0,0.6)",
+                            dark: "rgba(255,255,255,0.6)",
+                          },
+                          opacity: 1,
+                        },
+                        "& .MuiSvgIcon-root": {
+                          color: { xs: "black", dark: "white" },
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: {
+                            xs: "rgba(0,0,0,0.23)",
+                            dark: "rgba(255,255,255,0.23)",
+                          },
+                        },
+                      },
                       placeholder: "Select start date",
                     },
                     popper: {

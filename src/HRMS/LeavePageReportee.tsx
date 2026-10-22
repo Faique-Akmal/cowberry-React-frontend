@@ -749,8 +749,8 @@ const LeaveManagementReportee: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-gray-50 min-h-screen mb-10">
-      <div className="w-full">
+    <div className="w-full max-w-full min-w-0 overflow-x-hidden bg-gray-50 min-h-screen mb-10">
+      <div className="w-full max-w-full min-w-0">
         {/* ── Header ── */}
         <div className="bg-lantern-blue-600 px-4 pt-4 pb-4">
           <div className="flex items-start justify-between gap-3 mb-3">

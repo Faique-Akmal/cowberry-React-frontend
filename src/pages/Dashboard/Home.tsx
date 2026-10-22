@@ -47,9 +47,9 @@ export default function Home() {
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-12">
         {/* Metrics */}
-        <div className="col-span-1 md:col-span-2 xl:col-span-12 bg-white p-2 ">
-          <div className=" text-2xl font-bold ">
-            <h1 className="text-lantern-blue-600">Users Role Distribution</h1>
+        <div className="col-span-1 md:col-span-2 xl:col-span-12 bg-white dark:bg-[#111111] dark:border dark:border-gray-800 rounded-2xl p-4 shadow-xs">
+          <div className=" text-2xl font-bold mb-2">
+            <h1 className="text-lantern-blue-600 dark:text-blue-400">Users Role Distribution</h1>
           </div>
           <Metrics />
         </div>

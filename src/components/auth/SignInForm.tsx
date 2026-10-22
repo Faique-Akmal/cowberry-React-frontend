@@ -10,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import ThemeToggleButton from "../common/ThemeToggleButton";
 
 // Access Restriction Modal Component (unchanged)
 const AccessRestrictionModal = ({
@@ -651,6 +652,11 @@ export default function SignInForm() {
 
   return (
     <>
+      {/* Floating Theme Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggleButton />
+      </div>
+
       {/* ============ MOBILE / SMALL SCREEN UI (below md) — unchanged ============ */}
       <div className="md:hidden relative min-h-screen overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-black dark:to-black">
         {/* Decorative shapes */}

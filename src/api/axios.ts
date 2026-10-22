@@ -80,8 +80,18 @@ API.interceptors.response.use(
 
       const refreshToken = localStorage.getItem("refreshToken");
 
-      if (!refreshToken) {
+      const clearAuthStorage = () => {
+        const isDark = localStorage.getItem("isDarkMode");
+        const th = localStorage.getItem("theme");
+        const ct = localStorage.getItem("customTheme");
         localStorage.clear();
+        if (isDark !== null) localStorage.setItem("isDarkMode", isDark);
+        if (th !== null) localStorage.setItem("theme", th);
+        if (ct !== null) localStorage.setItem("customTheme", ct);
+      };
+
+      if (!refreshToken) {
+        clearAuthStorage();
         window.location.href = "/signin";
         return Promise.reject(error);
       }
@@ -117,7 +127,7 @@ API.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         console.error("Session expired completely.", err);
-        localStorage.clear();
+        clearAuthStorage();
         window.location.href = "/signin";
         return Promise.reject(err);
       } finally {

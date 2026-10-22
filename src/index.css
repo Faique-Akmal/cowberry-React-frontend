@@ -3,7 +3,33 @@ layer(base);
 
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Flowing Water Theme Transition View Transition setup */
+html.theme-transitioning::view-transition-group(root) {
+  animation: none;
+}
+
+html.theme-transitioning::view-transition-image-pair(root) {
+  isolation: isolate;
+}
+
+html.theme-transitioning::view-transition-old(root),
+html.theme-transitioning::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+  height: 100%;
+  overflow: clip;
+}
+
+html.theme-transitioning::view-transition-old(root) {
+  z-index: 1;
+}
+
+html.theme-transitioning::view-transition-new(root) {
+  z-index: 9999;
+}
 
 @theme {
   --font-*: initial;
@@ -243,6 +269,26 @@ layer(base);
     background-attachment: fixed;
     background-color: rgba(255, 255, 255, 0.9);
   }
+
+  html.dark body,
+  body.dark {
+    background-color: #0b0b0b !important;
+    background-image:
+      linear-gradient(rgba(11, 11, 11, 0.94), rgba(11, 11, 11, 0.94)),
+      url("/lantern-logo.png") !important;
+    color: #ffffff;
+  }
+}
+
+/* Dark mode native element color schemes */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color-scheme: dark;
 }
 
 @keyframes toast-in {
@@ -862,3 +908,84 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* ==========================================================================
+   Complete Dark Mode Surface & Readability Rules
+   ========================================================================== */
+
+/* Universal dark mode surfaces for elements that don't have explicit dark: classes */
+.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: #111111;
+  color: #ffffff;
+}
+
+.dark .bg-gray-50:not([class*="dark:bg-"]) {
+  background-color: #0b0b0b;
+}
+
+.dark .bg-gray-100:not([class*="dark:bg-"]) {
+  background-color: #161616;
+}
+
+.dark .bg-blue-50:not([class*="dark:bg-"]) {
+  background-color: rgba(30, 58, 138, 0.25);
+  color: #e0f2fe;
+}
+
+.dark .bg-green-50:not([class*="dark:bg-"]) {
+  background-color: rgba(6, 78, 59, 0.25);
+  color: #d1fae5;
+}
+
+.dark .bg-amber-50:not([class*="dark:bg-"]),
+.dark .bg-yellow-50:not([class*="dark:bg-"]) {
+  background-color: rgba(120, 53, 15, 0.25);
+  color: #fef3c7;
+}
+
+.dark .bg-red-50:not([class*="dark:bg-"]) {
+  background-color: rgba(127, 29, 29, 0.25);
+  color: #fee2e2;
+}
+
+.dark .border-gray-200:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .border-gray-300:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.dark .border-gray-100:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.dark .text-gray-900:not([class*="dark:text-"]) {
+  color: #ffffff;
+}
+
+.dark .text-gray-800:not([class*="dark:text-"]) {
+  color: #f3f4f6;
+}
+
+.dark .text-gray-700:not([class*="dark:text-"]) {
+  color: #e5e7eb;
+}
+
+.dark .text-gray-600:not([class*="dark:text-"]) {
+  color: #bdbdbd;
+}
+
+.dark .text-gray-500:not([class*="dark:text-"]) {
+  color: #9ca3af;
+}
+
+/* Respect user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+

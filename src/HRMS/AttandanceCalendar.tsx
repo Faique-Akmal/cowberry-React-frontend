@@ -492,7 +492,7 @@ const AttendanceCalendar: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-[100vw] overflow-x-hidden p-4">
+    <div className="w-full max-w-full min-w-0 overflow-x-hidden p-4">
       <div className="bg-white rounded-lg shadow-lg p-6">
         {/* Header with Employee Selector */}
         <div className="flex flex-wrap justify-between items-center gap-4 mb-6">

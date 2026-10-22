@@ -959,8 +959,8 @@ const LeaveManagement: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen mb-10">
-      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
+    <div className="w-full max-w-full min-w-0 overflow-x-hidden bg-gray-50 min-h-screen mb-10">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8 w-full min-w-0">
         {/* ── Header ── */}
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg mb-6">
           <div className="px-4 sm:px-6 py-4 bg-lantern-blue-600 rounded-t-lg">
@@ -1157,32 +1157,28 @@ const LeaveManagement: React.FC = () => {
                     {paginatedLeaves.map((leave) => (
                       <tr
                         key={leave.lantern360_leave_id}
-                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="hover:bg-gray-50 hover:text-black transition-colors cursor-pointer"
                         onClick={() => openDetailsModal(leave)}
                       >
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium ">
                             {leave.employee_name}
                           </div>
-                          <div className="text-gray-500 text-xs">
-                            {leave.employee_code}
-                          </div>
+                          <div className="text-xs">{leave.employee_code}</div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {leave.leave_type}
                           {leave.half_day && (
-                            <span className="ml-1 text-xs text-gray-500">
-                              (Half)
-                            </span>
+                            <span className="ml-1 text-xs ">(Half)</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap ">
                           {formatDate(leave.from_date)}
                           {leave.from_date !== leave.to_date && (
                             <> – {formatDate(leave.to_date)}</>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap ">
                           {leave.total_days}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -1193,11 +1189,9 @@ const LeaveManagement: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 max-w-xs">
-                          <div className="text-gray-900 line-clamp-2">
-                            {leave.reason}
-                          </div>
+                          <div className="line-clamp-2">{leave.reason}</div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap ">
                           {formatDate(leave.applied_on)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">

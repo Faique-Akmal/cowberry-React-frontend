@@ -648,55 +648,72 @@ const EmployeeCheckin = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto flex-wrap">
+              {/* Calendar — icon on mobile, text on larger screens */}
               <button
                 onClick={() => (window.location.href = "/attandance-calendar")}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
-        bg-lantern-blue-600 hover:bg-lantern-yellow-400
-        text-white rounded-lg text-sm"
+                title="Calendar"
+                aria-label="Calendar"
+                className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5
+                  bg-lantern-blue-600 hover:bg-lantern-yellow-400
+                  text-white rounded-lg text-sm transition-colors"
               >
-                <Calendar1 className="w-3.5 h-3.5" />
-                <span>Calendar</span>
+                <Calendar1 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">Calendar</span>
               </button>
+
+              {/* Export Excel — ICON ONLY on mobile, text on larger screens */}
               <button
                 onClick={exportToExcel}
                 disabled={isLoading || filteredLogs.length === 0}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
-        bg-lantern-blue-600 hover:bg-lantern-yellow-400
-        text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Export Excel"
+                aria-label="Export Excel"
+                className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5
+                  bg-lantern-blue-600 hover:bg-lantern-yellow-400
+                  text-white rounded-lg text-sm transition-colors
+                  disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Excel</span>
+                <Download className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline ml-1">Export Excel</span>
               </button>
 
+              {/* Refresh — icon on mobile, text on larger screens */}
               <button
                 onClick={handleRefresh}
                 disabled={isLoading || isRefreshing}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5
-        bg-lantern-blue-600 text-white rounded-lg hover:bg-cyan-700 text-sm disabled:opacity-50"
+                title="Refresh"
+                aria-label="Refresh"
+                className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5
+                  bg-lantern-blue-600 text-white rounded-lg hover:bg-cyan-700 text-sm
+                  transition-colors disabled:opacity-50"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${isLoading || isRefreshing ? "animate-spin" : ""}`}
+                  className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${isLoading || isRefreshing ? "animate-spin" : ""}`}
                 />
-                <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+                <span className="hidden sm:inline">
+                  {isRefreshing ? "Refreshing..." : "Refresh"}
+                </span>
               </button>
 
+              {/* Filters toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5
-        bg-white/40 dark:bg-gray-800/40 backdrop-blur-lg
-        border border-white/50 dark:border-gray-700/50 rounded-lg text-sm
-        font-medium text-gray-700 dark:text-gray-300"
+                title={showFilters ? "Hide filters" : "Show filters"}
+                aria-label={showFilters ? "Hide filters" : "Show filters"}
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5
+                  bg-white/40 dark:bg-gray-800/40 backdrop-blur-lg
+                  border border-white/50 dark:border-gray-700/50 rounded-lg text-sm
+                  font-medium text-gray-700 dark:text-gray-300 transition-colors"
               >
                 {showFilters ? (
                   <>
                     <ChevronUp className="w-4 h-4" />
-                    <span>Hide</span>
+                    <span className="hidden sm:inline">Hide</span>
                   </>
                 ) : (
                   <>
                     <ChevronDown className="w-4 h-4" />
-                    <span>Filters</span>
+                    <span className="hidden sm:inline">Filters</span>
                   </>
                 )}
               </button>
